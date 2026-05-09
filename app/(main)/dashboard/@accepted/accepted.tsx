@@ -48,7 +48,7 @@ export default function Accepted({ initialData, pagination }: { initialData: Rec
           ))
         ) : (
           <>
-            <DataTable columns={precheckTableColumns} data={displayedData} emptyMessage="No invoices found." />
+            <DataTable columns={precheckTableColumns} data={displayedData} emptyMessage="No shifts found." />
             {!isSearching && hasMore && (
               <div ref={loadMoreRef} className="py-6 flex justify-center">
                 <Loader2 className="animate-spin text-primary" />

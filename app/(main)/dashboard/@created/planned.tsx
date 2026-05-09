@@ -26,7 +26,7 @@ export default function Created({ initialData, pagination }: { initialData: Reco
   return (
     <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between px-7 py-1">
-        <CardTitle className="text-[19px] font-bold">Planned Shifts</CardTitle>
+        <CardTitle className="text-[19px] font-bold">New Shifts Created</CardTitle>
         <div className="relative w-full max-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -48,7 +48,7 @@ export default function Created({ initialData, pagination }: { initialData: Reco
           ))
         ) : (
           <>
-            <DataTable columns={precheckTableColumns} data={displayedData} emptyMessage="No invoices found." />
+            <DataTable columns={precheckTableColumns} data={displayedData} emptyMessage="No shifts found." />
             {!isSearching && hasMore && (
               <div ref={loadMoreRef} className="py-6 flex justify-center">
                 <Loader2 className="animate-spin text-primary" />

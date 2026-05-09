@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { fetchNotificationsAction } from "@/actions/notification.actions";
 import { Notification } from "@/types/notification.types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Bell, ChevronLeft, ChevronRight, CheckCircle2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -90,11 +89,11 @@ export default function NotificationsPage() {
                     <div className="text-right text-sm text-slate-400 flex items-center gap-1 whitespace-nowrap">
                       <Clock className="w-3.5 h-3.5" />
                       {new Date(notification.created_at).toLocaleString("en-GB", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </div>
                   </div>

@@ -47,7 +47,7 @@ export default function Refused({ initialData, pagination }: { initialData: Reco
           ))
         ) : (
           <>
-            <DataTable columns={precheckTableColumns} data={displayedData} emptyMessage="No invoices found." />
+            <DataTable columns={precheckTableColumns} data={displayedData} emptyMessage="No shifts found." />
             {!isSearching && hasMore && (
               <div ref={loadMoreRef} className="py-6 flex justify-center">
                 <Loader2 className="animate-spin text-primary" />

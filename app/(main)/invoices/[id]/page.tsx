@@ -398,14 +398,25 @@ export default function InvoiceDetailsPage() {
     );
   }
 
+  const getCurrentViewName = () => {
+    if (isPaymentOpen) return "Update Payment Status";
+    if (isScheduleOpen) return "Schedule Shift";
+    if (isAssignGuardOpen) return "Assign Guard";
+    return "";
+  };
+
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6">
       <InvoiceHeader
         invoiceNo={invoice.invoice_no}
+        customerName={invoice.customer_name}
+        zohoInvoiceId={invoice.zoho_invoice_id}
+        description={invoice.description || ""}
         onOpenPayment={() => { setIsPaymentOpen(true); setIsScheduleOpen(false); setIsAssignGuardOpen(false); }}
         onOpenSchedule={() => { setIsScheduleOpen(true); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAddingShift(false); loadShifts("schedule"); }}
         onOpenAssignGuard={() => { setIsAssignGuardOpen(true); setIsScheduleOpen(false); setIsPaymentOpen(false); loadShifts("assign_guard"); }}
         onResetView={() => { setIsScheduleOpen(false); setIsPaymentOpen(false); setIsAssignGuardOpen(false); }}
+        currentView={getCurrentViewName()}
       />
 
       {isPaymentOpen ? (

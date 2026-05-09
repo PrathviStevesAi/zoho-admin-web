@@ -6,10 +6,6 @@ import { useState } from "react";
 import Image from "next/image";
 import {
   LayoutDashboard,
-  FileText,
-  Users,
-  Clock,
-  Settings,
   PanelLeftClose,
   PanelLeftOpen,
   User
@@ -20,10 +16,7 @@ import { Button } from "@/components/ui/button";
 
 const routes = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Guards", icon: Users, href: "/dashboard/guards" },
-  { label: "Shifts", icon: Clock, href: "/dashboard/shifts" },
   { label: "Profile", icon: User, href: "/profile" },
-  { label: "Settings", icon: Settings, href: "/dashboard/settings" },
 ];
 
 export function Sidebar() {

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InvoiceData } from "@/types/dashboard.types";
+import { formatStatus } from "@/lib/utils";
 
 interface InvoiceDetailsCardProps {
   invoice: InvoiceData;
@@ -105,7 +106,7 @@ export function InvoiceDetailsCard({
 
           <div className="grid grid-cols-4 p-4 items-center">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Status:</span>
-            <span className="col-span-3 text-sm text-slate-500 font-bold">{invoice.status}</span>
+            <span className="col-span-3 text-sm text-slate-500 font-bold">{formatStatus(invoice.status)}</span>
           </div>
 
           <div className="grid grid-cols-4 p-4 items-center">
