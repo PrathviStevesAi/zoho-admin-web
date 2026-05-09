@@ -1,7 +1,7 @@
 "use server";
 
 import { apiFetch } from "@/lib/api";
-import { NotificationResponse } from "@/types/notification.types";
+import { NotificationResponse, Notification } from "@/types/notification.types";
 
 export async function fetchNotificationsAction(page: number = 1): Promise<NotificationResponse> {
     try {
@@ -26,6 +26,27 @@ export async function updateFcmTokenAction(fcmToken: string) {
         return response;
     } catch (error) {
         console.error("Error updating FCM token:", error);
+        return { success: false };
+    }
+}
+export async function fetchNotificationByIdAction(id: string): Promise<{ success: boolean; data?: Notification }> {
+    try {
+        const response = await apiFetch<Notification>(`/api/v1/notification/${id}/`);
+        return { success: true, data: response };
+    } catch (error) {
+        console.error(`Error fetching notification ${id}:`, error);
+        return { success: false };
+    }
+}
+
+export async function markNotificationAsReadAction(id: string) {
+    try {
+        const response = await apiFetch<any>(`/api/v1/notification/${id}/mark-as-read/`, {
+            method: "POST",
+        });
+        return response;
+    } catch (error) {
+        console.error(`Error marking notification ${id} as read:`, error);
         return { success: false };
     }
 }

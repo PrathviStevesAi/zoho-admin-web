@@ -451,7 +451,7 @@ export default function InvoiceDetailsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
-          <div className="lg:col-span-8 space-y-6">
+          <div className="lg:col-span-7 space-y-6">
             <InvoiceDetailsCard
               invoice={invoice}
               isEditOpen={isEditOpen}
@@ -462,7 +462,7 @@ export default function InvoiceDetailsPage() {
               onSave={handleSave}
             />
           </div>
-          <div className="lg:col-span-4 space-y-6">
+          <div className="lg:col-span-5 space-y-6">
             <InvoiceHistorySidebar history={invoice.history} />
           </div>
         </div>

@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Notification } from "@/types/notification.types";
-import { fetchNotificationsAction } from "@/actions/notification.actions";
+import { fetchNotificationsAction, markNotificationAsReadAction } from "@/actions/notification.actions";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export function NotificationsNav() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -111,7 +112,16 @@ export function NotificationsNav() {
                   <div className="flex-1 space-y-1">
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="text-[14px] font-bold text-[#0064cb] leading-tight cursor-pointer hover:underline">
-                        {notification.title}
+                        <Link
+                          href={`/notifications/view`}
+                          onClick={() => {
+                            if (!notification.is_seen) {
+                              markNotificationAsReadAction(notification.id);
+                            }
+                          }}
+                        >
+                          {notification.title}
+                        </Link>
                       </h4>
                     </div>
                     <p className="text-[13px] text-slate-500 leading-normal">
@@ -138,9 +148,9 @@ export function NotificationsNav() {
         {(hasMore || hasPrevious) && (
           <div className="p-3 border-t border-border/50 flex items-center justify-center gap-4 bg-slate-50/50">
             {hasPrevious && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handlePreviousPage}
                 className="text-[13px] text-[#0064cb] hover:text-[#0052ae] hover:bg-white font-semibold"
               >
@@ -149,9 +159,9 @@ export function NotificationsNav() {
               </Button>
             )}
             {hasMore && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleNextPage}
                 className="text-[13px] text-[#0064cb] hover:text-[#0052ae] hover:bg-white font-semibold"
               >
