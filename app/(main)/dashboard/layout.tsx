@@ -1,11 +1,11 @@
-// Force re-compile after route move
+"use client";
+
 import { DashboardHeader } from "./dashboard-header";
 import { DashboardView } from "./dashboard-view";
 import { DashboardProvider } from "./dashboard-context";
 import { Suspense } from "react";
-import NotificationProvider from "@/components/NotificationProvider";
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
     children,
     invoice,
     precheck,
@@ -36,9 +36,8 @@ export default async function DashboardLayout({
 }) {
 
     return (
-        <div className="min-h-screen">
-            <DashboardProvider>
-                <NotificationProvider />
+        <DashboardProvider>
+            <div className="min-h-screen">
                 {/* Header Section */}
                 <Suspense fallback={<div className="h-20 animate-pulse bg-muted rounded-sm mb-10" />}>
                     <DashboardHeader />
@@ -65,12 +64,11 @@ export default async function DashboardLayout({
                         notapproved={notapproved}
                     />
                 </Suspense>
-            </DashboardProvider>
+            </div>
 
             {/* This renders the children (page.tsx) if needed */}
             <div>{children}</div>
-
-        </div>
+        </DashboardProvider>
     )
 }
 

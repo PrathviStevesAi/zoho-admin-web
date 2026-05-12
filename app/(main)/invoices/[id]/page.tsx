@@ -200,11 +200,10 @@ export default function InvoiceDetailsPage() {
     }
   };
 
-  const calculateHours = (date: Date, startTime: string, endTime: string) => {
+  const calculateHours = (startTime: string, endTime: string) => {
     if (!startTime || !endTime) return "";
-    const dateStr = date.toISOString().split('T')[0];
-    const start = DateTime.fromISO(`${dateStr}T${startTime}`);
-    let end = DateTime.fromISO(`${dateStr}T${endTime}`);
+    const start = DateTime.fromISO(startTime);
+    let end = DateTime.fromISO(endTime);
     if (!start.isValid || !end.isValid) return "";
     if (end < start) end = end.plus({ days: 1 });
     const diff = end.diff(start, ['hours', 'minutes']).toObject();
@@ -214,18 +213,22 @@ export default function InvoiceDetailsPage() {
 
   const handleRowChange = (dateKey: string, field: string, value: any) => {
     setRowSchedules(prev => {
-      const current = prev[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
+      const current = prev[dateKey] || {
+        checked: true,
+        hours: "",
+        startTime: `${dateKey}T09:00`,
+        endTime: `${dateKey}T17:00`
+      };
       const updated = { ...current, [field]: value };
       if (field === 'startTime' || field === 'endTime') {
-        const date = new Date(dateKey);
-        updated.hours = calculateHours(date, updated.startTime, updated.endTime);
+        updated.hours = calculateHours(updated.startTime, updated.endTime);
       } else if (field === 'hours') {
         const hoursNum = parseFloat(value);
         if (!isNaN(hoursNum)) {
-          const startTime = updated.startTime || "09:00";
-          updated.startTime = startTime;
-          const start = DateTime.fromISO(`${new Date(dateKey).toISOString().split('T')[0]}T${startTime}`);
-          if (start.isValid) updated.endTime = start.plus({ hours: hoursNum }).toFormat("HH:mm");
+          const start = DateTime.fromISO(updated.startTime);
+          if (start.isValid) {
+            updated.endTime = start.plus({ hours: hoursNum }).toISO({ includeOffset: false }).slice(0, 16);
+          }
         }
       }
       return { ...prev, [dateKey]: updated };
@@ -254,17 +257,14 @@ export default function InvoiceDetailsPage() {
       const dateKey = date.toISOString().split('T')[0];
       const row = rowSchedules[dateKey];
       if (row && row.checked && row.startTime && row.endTime) {
-        let end_date = dateKey;
-        if (row.endTime < row.startTime) {
-          const nextDay = new Date(date);
-          nextDay.setDate(nextDay.getDate() + 1);
-          end_date = nextDay.toISOString().split('T')[0];
+        // Create multiple objects based on # of people
+        for (let p = 0; p < (addShiftData.people || 1); p++) {
+          schedule.push({
+            start_date: DateTime.fromISO(row.startTime).toUTC().toISO({ suppressMilliseconds: true }) || row.startTime,
+            end_date: DateTime.fromISO(row.endTime).toUTC().toISO({ suppressMilliseconds: true }) || row.endTime,
+            total_hr: parseFloat(row.hours)
+          });
         }
-        schedule.push({
-          start_date: `${dateKey}T${row.startTime}:00`,
-          end_date: `${end_date}T${row.endTime}:00`,
-          total_hr: parseFloat(row.hours)
-        });
       }
     }
     if (schedule.length === 0) {
@@ -272,7 +272,12 @@ export default function InvoiceDetailsPage() {
       return;
     }
     setIsCreatingShift(true);
-    const result = await createShiftAction({ invoice_id: id, service_id: addShiftData.service, schedule });
+    const payload = { invoice_id: id, service_id: addShiftData.service, schedule };
+    console.log("[ShiftModule] Creating shifts with payload:", payload);
+
+    const result = await createShiftAction(payload);
+    console.log("[ShiftModule] Create shifts response:", result);
+
     if (result.success) {
       toast.success("Shifts created successfully");
       setIsAddingShift(false);

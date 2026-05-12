@@ -306,9 +306,8 @@ export async function fetchInvoiceDetailsAction(
     );
 
     return { success: true, data: data.data };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -326,9 +325,8 @@ export async function updateInvoicePaymentStatusAction(payload: {
       body: JSON.stringify(payload),
     });
     return { success: true };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -360,9 +358,8 @@ export async function fetchShiftDetailsAction(
     );
 
     return { success: true, data: data.data };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -375,9 +372,8 @@ export async function deleteShiftAction(
       method: "DELETE",
     });
     return { success: true };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -388,9 +384,8 @@ export async function fetchSecurityServicesAction(): Promise<{ success: boolean;
       `/api/v1/security-service`,
     );
     return { success: true, data: data.data };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -410,9 +405,8 @@ export async function createShiftAction(payload: {
       body: JSON.stringify(payload),
     });
     return { success: true };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -422,9 +416,8 @@ export async function fetchLocationAction(): Promise<{ success: boolean; data?: 
       `/api/v1/guards/location`
     );
     return { success: true, data: data.data };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -455,9 +448,8 @@ export async function fetchGuardsAction(params: {
       `/api/v1/guards/list?${query.toString()}`
     );
     return { success: true, data: data.data, pagination: data.pagination };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -480,9 +472,8 @@ export async function assignGuardsAction(payload: {
       }
     );
     return { success: true, message: res.message };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -497,9 +488,20 @@ export async function unassignGuardAction(shift_offer_id: string): Promise<{ suc
       }
     );
     return { success: true, message: res.message };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function fetchShiftCountsAction(): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const data = await apiFetch<{ success: boolean; data: any }>(
+      `/api/v1/shift/total/counts`
+    );
+    return { success: true, data: data.data };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
 }

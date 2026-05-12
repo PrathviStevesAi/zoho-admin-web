@@ -285,7 +285,7 @@ function UserNav({ session }: { session: any }) {
 
         <DropdownMenuItem
           className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer mt-1 text-red-600 focus:bg-red-50 focus:text-red-700 transition-colors"
-          onClick={() => signOut()}
+          onClick={() => signOut({ callbackUrl: "/admin-login" })}
         >
           <div className="flex items-center justify-center size-8 rounded-lg bg-red-50">
             <LogOut className="size-4 text-red-600" />

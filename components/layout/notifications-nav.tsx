@@ -8,36 +8,47 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
 import { Notification } from "@/types/notification.types";
-import { fetchNotificationsAction, markNotificationAsReadAction } from "@/actions/notification.actions";
+import { markNotificationAsReadAction } from "@/actions/notification.actions";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { onMessageListener } from "@/lib/firebase";
 
 export function NotificationsNav() {
+  const { status } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalNotifications, setTotalNotifications] = useState(0);
   const limit = 10;
 
   const loadNotifications = useCallback(async (page: number) => {
+    console.log("[NotificationsNav] Attempting load, status:", status);
+    if (status !== "authenticated") return;
+    
     setLoading(true);
-    const res = await fetchNotificationsAction(page);
-    if (res.success) {
-      // Sort: Unread (is_seen: false) first within the page
-      const sorted = [...res.data].sort((a, b) => {
-        if (a.is_seen === b.is_seen) return 0;
-        return a.is_seen ? 1 : -1;
-      });
-      setNotifications(sorted);
-      setUnreadCount(res.unread_count);
-      setTotalNotifications(res.pagination.total);
-      setCurrentPage(res.pagination.page);
+    console.log("[NotificationsNav] Fetching notifications...");
+    try {
+      const response = await fetch(`/api/notifications?page=${page}`);
+      const res = await response.json();
+      if (res.success) {
+        // Sort: Unread (is_seen: false) first within the page
+        const sorted = [...res.data].sort((a, b) => {
+          if (a.is_seen === b.is_seen) return 0;
+          return a.is_seen ? 1 : -1;
+        });
+        setNotifications(sorted);
+        setUnreadCount(res.unread_count);
+        setTotalNotifications(res.pagination.total);
+        setCurrentPage(res.pagination.page);
+      }
+    } catch (error) {
+      console.error("Error loading notifications:", error);
     }
     setLoading(false);
-  }, []);
+  }, [status]);
 
   // Initial load when the component mounts or when manually changing pages
   useEffect(() => {
@@ -46,11 +57,14 @@ export function NotificationsNav() {
 
   // Real-time updates via Firebase Cloud Messaging
   useEffect(() => {
-    onMessageListener((payload: any) => {
-      console.log("New notification received via FCM:", payload);
+    const unsubscribe = onMessageListener((payload: any) => {
+      console.log("[NotificationsNav] FCM message received in foreground:", payload);
       // Refresh the first page to show the latest notification
       loadNotifications(1);
     });
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [loadNotifications]);
 
   const hasMore = currentPage * limit < totalNotifications;

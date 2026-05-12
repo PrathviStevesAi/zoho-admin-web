@@ -3,6 +3,7 @@
 import { useSearchParams, usePathname } from "next/navigation";
 import { useDashboard } from "./dashboard-context";
 import { Loader2 } from "lucide-react";
+import { DispatchSummary } from "./_components/dispatch-summary";
 
 
 interface DashboardViewProps {
@@ -56,25 +57,28 @@ export function DashboardView({
                 </div>
             )}
 
+            {/* Dispatch View Summary Cards */}
+            {currentView !== "guard-management" && <DispatchSummary />}
+
             <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 transition-all duration-300 ${isPending ? 'opacity-40 blur-[2px] pointer-events-none' : ''}`}>
 
                 {currentView === "guard-management" ? (
                     <>
-                        {invoice}
-                        {created}
-                        {planned}
-                        {arrival}
-                        {precheck}
-                        {inprogress}
-                        {finished}
+                        <div key="invoice">{invoice}</div>
+                        <div key="created">{created}</div>
+                        <div key="planned">{planned}</div>
+                        <div key="arrival">{arrival}</div>
+                        <div key="precheck">{precheck}</div>
+                        <div key="inprogress">{inprogress}</div>
+                        <div key="finished">{finished}</div>
                     </>
                 ) : (
                     <>
-                        {accepted}
-                        {refused}
-                        {abandon}
-                        {approved}
-                        {notapproved}
+                        <div key="accepted">{accepted}</div>
+                        <div key="refused">{refused}</div>
+                        <div key="abandon">{abandon}</div>
+                        <div key="approved">{approved}</div>
+                        <div key="notapproved">{notapproved}</div>
                     </>
                 )}
             </div>

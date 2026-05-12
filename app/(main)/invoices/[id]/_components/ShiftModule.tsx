@@ -256,23 +256,21 @@ export function ShiftModule({
                         <TableCell className="py-4 px-6">
                           <div className="relative">
                             <Input
-                              type="time"
+                              type="datetime-local"
                               value={row.startTime}
                               onChange={(e) => handleRowChange(dateKey, 'startTime', e.target.value)}
-                              className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg pr-10"
+                              className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg"
                             />
-                            <Clock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                           </div>
                         </TableCell>
                         <TableCell className="py-4 px-6">
                           <div className="relative">
                             <Input
-                              type="time"
+                              type="datetime-local"
                               value={row.endTime}
                               onChange={(e) => handleRowChange(dateKey, 'endTime', e.target.value)}
-                              className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg pr-10"
+                              className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg"
                             />
-                            <Clock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                           </div>
                         </TableCell>
                       </TableRow>

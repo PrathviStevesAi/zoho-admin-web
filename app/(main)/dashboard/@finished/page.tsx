@@ -22,7 +22,13 @@ export default async function FinishedPage({
 
     const url = `/api/v1/shift/list?status=shift_finished${params.length > 0 ? '&' + params.join("&") : ""}`;
 
-    const response = await apiFetch<BaseApiResponse<Record>>(url);
+    let response;
+    try {
+        response = await apiFetch<BaseApiResponse<Record>>(url);
+    } catch (error) {
+        console.error("Failed to fetch finished shifts:", error);
+        response = { data: [], pagination: { page: 1, limit: 10, total: 0, total_pages: 0 } };
+    }
 
     return <Finished initialData={response.data} pagination={response.pagination} />;
 }

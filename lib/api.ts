@@ -3,18 +3,16 @@ import { auth } from "@/lib/auth";
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {},
-  retries: number = 3
+  retries: number = 5
 ): Promise<T> {
-  const session = await auth();
-  console.log("Full Session Object:", JSON.stringify(session, null, 2));
-  const token = session?.accessToken;
-  console.log("Authorization Token extracted:", token);
-
   const url = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
-
   let lastError: any;
   for (let i = 0; i < retries; i++) {
     try {
+      const session = await auth();
+      const token = session?.accessToken;
+      // console.log("Token:", token);
+
       console.log(`Fetching API (Attempt ${i + 1}): ${url}`);
       const response = await fetch(
         url,
@@ -30,9 +28,16 @@ export async function apiFetch<T>(
       );
 
       if (!response.ok) {
+        if (response.status === 401 && i < retries - 1) {
+          const delay = i >= 2 ? 1000 : 500;
+          console.warn(`[apiFetch] 401 detected for ${endpoint}. Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+
         const errorData = await response.json().catch(() => ({}));
         console.error(`API Error [${response.status}] ${endpoint}:`, errorData);
-        throw new Error(errorData.message || `API Request Failed with status ${response.status}`);
+        throw new Error(errorData.detail?.error || errorData.message || `API Request Failed with status ${response.status}`);
       }
       return response.json();
     } catch (error: any) {

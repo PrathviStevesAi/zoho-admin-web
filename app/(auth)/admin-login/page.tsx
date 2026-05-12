@@ -118,8 +118,7 @@ export default function LoginPage() {
             const result = await loginAction({ email, password });
             if (result.success) {
                 toast.success("Login Successful");
-                router.refresh();
-                router.push("/dashboard");
+                window.location.href = "/dashboard";
             } else {
                 toast.error(result.error || "Invalid Credentials");
             }

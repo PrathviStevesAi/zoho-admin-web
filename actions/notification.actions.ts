@@ -41,8 +41,9 @@ export async function fetchNotificationByIdAction(id: string): Promise<{ success
 
 export async function markNotificationAsReadAction(id: string) {
     try {
-        const response = await apiFetch<any>(`/api/v1/notification/${id}/mark-as-read/`, {
-            method: "POST",
+        const response = await apiFetch<any>(`/api/v1/notification/${id}/`, {
+            method: "PATCH",
+            body: JSON.stringify({ is_seen: true }),
         });
         return response;
     } catch (error) {

@@ -1,9 +1,11 @@
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
+import NotificationProvider from "@/components/NotificationProvider";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-background">
+      <NotificationProvider />
       <Sidebar />
       <div className="flex flex-1 flex-col min-w-0">
         <Header />

@@ -22,7 +22,13 @@ export default async function InvoicePage({
 
     const url = `/api/v1/invoice/list${params.length > 0 ? '?' + params.join("&") : ""}`;
 
-    const response = await apiFetch<BaseApiResponse<InvoiceData>>(url);
+    let response;
+    try {
+        response = await apiFetch<BaseApiResponse<InvoiceData>>(url);
+    } catch (error) {
+        console.error("Failed to fetch invoices:", error);
+        response = { data: [], pagination: { page: 1, limit: 10, total: 0, total_pages: 0 } };
+    }
 
     return <Invoice initialData={response.data} pagination={response.pagination} />;
 }

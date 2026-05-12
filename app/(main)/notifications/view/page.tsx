@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   ChevronRight,
   ArrowLeft,
@@ -44,9 +44,11 @@ import { toast } from "sonner";
 
 function NotificationViewContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const shiftId = searchParams.get("shift_id");
   const [shift, setShift] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("");
   const [showFilePreview, setShowFilePreview] = useState(false);
 
@@ -56,6 +58,9 @@ function NotificationViewContent() {
     const res = await fetchShiftDetailsAction(shiftId);
     if (res.success) {
       setShift(res.data);
+      setError(null);
+    } else {
+      setError(res.error || "Shift not found");
     }
     setIsLoading(false);
   }, [shiftId]);
@@ -217,7 +222,12 @@ function NotificationViewContent() {
             { label: "Assign Guard", icon: UserPlus, color: "indigo", onClick: handleAssignGuard },
             { label: "Open in CRM", icon: ExternalLink, color: "slate", onClick: () => {} },
             { label: "Cancel Service", icon: XCircle, color: "red", onClick: () => {} },
-          ].map((action, idx) => (
+          ].filter(action => {
+            if (!shift?.payment_status && (action.label === "Find Available Guard" || action.label === "Assign Guard")) {
+              return false;
+            }
+            return true;
+          }).map((action, idx) => (
             <div key={idx} className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={action.onClick}>
               <div className={cn(
                 "w-12 h-12 rounded-full border-2 flex items-center justify-center shadow-sm transition-colors",
@@ -282,7 +292,11 @@ function NotificationViewContent() {
                   <div className="grid grid-cols-4 p-4 items-center">
                     <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">ASSIGNED GUARD:</span>
                     <div className="col-span-3 text-sm text-slate-500 font-medium">
-                      {shift.assigned_guard || (
+                      {shift.assigned_guard ? (
+                        typeof shift.assigned_guard === 'object' 
+                          ? `${shift.assigned_guard.first_name} ${shift.assigned_guard.last_name}`
+                          : shift.assigned_guard
+                      ) : (
                         <span className="text-slate-400">No guard assigned</span>
                       )}
                     </div>
@@ -318,8 +332,16 @@ function NotificationViewContent() {
             </Card>
           ) : (
             <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-20 text-center">
-              <XCircle className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-              <p className="text-sm font-medium text-slate-400">No shift data found.</p>
+              <XCircle className="w-12 h-12 text-red-200 mx-auto mb-4" />
+              <p className="text-sm font-bold text-slate-600 mb-1">{error || "No shift data found"}</p>
+              <p className="text-xs text-slate-400 font-medium">The shift may have been deleted or the ID is invalid.</p>
+              <Button 
+                variant="outline" 
+                className="mt-6 h-9 rounded-xl text-xs font-bold text-[#0064cb] border-blue-100 hover:bg-blue-50"
+                onClick={() => router.push("/dashboard")}
+              >
+                Return to Dashboard
+              </Button>
             </Card>
           )}
 
