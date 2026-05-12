@@ -12,17 +12,23 @@ import {
 export async function fetchInvoicesAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<InvoiceData>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<InvoiceData>>(
-      `/api/v1/invoice/list?page=${page}&search=${query}`,
-    );
+  let url = `/api/v1/invoice/list?search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<InvoiceData>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -30,17 +36,23 @@ export async function fetchInvoicesAction(
 export async function fetchPreShiftCheckInAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_pre_check_in&search=${query}`,
-    );
+  let url = `/api/v1/shift/list?status=shift_pre_check_in&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -48,17 +60,23 @@ export async function fetchPreShiftCheckInAction(
 export async function fetchInProgressShiftAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_in_progress&search=${query}`,
-    );
+  let url = `/api/v1/shift/list?status=shift_in_progress&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -66,17 +84,23 @@ export async function fetchInProgressShiftAction(
 export async function fetchFinishedShiftAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_finished&search=${query}`,
-    );
+  let url = `/api/v1/shift/list?status=shift_finished&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -84,17 +108,23 @@ export async function fetchFinishedShiftAction(
 export async function fetchPlannedShiftAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
+  let url = `/api/v1/shift/list?status=shift_planned&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
+  
   try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_planned&search=${query}`,
-    );
-
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -102,17 +132,23 @@ export async function fetchPlannedShiftAction(
 export async function fetchArrivalShiftAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_arrival&search=${query}`,
-    );
+  let url = `/api/v1/shift/list?status=shift_arrival&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -120,17 +156,23 @@ export async function fetchArrivalShiftAction(
 export async function fetchCreatedShiftAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_created&search=${query}`,
-    );
+  let url = `/api/v1/shift/list?status=shift_created&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -138,17 +180,23 @@ export async function fetchCreatedShiftAction(
 export async function fetchAcceptedShiftAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_accepted&search=${query}`,
-    );
+  let url = `/api/v1/shift/list?status=shift_accepted&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -156,17 +204,23 @@ export async function fetchAcceptedShiftAction(
 export async function fetchRefusedShiftAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_refused&search=${query}`,
-    );
+  let url = `/api/v1/shift/list?status=shift_refused&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -174,17 +228,23 @@ export async function fetchRefusedShiftAction(
 export async function fetchAbandonShiftAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_abandon&search=${query}`,
-    );
+  let url = `/api/v1/shift/list?status=shift_abandon&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -192,17 +252,23 @@ export async function fetchAbandonShiftAction(
 export async function fetchApprovedShiftAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_approved&search=${query}`,
-    );
+  let url = `/api/v1/shift/list?status=shift_approved&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -210,17 +276,23 @@ export async function fetchApprovedShiftAction(
 export async function fetchNotApprovedShiftAction(
   page: number,
   search: string = "",
+  date_from: string = "",
+  date_to: string = "",
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
-  try {
-    const data = await apiFetch<BaseApiResponse<Record>>(
-      `/api/v1/shift/list?page=${page}&status=shift_not_approved&search=${query}`,
-    );
+  let url = `/api/v1/shift/list?status=shift_not_approved&search=${query}`;
+  
+  if (!date_from && !date_to) {
+    url += `&page=${page}`;
+  }
+  if (date_from) url += `&date_from=${date_from}`;
+  if (date_to) url += `&date_to=${date_to}`;
 
+  try {
+    const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
+    const message = error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };
   }
 }
@@ -250,7 +322,7 @@ export async function updateInvoicePaymentStatusAction(payload: {
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await apiFetch(`/api/v1/invoice/payment-status`, {
-      method: "PUT",
+      method: "PATCH",
       body: JSON.stringify(payload),
     });
     return { success: true };
@@ -273,6 +345,22 @@ export async function fetchInvoiceShiftsAction(
     return { success: true, data: data.data };
   } catch (error: unknown) {
     console.error("Error fetching invoice shifts:", error);
+    const message =
+      error instanceof Error ? error.message : "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function fetchShiftDetailsAction(
+  shiftId: string,
+): Promise<SingleFetchResponse<any>> {
+  try {
+    const data = await apiFetch<{ success: boolean; data: any }>(
+      `/api/v1/shift/${shiftId}`,
+    );
+
+    return { success: true, data: data.data };
+  } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Something went wrong";
     return { success: false, error: message };

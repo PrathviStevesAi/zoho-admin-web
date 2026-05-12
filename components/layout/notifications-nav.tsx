@@ -12,6 +12,7 @@ import { Notification } from "@/types/notification.types";
 import { fetchNotificationsAction, markNotificationAsReadAction } from "@/actions/notification.actions";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { onMessageListener } from "@/lib/firebase";
 
 export function NotificationsNav() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -43,16 +44,14 @@ export function NotificationsNav() {
     loadNotifications(currentPage);
   }, [loadNotifications, currentPage]);
 
-  // Polling for updates every 60 seconds (only if not already loading)
+  // Real-time updates via Firebase Cloud Messaging
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!loading) {
-        // We typically only poll the first page to check for new notifications
-        loadNotifications(1);
-      }
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [loadNotifications, loading]);
+    onMessageListener((payload: any) => {
+      console.log("New notification received via FCM:", payload);
+      // Refresh the first page to show the latest notification
+      loadNotifications(1);
+    });
+  }, [loadNotifications]);
 
   const hasMore = currentPage * limit < totalNotifications;
   const hasPrevious = currentPage > 1;
@@ -113,7 +112,7 @@ export function NotificationsNav() {
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="text-[14px] font-bold text-[#0064cb] leading-tight cursor-pointer hover:underline">
                         <Link
-                          href={`/notifications/view`}
+                          href={notification.data?.shift_id ? `/notifications/view?shift_id=${notification.data.shift_id}` : `/notifications/view`}
                           onClick={() => {
                             if (!notification.is_seen) {
                               markNotificationAsReadAction(notification.id);

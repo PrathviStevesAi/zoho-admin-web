@@ -72,26 +72,38 @@ export function PaymentModule({
 
               <div className="space-y-2">
                 <Label htmlFor="per_hour_rate" className="text-[13px] text-slate-700 font-semibold">Per Hour rate paid by the customer</Label>
-                <Input
-                  id="per_hour_rate"
-                  type="number"
-                  value={formData.per_hour_rate || ""}
-                  onChange={(e) => setFormData((prev: any) => ({ ...prev, per_hour_rate: Number(e.target.value) }))}
-                  placeholder="Enter Per Hour Rate"
-                  className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg px-3 text-sm transition-all"
-                />
+                <div className="relative group">
+                  <Input
+                    id="per_hour_rate"
+                    type="number"
+                    value={formData.per_hour_rate || ""}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, per_hour_rate: Number(e.target.value) }))}
+                    placeholder="0.00"
+                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <div className="h-5 w-px bg-slate-200 mr-2" />
+                    <span className="text-slate-400 text-[11px] font-bold tracking-wider">USD</span>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="per_shift_rate" className="text-[13px] text-slate-700 font-semibold">Per shift ( flat ) rate paid by the customer</Label>
-                <Input
-                  id="per_shift_rate"
-                  type="number"
-                  value={formData.per_shift_rate || ""}
-                  onChange={(e) => setFormData((prev: any) => ({ ...prev, per_shift_rate: Number(e.target.value) }))}
-                  placeholder="Enter Per Shift Rate"
-                  className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg px-3 text-sm transition-all"
-                />
+                <div className="relative group">
+                  <Input
+                    id="per_shift_rate"
+                    type="number"
+                    value={formData.per_shift_rate || ""}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, per_shift_rate: Number(e.target.value) }))}
+                    placeholder="0.00"
+                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <div className="h-5 w-px bg-slate-200 mr-2" />
+                    <span className="text-slate-400 text-[11px] font-bold tracking-wider">USD</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

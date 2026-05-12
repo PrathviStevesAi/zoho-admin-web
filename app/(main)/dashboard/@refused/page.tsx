@@ -7,12 +7,22 @@ export default async function RefusedPage({
 }: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-    const { view } = await searchParams;
+    const { view, date_from, date_to } = await searchParams;
     const currentView = view || "guard-management";
 
     if (currentView !== "shift-management") return null;
 
-    const response = await apiFetch<BaseApiResponse<Record>>("/api/v1/shift/list?page=1&status=shift_refused");
+    const dateFrom = typeof date_from === "string" ? date_from : "";
+    const dateTo = typeof date_to === "string" ? date_to : "";
+
+    const params = [];
+    if (!dateFrom && !dateTo) params.push("page=1");
+    if (dateFrom) params.push(`date_from=${dateFrom}`);
+    if (dateTo) params.push(`date_to=${dateTo}`);
+
+    const url = `/api/v1/shift/list?status=shift_refused${params.length > 0 ? '&' + params.join("&") : ""}`;
+
+    const response = await apiFetch<BaseApiResponse<Record>>(url);
 
     return <Refused initialData={response.data} pagination={response.pagination} />;
 }

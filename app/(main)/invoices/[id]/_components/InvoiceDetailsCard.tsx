@@ -26,6 +26,20 @@ export function InvoiceDetailsCard({
   setFormData,
   onSave
 }: InvoiceDetailsCardProps) {
+  const formatAddress = (addr: any) => {
+    if (!addr) return "N/A";
+    if (typeof addr === 'string') return addr;
+    const parts = [
+      addr.street,
+      addr.address,
+      addr.city,
+      addr.state,
+      addr.zip,
+      addr.country
+    ].filter(Boolean);
+    return parts.join(", ");
+  };
+
   return (
     <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white">
       <CardContent className="p-0">
@@ -64,7 +78,7 @@ export function InvoiceDetailsCard({
           </div>
 
           <p className="text-slate-600 font-bold text-sm font-medium">
-            Location - <span className="text-[#0064cb] cursor-pointer cursor-underline">{invoice.shipping_address || "N/A"}</span>
+            Location - <span className="text-[#0064cb] cursor-pointer cursor-underline">{formatAddress(invoice.shipping_address)}</span>
           </p>
         </div>
 

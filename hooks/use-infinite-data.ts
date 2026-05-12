@@ -16,9 +16,12 @@ export function useInfiniteSearch<T>(
   fetchAction: (
     page: number,
     query?: string,
-    status?: string,
+    date_from?: string,
+    date_to?: string,
   ) => Promise<FetchResponse<T>>,
   debounceMs: number = 500,
+  date_from: string = "",
+  date_to: string = "",
 ) {
   const [data, setData] = useState<T[]>(initialData);
   const [searchResults, setSearchResults] = useState<T[]>([]);
@@ -26,6 +29,13 @@ export function useInfiniteSearch<T>(
   const [hasMore, setHasMore] = useState(
     pagination.page < pagination.total_pages,
   );
+
+  // Sync state when initial props change (e.g. on filter change)
+  useEffect(() => {
+    setData(initialData);
+    setPage(pagination.page);
+    setHasMore(pagination.page < pagination.total_pages);
+  }, [initialData, pagination]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isPending, startTransition] = useTransition();
   const debouncedValue = useDebounceValue(searchTerm, debounceMs);
@@ -41,7 +51,7 @@ export function useInfiniteSearch<T>(
     loadingRef.current = true;
 
     startTransition(async () => {
-      const res = await fetchAction(nextPage, debouncedValue);
+      const res = await fetchAction(nextPage, debouncedValue, date_from, date_to);
       if (!res.success) {
         toast.error(res.error);
       } else if (res?.data && res.pagination) {
@@ -51,7 +61,7 @@ export function useInfiniteSearch<T>(
       }
       loadingRef.current = false;
     });
-  }, [isPending, hasMore, isSearching, page, debouncedValue, fetchAction]);
+  }, [isPending, hasMore, isSearching, page, debouncedValue, fetchAction, date_from, date_to]);
 
   // Search Logic
   useEffect(() => {
@@ -61,14 +71,14 @@ export function useInfiniteSearch<T>(
     }
 
     startTransition(async () => {
-      const res = await fetchAction(1, debouncedValue);
+      const res = await fetchAction(1, debouncedValue, date_from, date_to);
       if (!res.success) {
         toast.error(res.error);
         return;
       }
       setSearchResults(res.data);
     });
-  }, [debouncedValue, fetchAction]);
+  }, [debouncedValue, fetchAction, date_from, date_to]);
 
   // Observer Logic
   useEffect(() => {

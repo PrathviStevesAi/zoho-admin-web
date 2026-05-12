@@ -91,7 +91,7 @@ export default function ProfilePage() {
     console.log("updateProfileAction Payload:", payload);
     const res = await updateProfileAction(payload);
     console.log("updateProfileAction Response:", res);
-    
+
     if (res.success) {
       toast.success("Profile updated successfully");
       setIsEditing(false);
@@ -111,7 +111,7 @@ export default function ProfilePage() {
 
     try {
       setIsUpdating(true);
-      
+
       // Generate unique file name
       const fileExt = file.name.split('.').pop();
       const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
@@ -121,7 +121,7 @@ export default function ProfilePage() {
       console.log("generateUploadUrlAction Payload:", { file_name: uniqueFileName, type: "profile" });
       const res = await generateUploadUrlAction(uniqueFileName, "profile");
       console.log("generateUploadUrlAction Response:", res);
-      
+
       if (!res.success || !res.data) throw new Error(res.error || "Failed to generate upload URL");
 
       const { signed_url, file_path } = res.data;
@@ -194,8 +194,8 @@ export default function ProfilePage() {
             className="hidden"
             accept="image/*"
           />
-          <Button 
-            size="icon" 
+          <Button
+            size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUpdating}
             className="absolute -bottom-1 -right-1 h-8 w-8 rounded-lg bg-[#0064cb] hover:bg-[#0052ae] text-white shadow-lg border-2 border-white transition-all active:scale-90 cursor-pointer"
@@ -253,7 +253,7 @@ export default function ProfilePage() {
         <CardContent className="px-6 py-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase">First Name</Label>
+              <Label className="text-[12px] font-bold text-black-700 uppercase">First Name</Label>
               {isEditing ? (
                 <Input
                   value={editFormData.first_name}
@@ -261,12 +261,12 @@ export default function ProfilePage() {
                   className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all"
                 />
               ) : (
-                <p className="text-base font-bold text-slate-700 px-0.5">{currentUser.first_name}</p>
+                <p className="text-base font-bold text-slate-500">{currentUser.first_name}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase">Last Name</Label>
+              <Label className="text-[12px] font-bold text-black-700 uppercase">Last Name</Label>
               {isEditing ? (
                 <Input
                   value={editFormData.last_name}
@@ -274,19 +274,19 @@ export default function ProfilePage() {
                   className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all"
                 />
               ) : (
-                <p className="text-base font-bold text-slate-700 px-0.5">{currentUser.last_name}</p>
+                <p className="text-base font-bold text-slate-500">{currentUser.last_name}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase">Email Address</Label>
+              <Label className="text-[12px] font-bold text-black-700 uppercase">Email Address</Label>
               <div className="flex items-center gap-2 px-0.5">
-                <p className="text-sm font-bold text-slate-400">{currentUser.email}</p>
+                <p className="text-base font-bold text-slate-500">{currentUser.email}</p>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase">Phone Number</Label>
+              <Label className="text-[12px] font-bold text-black-700 uppercase">Phone Number</Label>
               {isEditing ? (
                 <div className="relative">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -298,7 +298,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2 px-0.5">
-                  <p className="text-base font-bold text-slate-700">{currentUser.phone_number || "Not provided"}</p>
+                  <p className="text-base font-bold text-slate-500">{currentUser.phone_number || "Not provided"}</p>
                 </div>
               )}
             </div>
@@ -312,10 +312,10 @@ export default function ProfilePage() {
                 </div>
                 <h3 className="text-[11px] font-bold text-slate-700 uppercase">Security Credentials</h3>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold text-slate-500 uppercase">Old Password</Label>
+                  <Label className="text-[11px] font-bold text-black-700 uppercase">Old Password</Label>
                   <Input
                     type="password"
                     placeholder="••••••••"
@@ -325,7 +325,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold text-slate-500 uppercase">New Password</Label>
+                  <Label className="text-[11px] font-bold text-black-700 uppercase">New Password</Label>
                   <Input
                     type="password"
                     placeholder="••••••••"

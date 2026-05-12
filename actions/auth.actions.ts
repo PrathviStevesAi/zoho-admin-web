@@ -1,6 +1,6 @@
 "use server";
 
-import { signIn } from "@/lib/auth";
+import { signIn, auth } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
 export async function loginAction(formData: { email: string; password: string }) {
@@ -25,9 +25,43 @@ export async function loginAction(formData: { email: string; password: string })
     }
 }
 
-export async function forgotPasswordAction(email: string) {
+export async function registerUserAction(userData: any) {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/forgot-password`, {
+        const session = await auth();
+        const token = session?.accessToken;
+        
+        console.log("Sending registration data:", userData);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/register`, {
+            method: "POST",
+            body: JSON.stringify(userData),
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        console.log("Registration API Response Status:", response.status);
+        const result = await response.json();
+
+        if (response.ok) {
+            return { success: true, data: result.data };
+        } else {
+            console.error("Registration API Failure Body:", result);
+            return { 
+                success: false, 
+                error: result.error || result.message || result.msg || (result ? `API Error: ${JSON.stringify(result)}` : "Registration failed")
+            };
+        }
+    } catch (error) {
+        console.error("Registration Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
+export async function sendOtpAction(email: string) {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/forgot-password/send-otp`, {
             method: "POST",
             body: JSON.stringify({ email }),
             headers: {
@@ -39,12 +73,135 @@ export async function forgotPasswordAction(email: string) {
         const result = await response.json();
 
         if (response.ok) {
-            return { success: true, message: result.message || "Password reset link sent to your email." };
+            return { success: true, message: result.message || "OTP sent successfully." };
         } else {
-            return { success: false, error: result.message || "Failed to process request." };
+            return { success: false, error: result.message || "Failed to send OTP." };
         }
     } catch (error) {
-        console.error("Forgot Password Error:", error);
+        console.error("Send OTP Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
+export async function verifyOtpAction(email: string, otp: string) {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/forgot-password/verify-otp`, {
+            method: "POST",
+            body: JSON.stringify({ email, otp }),
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+            },
+        });
+
+        const result = await response.json();
+        console.log("Verify OTP API Status:", response.status);
+        console.log("Verify OTP API Result:", result);
+
+        if (response.ok) {
+            return { 
+                success: true, 
+                accessToken: result.data?.access_token || result.access_token,
+                refreshToken: result.data?.refresh_token || result.refresh_token
+            };
+        } else {
+            return { success: false, error: result.message || "Invalid OTP." };
+        }
+    } catch (error) {
+        console.error("Verify OTP Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
+export async function resetPasswordAction(newPassword: string, accessToken: string, refreshToken?: string) {
+    try {
+        const payload: any = { 
+            new_password: newPassword, 
+            access_token: accessToken 
+        };
+        
+        if (refreshToken) {
+            payload.refresh_token = refreshToken;
+        }
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/forgot-password/reset`, {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+            },
+        });
+
+        const result = await response.json();
+        console.log("Reset Password API Status:", response.status);
+        console.log("Reset Password API Result:", result);
+
+        if (response.ok) {
+            return { success: true, message: result.message || "Password reset successfully." };
+        } else {
+            const errorMsg = result.detail?.error || result.message || "Failed to reset password.";
+            return { success: false, error: errorMsg };
+        }
+    } catch (error) {
+        console.error("Reset Password Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
+export async function fetchMembersAction() {
+    try {
+        const session = await auth();
+        const token = session?.accessToken;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/members`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            return { success: true, data: result.data };
+        } else {
+            return { success: false, error: result.message || "Failed to fetch members" };
+        }
+    } catch (error) {
+        console.error("Fetch Members Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
+export async function deleteMemberAction(memberId: string) {
+    try {
+        const session = await auth();
+        const token = session?.accessToken;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/member/${memberId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        const result = await response.json();
+        console.log("Delete Member API Status:", response.status);
+        console.log("Delete Member API Result:", result);
+
+        if (response.ok) {
+            return { success: true, message: result.message || "Member deleted successfully" };
+        } else {
+            const errorMsg = result.detail?.error || result.message || "Failed to delete member";
+            return { success: false, error: errorMsg };
+        }
+    } catch (error) {
+        console.error("Delete Member Error:", error);
         return { success: false, error: "An unexpected error occurred." };
     }
 }

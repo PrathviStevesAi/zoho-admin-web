@@ -414,7 +414,19 @@ export default function InvoiceDetailsPage() {
         description={invoice.description || ""}
         onOpenPayment={() => { setIsPaymentOpen(true); setIsScheduleOpen(false); setIsAssignGuardOpen(false); }}
         onOpenSchedule={() => { setIsScheduleOpen(true); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAddingShift(false); loadShifts("schedule"); }}
-        onOpenAssignGuard={() => { setIsAssignGuardOpen(true); setIsScheduleOpen(false); setIsPaymentOpen(false); loadShifts("assign_guard"); }}
+        onOpenAssignGuard={() => {
+          const paymentStatus = invoice?.payment_status?.toLowerCase();
+          if (paymentStatus === 'pending' || paymentStatus === 'unpaid') {
+            toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", {
+              duration: 5000,
+            });
+            return;
+          }
+          setIsAssignGuardOpen(true);
+          setIsScheduleOpen(false);
+          setIsPaymentOpen(false);
+          loadShifts("assign_guard");
+        }}
         onResetView={() => { setIsScheduleOpen(false); setIsPaymentOpen(false); setIsAssignGuardOpen(false); }}
         currentView={getCurrentViewName()}
       />

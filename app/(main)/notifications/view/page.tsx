@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ChevronRight,
   ArrowLeft,
@@ -18,7 +19,8 @@ import {
   History,
   Paperclip,
   Download,
-  Maximize2
+  Maximize2,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,10 +39,125 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { fetchShiftDetailsAction } from "@/actions/dashboard.actions";
+import { toast } from "sonner";
 
 export default function NotificationViewPage() {
+  const searchParams = useSearchParams();
+  const shiftId = searchParams.get("shift_id");
+  const [shift, setShift] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("");
   const [showFilePreview, setShowFilePreview] = useState(false);
+
+  const loadShiftDetails = useCallback(async () => {
+    if (!shiftId) return;
+    setIsLoading(true);
+    const res = await fetchShiftDetailsAction(shiftId);
+    if (res.success) {
+      setShift(res.data);
+    }
+    setIsLoading(false);
+  }, [shiftId]);
+
+  useEffect(() => {
+    loadShiftDetails();
+  }, [loadShiftDetails]);
+
+  const formatDescription = (text: string) => {
+    if (!text) return null;
+    const sections = text.split('*').map(s => s.trim()).filter(Boolean);
+    return (
+      <div className="space-y-3">
+        {sections.map((section, idx) => {
+          if (section.includes('PM') || section.includes('AM')) {
+            return (
+              <div key={idx} className="flex items-start gap-2 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                <span className="text-slate-200">{section}</span>
+              </div>
+            );
+          }
+          const lines = section.split(/(?=[A-Z][a-z]+ [a-z]*:)|(?=Total [A-Z][a-z]+:)/g);
+          return (
+            <div key={idx} className="space-y-1.5">
+              {lines.map((line, lIdx) => {
+                const parts = line.split(':');
+                if (parts.length > 1) {
+                  return (
+                    <div key={lIdx} className="flex justify-between gap-4 border-b border-slate-800/50 pb-1 last:border-0">
+                      <span className="text-slate-400 font-medium whitespace-nowrap">{parts[0].trim()}:</span>
+                      <span className="text-slate-200 text-right">{parts.slice(1).join(':').trim()}</span>
+                    </div>
+                  );
+                }
+                return <p key={lIdx} className="text-slate-200">{line.trim()}</p>;
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'shift_planned': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'shift_accepted': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'shift_in_progress': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'shift_finished': return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'shift_approved': return 'bg-sky-100 text-sky-700 border-sky-200';
+      default: return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+  };
+
+  const formatStatus = (status: string) => {
+    if (!status) return 'N/A';
+    return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    if (!dateStr) return 'N/A';
+    return new Date(dateStr).toLocaleString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const handleAssignGuard = () => {
+    if (!shift) return;
+    const paymentStatus = shift.payment_status?.toLowerCase();
+    if (paymentStatus === 'pending' || paymentStatus === 'unpaid') {
+      toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", {
+        duration: 5000,
+      });
+      return;
+    }
+    // Logic for successful assignment redirection or action can go here
+    toast.info("Proceeding to assign guard...");
+  };
+
+  const getStepStatus = (stepName: string) => {
+    if (!shift) return "upcoming";
+    const statusOrder = [
+      "shift_planned",
+      "shift_accepted",
+      "shift_in_progress",
+      "shift_finished",
+      "shift_approved"
+    ];
+
+    const currentStatus = shift.status;
+    const currentIndex = statusOrder.indexOf(currentStatus);
+    const stepIndex = statusOrder.indexOf(stepName);
+
+    if (stepIndex < currentIndex) return "completed";
+    if (stepIndex === currentIndex) return "current";
+    return "upcoming";
+  };
 
   const tabs = [
     { id: "comment", label: "Add Comment", icon: MessageSquarePlus },
@@ -65,9 +182,28 @@ export default function NotificationViewPage() {
               <Link href="/notifications" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-400 hover:text-[#0064cb] transition-all">
                 <ArrowLeft className="w-4 h-4" />
               </Link>
-              <h1 className="text-2xl font-bold text-slate-900">
-                Notification Details <span className="text-slate-400 font-normal ml-2">#NOT-995462</span>
-              </h1>
+              <div className="group relative">
+                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2 cursor-default">
+                  {shift ? (
+                    <>
+                      <span className="hover:text-[#0064cb] transition-colors">{shift.customer_name}</span>
+                      <span className="text-slate-400 font-normal ml-1">[ #SH-{shift.shift_no} ]</span>
+                    </>
+                  ) : "Loading..."}
+                </h1>
+
+                {shift?.invoice_description && (
+                  <div className="absolute left-0 top-full mt-2 w-80 p-4 bg-slate-900 text-white text-[11px] rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[70] border border-slate-800 shadow-blue-900/20">
+                    <div className="absolute -top-1.5 left-6 w-3 h-3 bg-slate-900 rotate-45 border-l border-t border-slate-800" />
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800">
+                      <p className="font-bold text-blue-400">Shift Description</p>
+                    </div>
+                    <div className="max-h-[350px] overflow-y-auto custom-scrollbar pr-1">
+                      {formatDescription(shift.invoice_description)}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -75,14 +211,14 @@ export default function NotificationViewPage() {
         {/* Action Icons */}
         <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 py-4">
           {[
-            { label: "Update Status", icon: RefreshCcw, color: "emerald" },
-            { label: "Schedule Shift", icon: Calendar, color: "blue" },
-            { label: "Find Available Guard", icon: Search, color: "orange" },
-            { label: "Assign Guard", icon: UserPlus, color: "indigo" },
-            { label: "Open in CRM", icon: ExternalLink, color: "slate" },
-            { label: "Cancel Service", icon: XCircle, color: "red" },
+            { label: "Update Status", icon: RefreshCcw, color: "emerald", onClick: () => {} },
+            { label: "Schedule Shift", icon: Calendar, color: "blue", onClick: () => {} },
+            { label: "Find Available Guard", icon: Search, color: "orange", onClick: () => {} },
+            { label: "Assign Guard", icon: UserPlus, color: "indigo", onClick: handleAssignGuard },
+            { label: "Open in CRM", icon: ExternalLink, color: "slate", onClick: () => {} },
+            { label: "Cancel Service", icon: XCircle, color: "red", onClick: () => {} },
           ].map((action, idx) => (
-            <div key={idx} className="flex flex-col items-center gap-1.5 group cursor-pointer">
+            <div key={idx} className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={action.onClick}>
               <div className={cn(
                 "w-12 h-12 rounded-full border-2 flex items-center justify-center shadow-sm transition-colors",
                 action.color === "emerald" && "border-emerald-500 text-emerald-500 group-hover:bg-emerald-50",
@@ -103,61 +239,105 @@ export default function NotificationViewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Content Card - Decreased width to 7/12 */}
         <div className="lg:col-span-7 space-y-6">
-          <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white">
-            <CardContent className="p-0">
-              <div className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-bold text-slate-700">#NOT-995462</span>
-                  <Button
-                    variant="outline"
-                    className="h-8 rounded-lg font-bold text-[10px] text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 transition-all active:scale-95 flex gap-1.5 cursor-pointer px-3"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                    Edit Details
-                  </Button>
+          {isLoading ? (
+            <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-20 flex flex-col items-center justify-center gap-4">
+              <Loader2 className="w-8 h-8 animate-spin text-[#0064cb]" />
+              <p className="text-sm font-medium text-slate-400">Fetching shift details...</p>
+            </Card>
+          ) : shift ? (
+            <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white">
+              <CardContent className="p-0">
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-bold text-slate-700">#SH-{shift.shift_no}</span>
+                    <Button
+                      variant="outline"
+                      className="h-8 rounded-lg font-bold text-[10px] text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 transition-all active:scale-95 flex gap-1.5 cursor-pointer px-3"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      Edit Details
+                    </Button>
+                  </div>
+
+                  <p className="text-slate-600 font-bold text-sm">
+                    Location - <span className="text-[#0064cb] cursor-pointer hover:underline">
+                      {shift.shipping_location?.location?.street}, {shift.shipping_location?.location?.address}, {shift.shipping_location?.location?.city}, {shift.shipping_location?.location?.state}, {shift.shipping_location?.location?.country} - {shift.shipping_location?.location?.zip}
+                    </span>
+                  </p>
                 </div>
 
-                <p className="text-slate-600 font-bold text-sm">
-                  Location - <span className="text-[#0064cb] cursor-pointer hover:underline">6062 N Fry Rd, test., Katy, TX, United States - 77449</span>
-                </p>
-              </div>
+                <div className="border-t border-slate-100 divide-y divide-slate-100">
+                  <div className="grid grid-cols-4 p-4 items-center">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">CUSTOMER NAME:</span>
+                    <div className="col-span-3 text-sm text-slate-500 font-medium">{shift.customer_name}</div>
+                  </div>
 
-              <div className="border-t border-slate-100 divide-y divide-slate-100">
-                <div className="grid grid-cols-4 p-4 items-center">
-                  <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">CUSTOMER NAME:</span>
-                  <div className="col-span-3 text-sm text-slate-500 font-medium">test B</div>
-                </div>
+                  <div className="grid grid-cols-4 p-4 items-start">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">DESCRIPTION:</span>
+                    <div className="col-span-3 text-sm text-slate-500 font-medium whitespace-pre-wrap leading-relaxed">
+                      {shift.invoice_description}
+                    </div>
+                  </div>
 
-                <div className="grid grid-cols-4 p-4 items-start">
-                  <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">DESCRIPTION:</span>
-                  <div className="col-span-3 text-sm text-slate-500 font-medium whitespace-pre-wrap leading-relaxed">
-                    No of Guards: 1 Armed Security{"\n"}
-                    Total Days: 2 Day{"\n"}{"\n"}
-                    Start Date: 05-08-2026{"\n"}
-                    End Date: 05-09-2026{"\n"}{"\n"}
-                    * 05-08-2026 (Thu){"\n"}
-                    12:30 PM - 8:30 PM (8:00 hr)
+                  <div className="grid grid-cols-4 p-4 items-center">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">ASSIGNED GUARD:</span>
+                    <div className="col-span-3 text-sm text-slate-500 font-medium">
+                      {shift.assigned_guard || (
+                        <span className="text-slate-400">No guard assigned</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 p-4 items-center">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">STATUS:</span>
+                    <div className="col-span-3">
+                      <span className={cn(
+                        "text-[10px] font-bold px-2.5 py-1 rounded-full border",
+                        getStatusColor(shift.status)
+                      )}>
+                        {formatStatus(shift.status)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 p-4 items-center">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">SCHEDULED FOR:</span>
+                    <div className="col-span-3 flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-400 uppercase font-bold w-12">Start:</span>
+                        <span className="text-sm text-slate-500 font-medium">{formatDateTime(shift.scheduled_for?.shift_start_time)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-400 uppercase font-bold w-12">End:</span>
+                        <span className="text-sm text-slate-500 font-medium">{formatDateTime(shift.scheduled_for?.shift_end_time)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-20 text-center">
+              <XCircle className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+              <p className="text-sm font-medium text-slate-400">No shift data found.</p>
+            </Card>
+          )}
+
           {/* Progress Stepper Section */}
           <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-8">
             <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight mb-12">Progress</h3>
-            
+
             <div className="relative px-4">
               {/* Progress Line */}
               <div className="absolute top-2 left-4 right-4 h-[2px] bg-slate-200" />
-              
+
               <div className="flex justify-between items-start relative">
                 {[
-                  { label: "Shift Planned", status: "completed" },
-                  { label: "Shift accepted", status: "completed" },
-                  { label: "Shift In Progress", status: "completed" },
-                  { label: "Shift Finished", status: "completed" },
-                  { label: "Shift Approved", status: "current" },
+                  { label: "Shift Planned", status: getStepStatus("shift_planned") },
+                  { label: "Shift Accepted", status: getStepStatus("shift_accepted") },
+                  { label: "Shift In Progress", status: getStepStatus("shift_in_progress") },
+                  { label: "Shift Finished", status: getStepStatus("shift_finished") },
+                  { label: "Shift Approved", status: getStepStatus("shift_approved") },
                   { label: "Pre-shift Check-in completed", status: "upcoming" },
                 ].map((step, idx) => (
                   <div key={idx} className="flex flex-col items-center flex-1 group">
@@ -168,7 +348,7 @@ export default function NotificationViewPage() {
                       step.status === "current" && "w-7 h-7 -mt-1.5 border-[#ffb300] shadow-[0_0_0_6px_rgba(255,179,0,0.2)] ring-4 ring-white",
                       step.status === "upcoming" && "border-slate-400"
                     )} />
-                    
+
                     {/* Label */}
                     <div className="mt-6 px-1">
                       <span className={cn(

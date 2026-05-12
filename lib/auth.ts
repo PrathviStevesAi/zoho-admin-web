@@ -41,6 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
+                console.log("JWT Callback - Initial User:", user);
                 return {
                     ...token,
                     accessToken: user.accessToken,
@@ -58,6 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         },
         async session({ session, token }) {
             if (token) {
+                console.log("Session Callback - Token:", { ...token, accessToken: token.accessToken ? "exists" : "missing" });
                 session.accessToken = token.accessToken;
                 session.user.id = token.sub as string;
                 session.user.role = token.role;
@@ -69,7 +71,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     pages: {
         signIn: "/admin-login",
     },
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+});
+
+console.log("NextAuth Configuration Initialized. Secret check:", {
+    hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
+    hasAuthSecret: !!process.env.AUTH_SECRET,
+    isPlaceholder: process.env.NEXTAUTH_SECRET?.includes("replace-this")
 });
 
 async function refreshAccessToken(token: any) {

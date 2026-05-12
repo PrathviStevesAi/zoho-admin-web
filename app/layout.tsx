@@ -28,7 +28,7 @@ export default function RootLayout({
       className={`${montserrat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <SessionProvider>
+        <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
           <AuthErrorHandler />
           <NotificationProvider />
           <NextTopLoader color="var(--primary)" showSpinner={false} />

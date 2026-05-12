@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Search, XCircle } from "lucide-react";
 import { fetchLocationAction, fetchGuardsAction } from "@/actions/dashboard.actions";
+import useDebounceValue from "@/hooks/use-debounce";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -42,7 +43,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
     country: "",
     state: "",
     city: "",
-    status: "",
+    status: "all",
     service: "All"
   });
   const [locations, setLocations] = useState<{ countries: string[], states: string[], cities: string[] }>({
@@ -54,6 +55,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
   const [isLoadingGuards, setIsLoadingGuards] = useState(false);
   const [pagination, setPagination] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
 
   useEffect(() => {
     if (isOpen) {
@@ -89,8 +91,8 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
 
         const res = await fetchGuardsAction({
           page: currentPage,
-          search: userSearchQuery,
-          status: userFilters.status,
+          search: debouncedSearchQuery,
+          status: userFilters.status === "all" ? "" : userFilters.status,
           city: userFilters.city,
           state: userFilters.state,
           country: userFilters.country,
@@ -103,10 +105,9 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
         }
         setIsLoadingGuards(false);
       };
-      const timer = setTimeout(loadGuards, 500);
-      return () => clearTimeout(timer);
+      loadGuards();
     }
-  }, [isOpen, currentPage, userSearchQuery, userFilters]);
+  }, [isOpen, currentPage, debouncedSearchQuery, userFilters]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -198,7 +199,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
-                  <SelectItem value=" ">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="true">Active</SelectItem>
                   <SelectItem value="false">Inactive</SelectItem>
                 </SelectContent>
@@ -255,7 +256,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
                             onClick={() => onSelect(guard)}
                             className="cursor-pointer text-[13px] font-bold text-[#0064cb] hover:text-[#0052ae] flex items-center gap-2 transition-all cursor-pointer"
                           >
-                            Select Guard <span className="text-[14px]">✓</span>
+                            Select Guard <span className="text-[14px]"></span>
                           </button>
                         </TableCell>
                         <TableCell className="text-[13px] text-slate-500 py-5 px-6 border-r border-slate-50/50 text-center">

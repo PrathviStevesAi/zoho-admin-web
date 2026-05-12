@@ -36,7 +36,7 @@ export function DashboardView({
 }: DashboardViewProps) {
     const searchParams = useSearchParams();
     const pathname = usePathname();
-    const { isPending } = useDashboard();
+    const { isPending, loadingMessage } = useDashboard();
     const currentView = searchParams.get("view") || "guard-management";
 
     // Only show the dashboard tables grid on the main dashboard page
@@ -50,7 +50,7 @@ export function DashboardView({
                     <div className="flex flex-col items-center gap-3 bg-card p-6 rounded-xl shadow-xl border border-border">
                         <Loader2 className="h-10 w-10 animate-spin text-primary" />
                         <p className="text-sm font-semibold text-foreground animate-pulse">
-                            Switching Dashboard...
+                            {loadingMessage}
                         </p>
                     </div>
                 </div>

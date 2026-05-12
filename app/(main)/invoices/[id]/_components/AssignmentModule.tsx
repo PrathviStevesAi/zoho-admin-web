@@ -74,17 +74,31 @@ export function AssignmentModule({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="text-sm font-bold text-slate-700">Rate per hour</Label>
-                <Input
-                  placeholder="0.00"
-                  className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg px-3 text-sm transition-all"
-                />
+                <div className="relative group">
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <div className="h-5 w-px bg-slate-200 mr-2" />
+                    <span className="text-slate-400 text-[11px] font-bold tracking-wider">USD</span>
+                  </div>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-bold text-slate-700">Flat rate</Label>
-                <Input
-                  placeholder="0.00"
-                  className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg px-3 text-sm transition-all"
-                />
+                <div className="relative group">
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <div className="h-5 w-px bg-slate-200 mr-2" />
+                    <span className="text-slate-400 text-[11px] font-bold tracking-wider">USD</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -124,6 +138,7 @@ export function AssignmentModule({
                       <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Start Time</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">End Time</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Guard</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Is Seen</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -183,6 +198,15 @@ export function AssignmentModule({
                                 <span className="text-slate-300 text-xs">Unassigned</span>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell className="py-4 px-6">
+                            <span className={cn(
+                              "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
+                              shift.is_seen === true ? "bg-green-50 text-green-600" : 
+                              shift.is_seen === false ? "bg-amber-50 text-amber-600" : "bg-slate-50 text-slate-400"
+                            )}>
+                              {shift.is_seen === true ? "Seen" : shift.is_seen === false ? "Not Seen" : "----"}
+                            </span>
                           </TableCell>
                           <TableCell className="py-4 px-6">
                             <span className={cn(

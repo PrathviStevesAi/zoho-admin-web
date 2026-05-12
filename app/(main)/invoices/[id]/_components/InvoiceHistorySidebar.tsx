@@ -62,7 +62,11 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
                           };
 
                           // Handle array values (like Shift No)
-                          const displayValue = Array.isArray(value) ? value.join(', ') : value;
+                          const displayValue = Array.isArray(value) 
+                            ? value.join(', ') 
+                            : typeof value === 'object' && value !== null
+                              ? JSON.stringify(value)
+                              : value;
                           
                           return (
                             <div key={key} className="flex items-center justify-between gap-4 border-b border-slate-50/50 pb-1 last:border-0 last:pb-0">
@@ -72,7 +76,7 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
                               <span className="text-sm text-slate-500 font-bold truncate">
                                 {key.toLowerCase().includes('amount') || key.toLowerCase().includes('rate') 
                                   ? `$${displayValue}` 
-                                  : typeof displayValue === 'string' ? formatStatus(displayValue) : displayValue}
+                                  : typeof displayValue === 'string' ? formatStatus(displayValue) : String(displayValue)}
                               </span>
                             </div>
                           );

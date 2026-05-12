@@ -5,6 +5,15 @@ export type InvoiceHistory = {
   performed_by: string | null;
 };
 
+export type ShippingAddress = {
+  zip?: string;
+  city?: string;
+  state?: string;
+  street?: string;
+  address?: string;
+  country?: string;
+};
+
 export type InvoiceData = {
   id: string;
   invoice_no: string;
@@ -18,7 +27,7 @@ export type InvoiceData = {
   reminder_date?: string | null;
   per_hour_rate?: number | null;
   per_shift_rate?: number | null;
-  shipping_address?: string;
+  shipping_address?: string | ShippingAddress;
   history?: InvoiceHistory[];
 };
 
