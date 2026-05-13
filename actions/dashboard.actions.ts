@@ -1,6 +1,7 @@
 "use server";
 
 import { apiFetch } from "@/lib/api";
+import { revalidatePath } from "next/cache";
 import {
   FetchResponse,
   BaseApiResponse,
@@ -500,6 +501,60 @@ export async function fetchShiftCountsAction(): Promise<{ success: boolean; data
       `/api/v1/shift/total/counts`
     );
     return { success: true, data: data.data };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function cancelInvoiceServiceAction(payload: {
+  invoice_id: string;
+  reason: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log("[Server Action] Starting cancelInvoiceServiceAction for:", payload.invoice_id);
+    const result = await apiFetch(`/api/v1/invoice/service/cancelled`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    console.log("[Server Action] apiFetch completed successfully:", result);
+    revalidatePath(`/invoices/${payload.invoice_id}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("[Server Action] Cancellation error:", error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function updateInvoiceDetailsAction(payload: {
+  invoice_id: string;
+  customer_name?: string;
+  description?: string;
+  shipping_address?: any;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log("[Server Action] Updating invoice details:", payload);
+    const result = await apiFetch(`/api/v1/invoice/details`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    revalidatePath(`/invoices/${payload.invoice_id}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("[Server Action] Update error:", error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+export async function fetchAvailableGuardsAction(
+  invoiceId: string
+): Promise<{ success: boolean; data?: any[]; total_guards?: number; error?: string }> {
+  try {
+    const data = await apiFetch<{ success: boolean; data: any[]; total_guards: number }>(
+      `/api/v1/invoice/${invoiceId}/available-guards`
+    );
+    return { success: true, data: data.data, total_guards: data.total_guards };
   } catch (error: any) {
     const message = error.message || "Something went wrong";
     return { success: false, error: message };

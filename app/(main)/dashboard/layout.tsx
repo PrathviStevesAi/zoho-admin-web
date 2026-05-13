@@ -1,4 +1,3 @@
-"use client";
 
 import { DashboardHeader } from "./dashboard-header";
 import { DashboardView } from "./dashboard-view";
@@ -24,15 +23,15 @@ export default function DashboardLayout({
     invoice: React.ReactNode;
     precheck: React.ReactNode;
     inprogress: React.ReactNode;
-    finished: React.ReactNode
-    planned: React.ReactNode
-    arrival: React.ReactNode
-    created: React.ReactNode
-    accepted: React.ReactNode
-    refused: React.ReactNode
-    abandon: React.ReactNode
-    approved: React.ReactNode
-    notapproved: React.ReactNode
+    finished: React.ReactNode;
+    planned: React.ReactNode;
+    arrival: React.ReactNode;
+    created: React.ReactNode;
+    accepted: React.ReactNode;
+    refused: React.ReactNode;
+    abandon: React.ReactNode;
+    approved: React.ReactNode;
+    notapproved: React.ReactNode;
 }) {
 
     return (

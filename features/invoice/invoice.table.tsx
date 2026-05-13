@@ -57,4 +57,9 @@ export const invoiceTableColumns: TableColumn<InvoiceData>[] = [
             </Link>
         ),
     },
+    {
+        key: "service_address",
+        header: "Service Address",
+        hidden: true,
+    },
 ];

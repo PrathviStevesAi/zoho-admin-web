@@ -52,4 +52,9 @@ export const precheckTableColumns: TableColumn<Record>[] = [
             </span>
         ),
     },
+    {
+        key: "service_address",
+        header: "Service Address",
+        hidden: true,
+    },
 ];

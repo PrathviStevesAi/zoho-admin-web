@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InvoiceData } from "@/types/dashboard.types";
-import { formatStatus } from "@/lib/utils";
+import { formatStatus, cn } from "@/lib/utils";
 
 interface InvoiceDetailsCardProps {
   invoice: InvoiceData;
@@ -15,6 +15,7 @@ interface InvoiceDetailsCardProps {
   formData: { title: string; description: string };
   setFormData: (data: any) => void;
   onSave: () => void;
+  onEditLocation: () => void;
 }
 
 export function InvoiceDetailsCard({
@@ -24,7 +25,8 @@ export function InvoiceDetailsCard({
   isSaving,
   formData,
   setFormData,
-  onSave
+  onSave,
+  onEditLocation
 }: InvoiceDetailsCardProps) {
   const formatAddress = (addr: any) => {
     if (!addr) return "N/A";
@@ -47,31 +49,14 @@ export function InvoiceDetailsCard({
           <div className="flex items-center justify-between">
             <span className="text-xl font-bold text-slate-700">#{invoice.invoice_no || "N/A"}</span>
             <div className="flex items-center gap-2">
-              {isEditOpen ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditOpen(false)}
-                    className="px-3 h-8 rounded-lg font-bold border-slate-200 text-[10px] text-slate-500 hover:bg-slate-50 transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={onSave}
-                    disabled={isSaving}
-                    className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-3 h-8 rounded-lg font-bold text-[10px] shadow-md shadow-blue-100 transition-all active:scale-95 flex gap-1.5 cursor-pointer"
-                  >
-                    {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
-                  </Button>
-                </>
-              ) : (
+              {!invoice.status?.toLowerCase().includes('cancelled') && (
                 <Button
                   variant="outline"
-                  onClick={() => setIsEditOpen(true)}
+                  onClick={onEditLocation}
                   className="h-8 rounded-lg font-bold text-[10px] text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 transition-all active:scale-95 flex gap-1.5 cursor-pointer px-3"
                 >
                   <Edit2 className="w-3 h-3" />
-                  Edit Details
+                  Edit Location
                 </Button>
               )}
             </div>
@@ -85,18 +70,52 @@ export function InvoiceDetailsCard({
         <div className="border-t border-slate-100 divide-y divide-slate-100">
           <div className="grid grid-cols-4 p-4 items-center">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Customer Name:</span>
-            <div className="col-span-3">
-              {isEditOpen ? (
-                <Input
-                  value={formData.title}
-                  onChange={(e) => setFormData((prev: any) => ({ ...prev, title: e.target.value }))}
-                  className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg px-3 text-sm font-medium transition-all"
-                />
-              ) : (
-                <span className="text-sm text-slate-500 font-medium">
-                  {invoice.customer_name}
-                </span>
-              )}
+            <div className="col-span-3 flex items-center justify-between gap-4">
+              <div className="flex-1">
+                {isEditOpen ? (
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, title: e.target.value }))}
+                    className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg px-3 text-sm font-medium transition-all"
+                  />
+                ) : (
+                  <span className="text-sm text-slate-500 font-medium">
+                    {invoice.customer_name}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {!invoice.status?.toLowerCase().includes('cancelled') && (
+                  isEditOpen ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEditOpen(false)}
+                        className="px-3 h-8 rounded-lg font-bold border-slate-200 text-[10px] text-slate-500 hover:bg-slate-50 transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={onSave}
+                        disabled={isSaving}
+                        className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-3 h-8 rounded-lg font-bold text-[10px] shadow-md shadow-blue-100 transition-all active:scale-95 flex gap-1.5 cursor-pointer"
+                      >
+                        {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditOpen(true)}
+                      className="h-8 rounded-lg font-bold text-[10px] text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 transition-all active:scale-95 flex gap-1.5 cursor-pointer px-3"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      Edit Details
+                    </Button>
+                  )
+                )}
+              </div>
             </div>
           </div>
 
@@ -120,7 +139,9 @@ export function InvoiceDetailsCard({
 
           <div className="grid grid-cols-4 p-4 items-center">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Status:</span>
-            <span className="col-span-3 text-sm text-slate-500 font-bold">{formatStatus(invoice.status)}</span>
+            <span className={cn("col-span-3 text-sm font-bold", invoice.status?.toLowerCase().includes('cancelled') ? "text-red-600" : "text-slate-500")}>
+              {formatStatus(invoice.status)}
+            </span>
           </div>
 
           <div className="grid grid-cols-4 p-4 items-center">

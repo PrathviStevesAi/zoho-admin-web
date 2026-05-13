@@ -47,13 +47,13 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
 
                     <div className="space-y-2">
                       <p className="text-[11px] text-slate-800 font-bold uppercase flex items-center gap-2">
-                        Performed by: <span className="text-slate-500 font-bold normal-case">{item.performed_by || "System"}</span>
+                        Performed by: <span className="text-slate-500 font-medium normal-case">{item.performed_by || "System"}</span>
                       </p>
 
                       <div className="grid grid-cols-1 gap-2 pt-1">
                         {Object.entries(item.details).map(([key, value]) => {
                           if (!value) return null;
-                          
+
                           const shortenKey = (k: string) => {
                             if (k.includes('Per hour rate paid by the customer')) return 'Per hour rate paid';
                             if (k.includes('Per shift (flat) rate paid by the customer')) return 'Per shift (flat) rate paid';
@@ -62,20 +62,20 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
                           };
 
                           // Handle array values (like Shift No)
-                          const displayValue = Array.isArray(value) 
-                            ? value.join(', ') 
+                          const displayValue = Array.isArray(value)
+                            ? value.join(', ')
                             : typeof value === 'object' && value !== null
                               ? JSON.stringify(value)
                               : value;
-                          
+
                           return (
                             <div key={key} className="flex items-center justify-between gap-4 border-b border-slate-50/50 pb-1 last:border-0 last:pb-0">
                               <p className="text-[10px] text-slate-800 font-bold uppercase whitespace-nowrap shrink-0">
                                 {formatStatus(shortenKey(key))}:
                               </p>
-                              <span className="text-sm text-slate-500 font-bold truncate">
-                                {key.toLowerCase().includes('amount') || key.toLowerCase().includes('rate') 
-                                  ? `$${displayValue}` 
+                              <span className="text-sm text-slate-500 font-medium break-all text-right">
+                                {key.toLowerCase().includes('amount') || key.toLowerCase().includes('rate')
+                                  ? `$${displayValue}`
                                   : typeof displayValue === 'string' ? formatStatus(displayValue) : String(displayValue)}
                               </span>
                             </div>

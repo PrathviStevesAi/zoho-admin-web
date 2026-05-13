@@ -29,7 +29,7 @@ export async function registerUserAction(userData: any) {
     try {
         const session = await auth();
         const token = session?.accessToken;
-        
+
         console.log("Sending registration data:", userData);
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/register`, {
             method: "POST",
@@ -48,8 +48,8 @@ export async function registerUserAction(userData: any) {
             return { success: true, data: result.data };
         } else {
             console.error("Registration API Failure Body:", result);
-            return { 
-                success: false, 
+            return {
+                success: false,
                 error: result.error || result.message || result.msg || (result ? `API Error: ${JSON.stringify(result)}` : "Registration failed")
             };
         }
@@ -99,8 +99,8 @@ export async function verifyOtpAction(email: string, otp: string) {
         console.log("Verify OTP API Result:", result);
 
         if (response.ok) {
-            return { 
-                success: true, 
+            return {
+                success: true,
                 accessToken: result.data?.access_token || result.access_token,
                 refreshToken: result.data?.refresh_token || result.refresh_token
             };
@@ -115,11 +115,11 @@ export async function verifyOtpAction(email: string, otp: string) {
 
 export async function resetPasswordAction(newPassword: string, accessToken: string, refreshToken?: string) {
     try {
-        const payload: any = { 
-            new_password: newPassword, 
-            access_token: accessToken 
+        const payload: any = {
+            new_password: newPassword,
+            access_token: accessToken
         };
-        
+
         if (refreshToken) {
             payload.refresh_token = refreshToken;
         }
@@ -154,7 +154,7 @@ export async function fetchMembersAction() {
         const session = await auth();
         const token = session?.accessToken;
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/members`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/member/list`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

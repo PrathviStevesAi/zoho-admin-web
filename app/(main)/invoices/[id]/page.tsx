@@ -17,12 +17,13 @@ import {
   fetchSecurityServicesAction,
   createShiftAction,
   assignGuardsAction,
-  unassignGuardAction
+  unassignGuardAction,
+  cancelInvoiceServiceAction,
+  updateInvoiceDetailsAction
 } from "@/actions/dashboard.actions";
 import { InvoiceData } from "@/types/dashboard.types";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
-import Swal from "sweetalert2";
 
 // Import Modular Components
 import { InvoiceHeader } from "./_components/InvoiceHeader";
@@ -32,6 +33,12 @@ import { PaymentModule } from "./_components/PaymentModule";
 import { ShiftModule } from "./_components/ShiftModule";
 import { AssignmentModule } from "./_components/AssignmentModule";
 import { SelectUserDialog } from "./_components/SelectUserDialog";
+import { EditLocationDialog } from "./_components/EditLocationDialog";
+import { CancelServiceDialog } from "./_components/CancelServiceDialog";
+import { ConfirmationDialog } from "./_components/ConfirmationDialog";
+import { AvailableGuardsModule } from "./_components/AvailableGuardsModule";
+import { ShippingAddress } from "@/types/dashboard.types";
+import { fetchAvailableGuardsAction } from "@/actions/dashboard.actions";
 
 function InvoiceSkeleton() {
   return (
@@ -63,11 +70,17 @@ export default function InvoiceDetailsPage() {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isAssignGuardOpen, setIsAssignGuardOpen] = useState(false);
+  const [isAvailableGuardsOpen, setIsAvailableGuardsOpen] = useState(false);
 
   // Details Logic State
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ title: "", description: "" });
+  const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
+  const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, shiftId: string }>({ isOpen: false, shiftId: "" });
+  const [unassignConfirm, setUnassignConfirm] = useState<{ isOpen: boolean, shiftOfferId: string }>({ isOpen: false, shiftOfferId: "" });
 
   // Payment Logic State
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
@@ -97,6 +110,11 @@ export default function InvoiceDetailsPage() {
   const [selectedShiftIds, setSelectedShiftIds] = useState<string[]>([]);
   const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string }>>({});
   const [isAssigning, setIsAssigning] = useState(false);
+
+  // Available Guards State
+  const [availableGuards, setAvailableGuards] = useState<any[]>([]);
+  const [isAvailableGuardsLoading, setIsAvailableGuardsLoading] = useState(false);
+  const [totalAvailableGuards, setTotalAvailableGuards] = useState(0);
 
   useEffect(() => {
     async function loadInvoice() {
@@ -141,12 +159,108 @@ export default function InvoiceDetailsPage() {
     setIsShiftsLoading(false);
   };
 
+  const loadAvailableGuards = async () => {
+    setIsAvailableGuardsLoading(true);
+    const res = await fetchAvailableGuardsAction(id);
+    if (res.success && res.data) {
+      setAvailableGuards(res.data);
+      setTotalAvailableGuards(res.total_guards || 0);
+    } else {
+      toast.error(res.error || "Failed to load available guards");
+    }
+    setIsAvailableGuardsLoading(false);
+  };
+
+  const handleEditLocation = () => setIsEditLocationOpen(true);
+
+  const handleLocationUpdate = async (address: ShippingAddress) => {
+    setIsSaving(true);
+    const res = await updateInvoiceDetailsAction({
+      invoice_id: id,
+      shipping_address: address
+    });
+    if (res.success) {
+      toast.success("Location updated successfully");
+      const refreshed = await fetchInvoiceDetailsAction(id);
+      if (refreshed.success) setInvoice(refreshed.data);
+      setIsEditLocationOpen(false);
+    } else {
+      toast.error(res.error || "Failed to update location");
+    }
+    setIsSaving(false);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
+    const res = await updateInvoiceDetailsAction({
+      invoice_id: id,
+      customer_name: formData.title,
+      description: formData.description
+    });
+    if (res.success) {
+      toast.success("Details updated successfully");
+      const refreshed = await fetchInvoiceDetailsAction(id);
+      if (refreshed.success) {
+        setInvoice(refreshed.data);
+        setIsEditOpen(false);
+      }
+    } else {
+      toast.error(res.error || "Failed to update details");
+    }
     setIsSaving(false);
-    setIsEditOpen(false);
-    toast.success("Invoice updated successfully");
+  };
+
+  const handleCancelService = () => setIsCancelServiceOpen(true);
+
+  const handleConfirmCancel = async (reason: string) => {
+    setIsCancelling(true);
+    try {
+      console.log("Calling cancelInvoiceServiceAction with 15s timeout...");
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Request timed out but may have succeeded. Please refresh.")), 15000)
+      );
+
+      const res = await Promise.race([
+        cancelInvoiceServiceAction({
+          invoice_id: id,
+          reason: reason
+        }),
+        timeoutPromise
+      ]) as any;
+
+      console.log("API Result received:", res);
+      
+      if (res && res.success) {
+        toast.success("Service cancelled successfully");
+        setIsCancelServiceOpen(false);
+        
+        // Trigger refresh immediately
+        fetchInvoiceDetailsAction(id).then(refreshed => {
+          if (refreshed.success) {
+            setInvoice(refreshed.data);
+          } else {
+            window.location.reload();
+          }
+        });
+      } else {
+        toast.error(res?.error || "Failed to cancel service");
+      }
+    } catch (error: any) {
+      console.error("Cancellation exception:", error);
+      if (error.message?.includes("timed out")) {
+         toast.info("Request took longer than expected. Refreshing data...");
+         setIsCancelServiceOpen(false);
+         fetchInvoiceDetailsAction(id).then(refreshed => {
+           if (refreshed.success) setInvoice(refreshed.data);
+           else window.location.reload();
+         });
+      } else {
+        toast.error(error.message || "Failed to cancel service");
+      }
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   const handleUpdatePayment = async () => {
@@ -166,38 +280,20 @@ export default function InvoiceDetailsPage() {
     setIsUpdatingPayment(false);
   };
 
-  const handleDeleteShift = async (shiftId: string) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "You want to delete this shift schedule?",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'Cancel',
-      background: '#fff',
-      width: '320px',
-      padding: '1rem',
-      customClass: {
-        popup: 'rounded-xl border border-slate-100 shadow-xl',
-        icon: '-mb-2 !mt-2 scale-[0.6]',
-        title: 'text-sm font-bold text-slate-800 !pt-0 !mt-0',
-        htmlContainer: 'text-[12px] text-slate-500 !p-0 !mt-0',
-        actions: 'mt-4 gap-3',
-        confirmButton: 'cursor-pointer bg-[#0064cb] hover:bg-[#0052ae] text-white px-5 h-9 rounded-lg text-xs font-bold transition-all',
-        cancelButton: 'cursor-pointer bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-5 h-9 rounded-lg text-xs font-bold transition-all'
-      },
-      buttonsStyling: false
-    });
+  const handleDeleteShift = (shiftId: string) => setDeleteConfirm({ isOpen: true, shiftId });
 
-    if (result.isConfirmed) {
-      const res = await deleteShiftAction(shiftId);
-      if (res.success) {
-        toast.success("Shift deleted successfully");
-        loadShifts(isAssignGuardOpen ? "assign_guard" : "schedule");
-      } else {
-        toast.error(res.error || "Failed to delete shift");
-      }
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.shiftId) return;
+    setIsShiftsLoading(true);
+    const res = await deleteShiftAction(deleteConfirm.shiftId);
+    if (res.success) {
+      toast.success("Shift deleted successfully");
+      loadShifts(isAssignGuardOpen ? "assign_guard" : "schedule");
+      setDeleteConfirm({ isOpen: false, shiftId: "" });
+    } else {
+      toast.error(res.error || "Failed to delete shift");
     }
+    setIsShiftsLoading(false);
   };
 
   const calculateHours = (startTime: string, endTime: string) => {
@@ -333,45 +429,20 @@ export default function InvoiceDetailsPage() {
     setIsAssigning(false);
   };
 
-  const handleUnassignGuard = async (shiftOfferId: string) => {
-    if (!shiftOfferId) {
-      toast.error("Shift offer ID not found");
-      return;
-    }
+  const handleUnassignGuard = (shiftOfferId: string) => setUnassignConfirm({ isOpen: true, shiftOfferId });
 
-    const result = await Swal.fire({
-      title: 'Unassign Guard?',
-      text: "This will remove the guard from this shift.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, unassign',
-      cancelButtonText: 'Cancel',
-      background: '#fff',
-      width: '320px',
-      padding: '1rem',
-      customClass: {
-        popup: 'rounded-xl border border-slate-100 shadow-xl',
-        icon: '-mb-2 !mt-2 scale-[0.6]',
-        title: 'text-sm font-bold text-slate-800 !pt-0 !mt-0',
-        htmlContainer: 'text-[12px] text-slate-500 !p-0 !mt-0',
-        actions: 'mt-4 gap-3',
-        confirmButton: 'cursor-pointer bg-red-500 hover:bg-red-600 text-white px-5 h-9 rounded-lg text-xs font-bold transition-all',
-        cancelButton: 'cursor-pointer bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-5 h-9 rounded-lg text-xs font-bold transition-all'
-      },
-      buttonsStyling: false
-    });
-
-    if (result.isConfirmed) {
-      setIsShiftsLoading(true);
-      const res = await unassignGuardAction(shiftOfferId);
-      if (res.success) {
-        toast.success("Guard unassigned successfully");
-        loadShifts("assign_guard");
-      } else {
-        toast.error(res.error || "Failed to unassign guard");
-      }
-      setIsShiftsLoading(false);
+  const handleConfirmUnassign = async () => {
+    if (!unassignConfirm.shiftOfferId) return;
+    setIsShiftsLoading(true);
+    const res = await unassignGuardAction(unassignConfirm.shiftOfferId);
+    if (res.success) {
+      toast.success("Guard unassigned successfully");
+      loadShifts("assign_guard");
+      setUnassignConfirm({ isOpen: false, shiftOfferId: "" });
+    } else {
+      toast.error(res.error || "Failed to unassign guard");
     }
+    setIsShiftsLoading(false);
   };
 
   if (loading) return <InvoiceSkeleton />;
@@ -407,6 +478,7 @@ export default function InvoiceDetailsPage() {
     if (isPaymentOpen) return "Update Payment Status";
     if (isScheduleOpen) return "Schedule Shift";
     if (isAssignGuardOpen) return "Assign Guard";
+    if (isAvailableGuardsOpen) return "Available Guards";
     return "";
   };
 
@@ -430,10 +502,20 @@ export default function InvoiceDetailsPage() {
           setIsAssignGuardOpen(true);
           setIsScheduleOpen(false);
           setIsPaymentOpen(false);
+          setIsAvailableGuardsOpen(false);
           loadShifts("assign_guard");
         }}
-        onResetView={() => { setIsScheduleOpen(false); setIsPaymentOpen(false); setIsAssignGuardOpen(false); }}
+        onOpenAvailableGuards={() => {
+          setIsAvailableGuardsOpen(true);
+          setIsAssignGuardOpen(false);
+          setIsScheduleOpen(false);
+          setIsPaymentOpen(false);
+          loadAvailableGuards();
+        }}
+        onResetView={() => { setIsScheduleOpen(false); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAvailableGuardsOpen(false); }}
+        onCancelService={handleCancelService}
         currentView={getCurrentViewName()}
+        status={invoice.status}
       />
 
       {isPaymentOpen ? (
@@ -477,6 +559,13 @@ export default function InvoiceDetailsPage() {
           onUnassignGuard={handleUnassignGuard}
           isAssigning={isAssigning}
         />
+      ) : isAvailableGuardsOpen ? (
+        <AvailableGuardsModule
+          guards={availableGuards}
+          totalGuards={totalAvailableGuards}
+          isLoading={isAvailableGuardsLoading}
+          onBack={() => setIsAvailableGuardsOpen(false)}
+        />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
           <div className="lg:col-span-7 space-y-6">
@@ -488,6 +577,7 @@ export default function InvoiceDetailsPage() {
               formData={formData}
               setFormData={setFormData}
               onSave={handleSave}
+              onEditLocation={handleEditLocation}
             />
           </div>
           <div className="lg:col-span-5 space-y-6">
@@ -501,6 +591,43 @@ export default function InvoiceDetailsPage() {
         onClose={() => setIsSelectUserOpen(false)}
         onSelect={handleGuardSelect}
         selectedShiftIds={selectedShiftIds}
+      />
+
+      <EditLocationDialog
+        isOpen={isEditLocationOpen}
+        onClose={() => setIsEditLocationOpen(false)}
+        onUpdate={handleLocationUpdate}
+        initialAddress={invoice.shipping_address}
+        isSaving={isSaving}
+      />
+
+      <CancelServiceDialog
+        isOpen={isCancelServiceOpen}
+        onClose={() => setIsCancelServiceOpen(false)}
+        onConfirm={handleConfirmCancel}
+        isSaving={isCancelling}
+      />
+
+      <ConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, shiftId: "" })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Shift?"
+        description="Are you sure you want to delete this shift schedule? This action cannot be undone."
+        confirmText="Yes, delete it"
+        isDanger={true}
+        isLoading={isShiftsLoading}
+      />
+
+      <ConfirmationDialog
+        isOpen={unassignConfirm.isOpen}
+        onClose={() => setUnassignConfirm({ isOpen: false, shiftOfferId: "" })}
+        onConfirm={handleConfirmUnassign}
+        title="Unassign Guard?"
+        description="This will remove the guard from this shift. Are you sure?"
+        confirmText="Yes, unassign"
+        isDanger={true}
+        isLoading={isShiftsLoading}
       />
     </div>
   );

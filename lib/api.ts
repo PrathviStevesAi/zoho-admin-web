@@ -9,11 +9,17 @@ export async function apiFetch<T>(
   let lastError: any;
   for (let i = 0; i < retries; i++) {
     try {
-      const session = await auth();
+      const session = await auth() as any;
       const token = session?.accessToken;
-      // console.log("Token:", token);
+      console.log('token', token);
 
-      console.log(`Fetching API (Attempt ${i + 1}): ${url}`);
+      if (!token) console.warn(`[apiFetch] No token found for ${endpoint}`);
+
+      if (session?.error === "RefreshAccessTokenError") {
+        console.warn(`[apiFetch] Refresh token expired for ${endpoint}.`);
+        throw new Error("Session expired. Please log in again.");
+      }
+
       const response = await fetch(
         url,
         {
@@ -29,8 +35,8 @@ export async function apiFetch<T>(
 
       if (!response.ok) {
         if (response.status === 401 && i < retries - 1) {
-          const delay = i >= 2 ? 1000 : 500;
-          console.warn(`[apiFetch] 401 detected for ${endpoint}. Retrying in ${delay}ms...`);
+          const delay = (i + 1) * 1000 + Math.random() * 500;
+          console.warn(`[apiFetch] 401 Unauthorized for ${endpoint}. Retrying (Attempt ${i + 2}/${retries}) in ${Math.round(delay)}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }

@@ -10,7 +10,9 @@ import {
   Edit3,
   Loader2,
   ChevronRight,
-  LogOut
+  LogOut,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -28,6 +30,8 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editFormData, setEditFormData] = useState({
     first_name: "",
@@ -37,6 +41,14 @@ export default function ProfilePage() {
     new_password: "",
     profile_img_url: ""
   });
+
+  const isFormChanged = user ? (
+    editFormData.first_name !== user.first_name ||
+    editFormData.last_name !== user.last_name ||
+    editFormData.phone_number !== (user.phone_number || "") ||
+    editFormData.old_password !== "" ||
+    editFormData.new_password !== ""
+  ) : false;
 
   const loadProfile = async () => {
     setLoading(true);
@@ -226,7 +238,7 @@ export default function ProfilePage() {
               <Button variant="outline" onClick={() => setIsEditing(false)} className="px-5 h-9 rounded-lg font-bold border-slate-200 text-xs text-slate-500 hover:bg-slate-50 transition-all cursor-pointer">
                 Cancel
               </Button>
-              <Button onClick={handleUpdateProfile} disabled={isUpdating} className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-5 h-9 rounded-lg font-bold text-xs shadow-md shadow-blue-100 transition-all active:scale-95 flex gap-2 cursor-pointer">
+              <Button onClick={handleUpdateProfile} disabled={isUpdating || !isFormChanged} className="bg-[#0064cb] hover:bg-[#0052ae] disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 h-9 rounded-lg font-bold text-xs shadow-md shadow-blue-100 transition-all active:scale-95 flex gap-2 cursor-pointer">
                 {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save Changes"}
               </Button>
             </>
@@ -316,23 +328,41 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-1.5">
                   <Label className="text-[11px] font-bold text-black-700 uppercase">Old Password</Label>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    value={editFormData.old_password}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, old_password: e.target.value }))}
-                    className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm transition-all"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showOldPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={editFormData.old_password}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, old_password: e.target.value }))}
+                      className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 pr-11 text-sm transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOldPassword(!showOldPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    >
+                      {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[11px] font-bold text-black-700 uppercase">New Password</Label>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    value={editFormData.new_password}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, new_password: e.target.value }))}
-                    className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm transition-all"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={editFormData.new_password}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, new_password: e.target.value }))}
+                      className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 pr-11 text-sm transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
               <p className="mt-3 text-[10px] text-slate-400 font-medium">Leave passwords blank to keep current credentials.</p>

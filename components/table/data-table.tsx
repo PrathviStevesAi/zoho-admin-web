@@ -24,7 +24,7 @@ export function DataTable<T extends { id?: string | number }>({
         <Table>
             <TableHeader className="bg-surface">
                 <TableRow>
-                    {columns.map((col) => (
+                    {columns.filter(col => !col.hidden).map((col) => (
                         <TableHead
                             key={col.key}
                             className={cn(
@@ -60,7 +60,7 @@ export function DataTable<T extends { id?: string | number }>({
                                 "!border-b-0", "!p-10"
                             )}
                         >
-                            {columns.map((col) => (
+                            {columns.filter(col => !col.hidden).map((col) => (
                                 <TableCell
                                     key={col.key}
                                     className={cn(

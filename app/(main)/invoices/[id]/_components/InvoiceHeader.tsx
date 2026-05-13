@@ -20,8 +20,11 @@ interface InvoiceHeaderProps {
   onOpenPayment: () => void;
   onOpenSchedule: () => void;
   onOpenAssignGuard: () => void;
+  onOpenAvailableGuards: () => void;
   onResetView: () => void;
+  onCancelService: () => void;
   currentView?: string;
+  status?: string;
 }
 
 export function InvoiceHeader({
@@ -32,8 +35,11 @@ export function InvoiceHeader({
   onOpenPayment,
   onOpenSchedule,
   onOpenAssignGuard,
+  onOpenAvailableGuards,
   onResetView,
-  currentView
+  onCancelService,
+  currentView,
+  status
 }: InvoiceHeaderProps) {
   const handleOpenCRM = () => {
     if (zohoInvoiceId) {
@@ -132,47 +138,51 @@ export function InvoiceHeader({
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 py-4">
-        <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenPayment}>
-          <div className="w-12 h-12 rounded-full border-2 border-emerald-500 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-50 transition-colors shadow-sm">
-            <RefreshCcw className="w-5.5 h-5.5" />
-          </div>
-          <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Update<br />payment status</span>
-        </div>
-
-        <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenSchedule}>
-          <div className="w-12 h-12 rounded-full border-2 border-[#0064cb] flex items-center justify-center text-[#0064cb] group-hover:bg-blue-50 transition-colors shadow-sm">
-            <Calendar className="w-5.5 h-5.5" />
-          </div>
-          <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Schedule<br />Shift</span>
-        </div>
-
-        <div className="flex flex-col items-center gap-1.5 group cursor-pointer">
-          <div className="w-12 h-12 rounded-full border-2 border-orange-500 flex items-center justify-center text-orange-500 group-hover:bg-orange-50 transition-colors shadow-sm">
-            <Search className="w-5.5 h-5.5" />
-          </div>
-          <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Find Available<br />Guard</span>
-        </div>
-
-        <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenAssignGuard}>
-          <div className="w-12 h-12 rounded-full border-2 border-indigo-500 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-50 transition-colors shadow-sm">
-            <UserPlus className="w-5.5 h-5.5" />
-          </div>
-          <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Assign<br />Guard</span>
-        </div>
-
-        <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={handleOpenCRM}>
-          <div className="w-12 h-12 rounded-full border-2 border-slate-400 flex items-center justify-center text-slate-500 group-hover:bg-slate-50 transition-colors shadow-sm">
-            <ExternalLink className="w-5.5 h-5.5" />
-          </div>
-          <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Open in<br />CRM</span>
-        </div>
-
-        <div className="flex flex-col items-center gap-1.5 group cursor-pointer">
-          <div className="w-12 h-12 rounded-full border-2 border-red-400 flex items-center justify-center text-red-500 group-hover:bg-red-50 transition-colors shadow-sm">
-            <XCircle className="w-5.5 h-5.5" />
-          </div>
-          <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Cancel<br />Service</span>
-        </div>
+        {!status?.toLowerCase().includes('cancelled') && (
+          <>
+            <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenPayment}>
+              <div className="w-12 h-12 rounded-full border-2 border-emerald-500 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-50 transition-colors shadow-sm">
+                <RefreshCcw className="w-5.5 h-5.5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Update<br />payment status</span>
+            </div>
+    
+            <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenSchedule}>
+              <div className="w-12 h-12 rounded-full border-2 border-[#0064cb] flex items-center justify-center text-[#0064cb] group-hover:bg-blue-50 transition-colors shadow-sm">
+                <Calendar className="w-5.5 h-5.5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Schedule<br />Shift</span>
+            </div>
+    
+            <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenAvailableGuards}>
+              <div className="w-12 h-12 rounded-full border-2 border-orange-500 flex items-center justify-center text-orange-500 group-hover:bg-orange-50 transition-colors shadow-sm">
+                <Search className="w-5.5 h-5.5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Find Available<br />Guard</span>
+            </div>
+    
+            <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenAssignGuard}>
+              <div className="w-12 h-12 rounded-full border-2 border-indigo-500 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-50 transition-colors shadow-sm">
+                <UserPlus className="w-5.5 h-5.5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Assign<br />Guard</span>
+            </div>
+    
+            <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={handleOpenCRM}>
+              <div className="w-12 h-12 rounded-full border-2 border-slate-400 flex items-center justify-center text-slate-500 group-hover:bg-slate-50 transition-colors shadow-sm">
+                <ExternalLink className="w-5.5 h-5.5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Open in<br />CRM</span>
+            </div>
+    
+            <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onCancelService}>
+              <div className="w-12 h-12 rounded-full border-2 border-red-400 flex items-center justify-center text-red-500 group-hover:bg-red-50 transition-colors shadow-sm">
+                <XCircle className="w-5.5 h-5.5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Cancel<br />Service</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ export function NotificationsNav() {
   const loadNotifications = useCallback(async (page: number) => {
     console.log("[NotificationsNav] Attempting load, status:", status);
     if (status !== "authenticated") return;
-    
+
     setLoading(true);
     console.log("[NotificationsNav] Fetching notifications...");
     try {
@@ -165,7 +165,7 @@ export function NotificationsNav() {
                 variant="ghost"
                 size="sm"
                 onClick={handlePreviousPage}
-                className="text-[13px] text-[#0064cb] hover:text-[#0052ae] hover:bg-white font-semibold"
+                className="cursor-pointer text-[13px] text-[#0064cb] hover:text-[#0052ae] hover:bg-white font-semibold"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Previous
@@ -176,7 +176,7 @@ export function NotificationsNav() {
                 variant="ghost"
                 size="sm"
                 onClick={handleNextPage}
-                className="text-[13px] text-[#0064cb] hover:text-[#0052ae] hover:bg-white font-semibold"
+                className="cursor-pointer text-[13px] text-[#0064cb] hover:text-[#0052ae] hover:bg-white font-semibold"
               >
                 See More
                 <ChevronRight className="w-4 h-4 ml-1" />

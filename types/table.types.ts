@@ -6,4 +6,5 @@ export type TableColumn<T = any> = {
     width?: string;
     align?: "left" | "center" | "right";
     render?: (row: T) => ReactNode; 
+    hidden?: boolean;
 };
