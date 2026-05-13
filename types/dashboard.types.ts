@@ -28,6 +28,7 @@ export type InvoiceData = {
   per_hour_rate?: number | null;
   per_shift_rate?: number | null;
   shipping_address?: string | ShippingAddress;
+  service_address?: string;
   history?: InvoiceHistory[];
 };
 
@@ -38,6 +39,7 @@ export type Record = {
   customer_name: string;
   status: string;
   start_time: string;
+  service_address?: string;
 };
 
 export type Pagination = {
