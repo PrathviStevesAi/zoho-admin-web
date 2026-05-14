@@ -30,8 +30,8 @@ export default function Created({ initialData, pagination }: { initialData: Reco
     isSearching,
     loadMoreRef
   } = useInfiniteSearch<Record>(
-    initialData, 
-    pagination, 
+    initialData,
+    pagination,
     fetchCreatedShiftAction,
     500,
     dateFrom,
@@ -41,8 +41,8 @@ export default function Created({ initialData, pagination }: { initialData: Reco
   return (
     <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between px-7 py-2">
-        <CardTitle className="text-[19px] font-bold shrink-0">New Shifts Created</CardTitle>
-        
+        <CardTitle className="text-[19px] font-bold shrink-0">Draft Shifts</CardTitle>
+
         <div className="flex-1 flex justify-center max-w-[240px] mx-auto">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

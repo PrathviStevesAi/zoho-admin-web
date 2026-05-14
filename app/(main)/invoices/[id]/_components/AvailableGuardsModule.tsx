@@ -103,8 +103,16 @@ export function AvailableGuardsModule({
     if (guardFilters.service === "unarmed") unarmed = "true";
     if (guardFilters.service === "both") { armed = "true"; unarmed = "true"; }
 
+    const isFiltered =
+      debouncedSearchQuery !== "" ||
+      guardFilters.country !== "All Country" ||
+      guardFilters.state !== "All State" ||
+      guardFilters.city !== "All City" ||
+      guardFilters.status !== "all" ||
+      guardFilters.service !== "All";
+
     const res = await fetchGuardsAction({
-      page: currentPage,
+      page: isFiltered ? undefined : currentPage,
       search: debouncedSearchQuery,
       status: guardFilters.status === "all" ? "" : guardFilters.status,
       city: guardFilters.city === "All City" ? "" : guardFilters.city,
