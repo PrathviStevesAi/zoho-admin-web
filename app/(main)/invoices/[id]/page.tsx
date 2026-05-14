@@ -511,6 +511,7 @@ export default function InvoiceDetailsPage() {
           setIsScheduleOpen(false);
           setIsPaymentOpen(false);
           loadAvailableGuards();
+          loadShifts("assign_guard");
         }}
         onResetView={() => { setIsScheduleOpen(false); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAvailableGuardsOpen(false); }}
         onCancelService={handleCancelService}
@@ -561,10 +562,13 @@ export default function InvoiceDetailsPage() {
         />
       ) : isAvailableGuardsOpen ? (
         <AvailableGuardsModule
+          invoiceId={id}
           guards={availableGuards}
+          shifts={shifts}
           totalGuards={totalAvailableGuards}
           isLoading={isAvailableGuardsLoading}
           onBack={() => setIsAvailableGuardsOpen(false)}
+          onRefresh={loadAvailableGuards}
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">

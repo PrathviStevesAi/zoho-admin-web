@@ -560,3 +560,23 @@ export async function fetchAvailableGuardsAction(
     return { success: false, error: message };
   }
 }
+
+export async function findAvailableGuardsAction(payload: {
+  invoice_id: string;
+  shift_ids: string[];
+  guard_ids: string[];
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/invoice/find-available-guards`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    return { success: true, message: res.message };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
