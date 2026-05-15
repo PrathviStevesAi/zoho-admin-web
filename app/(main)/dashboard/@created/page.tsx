@@ -1,8 +1,8 @@
 import { apiFetch } from "@/lib/api";
-import Created from "./planned";
-import { BaseApiResponse, Record } from "@/types/dashboard.types";
+import InProgressInvoice from "./planned";
+import { BaseApiResponse, InvoiceData } from "@/types/dashboard.types";
 
-export default async function CreatedPage({
+export default async function InProgressInvoicePage({
     searchParams,
 }: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -20,15 +20,15 @@ export default async function CreatedPage({
     if (dateFrom) params.push(`date_from=${dateFrom}`);
     if (dateTo) params.push(`date_to=${dateTo}`);
 
-    const url = `/api/v1/shift/list?status=shift_created${params.length > 0 ? '&' + params.join("&") : ""}`;
+    const url = `/api/v1/invoice/in_progress/list${params.length > 0 ? '?' + params.join("&") : ""}`;
 
     let response;
     try {
-        response = await apiFetch<BaseApiResponse<Record>>(url);
+        response = await apiFetch<BaseApiResponse<InvoiceData>>(url);
     } catch (error) {
-        console.error("Failed to fetch created shifts:", error);
+        console.error("Failed to fetch in-progress invoices:", error);
         response = { data: [], pagination: { page: 1, limit: 10, total: 0, total_pages: 0 } };
     }
 
-    return <Created initialData={response.data} pagination={response.pagination} />;
+    return <InProgressInvoice initialData={response.data} pagination={response.pagination} />;
 }

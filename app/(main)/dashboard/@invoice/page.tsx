@@ -20,7 +20,7 @@ export default async function InvoicePage({
     if (dateFrom) params.push(`date_from=${dateFrom}`);
     if (dateTo) params.push(`date_to=${dateTo}`);
 
-    const url = `/api/v1/invoice/list${params.length > 0 ? '?' + params.join("&") : ""}`;
+    const url = `/api/v1/invoice/new_project/list${params.length > 0 ? '?' + params.join("&") : ""}`;
 
     let response;
     try {

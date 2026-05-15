@@ -15,9 +15,10 @@ export async function fetchInvoicesAction(
   search: string = "",
   date_from: string = "",
   date_to: string = "",
+  status: string = "new_project"
 ): Promise<FetchResponse<InvoiceData>> {
   const query = encodeURIComponent(search);
-  let url = `/api/v1/invoice/list?search=${query}`;
+  let url = `/api/v1/invoice/${status}/list?search=${query}`;
   
   if (!date_from && !date_to) {
     url += `&page=${page}`;

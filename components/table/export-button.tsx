@@ -14,13 +14,12 @@ export function ExportButton({ data, columns, fileName }: ExportButtonProps) {
   return (
     <Button
       variant="ghost"
-      size="sm"
-      className="cursor-pointer text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 gap-2 font-bold transition-all active:scale-95"
+      size="icon"
+      className="cursor-pointer text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-full transition-all active:scale-95 h-9 w-9"
       onClick={() => exportToExcel(data, columns, fileName)}
       title="Export to Excel"
     >
-      <Download className="w-4 h-4" />
-      <span>Export</span>
+      <Download className="w-5 h-5" />
     </Button>
   );
 }

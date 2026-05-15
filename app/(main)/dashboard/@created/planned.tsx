@@ -1,7 +1,9 @@
 "use client";
 
+import { useCallback } from "react";
+
 import { useSearchParams } from "next/navigation";
-import { Pagination, Record } from "@/types/dashboard.types";
+import { InvoiceData, Pagination } from "@/types/dashboard.types";
 import { Loader2, Search } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -10,16 +12,19 @@ import { DataTable } from "@/components/table/data-table";
 import { ExportButton } from "@/components/table/export-button";
 import { invoiceSkeletonColumns } from "@/features/invoice/invoice.skeleton";
 import { useInfiniteSearch } from "@/hooks/use-infinite-data";
-import { fetchCreatedShiftAction } from "@/actions/dashboard.actions";
+import { fetchInvoicesAction } from "@/actions/dashboard.actions";
 import { GenericRowSkeleton } from "@/components/skeletons/generic-row-skeleton";
-import { precheckTableColumns } from "@/features/invoice/precheck.table";
+import { invoiceTableColumns } from "@/features/invoice/invoice.table";
 import { useDashboard } from "../dashboard-context";
 
-export default function Created({ initialData, pagination }: { initialData: Record[]; pagination: Pagination }) {
+export default function InProgressInvoice({ initialData, pagination }: { initialData: InvoiceData[]; pagination: Pagination }) {
   const searchParams = useSearchParams();
   const { isPending: isDashboardPending } = useDashboard();
   const dateFrom = searchParams.get("date_from") || "";
   const dateTo = searchParams.get("date_to") || "";
+
+  const fetchAction = useCallback((page: number, search?: string, from?: string, to?: string) => 
+    fetchInvoicesAction(page, search, from, to, "in_progress"), []);
 
   const {
     displayedData,
@@ -29,10 +34,10 @@ export default function Created({ initialData, pagination }: { initialData: Reco
     hasMore,
     isSearching,
     loadMoreRef
-  } = useInfiniteSearch<Record>(
+  } = useInfiniteSearch<InvoiceData>(
     initialData,
     pagination,
-    fetchCreatedShiftAction,
+    fetchAction,
     500,
     dateFrom,
     dateTo
@@ -41,10 +46,15 @@ export default function Created({ initialData, pagination }: { initialData: Reco
   return (
     <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between px-7 py-2">
-        <CardTitle className="text-[19px] font-bold shrink-0">Draft Shifts</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-[19px] font-bold shrink-0">In-Progress Invoice</CardTitle>
+          <span className="text-[19px] text-slate-900">
+            [ {pagination.total} ]
+          </span>
+        </div>
 
-        <div className="flex-1 flex justify-center max-w-[240px] mx-auto">
-          <div className="relative w-full">
+        <div className="flex items-center gap-4 shrink-0">
+          <div className="relative w-[240px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={searchTerm}
@@ -53,13 +63,7 @@ export default function Created({ initialData, pagination }: { initialData: Reco
               className="pl-9 h-10 w-full"
             />
           </div>
-        </div>
-
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="text-sm font-medium text-slate-500">
-            Total: <span className="text-slate-900 font-bold">{pagination.total}</span>
-          </div>
-          <ExportButton data={displayedData} columns={precheckTableColumns} fileName="Created_Shifts" />
+          <ExportButton data={displayedData} columns={invoiceTableColumns} fileName="InProgress_Invoices" />
         </div>
       </CardHeader>
 
@@ -73,7 +77,7 @@ export default function Created({ initialData, pagination }: { initialData: Reco
           ))
         ) : (
           <>
-            <DataTable columns={precheckTableColumns} data={displayedData} emptyMessage="No shifts found." />
+            <DataTable columns={invoiceTableColumns} data={displayedData} emptyMessage="No invoices found." />
             {!isSearching && hasMore && (
               <div ref={loadMoreRef} className="py-6 flex justify-center">
                 <Loader2 className="animate-spin text-primary" />

@@ -32,24 +32,19 @@ export default function InvoiceError({
             </CardHeader>
 
             <CardContent className="flex-grow flex flex-col items-center justify-center p-8 text-center">
-
-                {/* Icon */}
                 <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
                     <AlertCircle className="h-6 w-6 text-destructive" />
                 </div>
 
-                {/* Title */}
                 <h3 className="text-[16px] font-bold text-foreground mb-2">
                     Failed to load data
                 </h3>
 
-                {/* Description */}
                 <p className="text-[13px] text-muted-foreground max-w-[250px] mb-6">
                     {error?.message ||
                         "There was an issue fetching this section's data. Please try again."}
                 </p>
 
-                {/* Button */}
                 <Button
                     variant="outline"
                     onClick={reload}
@@ -58,7 +53,6 @@ export default function InvoiceError({
                     <RefreshCcw className="h-4 w-4" />
                     Try again
                 </Button>
-
             </CardContent>
         </Card>
     );

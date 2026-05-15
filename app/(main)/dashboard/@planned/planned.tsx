@@ -41,10 +41,15 @@ export default function Planned({ initialData, pagination }: { initialData: Reco
   return (
     <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between px-7 py-2">
-        <CardTitle className="text-[19px] font-bold shrink-0">Planned Shifts</CardTitle>
-        
-        <div className="flex-1 flex justify-center max-w-[240px] mx-auto">
-          <div className="relative w-full">
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-[19px] font-bold shrink-0">Planned Shifts</CardTitle>
+          <span className="text-[19px] text-slate-900">
+            [ {pagination.total} ]
+          </span>
+        </div>
+
+        <div className="flex items-center gap-4 shrink-0">
+          <div className="relative w-[240px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={searchTerm}
@@ -52,12 +57,6 @@ export default function Planned({ initialData, pagination }: { initialData: Reco
               placeholder="Search..."
               className="pl-9 h-10 w-full"
             />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="text-sm font-medium text-slate-500">
-            Total: <span className="text-slate-900 font-bold">{pagination.total}</span>
           </div>
           <ExportButton data={displayedData} columns={precheckTableColumns} fileName="Planned_Shifts" />
         </div>
