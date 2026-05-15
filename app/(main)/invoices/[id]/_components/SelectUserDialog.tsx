@@ -277,6 +277,12 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
                         <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50 text-center">
                           {guard.unarmed ? "Yes" : "No"}
                         </TableCell>
+                        <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50">
+                          {guard.address || "-"}
+                        </TableCell>
+                        <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50">
+                          {guard.last_active_at ? new Date(guard.last_active_at).toLocaleDateString() : "-"}
+                        </TableCell>
                         <TableCell className="py-5 px-6">
                           <span className={cn(
                             "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
@@ -284,12 +290,6 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
                           )}>
                             {guard.status ? "Active" : "Inactive"}
                           </span>
-                        </TableCell>
-                        <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50">
-                          {guard.address || "-"}
-                        </TableCell>
-                        <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50">
-                          {guard.last_active_at ? new Date(guard.last_active_at).toLocaleDateString() : "-"}
                         </TableCell>
                       </TableRow>
                     ))

@@ -30,8 +30,8 @@ export default function Precheck({ initialData, pagination }: { initialData: Rec
     isSearching,
     loadMoreRef
   } = useInfiniteSearch<Record>(
-    initialData, 
-    pagination, 
+    initialData,
+    pagination,
     fetchPreShiftCheckInAction,
     500,
     dateFrom,
@@ -42,7 +42,7 @@ export default function Precheck({ initialData, pagination }: { initialData: Rec
     <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between px-7 py-2">
         <div className="flex items-center gap-2">
-          <CardTitle className="text-[19px] font-bold shrink-0">Precheck Shifts</CardTitle>
+          <CardTitle className="text-[19px] font-bold shrink-0">Pre-Shift Check-In</CardTitle>
           <span className="text-[19px] text-slate-900">
             [ {pagination.total} ]
           </span>
