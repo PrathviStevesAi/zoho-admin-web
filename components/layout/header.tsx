@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bell, User, Settings, LogOut, ChevronDown, Search, XCircle } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import useDebounceValue from "@/hooks/use-debounce";
 import { Loader2 } from "lucide-react";
@@ -31,8 +31,36 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   const { data: session } = useSession();
+
+  const loadProfile = useCallback(async () => {
+    if (!session?.accessToken) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/user/profile`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+          Authorization: `Bearer ${session.accessToken}`,
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProfile(data.data);
+      }
+    } catch (error) {
+      console.error("Failed to load header profile:", error);
+    }
+  }, [session?.accessToken]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  useEffect(() => {
+    window.addEventListener("profile-updated", loadProfile);
+    return () => window.removeEventListener("profile-updated", loadProfile);
+  }, [loadProfile]);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -217,17 +245,18 @@ export function Header() {
       {/* RIGHT: Actions */}
       <div className="flex items-center gap-4 shrink-0 w-[240px] justify-end">
         <NotificationsNav />
-        <UserNav session={session} />
+        <UserNav session={session} dynamicProfile={profile} />
       </div>
     </header>
   );
 }
 
-function UserNav({ session }: { session: any }) {
-  const user = session?.user;
-  const initials = user?.name
-    ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase()
-    : "A";
+function UserNav({ session, dynamicProfile }: { session: any, dynamicProfile: any }) {
+  const user = dynamicProfile || session?.user;
+  const name = dynamicProfile ? `${dynamicProfile.first_name} ${dynamicProfile.last_name}` : (session?.user?.name || "Admin");
+  const role = dynamicProfile?.role || session?.user?.role || "Admin";
+  const initials = name.split(" ").map((n: string) => n[0]).join("").toUpperCase();
+  const profileImage = dynamicProfile?.profile_img_url || session?.user?.image;
 
   return (
     <DropdownMenu>
@@ -236,15 +265,15 @@ function UserNav({ session }: { session: any }) {
           variant="ghost"
           className="relative h-10 flex items-center gap-2 pl-1 pr-2 rounded-full hover:bg-muted transition-all active:scale-95"
         >
-          <Avatar className="h-8 w-8 border border-border">
-            <AvatarImage src={user?.image || "/avatar.png"} alt={user?.name || "User"} />
-            <AvatarFallback className="bg-brand-secondary text-brand-secondary-foreground text-xs font-bold">
+          <Avatar className="h-9 w-9 border border-slate-200 shadow-sm">
+            <AvatarImage src={profileImage} alt={name} className="object-cover" />
+            <AvatarFallback className="bg-slate-100 text-[#0064cb] text-xs font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col items-start text-left hidden sm:flex">
-            <span className="text-sm font-semibold leading-none">{user?.name || "Admin"}</span>
-            <span className="text-[10px] text-muted-foreground leading-tight mt-0.5 capitalize">{user?.role || "Admin"}</span>
+            <span className="text-sm font-semibold leading-none">{name}</span>
+            <span className="text-[10px] text-muted-foreground leading-tight mt-0.5 capitalize">{role}</span>
           </div>
           <ChevronDown className="size-3.5 text-muted-foreground ml-1" />
         </Button>
@@ -254,10 +283,18 @@ function UserNav({ session }: { session: any }) {
         align="end"
         className="w-64 p-2 mt-1 rounded-sm bg-card border-border shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] animate-in fade-in-0 zoom-in-95"
       >
-        <DropdownMenuLabel className="font-normal p-3">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-bold leading-none text-foreground">{user?.name || "Admin"}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user?.email || "admin@gmail.com"}</p>
+        <DropdownMenuLabel className="font-normal p-4">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
+              <AvatarImage src={profileImage} alt={name} />
+              <AvatarFallback className="bg-slate-100 text-[#0064cb] text-xs font-bold">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col space-y-1 min-w-0">
+              <p className="text-sm font-bold leading-none text-foreground truncate">{name}</p>
+              <p className="text-xs leading-none text-muted-foreground truncate" title={dynamicProfile?.email || session?.user?.email}>
+                {dynamicProfile?.email || session?.user?.email || "admin@gmail.com"}
+              </p>
+            </div>
           </div>
         </DropdownMenuLabel>
 

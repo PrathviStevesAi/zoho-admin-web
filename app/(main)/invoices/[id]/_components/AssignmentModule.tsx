@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Plus, Trash2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ interface AssignmentModuleProps {
   pendingAssignments: Record<string, { guard_id: string, guard_name: string }>;
   onAdd: () => void;
   isAssigning: boolean;
+  onRemovePendingAssignment?: (shiftId: string) => void;
 }
 
 export function AssignmentModule({
@@ -37,11 +38,16 @@ export function AssignmentModule({
   onBack,
   pendingAssignments,
   onAdd,
-  isAssigning
+  isAssigning,
+  onRemovePendingAssignment
 }: AssignmentModuleProps) {
   const [selectedShifts, setSelectedShifts] = useState<string[]>([]);
+  
+  useEffect(() => {
+    setSelectedShifts(prev => prev.filter(id => !pendingAssignments[id]));
+  }, [pendingAssignments]);
 
-  const selectableShifts = shifts.filter(s => !s.guard);
+  const selectableShifts = shifts.filter(s => !s.guard && !pendingAssignments[s.shift_id]);
   const isAllSelected = selectableShifts.length > 0 && selectableShifts.every(s => selectedShifts.includes(s.shift_id));
 
   const handleSelectAll = (checked: boolean) => {
@@ -152,17 +158,23 @@ export function AssignmentModule({
                       </TableRow>
                     ) : shifts.length > 0 ? (
                       shifts.map((shift) => (
-                        <TableRow key={shift.shift_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                        <TableRow 
+                          key={shift.shift_id} 
+                          className={cn(
+                            "border-slate-50 transition-colors",
+                            (shift.guard || pendingAssignments[shift.shift_id]) ? "bg-slate-50/50" : "hover:bg-slate-50/30"
+                          )}
+                        >
                           <TableCell className="py-4 px-6 text-center">
                             <input
                               type="checkbox"
                               className={cn(
                                 "w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer",
-                                shift.guard && "opacity-50 cursor-not-allowed"
+                                (shift.guard || pendingAssignments[shift.shift_id]) && "opacity-30 cursor-not-allowed"
                               )}
-                              checked={selectedShifts.includes(shift.shift_id)}
+                              checked={selectedShifts.includes(shift.shift_id) || !!pendingAssignments[shift.shift_id]}
                               onChange={(e) => handleSelectRow(shift.shift_id, e.target.checked)}
-                              disabled={!!shift.guard}
+                              disabled={!!shift.guard || !!pendingAssignments[shift.shift_id]}
                             />
                           </TableCell>
                           <TableCell className="text-sm font-bold text-slate-700 py-4 px-6">{shift.shift_no}</TableCell>
@@ -191,9 +203,18 @@ export function AssignmentModule({
                                   </button>
                                 </>
                               ) : pendingAssignments[shift.shift_id] ? (
-                                <span className="text-[#0064cb] font-semibold text-[13px] animate-pulse">
-                                  {pendingAssignments[shift.shift_id].guard_name}
-                                </span>
+                                <>
+                                  <span className="text-[#0064cb] font-semibold text-[13px] animate-pulse">
+                                    {pendingAssignments[shift.shift_id].guard_name}
+                                  </span>
+                                  <button
+                                    onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
+                                    className="w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-400 rounded-full transition-all cursor-pointer ml-auto"
+                                    title="Remove Selection"
+                                  >
+                                    <X className="w-3 h-3 stroke-[3]" />
+                                  </button>
+                                </>
                               ) : (
                                 <span className="text-slate-300 text-xs">Unassigned</span>
                               )}

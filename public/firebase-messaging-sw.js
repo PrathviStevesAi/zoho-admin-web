@@ -23,15 +23,17 @@ messaging.onBackgroundMessage(function (payload) {
         payload
     );
 
-    const notificationTitle = payload.notification?.title || "Notification";
+    const title = payload.notification?.title || payload.data?.title || "New Notification";
+    const body = payload.notification?.body || payload.data?.body || "You have a new message.";
 
     const notificationOptions = {
-        body: payload.notification?.body || "",
-        icon: "/logo.png", // optional
+        body: body,
+        icon: "/images/website-logo.png",
+        data: payload.data
     };
 
     self.registration.showNotification(
-        notificationTitle,
+        title,
         notificationOptions
     );
 });

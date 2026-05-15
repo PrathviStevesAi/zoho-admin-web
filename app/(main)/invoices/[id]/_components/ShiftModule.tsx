@@ -153,6 +153,9 @@ export function ShiftModule({
     );
   }
 
+  const today = new Date().toISOString().split('T')[0];
+  const now = new Date().toISOString().slice(0, 16);
+
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
       <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white max-w-7xl mx-auto">
@@ -189,6 +192,7 @@ export function ShiftModule({
                 <Label className="text-[11px] font-bold text-slate-500 uppercase">Date from</Label>
                 <Input
                   type="date"
+                  min={today}
                   className="w-full h-11 bg-white border-slate-200 rounded-lg"
                   value={addShiftData.dateFrom}
                   onChange={(e) => setAddShiftData((prev: any) => ({ ...prev, dateFrom: e.target.value }))}
@@ -198,6 +202,7 @@ export function ShiftModule({
                 <Label className="text-[11px] font-bold text-slate-500 uppercase">Date to</Label>
                 <Input
                   type="date"
+                  min={addShiftData.dateFrom || today}
                   className="w-full h-11 bg-white border-slate-200 rounded-lg"
                   value={addShiftData.dateTo}
                   onChange={(e) => setAddShiftData((prev: any) => ({ ...prev, dateTo: e.target.value }))}
@@ -207,9 +212,10 @@ export function ShiftModule({
                 <Label className="text-[11px] font-bold text-slate-500 uppercase"># of People</Label>
                 <Input
                   type="number"
+                  min="0"
                   className="w-full h-11 bg-white border-slate-200 rounded-lg"
                   value={addShiftData.people}
-                  onChange={(e) => setAddShiftData((prev: any) => ({ ...prev, people: Number(e.target.value) }))}
+                  onChange={(e) => setAddShiftData((prev: any) => ({ ...prev, people: Math.max(0, Number(e.target.value)) }))}
                 />
               </div>
             </div>
@@ -230,6 +236,10 @@ export function ShiftModule({
                     const dateKey = date.toISOString().split('T')[0];
                     const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
 
+                    // For the datetime-local inputs in the rows, we can also set min to 'now' 
+                    // or better, min to that specific date at 00:00 if it's in the future
+                    const rowMin = dateKey === today ? now : `${dateKey}T00:00`;
+
                     return (
                       <TableRow key={i} className="border-slate-50">
                         <TableCell className="py-4 px-6">
@@ -247,9 +257,14 @@ export function ShiftModule({
                         </TableCell>
                         <TableCell className="py-4 px-6">
                           <Input
-                            placeholder="e.g., 8:00"
+                            type="number"
+                            min="0"
+                            placeholder="e.g., 8"
                             value={row.hours}
-                            onChange={(e) => handleRowChange(dateKey, 'hours', e.target.value)}
+                            onChange={(e) => {
+                              const val = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
+                              handleRowChange(dateKey, 'hours', val);
+                            }}
                             className="h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg font-medium text-slate-700"
                           />
                         </TableCell>
@@ -257,6 +272,7 @@ export function ShiftModule({
                           <div className="relative">
                             <Input
                               type="datetime-local"
+                              min={rowMin}
                               value={row.startTime}
                               onChange={(e) => handleRowChange(dateKey, 'startTime', e.target.value)}
                               className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg"
@@ -267,6 +283,7 @@ export function ShiftModule({
                           <div className="relative">
                             <Input
                               type="datetime-local"
+                              min={row.startTime || rowMin}
                               value={row.endTime}
                               onChange={(e) => handleRowChange(dateKey, 'endTime', e.target.value)}
                               className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg"

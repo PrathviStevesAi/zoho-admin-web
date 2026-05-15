@@ -28,6 +28,8 @@ export function PaymentModule({
   onUpdate,
   onCancel
 }: PaymentModuleProps) {
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
       <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white max-w-4xl mx-auto">
@@ -64,6 +66,7 @@ export function PaymentModule({
                 <Input
                   id="reminder_date"
                   type="date"
+                  min={today}
                   value={formData.reminder_date}
                   onChange={(e) => setFormData((prev: any) => ({ ...prev, reminder_date: e.target.value }))}
                   className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg px-3 text-sm transition-all"
@@ -76,10 +79,12 @@ export function PaymentModule({
                   <Input
                     id="per_hour_rate"
                     type="number"
+                    min="0"
+                    disabled={!!formData.per_shift_rate && formData.per_shift_rate > 0}
                     value={formData.per_hour_rate || ""}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, per_hour_rate: Number(e.target.value) }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, per_hour_rate: Math.max(0, Number(e.target.value)) }))}
                     placeholder="0.00"
-                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <div className="h-5 w-px bg-slate-200 mr-2" />
@@ -94,10 +99,12 @@ export function PaymentModule({
                   <Input
                     id="per_shift_rate"
                     type="number"
+                    min="0"
+                    disabled={!!formData.per_hour_rate && formData.per_hour_rate > 0}
                     value={formData.per_shift_rate || ""}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, per_shift_rate: Number(e.target.value) }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, per_shift_rate: Math.max(0, Number(e.target.value)) }))}
                     placeholder="0.00"
-                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <div className="h-5 w-px bg-slate-200 mr-2" />

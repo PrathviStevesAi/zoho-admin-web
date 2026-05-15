@@ -31,7 +31,7 @@ export function NotificationsNav() {
     setLoading(true);
     console.log("[NotificationsNav] Fetching notifications...");
     try {
-      const response = await fetch(`/api/notifications?page=${page}`);
+      const response = await fetch(`/api/notifications?page=${page}&t=${Date.now()}`);
       const res = await response.json();
       if (res.success) {
         // Sort: Unread (is_seen: false) first within the page
@@ -60,6 +60,7 @@ export function NotificationsNav() {
     const unsubscribe = onMessageListener((payload: any) => {
       console.log("[NotificationsNav] FCM message received in foreground:", payload);
       // Refresh the first page to show the latest notification
+      console.log("[NotificationsNav] Refreshing notifications list and count...");
       loadNotifications(1);
     });
     return () => {

@@ -384,6 +384,56 @@ export default function InvoiceDetailsPage() {
     setIsCreatingShift(false);
   };
   const handleGuardSelect = (guard: any) => {
+    // 1. Get shift details for the current selection
+    const currentBatchShifts = shifts.filter(s => selectedShiftIds.includes(s.shift_id));
+
+    // 2. Check for overlaps within the current selection itself
+    for (let i = 0; i < currentBatchShifts.length; i++) {
+      for (let j = i + 1; j < currentBatchShifts.length; j++) {
+        const s1 = currentBatchShifts[i];
+        const s2 = currentBatchShifts[j];
+        if (DateTime.fromISO(s1.start_time) < DateTime.fromISO(s2.end_time) && 
+            DateTime.fromISO(s2.start_time) < DateTime.fromISO(s1.end_time)) {
+          toast.error(`Overlap detected: Shift ${s1.shift_no} and ${s2.shift_no} happen at the same time. You cannot assign the same guard to both.`);
+          return;
+        }
+      }
+    }
+
+    // 3. Check for overlaps with existing assignments for this guard (already in DB)
+    const existingGuardShifts = shifts.filter(s => {
+      if (!s.guard) return false;
+      
+      // Try ID match
+      const gid = typeof s.guard === 'object' ? (s.guard.guard_id || s.guard.id) : (s.guard_id || s.assigned_guard_id);
+      if (gid && gid === guard.guard_id) return true;
+      
+      // Fallback: Name match (useful if API only returns names or partial objects)
+      const sName = typeof s.guard === 'object' 
+        ? `${s.guard.first_name} ${s.guard.last_name}`.toLowerCase().trim()
+        : String(s.guard).toLowerCase().trim();
+      const gName = `${guard.first_name} ${guard.last_name}`.toLowerCase().trim();
+      
+      return sName === gName;
+    });
+
+    // 4. Check for overlaps with pending assignments for this guard
+    const pendingGuardShifts = shifts.filter(s => 
+      pendingAssignments[s.shift_id] && pendingAssignments[s.shift_id].guard_id === guard.guard_id
+    );
+
+    const allAssignedShifts = [...existingGuardShifts, ...pendingGuardShifts];
+
+    for (const newShift of currentBatchShifts) {
+      for (const assigned of allAssignedShifts) {
+        if (DateTime.fromISO(newShift.start_time) < DateTime.fromISO(assigned.end_time) && 
+            DateTime.fromISO(assigned.start_time) < DateTime.fromISO(newShift.end_time)) {
+          toast.error(`Guard ${guard.first_name} is already assigned to shift ${assigned.shift_no} during this time (${new Date(assigned.start_time).toLocaleTimeString()} - ${new Date(assigned.end_time).toLocaleTimeString()}).`);
+          return;
+        }
+      }
+    }
+
     const newAssignments = { ...pendingAssignments };
     selectedShiftIds.forEach(id => {
       newAssignments[id] = { guard_id: guard.guard_id, guard_name: `${guard.first_name} ${guard.last_name}` };
@@ -558,6 +608,13 @@ export default function InvoiceDetailsPage() {
           pendingAssignments={pendingAssignments}
           onAdd={handleAssignGuards}
           onUnassignGuard={handleUnassignGuard}
+          onRemovePendingAssignment={(shiftId) => {
+            setPendingAssignments(prev => {
+              const updated = { ...prev };
+              delete updated[shiftId];
+              return updated;
+            });
+          }}
           isAssigning={isAssigning}
         />
       ) : isAvailableGuardsOpen ? (

@@ -91,7 +91,7 @@ export default function ProfilePage() {
       phone_number: editFormData.phone_number,
     };
 
-    if (editFormData.profile_img_url) {
+    if (editFormData.profile_img_url && !editFormData.profile_img_url.startsWith('http')) {
       payload.profile_img_url = editFormData.profile_img_url;
     }
 
@@ -109,7 +109,16 @@ export default function ProfilePage() {
       setIsEditing(false);
       const refreshed = await fetchProfileAction();
       if (refreshed.success && refreshed.data) {
-        setUser(refreshed.data);
+        const profileData = refreshed.data;
+        setUser(profileData);
+        setEditFormData(prev => ({
+          ...prev,
+          first_name: profileData.first_name,
+          last_name: profileData.last_name,
+          phone_number: profileData.phone_number || "",
+          profile_img_url: profileData.profile_img_url || ""
+        }));
+        window.dispatchEvent(new CustomEvent("profile-updated"));
       }
     } else {
       toast.error(res.error || "Failed to update profile");
@@ -127,7 +136,7 @@ export default function ProfilePage() {
       // Generate unique file name
       const fileExt = file.name.split('.').pop();
       const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
-      const uniqueId = Math.floor(1000 + Math.random() * 9000); // 4 digit random number
+      const uniqueId = Math.floor(1000 + Math.random() * 9000);
       const uniqueFileName = `${fileNameWithoutExt}_${uniqueId}.${fileExt}`;
 
       console.log("generateUploadUrlAction Payload:", { file_name: uniqueFileName, type: "profile" });
@@ -157,8 +166,14 @@ export default function ProfilePage() {
 
       if (updateRes.success) {
         toast.success("Profile image updated");
+        // Update local edit form state with the new path
+        setEditFormData(prev => ({ ...prev, profile_img_url: file_path }));
+        
         const refreshed = await fetchProfileAction();
-        if (refreshed.success && refreshed.data) setUser(refreshed.data);
+        if (refreshed.success && refreshed.data) {
+          setUser(refreshed.data);
+          window.dispatchEvent(new CustomEvent("profile-updated"));
+        }
       } else {
         throw new Error(updateRes.error || "Failed to save profile image");
       }
