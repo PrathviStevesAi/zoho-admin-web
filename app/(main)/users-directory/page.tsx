@@ -142,13 +142,13 @@ export default function MemberDirectoryPage() {
         <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
           <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-slate-600 font-medium">Member Directory</span>
+          <span className="text-slate-600 font-medium">Users Directory</span>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
             <ArrowLeft className="w-4 h-4" />
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900">Member Directory</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Users Directory</h1>
         </div>
       </div>
 
