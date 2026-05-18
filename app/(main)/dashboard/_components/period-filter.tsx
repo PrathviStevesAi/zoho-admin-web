@@ -77,7 +77,7 @@ export function PeriodFilter() {
             {isCustom && (
                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight ml-1">From</span>
+                        <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight ml-1">From</span>
                         <Input
                             type="date"
                             disabled={isPending}
@@ -87,7 +87,7 @@ export function PeriodFilter() {
                         />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight ml-1">To</span>
+                        <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight ml-1">To</span>
                         <Input
                             type="date"
                             disabled={isPending}
@@ -112,7 +112,7 @@ export function PeriodFilter() {
                             setIsCustom(false);
                             handlePeriodChange("all_time");
                         }}
-                        className="h-[42px] w-9 mt-5 text-slate-400 hover:text-slate-600"
+                        className="h-[42px] w-9 mt-5 text-slate-700 hover:text-slate-600"
                     >
                         <X className="h-4 w-4" />
                     </Button>
@@ -123,10 +123,10 @@ export function PeriodFilter() {
                 <span className="text-[14px] font-semibold text-slate-600 tracking-tight ml-1">Period</span>
                 <Select value={period} onValueChange={handlePeriodChange} disabled={isPending}>
                     <SelectTrigger
-                        className="!h-[42px] w-[150px] bg-card border-border rounded-sm text-xs font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all hover:bg-surface active:scale-[0.98]"
+                        className="cursor-pointer !h-[42px] w-[150px] bg-card border-border rounded-sm text-xs font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all hover:bg-surface active:scale-[0.98]"
                     >
                         <div className="flex items-center gap-2">
-                            <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
+                            <CalendarIcon className="h-3.5 w-3.5 text-slate-700" />
                             <SelectValue placeholder="Select Period" />
                         </div>
                     </SelectTrigger>

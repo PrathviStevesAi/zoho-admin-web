@@ -145,7 +145,7 @@ export function Header() {
             {isLoading ? (
               <Loader2 className="h-4 w-4 text-[#0064cb] animate-spin" />
             ) : (
-              <Search className="h-4 w-4 text-slate-400 group-focus-within:text-[#0064cb] transition-colors" />
+              <Search className="h-4 w-4 text-slate-700 group-focus-within:text-[#0064cb] transition-colors" />
             )}
           </div>
           <input
@@ -160,14 +160,14 @@ export function Header() {
             }}
             placeholder="Search INV, Shift,..."
             className={cn(
-              "w-full h-10 pl-11 bg-slate-50/80 border border-slate-300 rounded-lg text-[13px] placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-4 focus:ring-[#0064cb]/5 focus:border-[#0064cb] focus:shadow-sm transition-all duration-300",
+              "w-full h-10 pl-11 bg-slate-50/80 border border-slate-300 rounded-lg text-[13px] placeholder:text-slate-700 focus:outline-none focus:bg-white focus:ring-4 focus:ring-[#0064cb]/5 focus:border-[#0064cb] focus:shadow-sm transition-all duration-300",
               searchValue ? "pr-10" : "pr-4"
             )}
           />
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
             {searchValue && (
               <XCircle
-                className="h-4 w-4 text-slate-400 hover:text-red-500 cursor-pointer transition-colors"
+                className="h-4 w-4 text-slate-700 hover:text-red-500 cursor-pointer transition-colors"
                 onClick={() => {
                   setSearchValue("");
                   setResults([]);
@@ -182,7 +182,7 @@ export function Header() {
           {isOpen && (results.length > 0 || isLoading) && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden z-[60] max-h-[480px] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
               {isLoading && results.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-sm">
+                <div className="p-8 text-center text-slate-700 text-sm">
                   <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-[#0064cb]" />
                   Searching...
                 </div>
@@ -196,7 +196,7 @@ export function Header() {
                     return (
                       <div key={type} className="mb-2 last:mb-0">
                         <div className="px-4 py-2 flex items-center justify-between">
-                          <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{type}</h3>
+                          <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">{type}</h3>
                           {hasMore && (
                             <button
                               onClick={(e) => toggleExpand(type, e)}
@@ -224,7 +224,7 @@ export function Header() {
                                   </span>
                                 </div>
                                 {item.type === 'shift' && (
-                                  <div className="text-[11px] text-slate-400 mt-0.5">
+                                  <div className="text-[11px] text-slate-700 mt-0.5">
                                     Shift #{item.shift_no}
                                   </div>
                                 )}

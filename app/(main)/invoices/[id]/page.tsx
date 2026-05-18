@@ -507,7 +507,7 @@ export default function InvoiceDetailsPage() {
             </div>
             <div className="space-y-2">
               <h1 className="text-xl font-bold text-slate-900">Invoice Not Found</h1>
-              <p className="text-sm text-slate-500 leading-relaxed">
+              <p className="text-sm text-slate-800 leading-relaxed">
                 The invoice you're looking for doesn't exist or has been moved.
               </p>
             </div>

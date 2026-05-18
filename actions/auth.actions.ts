@@ -75,7 +75,8 @@ export async function sendOtpAction(email: string) {
         if (response.ok) {
             return { success: true, message: result.message || "OTP sent successfully." };
         } else {
-            return { success: false, error: result.message || "Failed to send OTP." };
+            const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.message || "Failed to send OTP.";
+            return { success: false, error: errorMsg };
         }
     } catch (error) {
         console.error("Send OTP Error:", error);
@@ -105,7 +106,8 @@ export async function verifyOtpAction(email: string, otp: string) {
                 refreshToken: result.data?.refresh_token || result.refresh_token
             };
         } else {
-            return { success: false, error: result.message || "Invalid OTP." };
+            const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.message || "Invalid OTP.";
+            return { success: false, error: errorMsg };
         }
     } catch (error) {
         console.error("Verify OTP Error:", error);

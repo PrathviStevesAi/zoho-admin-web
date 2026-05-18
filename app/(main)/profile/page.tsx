@@ -241,7 +241,7 @@ export default function ProfilePage() {
               {(currentUser.role || 'user').toUpperCase()}
             </Badge>
           </div>
-          <p className="text-slate-400 font-medium text-sm flex items-center justify-center md:justify-start gap-1.5">
+          <p className="text-slate-700 font-medium text-sm flex items-center justify-center md:justify-start gap-1.5">
             <Mail className="w-3.5 h-3.5" />
             {currentUser.email}
           </p>
@@ -250,7 +250,7 @@ export default function ProfilePage() {
         <div className="flex gap-3">
           {isEditing ? (
             <>
-              <Button variant="outline" onClick={() => setIsEditing(false)} className="px-5 h-9 rounded-lg font-bold border-slate-200 text-xs text-slate-500 hover:bg-slate-50 transition-all cursor-pointer">
+              <Button variant="outline" onClick={() => setIsEditing(false)} className="px-5 h-9 rounded-lg font-bold border-slate-200 text-xs text-slate-800 hover:bg-slate-50 transition-all cursor-pointer">
                 Cancel
               </Button>
               <Button onClick={handleUpdateProfile} disabled={isUpdating || !isFormChanged} className="bg-[#0064cb] hover:bg-[#0052ae] disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 h-9 rounded-lg font-bold text-xs shadow-md shadow-blue-100 transition-all active:scale-95 flex gap-2 cursor-pointer">
@@ -280,7 +280,7 @@ export default function ProfilePage() {
         <CardContent className="px-6 py-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-bold text-black-700 uppercase">First Name</Label>
+              <Label className="text-[12px] font-bold text-slate-800 uppercase">First Name</Label>
               {isEditing ? (
                 <Input
                   placeholder="Enter first name"
@@ -289,12 +289,12 @@ export default function ProfilePage() {
                   className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all"
                 />
               ) : (
-                <p className="text-base font-bold text-slate-500">{currentUser.first_name}</p>
+                <p className="text-base font-bold text-slate-800">{currentUser.first_name}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-bold text-black-700 uppercase">Last Name</Label>
+              <Label className="text-[12px] font-bold text-slate-800 uppercase">Last Name</Label>
               {isEditing ? (
                 <Input
                   placeholder="Enter last name"
@@ -303,22 +303,22 @@ export default function ProfilePage() {
                   className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all"
                 />
               ) : (
-                <p className="text-base font-bold text-slate-500">{currentUser.last_name}</p>
+                <p className="text-base font-bold text-slate-800">{currentUser.last_name}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-bold text-black-700 uppercase">Email Address</Label>
+              <Label className="text-[12px] font-bold text-slate-800 uppercase">Email Address</Label>
               <div className="flex items-center gap-2 px-0.5">
-                <p className="text-base font-bold text-slate-500">{currentUser.email}</p>
+                <p className="text-base font-bold text-slate-800">{currentUser.email}</p>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-bold text-black-700 uppercase">Phone Number</Label>
+              <Label className="text-[12px] font-bold text-slate-800 uppercase">Phone Number</Label>
               {isEditing ? (
                 <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
                   <Input
                     placeholder="Enter phone number"
                     value={editFormData.phone_number}
@@ -328,7 +328,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2 px-0.5">
-                  <p className="text-base font-bold text-slate-500">{currentUser.phone_number || "Not provided"}</p>
+                  <p className="text-base font-bold text-slate-800">{currentUser.phone_number || "Not provided"}</p>
                 </div>
               )}
             </div>
@@ -345,7 +345,7 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold text-black-700 uppercase">Old Password</Label>
+                  <Label className="text-[11px] font-bold text-slate-800 uppercase">Old Password</Label>
                   <div className="relative">
                     <Input
                       type={showOldPassword ? "text" : "password"}
@@ -357,14 +357,14 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => setShowOldPassword(!showOldPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 hover:text-slate-600 transition-colors cursor-pointer"
                     >
                       {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold text-black-700 uppercase">New Password</Label>
+                  <Label className="text-[11px] font-bold text-slate-800 uppercase">New Password</Label>
                   <div className="relative">
                     <Input
                       type={showNewPassword ? "text" : "password"}
@@ -376,14 +376,14 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 hover:text-slate-600 transition-colors cursor-pointer"
                     >
                       {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
               </div>
-              <p className="mt-3 text-[10px] text-slate-400 font-medium">Leave passwords blank to keep current credentials.</p>
+              <p className="mt-3 text-[10px] text-slate-700 font-medium">Leave passwords blank to keep current credentials.</p>
             </div>
           )}
         </CardContent>

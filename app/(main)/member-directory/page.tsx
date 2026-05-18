@@ -12,7 +12,9 @@ import {
   ChevronRight,
   ArrowLeft,
   User,
-  Loader2
+  Loader2,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { useEffect } from "react";
 import Link from "next/link";
@@ -53,6 +55,7 @@ export default function MemberDirectoryPage() {
   });
 
   const [isRegistering, setIsRegistering] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     loadMembers();
@@ -114,7 +117,7 @@ export default function MemberDirectoryPage() {
         cancelButton: "bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 px-6 rounded-xl transition-all mx-2 cursor-pointer",
         popup: "rounded-[2rem] shadow-2xl border-none font-sans",
         title: "text-xl font-bold text-slate-800 !p-0 !m-0",
-        htmlContainer: "text-slate-500 font-medium !p-0 !m-0 !mt-2",
+        htmlContainer: "text-slate-800 font-medium !p-0 !m-0 !mt-2",
         icon: "!mt-2 mb-2"
       }
     });
@@ -136,13 +139,13 @@ export default function MemberDirectoryPage() {
     <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Breadcrumbs & Header */}
       <div className="space-y-1">
-        <div className="flex items-center gap-2 text-slate-400 text-[13px] mb-1">
+        <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
           <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-slate-600 font-medium">Member Directory</span>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-400 hover:text-[#0064cb] transition-all">
+          <Link href="/dashboard" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <h1 className="text-2xl font-bold text-slate-900">Member Directory</h1>
@@ -167,7 +170,7 @@ export default function MemberDirectoryPage() {
               <form onSubmit={handleRegister} className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">First Name</label>
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">First Name</label>
                     <Input
                       placeholder="Enter first name"
                       value={formData.firstName}
@@ -176,7 +179,7 @@ export default function MemberDirectoryPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">Last Name</label>
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Last Name</label>
                     <Input
                       placeholder="Enter last name"
                       value={formData.lastName}
@@ -187,9 +190,9 @@ export default function MemberDirectoryPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">Email Address</label>
+                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Email Address</label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
                     <Input
                       type="email"
                       placeholder="Enter email address"
@@ -201,12 +204,12 @@ export default function MemberDirectoryPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 flex justify-between items-center">
+                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1 flex justify-between items-center">
                     <span>Phone Number</span>
-                    <span className="text-[10px] lowercase text-slate-400 font-normal">(Optional)</span>
+                    <span className="text-[10px] lowercase text-slate-700 font-normal">(Optional)</span>
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
                     <Input
                       placeholder="Enter phone number"
                       value={formData.phone}
@@ -217,16 +220,23 @@ export default function MemberDirectoryPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">Access Password</label>
+                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Access Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
                     <Input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="Enter password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="h-12 pl-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
+                      className="h-12 pl-11 pr-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -257,7 +267,7 @@ export default function MemberDirectoryPage() {
                 </div>
                 <div>
                   <CardTitle className="text-lg font-bold text-slate-800">Members List</CardTitle>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">{members.length} Registered Members</p>
+                  <p className="text-xs text-slate-800 font-medium mt-0.5">{members.length} Registered Members</p>
                 </div>
               </div>
             </CardHeader>
@@ -266,10 +276,10 @@ export default function MemberDirectoryPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="w-[200px] h-12 px-8 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Name</TableHead>
-                      <TableHead className="h-12 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Email</TableHead>
-                      <TableHead className="h-12 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Phone Number</TableHead>
-                      <TableHead className="h-12 text-right px-8 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Action</TableHead>
+                      <TableHead className="w-[200px] h-12 px-8 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Name</TableHead>
+                      <TableHead className="h-12 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Email</TableHead>
+                      <TableHead className="h-12 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Phone Number</TableHead>
+                      <TableHead className="h-12 text-right px-8 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -298,7 +308,7 @@ export default function MemberDirectoryPage() {
                         <TableCell colSpan={4} className="h-64 text-center">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <Users className="w-10 h-10 text-slate-200" />
-                            <p className="text-sm font-medium text-slate-400 italic">No members found</p>
+                            <p className="text-sm font-medium text-slate-700 italic">No members found</p>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -307,7 +317,7 @@ export default function MemberDirectoryPage() {
                         <TableRow key={member.id} className="group hover:bg-slate-50/50 border-slate-50 transition-colors">
                           <TableCell className="px-8 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                              <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
                                 <User className="w-5 h-5" />
                               </div>
                               <span className="text-sm font-bold text-slate-700">
@@ -316,10 +326,10 @@ export default function MemberDirectoryPage() {
                             </div>
                           </TableCell>
                           <TableCell className="py-4">
-                            <span className="text-sm text-slate-500 font-medium">{member.email}</span>
+                            <span className="text-sm text-slate-800 font-medium">{member.email}</span>
                           </TableCell>
                           <TableCell className="py-4">
-                            <span className="text-sm text-slate-500 font-medium">{member.phone_number || "---"}</span>
+                            <span className="text-sm text-slate-800 font-medium">{member.phone_number || "---"}</span>
                           </TableCell>
                           <TableCell className="px-8 py-4 text-right">
                             <Button

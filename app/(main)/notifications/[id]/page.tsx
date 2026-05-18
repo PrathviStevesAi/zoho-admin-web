@@ -63,7 +63,7 @@ export default function NotificationDetailPage() {
       <div className="max-w-3xl mx-auto py-20 text-center space-y-4">
         <Info className="w-16 h-16 text-slate-300 mx-auto" />
         <h2 className="text-2xl font-bold text-slate-800">Notification not found</h2>
-        <p className="text-slate-500">The notification you're looking for doesn't exist.</p>
+        <p className="text-slate-800">The notification you're looking for doesn't exist.</p>
         <Button asChild>
           <Link href="/notifications">Back to Notifications</Link>
         </Button>
@@ -77,7 +77,7 @@ export default function NotificationDetailPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-slate-400 text-[13px] mb-1">
+            <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
               <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
               <ChevronRight className="w-3.5 h-3.5" />
               <Link href="/notifications" className="hover:text-[#0064cb] transition-colors">Notifications</Link>
@@ -85,11 +85,11 @@ export default function NotificationDetailPage() {
               <span className="text-slate-600 font-medium">Details</span>
             </div>
             <div className="flex items-center gap-3">
-              <Link href="/notifications" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-400 hover:text-[#0064cb] transition-all">
+              <Link href="/notifications" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
                 <ArrowLeft className="w-4 h-4" />
               </Link>
               <h1 className="text-2xl font-bold text-slate-900 transition-all">
-                Notification Details <span className="text-slate-400 font-normal ml-2">#{notification.id.slice(0, 8)}</span>
+                Notification Details <span className="text-slate-700 font-normal ml-2">#{notification.id.slice(0, 8)}</span>
               </h1>
             </div>
           </div>
@@ -163,14 +163,14 @@ export default function NotificationDetailPage() {
               <div className="border-t border-slate-100 divide-y divide-slate-100">
                 <div className="grid grid-cols-4 p-4 items-center">
                   <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Title:</span>
-                  <div className="col-span-3 text-sm text-slate-500 font-medium">
+                  <div className="col-span-3 text-sm text-slate-800 font-medium">
                     {notification.title}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-4 p-4 items-start">
                   <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">Description:</span>
-                  <div className="col-span-3 text-sm text-slate-500 font-medium whitespace-pre-wrap leading-relaxed">
+                  <div className="col-span-3 text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
                     {notification.message}
                   </div>
                 </div>
@@ -180,7 +180,7 @@ export default function NotificationDetailPage() {
                   <div className="col-span-3 flex items-center gap-2">
                     <span className={cn(
                       "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                      notification.is_seen ? "bg-slate-100 text-slate-500" : "bg-blue-100 text-blue-600"
+                      notification.is_seen ? "bg-slate-100 text-slate-800" : "bg-blue-100 text-blue-600"
                     )}>
                       {notification.is_seen ? "Read" : "Unread"}
                     </span>
@@ -189,7 +189,7 @@ export default function NotificationDetailPage() {
 
                 <div className="grid grid-cols-4 p-4 items-center">
                   <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Received At:</span>
-                  <span className="col-span-3 text-sm text-slate-500 font-medium">
+                  <span className="col-span-3 text-sm text-slate-800 font-medium">
                     {new Date(notification.created_at).toLocaleString("en-GB", {
                       day: "2-digit",
                       month: "2-digit",
@@ -202,7 +202,7 @@ export default function NotificationDetailPage() {
 
                 <div className="grid grid-cols-4 p-4 items-center">
                   <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Type:</span>
-                  <span className="col-span-3 text-sm text-slate-500 font-medium uppercase">{notification.data?.type || "System"}</span>
+                  <span className="col-span-3 text-sm text-slate-800 font-medium uppercase">{notification.data?.type || "System"}</span>
                 </div>
               </div>
             </CardContent>
@@ -219,7 +219,7 @@ export default function NotificationDetailPage() {
                   <div className="absolute left-0 top-1.5 w-5 h-5 rounded-full border-4 border-white bg-[#0064cb] shadow-sm z-10" />
                   <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-1">
                     <h4 className="text-xs font-bold text-slate-800">Notification Received</h4>
-                    <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                    <p className="text-[11px] text-slate-800 flex items-center gap-1">
                       <Clock className="w-3 h-3" /> Just now
                     </p>
                     <p className="text-[11px] text-slate-600 font-medium pt-1">Delivered via Firebase Cloud Messaging</p>
@@ -230,7 +230,7 @@ export default function NotificationDetailPage() {
                   <div className="absolute left-0 top-1.5 w-5 h-5 rounded-full border-4 border-white bg-slate-200 shadow-sm z-10" />
                   <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
                     <h4 className="text-xs font-bold text-slate-800">Marked as Read</h4>
-                    <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                    <p className="text-[11px] text-slate-800 flex items-center gap-1">
                       <Clock className="w-3 h-3" /> {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                     <p className="text-[11px] text-slate-600 font-medium pt-1">PERFORMED BY: System</p>

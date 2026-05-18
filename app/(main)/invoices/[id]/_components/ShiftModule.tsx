@@ -65,7 +65,7 @@ export function ShiftModule({
             <div className="px-6 pt-2 pb-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">Shift Schedule</h2>
-                <p className="text-slate-500 text-sm">View and manage all scheduled shifts for this invoice.</p>
+                <p className="text-slate-800 text-sm">View and manage all scheduled shifts for this invoice.</p>
               </div>
               <div className="flex items-center gap-3">
                 <Button
@@ -90,11 +90,11 @@ export function ShiftModule({
                 <Table>
                   <TableHeader className="bg-slate-50/50">
                     <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Shift No.</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Service Name</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Start Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">End Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6 text-right">Action</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Shift No.</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Service Name</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Start Time</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">End Time</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6 text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -110,13 +110,13 @@ export function ShiftModule({
                       shifts.map((shift) => (
                         <TableRow key={shift.shift_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
                           <TableCell className="text-sm font-bold text-slate-700 py-4 px-6">{shift.shift_no}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-500 py-4 px-6">{shift.service_name}</TableCell>
-                          <TableCell className="text-sm text-slate-500 py-4 px-6">
+                          <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">{shift.service_name}</TableCell>
+                          <TableCell className="text-sm text-slate-800 py-4 px-6">
                             {new Date(shift.start_time).toLocaleString('en-US', {
                               month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
                             })}
                           </TableCell>
-                          <TableCell className="text-sm text-slate-500 py-4 px-6">
+                          <TableCell className="text-sm text-slate-800 py-4 px-6">
                             {new Date(shift.end_time).toLocaleString('en-US', {
                               month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
                             })}
@@ -138,7 +138,7 @@ export function ShiftModule({
                         <TableCell colSpan={5} className="py-12 text-center">
                           <div className="flex flex-col items-center gap-2">
                             <Calendar className="w-8 h-8 text-slate-200" />
-                            <p className="text-sm font-medium text-slate-400">No shift schedule yet</p>
+                            <p className="text-sm font-medium text-slate-700">No shift schedule yet</p>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -163,7 +163,7 @@ export function ShiftModule({
           <div className="px-6 pt-4 pb-4 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-slate-900">Add New Shift</h2>
-              <p className="text-slate-500 text-sm">Create and schedule new shifts for this invoice.</p>
+              <p className="text-slate-800 text-sm">Create and schedule new shifts for this invoice.</p>
             </div>
           </div>
 
@@ -171,7 +171,7 @@ export function ShiftModule({
             {/* Top Bar */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
               <div className="space-y-2">
-                <Label className="text-[11px] font-bold text-slate-500 uppercase">Select Service</Label>
+                <Label className="text-[11px] font-bold text-slate-800 uppercase">Select Service</Label>
                 <Select
                   value={addShiftData.service}
                   onValueChange={(val) => setAddShiftData((prev: any) => ({ ...prev, service: val }))}
@@ -189,7 +189,7 @@ export function ShiftModule({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-bold text-slate-500 uppercase">Date from</Label>
+                <Label className="text-[11px] font-bold text-slate-800 uppercase">Date from</Label>
                 <Input
                   type="date"
                   min={today}
@@ -199,7 +199,7 @@ export function ShiftModule({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-bold text-slate-500 uppercase">Date to</Label>
+                <Label className="text-[11px] font-bold text-slate-800 uppercase">Date to</Label>
                 <Input
                   type="date"
                   min={addShiftData.dateFrom || today}
@@ -209,7 +209,7 @@ export function ShiftModule({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-bold text-slate-500 uppercase"># of People</Label>
+                <Label className="text-[11px] font-bold text-slate-800 uppercase"># of People</Label>
                 <Input
                   type="number"
                   min="0"

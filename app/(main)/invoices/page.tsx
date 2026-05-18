@@ -24,7 +24,7 @@ export default function InvoiceDetailsPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <h1 className="text-2xl font-semibold text-slate-800">
-          US Soccer 5 <span className="text-slate-500">[INV-907123]</span>
+          US Soccer 5 <span className="text-slate-800">[INV-907123]</span>
         </h1>
 
         <div className="flex items-center gap-12 self-center md:self-auto">
@@ -66,12 +66,12 @@ export default function InvoiceDetailsPage() {
               <div className="border-t border-slate-100">
                 <div className="grid grid-cols-3 p-4 items-center">
                   <span className="text-sm font-semibold text-slate-600">Workflow:</span>
-                  <span className="col-span-2 text-sm text-slate-500">Service Project</span>
+                  <span className="col-span-2 text-sm text-slate-800">Service Project</span>
                 </div>
                 <div className="grid grid-cols-3 p-4 items-center border-t border-slate-100 bg-slate-50/50">
                   <span className="text-sm font-semibold text-slate-600">Name:</span>
                   <div className="col-span-2 flex items-center justify-between">
-                    <span className="text-sm text-slate-500">{formData.title} [INV-907123]</span>
+                    <span className="text-sm text-slate-800">{formData.title} [INV-907123]</span>
                     <Edit2
                       className="w-4 h-4 text-sky-500 cursor-pointer hover:text-sky-600 transition-colors"
                       onClick={() => setIsEditOpen(true)}
@@ -80,7 +80,7 @@ export default function InvoiceDetailsPage() {
                 </div>
               </div>
 
-              <div className="p-6 space-y-4 text-sm text-slate-500">
+              <div className="p-6 space-y-4 text-sm text-slate-800">
                 <p>1 unarmed guard</p>
                 <p>7 days per week</p>
                 <p>May 1-31,2026</p>
@@ -111,9 +111,9 @@ export default function InvoiceDetailsPage() {
                   <div className="bg-sky-50/50 p-4 rounded-sm border border-sky-100">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="text-lg font-medium text-slate-700">New Project</h3>
-                      <span className="text-xs text-slate-400">04/29/2026 14:56</span>
+                      <span className="text-xs text-slate-700">04/29/2026 14:56</span>
                     </div>
-                    <p className="text-sm text-slate-500">Assigned to: Staci Gullett</p>
+                    <p className="text-sm text-slate-800">Assigned to: Staci Gullett</p>
                   </div>
                 </div>
 
@@ -123,11 +123,11 @@ export default function InvoiceDetailsPage() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-medium text-slate-700">New</h3>
-                      <span className="text-xs text-slate-400">04/29/2026 14:56</span>
+                      <span className="text-xs text-slate-700">04/29/2026 14:56</span>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-slate-500">Performed by: <span className="text-slate-700">Illia Shulga</span></p>
+                      <p className="text-sm text-slate-800">Performed by: <span className="text-slate-700">Illia Shulga</span></p>
                       <Button variant="outline" size="sm" className="h-8 gap-2 text-sky-500 border-sky-200 hover:bg-sky-50 hover:text-sky-600">
                         Edit
                         <Edit2 className="w-3 h-3" />
@@ -136,7 +136,7 @@ export default function InvoiceDetailsPage() {
 
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <p className="text-sm text-slate-500 font-medium">Customer:</p>
+                        <p className="text-sm text-slate-800 font-medium">Customer:</p>
                         <div className="p-4 border border-slate-200 rounded-sm bg-white min-h-[100px]">
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-sky-500" />
@@ -146,10 +146,10 @@ export default function InvoiceDetailsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-800">
                           <span className="font-bold text-slate-700">Invoice/Estimate Number:</span> INV-907123
                         </p>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-800">
                           <span className="font-bold text-slate-700">Invoice Amount:</span> 8622
                         </p>
                       </div>
@@ -175,7 +175,7 @@ export default function InvoiceDetailsPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-slate-400"
+                className="h-8 w-8 text-slate-700"
                 onClick={() => setIsEditOpen(false)}
               >
                 <X className="w-4 h-4 cursor-pointer" />
@@ -184,7 +184,7 @@ export default function InvoiceDetailsPage() {
 
             <CardContent className="px-6 py-4 space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="title" className="text-xs font-semibold text-slate-500 tracking-wider">Title</Label>
+                <Label htmlFor="title" className="text-xs font-semibold text-slate-800 tracking-wider">Title</Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -195,7 +195,7 @@ export default function InvoiceDetailsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="description" className="text-xs font-semibold text-slate-500 tracking-wider">Description</Label>
+                <Label htmlFor="description" className="text-xs font-semibold text-slate-800 tracking-wider">Description</Label>
                 <textarea
                   id="description"
                   rows={3}

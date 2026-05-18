@@ -40,14 +40,14 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-slate-700 ">{formatStatus(item.action_name)}</h3>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase">
+                      <span className="text-[10px] text-slate-700 font-bold uppercase">
                         {new Date(item.created_at).toLocaleString()}
                       </span>
                     </div>
 
                     <div className="space-y-2">
                       <p className="text-[11px] text-slate-800 font-bold uppercase flex items-center gap-2">
-                        Performed by: <span className="text-slate-500 font-medium normal-case">{item.performed_by || "System"}</span>
+                        Performed by: <span className="text-slate-800 font-medium normal-case">{item.performed_by || "System"}</span>
                       </p>
 
                       <div className="grid grid-cols-1 gap-2 pt-1">
@@ -73,7 +73,7 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
                               <p className="text-[10px] text-slate-800 font-bold uppercase whitespace-nowrap shrink-0">
                                 {formatStatus(shortenKey(key))}:
                               </p>
-                              <span className="text-sm text-slate-500 font-medium break-all text-right">
+                              <span className="text-sm text-slate-800 font-medium break-all text-right">
                                 {key.toLowerCase().includes('amount') || key.toLowerCase().includes('rate')
                                   ? `$${displayValue}`
                                   : typeof displayValue === 'string' ? formatStatus(displayValue) : String(displayValue)}
@@ -87,7 +87,7 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
                 </div>
               </div>
             )) || (
-                <p className="text-center text-slate-400 py-8 italic font-medium">No history available</p>
+                <p className="text-center text-slate-700 py-8 italic font-medium">No history available</p>
               )}
           </div>
         </div>

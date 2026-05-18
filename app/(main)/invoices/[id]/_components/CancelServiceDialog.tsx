@@ -70,7 +70,7 @@ export function CancelServiceDialog({
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1 h-11 rounded-xl font-bold text-slate-500 hover:bg-slate-50 border-slate-200 transition-all active:scale-95 cursor-pointer"
+              className="flex-1 h-11 rounded-xl font-bold text-slate-800 hover:bg-slate-50 border-slate-200 transition-all active:scale-95 cursor-pointer"
             >
               No, Keep it
             </Button>

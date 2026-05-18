@@ -88,7 +88,7 @@ export function AssignmentModule({
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <div className="h-5 w-px bg-slate-200 mr-2" />
-                    <span className="text-slate-400 text-[11px] font-bold tracking-wider">USD</span>
+                    <span className="text-slate-700 text-[11px] font-bold tracking-wider">USD</span>
                   </div>
                 </div>
               </div>
@@ -102,7 +102,7 @@ export function AssignmentModule({
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <div className="h-5 w-px bg-slate-200 mr-2" />
-                    <span className="text-slate-400 text-[11px] font-bold tracking-wider">USD</span>
+                    <span className="text-slate-700 text-[11px] font-bold tracking-wider">USD</span>
                   </div>
                 </div>
               </div>
@@ -139,13 +139,13 @@ export function AssignmentModule({
                           disabled={selectableShifts.length === 0}
                         />
                       </TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Shift No.</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Service Name</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Start Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">End Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Guard</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Is Seen</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-4 px-6">Status</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Shift No.</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Service Name</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Start Time</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">End Time</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Guard</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Is Seen</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -153,7 +153,7 @@ export function AssignmentModule({
                       <TableRow>
                         <TableCell colSpan={8} className="py-12 text-center">
                           <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#0064cb]" />
-                          <p className="text-xs text-slate-400 mt-2">Loading shifts...</p>
+                          <p className="text-xs text-slate-700 mt-2">Loading shifts...</p>
                         </TableCell>
                       </TableRow>
                     ) : shifts.length > 0 ? (
@@ -178,16 +178,16 @@ export function AssignmentModule({
                             />
                           </TableCell>
                           <TableCell className="text-sm font-bold text-slate-700 py-4 px-6">{shift.shift_no}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-500 py-4 px-6">{shift.service_name}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-500 py-4 px-6">
+                          <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">{shift.service_name}</TableCell>
+                          <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">
                             {new Date(shift.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br />
-                            <span className="text-[11px] text-slate-400">{new Date(shift.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className="text-[11px] text-slate-700">{new Date(shift.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-500 py-4 px-6">
+                          <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">
                             {new Date(shift.end_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br />
-                            <span className="text-[11px] text-slate-400">{new Date(shift.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className="text-[11px] text-slate-700">{new Date(shift.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-500 py-4 px-6">
+                          <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">
                             <div className="flex items-center gap-2">
                               {shift.guard ? (
                                 <>
@@ -209,7 +209,7 @@ export function AssignmentModule({
                                   </span>
                                   <button
                                     onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
-                                    className="w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-400 rounded-full transition-all cursor-pointer ml-auto"
+                                    className="w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition-all cursor-pointer ml-auto"
                                     title="Remove Selection"
                                   >
                                     <X className="w-3 h-3 stroke-[3]" />
@@ -224,7 +224,7 @@ export function AssignmentModule({
                             <span className={cn(
                               "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
                               shift.is_seen === true ? "bg-green-50 text-green-600" : 
-                              shift.is_seen === false ? "bg-amber-50 text-amber-600" : "bg-slate-50 text-slate-400"
+                              shift.is_seen === false ? "bg-amber-50 text-amber-600" : "bg-slate-50 text-slate-700"
                             )}>
                               {shift.is_seen === true ? "Seen" : shift.is_seen === false ? "Not Seen" : "----"}
                             </span>
@@ -232,7 +232,7 @@ export function AssignmentModule({
                           <TableCell className="py-4 px-6">
                             <span className={cn(
                               "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                              shift.status ? "bg-green-50 text-green-600" : "bg-slate-50 text-slate-400"
+                              shift.status ? "bg-green-50 text-green-600" : "bg-slate-50 text-slate-700"
                             )}>
                               {shift.status || "----"}
                             </span>
@@ -241,7 +241,7 @@ export function AssignmentModule({
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={8} className="py-8 text-center text-slate-400">No shifts available to assign</TableCell>
+                        <TableCell colSpan={8} className="py-8 text-center text-slate-700">No shifts available to assign</TableCell>
                       </TableRow>
                     )}
                   </TableBody>

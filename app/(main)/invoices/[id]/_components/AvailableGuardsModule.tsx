@@ -252,7 +252,7 @@ export function AvailableGuardsModule({
               ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
               : activeStep === 1
                 ? "bg-white text-slate-600 border border-slate-200 hover:border-[#0064cb] hover:text-[#0064cb] cursor-pointer"
-                : "bg-slate-50 text-slate-400 border border-slate-300 opacity-60 cursor-not-allowed"
+                : "bg-slate-50 text-slate-700 border border-slate-300 opacity-60 cursor-not-allowed"
           )}
         >
           <div className={cn(
@@ -286,7 +286,7 @@ export function AvailableGuardsModule({
               ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
               : activeStep === 2
                 ? "bg-white text-slate-600 border border-slate-200 hover:border-[#0064cb] hover:text-[#0064cb] cursor-pointer"
-                : "bg-slate-50 text-slate-400 border border-slate-300 opacity-60 cursor-not-allowed"
+                : "bg-slate-50 text-slate-700 border border-slate-300 opacity-60 cursor-not-allowed"
           )}
         >
           <div className={cn(
@@ -315,7 +315,7 @@ export function AvailableGuardsModule({
           {guardSearchQuery && (
             <button
               onClick={() => setGuardSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800 cursor-pointer"
             >
               <XCircle className="w-4 h-4" />
             </button>
@@ -407,7 +407,7 @@ export function AvailableGuardsModule({
               <h2 className="text-xl font-bold text-slate-900">
                 {activeStep === 0 ? "Available Guards" : activeStep === 1 ? "Select Shifts" : activeStep === 2 ? "Select Guards" : "Finalize Search"}
               </h2>
-              <p className="text-sm text-slate-500 mt-0.5 font-medium">
+              <p className="text-sm text-slate-800 mt-0.5 font-medium">
                 {activeStep === 0 ? (
                   <>Total available guards found: <span className="font-semibold text-[#0064cb]">{totalGuards}</span></>
                 ) : activeStep === 1 ? (
@@ -440,13 +440,13 @@ export function AvailableGuardsModule({
                 <Table>
                   <TableHeader className="bg-slate-50/50">
                     <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">Guard Name</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">Email</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4 text-center">Total Shifts Sent</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4 text-center">Available For Shifts</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4 text-center">Unavailable For Shifts</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4 text-center">Seen</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4 text-center">Responded</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Guard Name</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Email</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Total Shifts Sent</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Available For Shifts</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Unavailable For Shifts</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Seen</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Responded</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -460,9 +460,9 @@ export function AvailableGuardsModule({
                       results.map((guard, index) => (
                         <TableRow key={guard.notification_id || index} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
                           <TableCell className="py-2.5 px-4 text-sm font-bold text-slate-700">{guard.guard_name}</TableCell>
-                          <TableCell className="py-2.5 px-4 text-sm font-medium text-slate-500">{guard.email}</TableCell>
+                          <TableCell className="py-2.5 px-4 text-sm font-medium text-slate-800">{guard.email}</TableCell>
                           <TableCell className="py-2.5 px-4 text-center">
-                            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
+                            <span className="text-xs font-medium text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md">
                               {formatArray(guard.total_shifts_sent)}
                             </span>
                           </TableCell>
@@ -479,7 +479,7 @@ export function AvailableGuardsModule({
                           <TableCell className="py-2.5 px-4 text-center">
                             <span className={cn(
                               "px-3 py-1 rounded-full text-[10px] font-bold uppercase",
-                              guard.notification_seen ? "bg-blue-50 text-blue-600" : "bg-slate-50 text-slate-400"
+                              guard.notification_seen ? "bg-blue-50 text-blue-600" : "bg-slate-50 text-slate-700"
                             )}>
                               {guard.notification_seen ? "Seen" : "Unseen"}
                             </span>
@@ -487,7 +487,7 @@ export function AvailableGuardsModule({
                           <TableCell className="py-2.5 px-4 text-center">
                             <span className={cn(
                               "px-3 py-1 rounded-full text-[10px] font-bold uppercase",
-                              guard.is_responded ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-400"
+                              guard.is_responded ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-700"
                             )}>
                               {guard.is_responded ? "Responded" : "No Response"}
                             </span>
@@ -496,7 +496,7 @@ export function AvailableGuardsModule({
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={7} className="py-8 text-center text-slate-400 font-medium">No available guards found for this invoice.</TableCell>
+                        <TableCell colSpan={7} className="py-8 text-center text-slate-700 font-medium">No available guards found for this invoice.</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -516,10 +516,10 @@ export function AvailableGuardsModule({
                           onChange={(e) => handleSelectAllShifts(e.target.checked)}
                         />
                       </TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">Shift No.</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">Service Name</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">Start Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">End Time</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Shift No.</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Service Name</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Start Time</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">End Time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -535,20 +535,20 @@ export function AvailableGuardsModule({
                             />
                           </TableCell>
                           <TableCell className="text-sm font-bold text-slate-700 py-2.5 px-4">{shift.shift_no}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-500 py-2.5 px-4">{shift.service_name}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-500 py-2.5 px-4">
+                          <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">{shift.service_name}</TableCell>
+                          <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
                             {new Date(shift.start_time).toLocaleDateString()}<br />
-                            <span className="text-[11px] text-slate-400">{new Date(shift.start_time).toLocaleTimeString()}</span>
+                            <span className="text-[11px] text-slate-700">{new Date(shift.start_time).toLocaleTimeString()}</span>
                           </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-500 py-2.5 px-4">
+                          <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
                             {new Date(shift.end_time).toLocaleDateString()}<br />
-                            <span className="text-[11px] text-slate-400">{new Date(shift.end_time).toLocaleTimeString()}</span>
+                            <span className="text-[11px] text-slate-700">{new Date(shift.end_time).toLocaleTimeString()}</span>
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="py-8 text-center text-slate-400 font-medium">
+                        <TableCell colSpan={5} className="py-8 text-center text-slate-700 font-medium">
                           No shifts found for this invoice. Please schedule shifts first.
                         </TableCell>
                       </TableRow>
@@ -570,15 +570,15 @@ export function AvailableGuardsModule({
                           onChange={(e) => handleSelectAllGuards(e.target.checked)}
                         />
                       </TableHead>
-                      <TableHead className="w-[60px] text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4 text-center">#</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">NAME</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">EMAIL</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">PHONE NO.</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">ADDRESS</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">LAST ACTIVE</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-500 uppercase py-2.5 px-4">STATUS</TableHead>
+                      <TableHead className="w-[60px] text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">#</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">NAME</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">EMAIL</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">PHONE NO.</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">ADDRESS</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">LAST ACTIVE</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">STATUS</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -599,18 +599,18 @@ export function AvailableGuardsModule({
                               onChange={(e) => handleSelectGuard(guard.guard_id, e.target.checked)}
                             />
                           </TableCell>
-                          <TableCell className="text-[13px] text-slate-500 py-2.5 px-4 text-center">
+                          <TableCell className="text-[13px] text-slate-800 py-2.5 px-4 text-center">
                             {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
                           </TableCell>
                           <TableCell className="text-[13px] font-bold text-slate-700 py-2.5 px-4">
                             {guard.first_name} {guard.last_name}
                           </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-400 py-2.5 px-4">{guard.email}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-400 py-2.5 px-4">{guard.phone_number || "-"}</TableCell>
-                          <TableCell className="py-2.5 px-4 text-center text-sm text-slate-400">{guard.armed ? "Yes" : "No"}</TableCell>
-                          <TableCell className="py-2.5 px-4 text-center text-sm text-slate-400">{guard.unarmed ? "Yes" : "No"}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-400 py-2.5 px-4 max-w-[200px] truncate">{guard.address || "-"}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-400 py-2.5 px-4">{guard.last_active_at ? new Date(guard.last_active_at).toLocaleDateString() : "-"}</TableCell>
+                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.email}</TableCell>
+                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.phone_number || "-"}</TableCell>
+                          <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.armed ? "Yes" : "No"}</TableCell>
+                          <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.unarmed ? "Yes" : "No"}</TableCell>
+                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4 max-w-[200px] truncate">{guard.address || "-"}</TableCell>
+                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.last_active_at ? new Date(guard.last_active_at).toLocaleDateString() : "-"}</TableCell>
                           <TableCell className="py-2.5 px-4">
                             <span className={cn(
                               "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
@@ -623,7 +623,7 @@ export function AvailableGuardsModule({
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={10} className="py-6 text-center text-slate-400 font-medium">No guards found matching filters.</TableCell>
+                        <TableCell colSpan={10} className="py-6 text-center text-slate-700 font-medium">No guards found matching filters.</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -657,7 +657,7 @@ export function AvailableGuardsModule({
 
                   <div className="space-y-2">
                     <h3 className="text-xl font-bold text-slate-900">Ready to find?</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed">
+                    <p className="text-sm text-slate-800 leading-relaxed">
                       We will notify the selected guards about these shifts to check their availability.
                     </p>
                   </div>

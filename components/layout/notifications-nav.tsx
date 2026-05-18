@@ -138,11 +138,11 @@ export function NotificationsNav() {
                         </Link>
                       </h4>
                     </div>
-                    <p className="text-[13px] text-slate-500 leading-normal">
+                    <p className="text-[13px] text-slate-800 leading-normal">
                       {notification.message}
                     </p>
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-[11px] text-slate-400">
+                      <span className="text-[11px] text-slate-700">
                         {new Date(notification.created_at).toLocaleString("en-GB", {
                           day: "2-digit",
                           month: "2-digit",

@@ -39,7 +39,7 @@ export default function NotificationsPage() {
           <Bell className="w-8 h-8 text-primary" />
           Notifications
         </h1>
-        <div className="text-sm text-slate-500">
+        <div className="text-sm text-slate-800">
           Showing {notifications.length} of {totalNotifications} notifications
         </div>
       </div>
@@ -55,7 +55,7 @@ export default function NotificationsPage() {
           <div className="text-center py-20 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
             <Bell className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-600">No notifications yet</h3>
-            <p className="text-slate-400">When you get notifications, they'll show up here.</p>
+            <p className="text-slate-700">When you get notifications, they'll show up here.</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -70,7 +70,7 @@ export default function NotificationsPage() {
               >
                 <div className={cn(
                   "mt-1 p-2 rounded-full",
-                  !notification.is_seen ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"
+                  !notification.is_seen ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-700"
                 )}>
                   {notification.is_seen ? <CheckCircle2 className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
                 </div>
@@ -86,7 +86,7 @@ export default function NotificationsPage() {
                         {notification.message}
                       </p>
                     </div>
-                    <div className="text-right text-sm text-slate-400 flex items-center gap-1 whitespace-nowrap">
+                    <div className="text-right text-sm text-slate-700 flex items-center gap-1 whitespace-nowrap">
                       <Clock className="w-3.5 h-3.5" />
                       {new Date(notification.created_at).toLocaleString("en-GB", {
                         day: "2-digit",

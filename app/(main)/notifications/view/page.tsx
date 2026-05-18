@@ -91,7 +91,7 @@ function NotificationViewContent() {
                 if (parts.length > 1) {
                   return (
                     <div key={lIdx} className="flex justify-between gap-4 border-b border-slate-800/50 pb-1 last:border-0">
-                      <span className="text-slate-400 font-medium whitespace-nowrap">{parts[0].trim()}:</span>
+                      <span className="text-slate-700 font-medium whitespace-nowrap">{parts[0].trim()}:</span>
                       <span className="text-slate-200 text-right">{parts.slice(1).join(':').trim()}</span>
                     </div>
                   );
@@ -178,13 +178,13 @@ function NotificationViewContent() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-slate-400 text-[13px] mb-1">
+            <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
               <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
               <ChevronRight className="w-3.5 h-3.5" />
               <Link href="/notifications" className="hover:text-[#0064cb] transition-colors">Notifications</Link>
             </div>
             <div className="flex items-center gap-3">
-              <Link href="/notifications" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-400 hover:text-[#0064cb] transition-all">
+              <Link href="/notifications" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
                 <ArrowLeft className="w-4 h-4" />
               </Link>
               <div className="group relative">
@@ -192,7 +192,7 @@ function NotificationViewContent() {
                   {shift ? (
                     <>
                       <span className="hover:text-[#0064cb] transition-colors">{shift.customer_name}</span>
-                      <span className="text-slate-400 font-normal ml-1">[ #SH-{shift.shift_no} ]</span>
+                      <span className="text-slate-700 font-normal ml-1">[ #SH-{shift.shift_no} ]</span>
                     </>
                   ) : "Loading..."}
                 </h1>
@@ -235,7 +235,7 @@ function NotificationViewContent() {
                 action.color === "blue" && "border-[#0064cb] text-[#0064cb] group-hover:bg-blue-50",
                 action.color === "orange" && "border-orange-500 text-orange-500 group-hover:bg-orange-50",
                 action.color === "indigo" && "border-indigo-500 text-indigo-500 group-hover:bg-indigo-50",
-                action.color === "slate" && "border-slate-400 text-slate-500 group-hover:bg-slate-50",
+                action.color === "slate" && "border-slate-400 text-slate-800 group-hover:bg-slate-50",
                 action.color === "red" && "border-red-400 text-red-500 group-hover:bg-red-50",
               )}>
                 <action.icon className="w-5.5 h-5.5" />
@@ -252,7 +252,7 @@ function NotificationViewContent() {
           {isLoading ? (
             <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-20 flex flex-col items-center justify-center gap-4">
               <Loader2 className="w-8 h-8 animate-spin text-[#0064cb]" />
-              <p className="text-sm font-medium text-slate-400">Fetching shift details...</p>
+              <p className="text-sm font-medium text-slate-700">Fetching shift details...</p>
             </Card>
           ) : shift ? (
             <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white">
@@ -279,25 +279,25 @@ function NotificationViewContent() {
                 <div className="border-t border-slate-100 divide-y divide-slate-100">
                   <div className="grid grid-cols-4 p-4 items-center">
                     <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">CUSTOMER NAME:</span>
-                    <div className="col-span-3 text-sm text-slate-500 font-medium">{shift.customer_name}</div>
+                    <div className="col-span-3 text-sm text-slate-800 font-medium">{shift.customer_name}</div>
                   </div>
 
                   <div className="grid grid-cols-4 p-4 items-start">
                     <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">DESCRIPTION:</span>
-                    <div className="col-span-3 text-sm text-slate-500 font-medium whitespace-pre-wrap leading-relaxed">
+                    <div className="col-span-3 text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
                       {shift.invoice_description}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-4 p-4 items-center">
                     <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">ASSIGNED GUARD:</span>
-                    <div className="col-span-3 text-sm text-slate-500 font-medium">
+                    <div className="col-span-3 text-sm text-slate-800 font-medium">
                       {shift.assigned_guard ? (
                         typeof shift.assigned_guard === 'object' 
                           ? `${shift.assigned_guard.first_name} ${shift.assigned_guard.last_name}`
                           : shift.assigned_guard
                       ) : (
-                        <span className="text-slate-400">No guard assigned</span>
+                        <span className="text-slate-700">No guard assigned</span>
                       )}
                     </div>
                   </div>
@@ -318,12 +318,12 @@ function NotificationViewContent() {
                     <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">SCHEDULED FOR:</span>
                     <div className="col-span-3 flex flex-col gap-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-400 uppercase font-bold w-12">Start:</span>
-                        <span className="text-sm text-slate-500 font-medium">{formatDateTime(shift.scheduled_for?.shift_start_time)}</span>
+                        <span className="text-[11px] text-slate-700 uppercase font-bold w-12">Start:</span>
+                        <span className="text-sm text-slate-800 font-medium">{formatDateTime(shift.scheduled_for?.shift_start_time)}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-400 uppercase font-bold w-12">End:</span>
-                        <span className="text-sm text-slate-500 font-medium">{formatDateTime(shift.scheduled_for?.shift_end_time)}</span>
+                        <span className="text-[11px] text-slate-700 uppercase font-bold w-12">End:</span>
+                        <span className="text-sm text-slate-800 font-medium">{formatDateTime(shift.scheduled_for?.shift_end_time)}</span>
                       </div>
                     </div>
                   </div>
@@ -334,7 +334,7 @@ function NotificationViewContent() {
             <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-20 text-center">
               <XCircle className="w-12 h-12 text-red-200 mx-auto mb-4" />
               <p className="text-sm font-bold text-slate-600 mb-1">{error || "No shift data found"}</p>
-              <p className="text-xs text-slate-400 font-medium">The shift may have been deleted or the ID is invalid.</p>
+              <p className="text-xs text-slate-700 font-medium">The shift may have been deleted or the ID is invalid.</p>
               <Button 
                 variant="outline" 
                 className="mt-6 h-9 rounded-xl text-xs font-bold text-[#0064cb] border-blue-100 hover:bg-blue-50"
@@ -377,7 +377,7 @@ function NotificationViewContent() {
                         "text-[11px] font-medium text-center block leading-snug transition-colors",
                         step.status === "completed" && "text-slate-600",
                         step.status === "current" && "text-slate-800 font-bold",
-                        step.status === "upcoming" && "text-slate-400"
+                        step.status === "upcoming" && "text-slate-700"
                       )}>
                         {step.label}
                       </span>
@@ -427,12 +427,12 @@ function NotificationViewContent() {
                               <div className="p-4 bg-[#f1f8ff] rounded-xl border border-[#e1f0ff] space-y-2">
                                 <div className="flex justify-between items-start">
                                   <h4 className="text-[12px] font-bold text-slate-800">New Project</h4>
-                                  <span className="text-[10px] text-slate-400">5/8/2026</span>
+                                  <span className="text-[10px] text-slate-700">5/8/2026</span>
                                 </div>
                                 <div className="space-y-1">
-                                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">PERFORMED BY: <span className="text-slate-700 font-bold">System</span></p>
-                                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">CUSTOMER: <span className="text-slate-700 font-bold">test B</span></p>
-                                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">INVOICE NUMBER: <span className="text-slate-700 font-bold">INV-995462</span></p>
+                                  <p className="text-[10px] text-slate-800 uppercase font-bold tracking-tight">PERFORMED BY: <span className="text-slate-700 font-bold">System</span></p>
+                                  <p className="text-[10px] text-slate-800 uppercase font-bold tracking-tight">CUSTOMER: <span className="text-slate-700 font-bold">test B</span></p>
+                                  <p className="text-[10px] text-slate-800 uppercase font-bold tracking-tight">INVOICE NUMBER: <span className="text-slate-700 font-bold">INV-995462</span></p>
                                 </div>
                               </div>
                             </div>
@@ -452,7 +452,7 @@ function NotificationViewContent() {
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-2">
                                     <span className="text-[13px] font-bold text-slate-800">Gemmo</span>
-                                    <span className="text-[11px] text-slate-400">05/08/2026 02:25</span>
+                                    <span className="text-[11px] text-slate-700">05/08/2026 02:25</span>
                                   </div>
                                   <p className="text-[12px] text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
                                     Nellie's Verbatim regarding the notification she went outside the geofence: "The system is wrong, I went to check the gate with my flashlight because I heard college kids outside talking loud..."
@@ -467,25 +467,25 @@ function NotificationViewContent() {
                                 <div className="space-y-2">
                                   <div className="flex items-center gap-2">
                                     <span className="text-[13px] font-bold text-slate-800">Leonard</span>
-                                    <span className="text-[11px] text-slate-400">05/07/2026 19:17</span>
+                                    <span className="text-[11px] text-slate-700">05/07/2026 19:17</span>
                                   </div>
                                   <p className="text-[12px] text-slate-600 leading-relaxed">
                                     Hi Nellie, since you've mentioned that you're having trouble connecting to the internet. I have attached a file, please download it and do your logs on the attached file.
                                   </p>
                                   <div className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm group hover:border-[#0064cb] transition-all">
                                     <div className="flex items-center gap-3">
-                                      <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-[#0064cb] transition-colors">
+                                      <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-700 group-hover:text-[#0064cb] transition-colors">
                                         <FileText className="w-4.5 h-4.5" />
                                       </div>
                                       <span className="text-[11px] font-medium text-slate-600 truncate max-w-[200px]">ckIFGS Firewatch Log_30017100_1778195812.pdf</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                      <button className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-[#0064cb] transition-all cursor-pointer" title="Download">
+                                      <button className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-700 hover:text-[#0064cb] transition-all cursor-pointer" title="Download">
                                         <Download className="w-3.5 h-3.5" />
                                       </button>
                                       <button
                                         onClick={() => setShowFilePreview(true)}
-                                        className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-[#0064cb] transition-all cursor-pointer"
+                                        className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-700 hover:text-[#0064cb] transition-all cursor-pointer"
                                         title="Preview"
                                       >
                                         <Maximize2 className="w-3.5 h-3.5" />
@@ -500,7 +500,7 @@ function NotificationViewContent() {
                             <div className="pt-6 flex flex-col md:flex-row gap-3 items-start">
                               {/* Type Selection */}
                               <div className="w-full md:w-28 flex-shrink-0 relative">
-                                <span className="absolute -top-2 left-3 px-1.5 bg-white text-[10px] font-bold text-slate-400 uppercase z-10">Type</span>
+                                <span className="absolute -top-2 left-3 px-1.5 bg-white text-[10px] font-bold text-slate-700 uppercase z-10">Type</span>
                                 <Select defaultValue="internal">
                                   <SelectTrigger className="!h-14 bg-white border-slate-200 rounded-2xl text-[13px] text-slate-600 focus:ring-[#0064cb]/10 focus:border-[#0064cb] cursor-pointer shadow-sm px-4">
                                     <SelectValue placeholder="Select Type" />
@@ -514,10 +514,10 @@ function NotificationViewContent() {
 
                               {/* Comment Box */}
                               <div className="flex-1 min-w-0 relative">
-                                <span className="absolute -top-2 left-4 px-1.5 bg-white text-[10px] font-bold text-slate-400 uppercase z-10">Comment</span>
+                                <span className="absolute -top-2 left-4 px-1.5 bg-white text-[10px] font-bold text-slate-700 uppercase z-10">Comment</span>
                                 <div className="min-h-[56px] border border-slate-200 rounded-2xl bg-white focus-within:border-[#0064cb] focus-within:ring-4 focus-within:ring-[#0064cb]/5 transition-all p-1.5 pl-3 flex items-center gap-2 shadow-sm overflow-hidden">
                                   <textarea
-                                    className="flex-1 bg-transparent border-none focus:outline-none outline-none focus:ring-0 p-2 text-[13px] text-slate-700 placeholder:text-slate-400 resize-none min-h-[40px] max-h-[120px] custom-scrollbar"
+                                    className="flex-1 bg-transparent border-none focus:outline-none outline-none focus:ring-0 p-2 text-[13px] text-slate-700 placeholder:text-slate-700 resize-none min-h-[40px] max-h-[120px] custom-scrollbar"
                                     placeholder="Write comment..."
                                     rows={1}
                                   />
@@ -543,23 +543,23 @@ function NotificationViewContent() {
                             <div className="space-y-3">
                               <div className="p-3.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm group hover:border-[#0064cb] transition-all">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-[#0064cb] transition-colors">
+                                  <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-700 group-hover:text-[#0064cb] transition-colors">
                                     <FileText className="w-5 h-5" />
                                   </div>
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-[12px] font-bold text-slate-700 truncate max-w-[220px]">
                                       {tab.id === "dar" ? "ckIFGS_Firewatch_Log_30017100.pdf" : "Notification_Report_995462.pdf"}
                                     </span>
-                                    <span className="text-[10px] text-slate-400 font-medium italic">Uploaded 2 hours ago</span>
+                                    <span className="text-[10px] text-slate-700 font-medium italic">Uploaded 2 hours ago</span>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                  <button className="p-2 rounded-xl hover:bg-blue-50 text-slate-400 hover:text-[#0064cb] transition-all cursor-pointer" title="Download">
+                                  <button className="p-2 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-[#0064cb] transition-all cursor-pointer" title="Download">
                                     <Download className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => setShowFilePreview(true)}
-                                    className="p-2 rounded-xl hover:bg-blue-50 text-slate-400 hover:text-[#0064cb] transition-all cursor-pointer"
+                                    className="p-2 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-[#0064cb] transition-all cursor-pointer"
                                     title="Preview"
                                   >
                                     <Maximize2 className="w-4 h-4" />
@@ -573,7 +573,7 @@ function NotificationViewContent() {
                             <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto">
                               <tab.icon className="w-6 h-6 text-slate-200" />
                             </div>
-                            <p className="text-xs font-medium text-slate-400 italic">No {tab.label} data available yet.</p>
+                            <p className="text-xs font-medium text-slate-700 italic">No {tab.label} data available yet.</p>
                           </div>
                         )}
                       </div>
@@ -602,7 +602,7 @@ function NotificationViewContent() {
                 <FileText className="w-10 h-10 text-[#0064cb]" />
               </div>
               <h2 className="text-xl font-bold text-slate-800">PDF Document Preview</h2>
-              <p className="text-slate-500 text-sm max-w-sm">
+              <p className="text-slate-800 text-sm max-w-sm">
                 This is a high-fidelity preview of the attached Firewatch Log document.
               </p>
               <div className="pt-6 flex gap-3">
@@ -624,7 +624,7 @@ export default function NotificationViewPage() {
     <Suspense fallback={
       <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6 flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-10 h-10 animate-spin text-[#0064cb]" />
-        <p className="text-slate-400 font-medium animate-pulse mt-4">Loading notification details...</p>
+        <p className="text-slate-700 font-medium animate-pulse mt-4">Loading notification details...</p>
       </div>
     }>
       <NotificationViewContent />

@@ -79,7 +79,7 @@ export function InvoiceDetailsCard({
                     className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg px-3 text-sm font-medium transition-all"
                   />
                 ) : (
-                  <span className="text-sm text-slate-500 font-medium">
+                  <span className="text-sm text-slate-800 font-medium">
                     {invoice.customer_name}
                   </span>
                 )}
@@ -92,7 +92,7 @@ export function InvoiceDetailsCard({
                       <Button
                         variant="outline"
                         onClick={() => setIsEditOpen(false)}
-                        className="px-3 h-8 rounded-lg font-bold border-slate-200 text-[10px] text-slate-500 hover:bg-slate-50 transition-all cursor-pointer"
+                        className="px-3 h-8 rounded-lg font-bold border-slate-200 text-[10px] text-slate-800 hover:bg-slate-50 transition-all cursor-pointer"
                       >
                         Cancel
                       </Button>
@@ -130,7 +130,7 @@ export function InvoiceDetailsCard({
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[100px] resize-none"
                 />
               ) : (
-                <div className="text-sm text-slate-500 font-medium whitespace-pre-wrap leading-relaxed">
+                <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
                   {invoice.description || "No description provided."}
                 </div>
               )}
@@ -139,19 +139,19 @@ export function InvoiceDetailsCard({
 
           <div className="grid grid-cols-4 p-4 items-center">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Status:</span>
-            <span className={cn("col-span-3 text-sm font-bold", invoice.status?.toLowerCase().includes('cancelled') ? "text-red-600" : "text-slate-500")}>
+            <span className={cn("col-span-3 text-sm font-bold", invoice.status?.toLowerCase().includes('cancelled') ? "text-red-600" : "text-slate-800")}>
               {formatStatus(invoice.status)}
             </span>
           </div>
 
           <div className="grid grid-cols-4 p-4 items-center">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Invoice/Estimate Number:</span>
-            <span className="col-span-3 text-sm text-slate-500 font-medium">{invoice.invoice_no}</span>
+            <span className="col-span-3 text-sm text-slate-800 font-medium">{invoice.invoice_no}</span>
           </div>
 
           <div className="grid grid-cols-4 p-4 items-center">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Invoice Amount:</span>
-            <span className="col-span-3 text-sm text-slate-500 font-medium">{invoice.invoice_amount || "0"}</span>
+            <span className="col-span-3 text-sm text-slate-800 font-medium">{invoice.invoice_amount || "0"}</span>
           </div>
         </div>
       </CardContent>

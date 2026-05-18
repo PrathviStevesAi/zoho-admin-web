@@ -60,7 +60,7 @@ export function EditLocationDialog({
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
           <div>
             <DialogTitle className="text-xl font-bold text-slate-900">Edit Location</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 mt-1">
+            <DialogDescription className="text-xs text-slate-800 mt-1">
               Update the shipping address details for this invoice.
             </DialogDescription>
           </div>
@@ -68,7 +68,7 @@ export function EditLocationDialog({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Street</Label>
+            <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Street</Label>
             <Input
               value={formData.street}
               onChange={(e) => setFormData(prev => ({ ...prev, street: e.target.value }))}
@@ -78,7 +78,7 @@ export function EditLocationDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">City</Label>
+            <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">City</Label>
             <Input
               value={formData.city}
               onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
@@ -89,7 +89,7 @@ export function EditLocationDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">State</Label>
+              <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">State</Label>
               <Input
                 value={formData.state}
                 onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
@@ -98,7 +98,7 @@ export function EditLocationDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">ZIP Code</Label>
+              <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">ZIP Code</Label>
               <Input
                 value={formData.zip}
                 onChange={(e) => setFormData(prev => ({ ...prev, zip: e.target.value }))}
@@ -109,7 +109,7 @@ export function EditLocationDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Country</Label>
+            <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Country</Label>
             <Input
               value={formData.country}
               onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
@@ -123,7 +123,7 @@ export function EditLocationDialog({
               type="button"
               variant="outline"
               onClick={onClose}
-              className="h-11 px-8 rounded-xl font-bold text-slate-500 hover:bg-slate-50 border-slate-200 transition-all active:scale-95 cursor-pointer"
+              className="h-11 px-8 rounded-xl font-bold text-slate-800 hover:bg-slate-50 border-slate-200 transition-all active:scale-95 cursor-pointer"
             >
               Cancel
             </Button>

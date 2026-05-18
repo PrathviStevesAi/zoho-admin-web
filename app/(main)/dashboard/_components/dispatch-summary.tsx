@@ -20,7 +20,7 @@ function SummaryCard({ label, value, variant = "default" }: SummaryCardProps) {
     };
 
     const textVariants = {
-        default: "text-slate-500",
+        default: "text-slate-800",
         success: "text-emerald-600",
         warning: "text-rose-600"
     };

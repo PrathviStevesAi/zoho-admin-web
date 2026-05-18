@@ -121,7 +121,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-slate-600 hover:rotate-90 duration-200"
+            className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-700 hover:text-slate-600 hover:rotate-90 duration-200"
           >
             <X className="w-5 h-5" />
           </button>
@@ -142,7 +142,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
                 {userSearchQuery && (
                   <button
                     onClick={() => setUserSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800"
                   >
                     <XCircle className="w-4 h-4" />
                   </button>
@@ -228,16 +228,16 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
               <Table className="border-collapse min-w-[1200px]">
                 <TableHeader className="bg-white sticky top-0 z-20">
                   <TableRow className="hover:bg-transparent border-b border-slate-100">
-                    <TableHead className="w-[140px] py-4 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-100">ACTION</TableHead>
-                    <TableHead className="w-[80px] text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">#</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4 px-6 border-r border-slate-100">NAME</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4 px-6 border-r border-slate-100">EMAIL</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4 px-6 border-r border-slate-100">PHONE NO.</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">ARMED</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">UNARMED</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4 px-6 border-r border-slate-100">ADDRESS</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4 px-6 border-r border-slate-100">LAST ACTIVE</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4 px-6">STATUS</TableHead>
+                    <TableHead className="w-[140px] py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-100">ACTION</TableHead>
+                    <TableHead className="w-[80px] text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">#</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">NAME</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">EMAIL</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">PHONE NO.</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">ARMED</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">UNARMED</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">ADDRESS</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">LAST ACTIVE</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6">STATUS</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -245,7 +245,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
                     <TableRow>
                       <TableCell colSpan={10} className="py-12 text-center">
                         <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#0064cb]" />
-                        <p className="text-xs text-slate-400 mt-2">Loading guards...</p>
+                        <p className="text-xs text-slate-700 mt-2">Loading guards...</p>
                       </TableCell>
                     </TableRow>
                   ) : guards.length > 0 ? (
@@ -259,28 +259,28 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
                             Select Guard <span className="text-[14px]"></span>
                           </button>
                         </TableCell>
-                        <TableCell className="text-[13px] text-slate-500 py-5 px-6 border-r border-slate-50/50 text-center">
+                        <TableCell className="text-[13px] text-slate-800 py-5 px-6 border-r border-slate-50/50 text-center">
                           {(currentPage - 1) * 10 + index + 1}
                         </TableCell>
                         <TableCell className="text-[13px] font-medium text-slate-600 py-5 px-6 border-r border-slate-50/50">
                           {guard.first_name} {guard.last_name}
                         </TableCell>
-                        <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50">
+                        <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
                           {guard.email}
                         </TableCell>
-                        <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50">
+                        <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
                           {guard.phone_number || "-"}
                         </TableCell>
-                        <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50 text-center">
+                        <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50 text-center">
                           {guard.armed ? "Yes" : "No"}
                         </TableCell>
-                        <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50 text-center">
+                        <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50 text-center">
                           {guard.unarmed ? "Yes" : "No"}
                         </TableCell>
-                        <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50">
+                        <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
                           {guard.address || "-"}
                         </TableCell>
-                        <TableCell className="text-[13px] text-slate-400 py-5 px-6 border-r border-slate-50/50">
+                        <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
                           {guard.last_active_at ? new Date(guard.last_active_at).toLocaleDateString() : "-"}
                         </TableCell>
                         <TableCell className="py-5 px-6">
@@ -295,7 +295,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={10} className="py-8 text-center text-slate-400">No guards found</TableCell>
+                      <TableCell colSpan={10} className="py-8 text-center text-slate-700">No guards found</TableCell>
                     </TableRow>
                   )}
                 </TableBody>

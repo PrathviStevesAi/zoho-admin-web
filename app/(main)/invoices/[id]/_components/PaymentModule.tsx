@@ -37,7 +37,7 @@ export function PaymentModule({
           <div className="px-6 pt-2 pb-4 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-slate-900">Update Payment Status</h2>
-              <p className="text-slate-500 text-sm">Update payment details and set reminders for this invoice.</p>
+              <p className="text-slate-800 text-sm">Update payment details and set reminders for this invoice.</p>
             </div>
           </div>
 
@@ -88,7 +88,7 @@ export function PaymentModule({
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <div className="h-5 w-px bg-slate-200 mr-2" />
-                    <span className="text-slate-400 text-[11px] font-bold tracking-wider">USD</span>
+                    <span className="text-slate-700 text-[11px] font-bold tracking-wider">USD</span>
                   </div>
                 </div>
               </div>
@@ -108,7 +108,7 @@ export function PaymentModule({
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <div className="h-5 w-px bg-slate-200 mr-2" />
-                    <span className="text-slate-400 text-[11px] font-bold tracking-wider">USD</span>
+                    <span className="text-slate-700 text-[11px] font-bold tracking-wider">USD</span>
                   </div>
                 </div>
               </div>

@@ -152,7 +152,7 @@ export default function LoginPage() {
                                         <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
                                             Welcome Back 👋
                                         </CardTitle>
-                                        <CardDescription className="text-slate-500 font-medium">
+                                        <CardDescription className="text-slate-800 font-medium">
                                             Enter your credentials to access your dashboard
                                         </CardDescription>
                                     </CardHeader>
@@ -164,7 +164,7 @@ export default function LoginPage() {
                                                 <Input
                                                     id="email"
                                                     type="email"
-                                                    placeholder="admin@gmail.com"
+                                                    placeholder="Enter your email"
                                                     required
                                                     value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
@@ -179,7 +179,7 @@ export default function LoginPage() {
                                                     <Input
                                                         id="password"
                                                         type={showPassword ? "text" : "password"}
-                                                        placeholder="••••••••"
+                                                        placeholder="Enter your password"
                                                         required
                                                         value={password}
                                                         onChange={(e) => setPassword(e.target.value)}
@@ -189,7 +189,7 @@ export default function LoginPage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowPassword(!showPassword)}
-                                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 hover:text-slate-600 transition-colors"
                                                         disabled={isPending}
                                                     >
                                                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -229,8 +229,16 @@ export default function LoginPage() {
                                     onClick={() => {
                                         setView('login');
                                         setForgotStep(1);
+                                        setForgotEmail("");
+                                        setOtp("");
+                                        setResetToken("");
+                                        setRefreshToken("");
+                                        setNewPassword("");
+                                        setConfirmPassword("");
+                                        setTimer(0);
+                                        setCanResend(false);
                                     }}
-                                    className="cursor-pointer flex items-center gap-2 text-slate-400 hover:text-[#0064cb] font-bold text-sm mb-6 transition-colors group"
+                                    className="cursor-pointer flex items-center gap-2 text-slate-700 hover:text-[#0064cb] font-bold text-sm mb-6 transition-colors group"
                                 >
                                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                                     Back to Login
@@ -241,7 +249,7 @@ export default function LoginPage() {
                                         <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
                                             {forgotStep === 1 ? "Reset Password" : forgotStep === 2 ? "Verify OTP" : "Set New Password"}
                                         </CardTitle>
-                                        <CardDescription className="text-slate-500 font-medium">
+                                        <CardDescription className="text-slate-800 font-medium">
                                             {forgotStep === 1
                                                 ? "Enter your email to receive a recovery code"
                                                 : forgotStep === 2
@@ -256,7 +264,7 @@ export default function LoginPage() {
                                             <Label className="text-slate-700 font-bold ml-1">Email Address</Label>
                                             <Input
                                                 type="email"
-                                                placeholder="admin@gmail.com"
+                                                placeholder="Enter your email"
                                                 value={forgotEmail}
                                                 onChange={(e) => setForgotEmail(e.target.value)}
                                                 disabled={isPending || forgotStep > 1}
@@ -266,10 +274,10 @@ export default function LoginPage() {
 
                                         {/* STEP 2: OTP (Inline) */}
                                         {forgotStep >= 2 && (
-                                                <div className="space-y-2 animate-in fade-in slide-in-from-top duration-500">
+                                            <div className="space-y-2 animate-in fade-in slide-in-from-top duration-500">
                                                 <div className="flex items-center justify-between ml-1">
                                                     <Label className="text-slate-700 font-bold">Verification Code</Label>
-                                                    {timer > 0 && (
+                                                    {timer > 0 && forgotStep === 2 && (
                                                         <span className="text-xs font-bold text-[#0064cb] bg-blue-50 px-2 py-1 rounded-lg flex items-center gap-1.5">
                                                             <Loader2 className="w-3 h-3 animate-spin" />
                                                             Expires in {formatTime(timer)}
@@ -324,7 +332,7 @@ export default function LoginPage() {
                                                     <div className="relative">
                                                         <Input
                                                             type={showNewPassword ? "text" : "password"}
-                                                            placeholder="••••••••"
+                                                            placeholder="Enter new password"
                                                             value={newPassword}
                                                             onChange={(e) => setNewPassword(e.target.value)}
                                                             disabled={isPending}
@@ -333,7 +341,7 @@ export default function LoginPage() {
                                                         <button
                                                             type="button"
                                                             onClick={() => setShowNewPassword(!showNewPassword)}
-                                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 hover:text-slate-600 transition-colors"
                                                             disabled={isPending}
                                                         >
                                                             {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -345,7 +353,7 @@ export default function LoginPage() {
                                                     <div className="relative">
                                                         <Input
                                                             type={showConfirmPassword ? "text" : "password"}
-                                                            placeholder="••••••••"
+                                                            placeholder="Enter confirm password"
                                                             value={confirmPassword}
                                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                                             disabled={isPending}
@@ -354,7 +362,7 @@ export default function LoginPage() {
                                                         <button
                                                             type="button"
                                                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 hover:text-slate-600 transition-colors"
                                                             disabled={isPending}
                                                         >
                                                             {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}

@@ -55,7 +55,7 @@ export function DashboardHeader() {
                     <span className="text-[14px] font-semibold text-slate-600 tracking-tight ml-1">View</span>
                     <Select value={currentView} onValueChange={handleValueChange} disabled={isPending}>
                         <SelectTrigger
-                            className="!h-[42px] w-[220px] bg-card border-border rounded-sm text-xs font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all hover:bg-surface active:scale-[0.98]"
+                            className="cursor-pointer !h-[42px] w-[220px] bg-card border-border rounded-sm text-xs font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all hover:bg-surface active:scale-[0.98]"
                         >
                             <div className="flex items-center gap-2">
                                 <SelectValue placeholder="Select View" />

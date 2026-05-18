@@ -73,7 +73,7 @@ export function InvoiceHeader({
                 if (parts.length > 1) {
                   return (
                     <div key={lIdx} className="flex justify-between gap-4 border-b border-slate-800/50 pb-1 last:border-0">
-                      <span className="text-slate-400 font-medium whitespace-nowrap">{parts[0].trim()}:</span>
+                      <span className="text-slate-700 font-medium whitespace-nowrap">{parts[0].trim()}:</span>
                       <span className="text-slate-200 text-right">{parts.slice(1).join(':').trim()}</span>
                     </div>
                   );
@@ -91,7 +91,7 @@ export function InvoiceHeader({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-slate-400 text-[13px] mb-1">
+          <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
             <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Dashboard</Link>
             <ChevronRight className="w-3.5 h-3.5 shrink-0" />
             <span
@@ -110,7 +110,7 @@ export function InvoiceHeader({
             )}
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-400 hover:text-[#0064cb] transition-all">
+            <Link href="/dashboard" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div className="group relative">
@@ -118,7 +118,7 @@ export function InvoiceHeader({
                 className="text-2xl font-bold text-slate-900 cursor-pointer hover:text-[#0064cb] transition-all"
                 onClick={onResetView}
               >
-                {customerName} <span className="text-slate-400 font-normal ml-2"> [ #{invoiceNo} ]</span>
+                {customerName} <span className="text-slate-700 font-normal ml-2"> [ #{invoiceNo} ]</span>
               </h1>
 
               {description && (
@@ -169,7 +169,7 @@ export function InvoiceHeader({
             </div>
     
             <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={handleOpenCRM}>
-              <div className="w-12 h-12 rounded-full border-2 border-slate-400 flex items-center justify-center text-slate-500 group-hover:bg-slate-50 transition-colors shadow-sm">
+              <div className="w-12 h-12 rounded-full border-2 border-slate-400 flex items-center justify-center text-slate-800 group-hover:bg-slate-50 transition-colors shadow-sm">
                 <ExternalLink className="w-5.5 h-5.5" />
               </div>
               <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Open in<br />CRM</span>
