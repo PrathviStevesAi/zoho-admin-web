@@ -277,7 +277,7 @@ export default function CalendarPage() {
 
         {selectedEvent && (
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] transition-all duration-300">
-            <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-[450px] max-w-[90vw] overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-[750px] max-w-[92vw] overflow-hidden animate-in zoom-in-95 duration-200">
               <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800">Shift Details</h3>
                 <button onClick={() => setSelectedEvent(null)} className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -307,7 +307,7 @@ export default function CalendarPage() {
 
         {showMoreModal && (
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] transition-all duration-300">
-            <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-[450px] max-w-[90vw] overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-[750px] max-w-[92vw] overflow-hidden animate-in zoom-in-95 duration-200">
               <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800">
                   {showMoreModal.date.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}
@@ -341,7 +341,7 @@ export default function CalendarPage() {
                         <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: event.backgroundColor }}></div>
                         {event.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                       </div>
-                      <div className="font-semibold text-[14px] leading-relaxed ml-[14px]">{event.title}</div>
+                      <div className="font-semibold text-[14px] ml-[14px] truncate">{event.title}</div>
                     </div>
                   ))}
                 </div>
