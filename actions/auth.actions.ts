@@ -70,13 +70,19 @@ export async function sendOtpAction(email: string) {
             },
         });
 
-        const result = await response.json();
-
-        if (response.ok) {
-            return { success: true, message: result.message || "OTP sent successfully." };
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            const result = await response.json();
+            if (response.ok) {
+                return { success: true, message: result.message || "OTP sent successfully." };
+            } else {
+                const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.message || "Failed to send OTP.";
+                return { success: false, error: errorMsg };
+            }
         } else {
-            const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.message || "Failed to send OTP.";
-            return { success: false, error: errorMsg };
+            const text = await response.text();
+            console.error("Send OTP Non-JSON response:", text);
+            return { success: false, error: `API Error ${response.status}: ${text.includes('ngrok') ? 'ngrok limit reached' : 'Invalid Server Response'}` };
         }
     } catch (error) {
         console.error("Send OTP Error:", error);

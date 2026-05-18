@@ -280,7 +280,7 @@ export default function ProfilePage() {
         <CardContent className="px-6 py-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-bold text-slate-800 uppercase">First Name</Label>
+              <Label className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">First Name</Label>
               {isEditing ? (
                 <Input
                   placeholder="Enter first name"
@@ -289,12 +289,12 @@ export default function ProfilePage() {
                   className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all"
                 />
               ) : (
-                <p className="text-base font-bold text-slate-800">{currentUser.first_name}</p>
+                <p className="text-[14px] font-medium text-slate-700">{currentUser.first_name}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-bold text-slate-800 uppercase">Last Name</Label>
+              <Label className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">Last Name</Label>
               {isEditing ? (
                 <Input
                   placeholder="Enter last name"
@@ -303,19 +303,19 @@ export default function ProfilePage() {
                   className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all"
                 />
               ) : (
-                <p className="text-base font-bold text-slate-800">{currentUser.last_name}</p>
+                <p className="text-[14px] font-medium text-slate-700">{currentUser.last_name}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-bold text-slate-800 uppercase">Email Address</Label>
+              <Label className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">Email Address</Label>
               <div className="flex items-center gap-2 px-0.5">
-                <p className="text-base font-bold text-slate-800">{currentUser.email}</p>
+                <p className="text-[14px] font-medium text-slate-700">{currentUser.email}</p>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-bold text-slate-800 uppercase">Phone Number</Label>
+              <Label className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">Phone Number</Label>
               {isEditing ? (
                 <div className="relative">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
@@ -328,7 +328,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2 px-0.5">
-                  <p className="text-base font-bold text-slate-800">{currentUser.phone_number || "Not provided"}</p>
+                  <p className="text-[14px] font-medium text-slate-700">{currentUser.phone_number || "Not provided"}</p>
                 </div>
               )}
             </div>
