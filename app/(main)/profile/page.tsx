@@ -55,8 +55,8 @@ export default function ProfilePage() {
     if (res.success && res.data) {
       setUser(res.data);
       setEditFormData({
-        first_name: res.data.first_name,
-        last_name: res.data.last_name,
+        first_name: res.data.first_name || "",
+        last_name: res.data.last_name || "",
         phone_number: res.data.phone_number || "",
         old_password: "",
         new_password: "",
@@ -110,8 +110,8 @@ export default function ProfilePage() {
         setUser(profileData);
         setEditFormData(prev => ({
           ...prev,
-          first_name: profileData.first_name,
-          last_name: profileData.last_name,
+          first_name: profileData.first_name || "",
+          last_name: profileData.last_name || "",
           phone_number: profileData.phone_number || "",
           profile_img_url: profileData.profile_img_url || ""
         }));
@@ -221,7 +221,8 @@ export default function ProfilePage() {
           <Avatar className="w-24 h-24 md:w-28 md:h-28 border-4 border-white shadow-lg rounded-2xl bg-slate-50 overflow-hidden transition-transform duration-500 group-hover:scale-[1.02]">
             <AvatarImage src={currentUser.profile_img_url || undefined} className="object-cover" />
             <AvatarFallback className="text-3xl font-bold bg-slate-100 text-[#0064cb]">
-              {currentUser.first_name[0]}{currentUser.last_name[0]}
+              {(currentUser.first_name?.[0] || "?").toUpperCase()}
+              {(currentUser.last_name?.[0] || "").toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <input
