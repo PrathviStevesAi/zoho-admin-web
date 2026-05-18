@@ -9,8 +9,6 @@ import {
   Camera,
   Edit3,
   Loader2,
-  ChevronRight,
-  LogOut,
   Eye,
   EyeOff
 } from "lucide-react";
@@ -65,13 +63,12 @@ export default function ProfilePage() {
         profile_img_url: res.data.profile_img_url || ""
       });
     } else {
-      // Fallback placeholder data if API fails
       setUser({
-        first_name: "Guest",
-        last_name: "User",
-        email: "guest@example.com",
-        phone_number: "Not available",
-        role: "guest",
+        first_name: "not found",
+        last_name: "not found",
+        email: "not found",
+        phone_number: "0000000000",
+        role: "not found",
         profile_img_url: "",
       } as any);
       toast.error(res.error || "Failed to load profile, showing guest view");
@@ -133,9 +130,24 @@ export default function ProfilePage() {
     try {
       setIsUpdating(true);
 
+      // Convert HEIC/HEIF to JPEG before upload (browsers can't handle HEIC natively)
+      let uploadFile: File = file;
+      const isHeic = file.type === "image/heic" || file.type === "image/heif"
+        || file.name.toLowerCase().endsWith(".heic")
+        || file.name.toLowerCase().endsWith(".heif");
+
+      if (isHeic) {
+        toast.info("Converting HEIC image, please wait...");
+        const heic2any = (await import("heic2any")).default;
+        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 });
+        const convertedBlob = Array.isArray(converted) ? converted[0] : converted;
+        const jpegName = file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg");
+        uploadFile = new File([convertedBlob], jpegName, { type: "image/jpeg" });
+      }
+
       // Generate unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+      const fileExt = uploadFile.name.split('.').pop();
+      const fileNameWithoutExt = uploadFile.name.replace(/\.[^/.]+$/, "");
       const uniqueId = Math.floor(1000 + Math.random() * 9000);
       const uniqueFileName = `${fileNameWithoutExt}_${uniqueId}.${fileExt}`;
 
@@ -149,8 +161,8 @@ export default function ProfilePage() {
       console.log("Uploading file to:", signed_url);
       const uploadRes = await fetch(signed_url, {
         method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type }
+        body: uploadFile,
+        headers: { "Content-Type": uploadFile.type }
       });
 
       if (!uploadRes.ok) throw new Error("Failed to upload image");
@@ -193,19 +205,17 @@ export default function ProfilePage() {
     );
   }
 
-  // Ensure we have a user object to avoid null reference errors
   const currentUser = user || {
-    first_name: "Guest",
-    last_name: "User",
-    email: "not-available@gmail.com",
-    phone_number: "None",
-    role: "guest",
+    first_name: "not found",
+    last_name: "not found",
+    email: "not found",
+    phone_number: "0000000000",
+    role: "not found",
     profile_img_url: ""
   };
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header Profile Section */}
       <div className="flex flex-col md:flex-row items-center gap-6 px-2">
         <div className="relative group">
           <Avatar className="w-24 h-24 md:w-28 md:h-28 border-4 border-white shadow-lg rounded-2xl bg-slate-50 overflow-hidden transition-transform duration-500 group-hover:scale-[1.02]">
@@ -219,7 +229,7 @@ export default function ProfilePage() {
             ref={fileInputRef}
             onChange={handleAvatarUpload}
             className="hidden"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
           />
           <Button
             size="icon"

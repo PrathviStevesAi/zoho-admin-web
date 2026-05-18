@@ -232,7 +232,14 @@ export function AssignmentModule({
                           <TableCell className="py-4 px-6">
                             <span className={cn(
                               "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                              shift.status ? "bg-green-50 text-green-600" : "bg-slate-50 text-slate-700"
+                              (shift.status?.toLowerCase().includes("abandon") || 
+                               shift.status?.toLowerCase().includes("rejected") || 
+                               shift.status?.toLowerCase().includes("refused") ||
+                               shift.status?.toLowerCase().includes("cancel"))
+                                ? "bg-red-50 text-red-600"
+                                : shift.status
+                                ? "bg-green-50 text-green-600"
+                                : "bg-slate-50 text-slate-700"
                             )}>
                               {shift.status || "----"}
                             </span>
