@@ -31,7 +31,7 @@ export async function registerUserAction(userData: any) {
         const token = session?.accessToken;
 
         console.log("Sending registration data:", userData);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/register`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/member/register`, {
             method: "POST",
             body: JSON.stringify(userData),
             headers: {

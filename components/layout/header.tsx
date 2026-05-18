@@ -242,7 +242,6 @@ export function Header() {
         </div>
       </div>
 
-      {/* RIGHT: Actions */}
       <div className="flex items-center gap-4 shrink-0 w-[240px] justify-end">
         <NotificationsNav />
         <UserNav session={session} dynamicProfile={profile} />
@@ -260,7 +259,7 @@ function UserNav({ session, dynamicProfile }: { session: any, dynamicProfile: an
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild className="cursor-pointer">
         <Button
           variant="ghost"
           className="relative h-10 flex items-center gap-2 pl-1 pr-2 rounded-full hover:bg-muted transition-all active:scale-95"
@@ -310,12 +309,12 @@ function UserNav({ session, dynamicProfile }: { session: any, dynamicProfile: an
             </DropdownMenuItem>
           </Link>
 
-          <DropdownMenuItem className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer focus:bg-primary/5 focus:text-primary transition-colors">
+          {/* <DropdownMenuItem className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer focus:bg-primary/5 focus:text-primary transition-colors">
             <div className="flex items-center justify-center size-8 rounded-lg bg-muted group-focus:bg-primary/10">
               <Settings className="size-4" />
             </div>
             <span className="font-medium">Settings</span>
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator className="bg-muted/50 mx-1 mt-1" />

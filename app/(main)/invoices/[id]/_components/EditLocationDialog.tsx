@@ -21,12 +21,12 @@ interface EditLocationDialogProps {
   isSaving: boolean;
 }
 
-export function EditLocationDialog({ 
-  isOpen, 
-  onClose, 
-  onUpdate, 
+export function EditLocationDialog({
+  isOpen,
+  onClose,
+  onUpdate,
   initialAddress,
-  isSaving 
+  isSaving
 }: EditLocationDialogProps) {
   const [formData, setFormData] = useState<ShippingAddress>({
     street: "",
@@ -72,7 +72,7 @@ export function EditLocationDialog({
             <Input
               value={formData.street}
               onChange={(e) => setFormData(prev => ({ ...prev, street: e.target.value }))}
-              placeholder="e.g. 123 Main St"
+              placeholder="Enter street address"
               className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm"
             />
           </div>
@@ -82,7 +82,7 @@ export function EditLocationDialog({
             <Input
               value={formData.city}
               onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-              placeholder="e.g. Los Angeles"
+              placeholder="Enter city name"
               className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm"
             />
           </div>
@@ -93,7 +93,7 @@ export function EditLocationDialog({
               <Input
                 value={formData.state}
                 onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
-                placeholder="e.g. California"
+                placeholder="Enter state name"
                 className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm"
               />
             </div>
@@ -102,7 +102,7 @@ export function EditLocationDialog({
               <Input
                 value={formData.zip}
                 onChange={(e) => setFormData(prev => ({ ...prev, zip: e.target.value }))}
-                placeholder="e.g. 90001"
+                placeholder="Enter zip code"
                 className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm"
               />
             </div>
@@ -113,7 +113,7 @@ export function EditLocationDialog({
             <Input
               value={formData.country}
               onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-              placeholder="e.g. United States"
+              placeholder="Enter country name"
               className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm"
             />
           </div>

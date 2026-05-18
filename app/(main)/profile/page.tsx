@@ -168,7 +168,7 @@ export default function ProfilePage() {
         toast.success("Profile image updated");
         // Update local edit form state with the new path
         setEditFormData(prev => ({ ...prev, profile_img_url: file_path }));
-        
+
         const refreshed = await fetchProfileAction();
         if (refreshed.success && refreshed.data) {
           setUser(refreshed.data);
@@ -283,6 +283,7 @@ export default function ProfilePage() {
               <Label className="text-[12px] font-bold text-black-700 uppercase">First Name</Label>
               {isEditing ? (
                 <Input
+                  placeholder="Enter first name"
                   value={editFormData.first_name}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, first_name: e.target.value }))}
                   className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all"
@@ -296,6 +297,7 @@ export default function ProfilePage() {
               <Label className="text-[12px] font-bold text-black-700 uppercase">Last Name</Label>
               {isEditing ? (
                 <Input
+                  placeholder="Enter last name"
                   value={editFormData.last_name}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, last_name: e.target.value }))}
                   className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all"
@@ -318,6 +320,7 @@ export default function ProfilePage() {
                 <div className="relative">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
+                    placeholder="Enter phone number"
                     value={editFormData.phone_number}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, phone_number: e.target.value }))}
                     className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl pl-10 pr-4 text-sm font-medium transition-all"
@@ -346,7 +349,7 @@ export default function ProfilePage() {
                   <div className="relative">
                     <Input
                       type={showOldPassword ? "text" : "password"}
-                      placeholder="••••••••"
+                      placeholder="Enter old password"
                       value={editFormData.old_password}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, old_password: e.target.value }))}
                       className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 pr-11 text-sm transition-all"
@@ -365,7 +368,7 @@ export default function ProfilePage() {
                   <div className="relative">
                     <Input
                       type={showNewPassword ? "text" : "password"}
-                      placeholder="••••••••"
+                      placeholder="Enter new password"
                       value={editFormData.new_password}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, new_password: e.target.value }))}
                       className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 pr-11 text-sm transition-all"
