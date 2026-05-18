@@ -581,3 +581,18 @@ export async function findAvailableGuardsAction(payload: {
     return { success: false, error: message };
   }
 }
+
+export async function fetchCalendarShiftsAction(
+  from_date: string,
+  to_date: string
+): Promise<{ success: boolean; data?: any[]; count?: number; error?: string }> {
+  try {
+    const data = await apiFetch<{ success: boolean; count: number; data: any[] }>(
+      `/api/v1/calender/shifts?from_date=${from_date}&to_date=${to_date}`
+    );
+    return { success: true, data: data.data, count: data.count };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}

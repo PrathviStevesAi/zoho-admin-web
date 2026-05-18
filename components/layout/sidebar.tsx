@@ -9,7 +9,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   User,
-  Users
+  Users,
+  Calendar
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 
 const routes = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+  { label: "Calendar", icon: Calendar, href: "/calendar" },
   { label: "Member Directory", icon: Users, href: "/member-directory" },
   { label: "Profile", icon: User, href: "/profile" },
 ];
