@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   LayoutDashboard,
@@ -19,13 +19,18 @@ import { Button } from "@/components/ui/button";
 const routes = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Calendar", icon: Calendar, href: "/calendar" },
-  { label: "Member Directory", icon: Users, href: "/member-directory" },
+  { label: "Users Directory", icon: Users, href: "/users-directory" },
   { label: "Profile", icon: User, href: "/profile" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <>
