@@ -23,6 +23,8 @@ export type InvoiceData = {
   zoho_invoice_id?: string;
   invoice_amount?: number;
   description?: string;
+  invoice_description?: string;
+  shift_description?: string | null;
   payment_status?: string | null;
   reminder_date?: string | null;
   per_hour_rate?: number | null;

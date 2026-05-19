@@ -531,7 +531,8 @@ export async function cancelInvoiceServiceAction(payload: {
 export async function updateInvoiceDetailsAction(payload: {
   invoice_id: string;
   customer_name?: string;
-  description?: string;
+  invoice_description?: string;
+  shift_description?: string;
   shipping_address?: any;
 }): Promise<{ success: boolean; error?: string }> {
   try {

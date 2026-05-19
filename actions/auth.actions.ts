@@ -31,7 +31,7 @@ export async function registerUserAction(userData: any) {
         const token = session?.accessToken;
 
         console.log("Sending registration data:", userData);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/member/register`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/member/register`, {
             method: "POST",
             body: JSON.stringify(userData),
             headers: {
@@ -48,9 +48,10 @@ export async function registerUserAction(userData: any) {
             return { success: true, data: result.data };
         } else {
             console.error("Registration API Failure Body:", result);
+            const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.error || result.message || result.msg || "Registration failed";
             return {
                 success: false,
-                error: result.error || result.message || result.msg || (result ? `API Error: ${JSON.stringify(result)}` : "Registration failed")
+                error: errorMsg
             };
         }
     } catch (error) {
@@ -189,7 +190,7 @@ export async function deleteMemberAction(memberId: string) {
         const session = await auth();
         const token = session?.accessToken;
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/member/${memberId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/member/${memberId}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",

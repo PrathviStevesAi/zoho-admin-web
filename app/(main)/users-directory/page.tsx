@@ -243,7 +243,7 @@ export default function MemberDirectoryPage() {
                 <Button
                   type="submit"
                   disabled={isRegistering}
-                  className="w-full h-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 mt-2 disabled:opacity-70"
+                  className="cursor-pointer w-full h-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 mt-2 disabled:opacity-70"
                 >
                   {isRegistering ? (
                     <div className="flex items-center gap-2">

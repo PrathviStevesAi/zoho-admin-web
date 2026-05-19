@@ -75,7 +75,7 @@ export default function InvoiceDetailsPage() {
   // Details Logic State
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState({ title: "", description: "" });
+  const [formData, setFormData] = useState({ title: "", description: "", shift_description: "" });
   const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -124,7 +124,8 @@ export default function InvoiceDetailsPage() {
         setInvoice(res.data);
         setFormData({
           title: res.data.customer_name || "",
-          description: res.data.description || ""
+          description: res.data.invoice_description || res.data.description || "",
+          shift_description: res.data.shift_description || ""
         });
         setPaymentFormData({
           payment_status: res.data.payment_status || "pending",
@@ -194,8 +195,9 @@ export default function InvoiceDetailsPage() {
     setIsSaving(true);
     const res = await updateInvoiceDetailsAction({
       invoice_id: id,
-      customer_name: formData.title,
-      description: formData.description
+      customer_name: formData.title?.trim(),
+      invoice_description: formData.description?.trim(),
+      shift_description: formData.shift_description?.trim()
     });
     if (res.success) {
       toast.success("Details updated successfully");
@@ -538,7 +540,7 @@ export default function InvoiceDetailsPage() {
         invoiceNo={invoice.invoice_no}
         customerName={invoice.customer_name}
         zohoInvoiceId={invoice.zoho_invoice_id}
-        description={invoice.description || ""}
+        description={invoice.invoice_description || invoice.description || ""}
         onOpenPayment={() => { setIsPaymentOpen(true); setIsScheduleOpen(false); setIsAssignGuardOpen(false); }}
         onOpenSchedule={() => { setIsScheduleOpen(true); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAddingShift(false); loadShifts("schedule"); }}
         onOpenAssignGuard={() => {
@@ -582,7 +584,15 @@ export default function InvoiceDetailsPage() {
           shifts={shifts}
           isLoading={isShiftsLoading}
           isAdding={isAddingShift}
-          onAdd={() => setIsAddingShift(true)}
+          onAdd={() => {
+            const desc = invoice?.shift_description?.trim();
+            if (!desc) {
+              toast.error("Please add a shift description first before scheduling a shift.");
+              setIsScheduleOpen(false);
+            } else {
+              setIsAddingShift(true);
+            }
+          }}
           onCancelAdd={() => setIsAddingShift(false)}
           onDelete={handleDeleteShift}
           onBack={() => setIsScheduleOpen(false)}

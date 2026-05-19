@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit2, Loader2 } from "lucide-react";
+import { Edit2, Loader2, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ interface InvoiceDetailsCardProps {
   isEditOpen: boolean;
   setIsEditOpen: (open: boolean) => void;
   isSaving: boolean;
-  formData: { title: string; description: string };
+  formData: { title: string; description: string; shift_description: string };
   setFormData: (data: any) => void;
   onSave: () => void;
   onEditLocation: () => void;
@@ -120,18 +120,54 @@ export function InvoiceDetailsCard({
           </div>
 
           <div className="grid grid-cols-4 p-4 items-start">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">Description:</span>
+            <div className="flex items-center gap-1.5 pt-1">
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Invoice Description:</span>
+              <div className="group relative">
+                <Info className="cursor-pointer w-6 h-6 text-[#0064cb] hover:text-[#0052ae] transition-colors cursor-help" />
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-52 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed font-medium rounded-lg shadow-xl z-50 text-center normal-case pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-800">
+                  Invoice details are visible only to admins. Guards cannot view invoice information.
+                </div>
+              </div>
+            </div>
             <div className="col-span-3">
               {isEditOpen ? (
                 <textarea
                   rows={4}
+                  placeholder="Enter invoice description..."
                   value={formData.description}
                   onChange={(e) => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[100px] resize-none"
                 />
               ) : (
                 <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
-                  {invoice.description || "No description provided."}
+                  {invoice.invoice_description || invoice.description || "No invoice description provided."}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 p-4 items-start border-t border-slate-50">
+            <div className="flex items-center gap-1.5 pt-1">
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Shift Description:</span>
+              <div className="group relative">
+                <Info className="cursor-pointer w-6 h-6 text-[#0064cb] hover:text-[#0052ae] transition-colors cursor-help" />
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-56 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed font-medium rounded-lg shadow-xl z-50 text-center normal-case pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-800">
+                  Shift details are visible to guards. You can add post orders, duties, instructions, and shift-related information here.
+                </div>
+              </div>
+            </div>
+            <div className="col-span-3">
+              {isEditOpen ? (
+                <textarea
+                  rows={4}
+                  placeholder="Enter shift description..."
+                  value={formData.shift_description}
+                  onChange={(e) => setFormData((prev: any) => ({ ...prev, shift_description: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[100px] resize-none"
+                />
+              ) : (
+                <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                  {invoice.shift_description || "No shift description provided."}
                 </div>
               )}
             </div>

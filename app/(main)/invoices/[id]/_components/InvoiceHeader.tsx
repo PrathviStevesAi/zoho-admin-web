@@ -50,6 +50,14 @@ export function InvoiceHeader({
   const formatDescription = (text: string) => {
     if (!text) return null;
 
+    if (!text.includes('*')) {
+      return (
+        <div className="text-slate-200 whitespace-pre-wrap leading-relaxed">
+          {text}
+        </div>
+      );
+    }
+
     const sections = text.split('*').map(s => s.trim()).filter(Boolean);
 
     return (
@@ -73,7 +81,7 @@ export function InvoiceHeader({
                 if (parts.length > 1) {
                   return (
                     <div key={lIdx} className="flex justify-between gap-4 border-b border-slate-800/50 pb-1 last:border-0">
-                      <span className="text-slate-700 font-medium whitespace-nowrap">{parts[0].trim()}:</span>
+                      <span className="text-slate-200 font-medium whitespace-nowrap">{parts[0].trim()}:</span>
                       <span className="text-slate-200 text-right">{parts.slice(1).join(':').trim()}</span>
                     </div>
                   );
