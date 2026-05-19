@@ -75,7 +75,6 @@ export function DashboardView({
                 ) : (
                     <>
                         <div key="refused">{refused}</div>
-                        <div key="abandon">{abandon}</div>
                         <div key="accepted">{accepted}</div>
                         <div key="approved">{approved}</div>
                         <div key="notapproved">{notapproved}</div>
