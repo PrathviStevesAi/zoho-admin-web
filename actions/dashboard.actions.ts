@@ -19,7 +19,7 @@ export async function fetchInvoicesAction(
 ): Promise<FetchResponse<InvoiceData>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/invoice/${status}/list?search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -43,7 +43,7 @@ export async function fetchPreShiftCheckInAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_pre_check_in&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -67,7 +67,7 @@ export async function fetchInProgressShiftAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_in_progress&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -91,7 +91,7 @@ export async function fetchFinishedShiftAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_finished&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -115,13 +115,13 @@ export async function fetchPlannedShiftAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_planned&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
   if (date_from) url += `&date_from=${date_from}`;
   if (date_to) url += `&date_to=${date_to}`;
-  
+
   try {
     const data = await apiFetch<BaseApiResponse<Record>>(url);
     return { success: true, data: data.data, pagination: data.pagination };
@@ -139,7 +139,7 @@ export async function fetchArrivalShiftAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_arrival&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -163,7 +163,7 @@ export async function fetchCreatedShiftAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_created&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -187,7 +187,7 @@ export async function fetchAcceptedShiftAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_accepted&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -211,7 +211,7 @@ export async function fetchRefusedShiftAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_refused&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -235,7 +235,7 @@ export async function fetchAbandonShiftAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_abandon&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -259,7 +259,7 @@ export async function fetchApprovedShiftAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_approved&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -283,7 +283,7 @@ export async function fetchNotApprovedShiftAction(
 ): Promise<FetchResponse<Record>> {
   const query = encodeURIComponent(search);
   let url = `/api/v1/shift/list?status=shift_not_approved&search=${query}`;
-  
+
   if (!date_from && !date_to) {
     url += `&page=${page}`;
   }
@@ -306,7 +306,6 @@ export async function fetchInvoiceDetailsAction(
     const data = await apiFetch<{ success: boolean; data: InvoiceData }>(
       `/api/v1/invoice/${id}`,
     );
-
     return { success: true, data: data.data };
   } catch (error: any) {
     const message = error.message || "Something went wrong";
@@ -406,6 +405,7 @@ export async function createShiftAction(payload: {
       method: "POST",
       body: JSON.stringify(payload),
     });
+    console.log("Shift created successfully", payload);
     return { success: true };
   } catch (error: any) {
     const message = error.message || "Something went wrong";

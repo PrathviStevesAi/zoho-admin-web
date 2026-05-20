@@ -1,6 +1,7 @@
 "use client";
 
 import { Calendar, Clock, Loader2, Plus, Trash2 } from "lucide-react";
+import { DateTime } from "luxon";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,14 +113,10 @@ export function ShiftModule({
                           <TableCell className="text-sm font-bold text-slate-700 py-4 px-6">{shift.shift_no}</TableCell>
                           <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">{shift.service_name}</TableCell>
                           <TableCell className="text-sm text-slate-800 py-4 px-6">
-                            {new Date(shift.start_time).toLocaleString('en-US', {
-                              month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
-                            })}
+                            {DateTime.fromISO(shift.start_time, { setZone: true }).toFormat("MMM d, yyyy, h:mm a")}
                           </TableCell>
                           <TableCell className="text-sm text-slate-800 py-4 px-6">
-                            {new Date(shift.end_time).toLocaleString('en-US', {
-                              month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
-                            })}
+                            {DateTime.fromISO(shift.end_time, { setZone: true }).toFormat("MMM d, yyyy, h:mm a")}
                           </TableCell>
                           <TableCell className="py-4 px-6 text-right">
                             <Button

@@ -137,6 +137,7 @@ export default function InvoiceDetailsPage() {
         toast.error(res.error || "Failed to load invoice");
       }
       setLoading(false);
+      console.log('responseee', res);
     }
     loadInvoice();
     loadServices();
@@ -152,6 +153,7 @@ export default function InvoiceDetailsPage() {
   const loadShifts = async (view: string = "schedule") => {
     setIsShiftsLoading(true);
     const res = await fetchInvoiceShiftsAction(id, view);
+    console.log("Shift Schedule table data response:", res);
     if (res.success && res.data) {
       setShifts(res.data);
     } else {
@@ -218,8 +220,8 @@ export default function InvoiceDetailsPage() {
     setIsCancelling(true);
     try {
       console.log("Calling cancelInvoiceServiceAction with 15s timeout...");
-      
-      const timeoutPromise = new Promise((_, reject) => 
+
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Request timed out but may have succeeded. Please refresh.")), 15000)
       );
 
@@ -232,11 +234,11 @@ export default function InvoiceDetailsPage() {
       ]) as any;
 
       console.log("API Result received:", res);
-      
+
       if (res && res.success) {
         toast.success("Service cancelled successfully");
         setIsCancelServiceOpen(false);
-        
+
         // Trigger refresh immediately
         fetchInvoiceDetailsAction(id).then(refreshed => {
           if (refreshed.success) {
@@ -251,12 +253,12 @@ export default function InvoiceDetailsPage() {
     } catch (error: any) {
       console.error("Cancellation exception:", error);
       if (error.message?.includes("timed out")) {
-         toast.info("Request took longer than expected. Refreshing data...");
-         setIsCancelServiceOpen(false);
-         fetchInvoiceDetailsAction(id).then(refreshed => {
-           if (refreshed.success) setInvoice(refreshed.data);
-           else window.location.reload();
-         });
+        toast.info("Request took longer than expected. Refreshing data...");
+        setIsCancelServiceOpen(false);
+        fetchInvoiceDetailsAction(id).then(refreshed => {
+          if (refreshed.success) setInvoice(refreshed.data);
+          else window.location.reload();
+        });
       } else {
         toast.error(error.message || "Failed to cancel service");
       }
@@ -379,6 +381,13 @@ export default function InvoiceDetailsPage() {
     if (result.success) {
       toast.success("Shifts created successfully");
       setIsAddingShift(false);
+      setAddShiftData({
+        dateFrom: new Date().toISOString().split('T')[0],
+        dateTo: new Date().toISOString().split('T')[0],
+        service: "",
+        people: 1
+      });
+      setRowSchedules({});
       loadShifts();
     } else {
       toast.error(result.error || "Failed to create shifts");
@@ -394,8 +403,8 @@ export default function InvoiceDetailsPage() {
       for (let j = i + 1; j < currentBatchShifts.length; j++) {
         const s1 = currentBatchShifts[i];
         const s2 = currentBatchShifts[j];
-        if (DateTime.fromISO(s1.start_time) < DateTime.fromISO(s2.end_time) && 
-            DateTime.fromISO(s2.start_time) < DateTime.fromISO(s1.end_time)) {
+        if (DateTime.fromISO(s1.start_time) < DateTime.fromISO(s2.end_time) &&
+          DateTime.fromISO(s2.start_time) < DateTime.fromISO(s1.end_time)) {
           toast.error(`Overlap detected: Shift ${s1.shift_no} and ${s2.shift_no} happen at the same time. You cannot assign the same guard to both.`);
           return;
         }
@@ -405,22 +414,22 @@ export default function InvoiceDetailsPage() {
     // 3. Check for overlaps with existing assignments for this guard (already in DB)
     const existingGuardShifts = shifts.filter(s => {
       if (!s.guard) return false;
-      
+
       // Try ID match
       const gid = typeof s.guard === 'object' ? (s.guard.guard_id || s.guard.id) : (s.guard_id || s.assigned_guard_id);
       if (gid && gid === guard.guard_id) return true;
-      
+
       // Fallback: Name match (useful if API only returns names or partial objects)
-      const sName = typeof s.guard === 'object' 
+      const sName = typeof s.guard === 'object'
         ? `${s.guard.first_name} ${s.guard.last_name}`.toLowerCase().trim()
         : String(s.guard).toLowerCase().trim();
       const gName = `${guard.first_name} ${guard.last_name}`.toLowerCase().trim();
-      
+
       return sName === gName;
     });
 
     // 4. Check for overlaps with pending assignments for this guard
-    const pendingGuardShifts = shifts.filter(s => 
+    const pendingGuardShifts = shifts.filter(s =>
       pendingAssignments[s.shift_id] && pendingAssignments[s.shift_id].guard_id === guard.guard_id
     );
 
@@ -428,8 +437,8 @@ export default function InvoiceDetailsPage() {
 
     for (const newShift of currentBatchShifts) {
       for (const assigned of allAssignedShifts) {
-        if (DateTime.fromISO(newShift.start_time) < DateTime.fromISO(assigned.end_time) && 
-            DateTime.fromISO(assigned.start_time) < DateTime.fromISO(newShift.end_time)) {
+        if (DateTime.fromISO(newShift.start_time) < DateTime.fromISO(assigned.end_time) &&
+          DateTime.fromISO(assigned.start_time) < DateTime.fromISO(newShift.end_time)) {
           toast.error(`Guard ${guard.first_name} is already assigned to shift ${assigned.shift_no} during this time (${new Date(assigned.start_time).toLocaleTimeString()} - ${new Date(assigned.end_time).toLocaleTimeString()}).`);
           return;
         }
