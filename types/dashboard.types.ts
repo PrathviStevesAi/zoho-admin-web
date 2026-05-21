@@ -31,6 +31,7 @@ export type InvoiceData = {
   per_shift_rate?: number | null;
   shipping_address?: string | ShippingAddress;
   service_address?: string;
+  timezone?: string | null;
   history?: InvoiceHistory[];
 };
 

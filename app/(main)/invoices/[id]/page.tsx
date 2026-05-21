@@ -24,8 +24,6 @@ import {
 import { InvoiceData } from "@/types/dashboard.types";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
-
-// Import Modular Components
 import { InvoiceHeader } from "./_components/InvoiceHeader";
 import { InvoiceDetailsCard } from "./_components/InvoiceDetailsCard";
 import { InvoiceHistorySidebar } from "./_components/InvoiceHistorySidebar";
@@ -39,6 +37,13 @@ import { ConfirmationDialog } from "./_components/ConfirmationDialog";
 import { AvailableGuardsModule } from "./_components/AvailableGuardsModule";
 import { ShippingAddress } from "@/types/dashboard.types";
 import { fetchAvailableGuardsAction } from "@/actions/dashboard.actions";
+
+const formatDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 function InvoiceSkeleton() {
   return (
@@ -61,18 +66,12 @@ function InvoiceSkeleton() {
 export default function InvoiceDetailsPage() {
   const params = useParams();
   const id = params.id as string;
-
-  // Global State
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
-
-  // View States
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isAssignGuardOpen, setIsAssignGuardOpen] = useState(false);
   const [isAvailableGuardsOpen, setIsAvailableGuardsOpen] = useState(false);
-
-  // Details Logic State
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ title: "", description: "", shift_description: "" });
@@ -81,8 +80,7 @@ export default function InvoiceDetailsPage() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, shiftId: string }>({ isOpen: false, shiftId: "" });
   const [unassignConfirm, setUnassignConfirm] = useState<{ isOpen: boolean, shiftOfferId: string }>({ isOpen: false, shiftOfferId: "" });
-
-  // Payment Logic State
+  const [invoiceTimezone, setInvoiceTimezone] = useState<string>('America/Los_Angeles');
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
   const [paymentFormData, setPaymentFormData] = useState({
     payment_status: "",
@@ -90,28 +88,22 @@ export default function InvoiceDetailsPage() {
     per_hour_rate: 0,
     per_shift_rate: 0
   });
-
-  // Shift Logic State
   const [shifts, setShifts] = useState<any[]>([]);
   const [isShiftsLoading, setIsShiftsLoading] = useState(false);
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [isCreatingShift, setIsCreatingShift] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [addShiftData, setAddShiftData] = useState({
-    dateFrom: new Date().toISOString().split('T')[0],
-    dateTo: new Date().toISOString().split('T')[0],
+    dateFrom: formatDateKey(new Date()),
+    dateTo: formatDateKey(new Date()),
     service: "",
     people: 1
   });
   const [rowSchedules, setRowSchedules] = useState<Record<string, any>>({});
-
-  // Guard Assignment State
   const [isSelectUserOpen, setIsSelectUserOpen] = useState(false);
   const [selectedShiftIds, setSelectedShiftIds] = useState<string[]>([]);
   const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string }>>({});
   const [isAssigning, setIsAssigning] = useState(false);
-
-  // Available Guards State
   const [availableGuards, setAvailableGuards] = useState<any[]>([]);
   const [isAvailableGuardsLoading, setIsAvailableGuardsLoading] = useState(false);
   const [totalAvailableGuards, setTotalAvailableGuards] = useState(0);
@@ -122,6 +114,7 @@ export default function InvoiceDetailsPage() {
       const res = await fetchInvoiceDetailsAction(id);
       if (res.success) {
         setInvoice(res.data);
+        setInvoiceTimezone(res.data.timezone || 'America/Los_Angeles');
         setFormData({
           title: res.data.customer_name || "",
           description: res.data.invoice_description || res.data.description || "",
@@ -238,8 +231,6 @@ export default function InvoiceDetailsPage() {
       if (res && res.success) {
         toast.success("Service cancelled successfully");
         setIsCancelServiceOpen(false);
-
-        // Trigger refresh immediately
         fetchInvoiceDetailsAction(id).then(refreshed => {
           if (refreshed.success) {
             setInvoice(refreshed.data);
@@ -302,8 +293,8 @@ export default function InvoiceDetailsPage() {
 
   const calculateHours = (startTime: string, endTime: string) => {
     if (!startTime || !endTime) return "";
-    const start = DateTime.fromISO(startTime);
-    let end = DateTime.fromISO(endTime);
+    const start = DateTime.fromISO(startTime, { zone: invoiceTimezone });
+    let end = DateTime.fromISO(endTime, { zone: invoiceTimezone });
     if (!start.isValid || !end.isValid) return "";
     if (end < start) end = end.plus({ days: 1 });
     const diff = end.diff(start, ['hours', 'minutes']).toObject();
@@ -325,7 +316,7 @@ export default function InvoiceDetailsPage() {
       } else if (field === 'hours') {
         const hoursNum = parseFloat(value);
         if (!isNaN(hoursNum)) {
-          const start = DateTime.fromISO(updated.startTime);
+          const start = DateTime.fromISO(updated.startTime, { zone: invoiceTimezone });
           if (start.isValid) {
             updated.endTime = start.plus({ hours: hoursNum }).toISO({ includeOffset: false }).slice(0, 16);
           }
@@ -338,9 +329,11 @@ export default function InvoiceDetailsPage() {
   const getDatesList = (startDate: string, endDate: string) => {
     if (!startDate || !endDate) return [];
     const dates = [];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    for (let d = new Date(start.getFullYear(), start.getMonth(), start.getDate()); d <= end; d.setDate(d.getDate() + 1)) {
+    const startParts = startDate.split('-').map(Number);
+    const endParts = endDate.split('-').map(Number);
+    const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+    const end = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       dates.push(new Date(d));
     }
     return dates;
@@ -354,14 +347,13 @@ export default function InvoiceDetailsPage() {
     const schedule = [];
     const dates = getDatesList(addShiftData.dateFrom, addShiftData.dateTo);
     for (const date of dates) {
-      const dateKey = date.toISOString().split('T')[0];
+      const dateKey = formatDateKey(date);
       const row = rowSchedules[dateKey];
       if (row && row.checked && row.startTime && row.endTime) {
-        // Create multiple objects based on # of people
         for (let p = 0; p < (addShiftData.people || 1); p++) {
           schedule.push({
-            start_date: DateTime.fromISO(row.startTime).toUTC().toISO({ suppressMilliseconds: true }) || row.startTime,
-            end_date: DateTime.fromISO(row.endTime).toUTC().toISO({ suppressMilliseconds: true }) || row.endTime,
+            start_date: DateTime.fromISO(row.startTime, { zone: invoiceTimezone }).toUTC().toISO({ suppressMilliseconds: true }) || row.startTime,
+            end_date: DateTime.fromISO(row.endTime, { zone: invoiceTimezone }).toUTC().toISO({ suppressMilliseconds: true }) || row.endTime,
             total_hr: parseFloat(row.hours)
           });
         }
@@ -382,8 +374,8 @@ export default function InvoiceDetailsPage() {
       toast.success("Shifts created successfully");
       setIsAddingShift(false);
       setAddShiftData({
-        dateFrom: new Date().toISOString().split('T')[0],
-        dateTo: new Date().toISOString().split('T')[0],
+        dateFrom: formatDateKey(new Date()),
+        dateTo: formatDateKey(new Date()),
         service: "",
         people: 1
       });
@@ -394,11 +386,9 @@ export default function InvoiceDetailsPage() {
     }
     setIsCreatingShift(false);
   };
-  const handleGuardSelect = (guard: any) => {
-    // 1. Get shift details for the current selection
-    const currentBatchShifts = shifts.filter(s => selectedShiftIds.includes(s.shift_id));
 
-    // 2. Check for overlaps within the current selection itself
+  const handleGuardSelect = (guard: any) => {
+    const currentBatchShifts = shifts.filter(s => selectedShiftIds.includes(s.shift_id));
     for (let i = 0; i < currentBatchShifts.length; i++) {
       for (let j = i + 1; j < currentBatchShifts.length; j++) {
         const s1 = currentBatchShifts[i];
@@ -411,15 +401,12 @@ export default function InvoiceDetailsPage() {
       }
     }
 
-    // 3. Check for overlaps with existing assignments for this guard (already in DB)
     const existingGuardShifts = shifts.filter(s => {
       if (!s.guard) return false;
 
-      // Try ID match
       const gid = typeof s.guard === 'object' ? (s.guard.guard_id || s.guard.id) : (s.guard_id || s.assigned_guard_id);
       if (gid && gid === guard.guard_id) return true;
 
-      // Fallback: Name match (useful if API only returns names or partial objects)
       const sName = typeof s.guard === 'object'
         ? `${s.guard.first_name} ${s.guard.last_name}`.toLowerCase().trim()
         : String(s.guard).toLowerCase().trim();
@@ -428,7 +415,6 @@ export default function InvoiceDetailsPage() {
       return sName === gName;
     });
 
-    // 4. Check for overlaps with pending assignments for this guard
     const pendingGuardShifts = shifts.filter(s =>
       pendingAssignments[s.shift_id] && pendingAssignments[s.shift_id].guard_id === guard.guard_id
     );
@@ -613,6 +599,7 @@ export default function InvoiceDetailsPage() {
           getDatesList={getDatesList}
           onCreateShifts={handleCreateShifts}
           isCreating={isCreatingShift}
+          timezone={invoiceTimezone}
         />
       ) : isAssignGuardOpen ? (
         <AssignmentModule

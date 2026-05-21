@@ -39,6 +39,7 @@ interface ShiftModuleProps {
   getDatesList: (start: string, end: string) => Date[];
   onCreateShifts: () => void;
   isCreating: boolean;
+  timezone: string;
 }
 
 export function ShiftModule({
@@ -150,8 +151,31 @@ export function ShiftModule({
     );
   }
 
-  const today = new Date().toISOString().split('T')[0];
-  const now = new Date().toISOString().slice(0, 16);
+  const getLocalDateString = (date: Date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getLocalTimeString = (date: Date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const formatDateKey = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = getLocalDateString();
+  const now = getLocalTimeString();
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
@@ -165,7 +189,6 @@ export function ShiftModule({
           </div>
 
           <div className="p-6 space-y-8">
-            {/* Top Bar */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
               <div className="space-y-2">
                 <Label className="text-[11px] font-bold text-slate-800 uppercase">Select Service</Label>
@@ -217,7 +240,6 @@ export function ShiftModule({
               </div>
             </div>
 
-            {/* Schedule Table */}
             <div className="border border-slate-100 rounded-xl overflow-hidden">
               <Table>
                 <TableHeader className="bg-slate-50/50">
@@ -230,11 +252,8 @@ export function ShiftModule({
                 </TableHeader>
                 <TableBody>
                   {getDatesList(addShiftData.dateFrom, addShiftData.dateTo).map((date, i) => {
-                    const dateKey = date.toISOString().split('T')[0];
+                    const dateKey = formatDateKey(date);
                     const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
-
-                    // For the datetime-local inputs in the rows, we can also set min to 'now' 
-                    // or better, min to that specific date at 00:00 if it's in the future
                     const rowMin = dateKey === today ? now : `${dateKey}T00:00`;
 
                     return (
