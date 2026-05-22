@@ -35,15 +35,32 @@ export async function updateProfileAction(formData: {
   }
 }
 
-export async function generateUploadUrlAction(fileName: string, type: string): Promise<{ success: boolean; data?: any; error?: string }> {
+export interface UploadUrlResponse {
+  signed_url: string;
+  file_path: string;
+}
+
+export async function generateUploadUrlAction(
+  fileName: string,
+  type: string,
+  shiftId?: string
+): Promise<{ success: boolean; data?: UploadUrlResponse; error?: string }> {
   try {
-    const data = await apiFetch<any>(`/api/v1/shift/media/generate-upload-url`, {
-      method: "POST",
-      body: JSON.stringify({ file_name: fileName, type }),
-    });
+    const data = await apiFetch<{ success: boolean; data: UploadUrlResponse }>(
+      `/api/v1/shift/media/generate-upload-url`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          file_name: fileName,
+          type,
+          ...(shiftId && { shift_id: shiftId }),
+        }),
+      }
+    );
     return { success: true, data: data.data };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to generate upload URL";
     return { success: false, error: message };
   }
 }
+

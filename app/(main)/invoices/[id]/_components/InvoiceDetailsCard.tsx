@@ -121,7 +121,7 @@ export function InvoiceDetailsCard({
 
           <div className="grid grid-cols-4 p-4 items-start">
             <div className="flex items-center gap-1.5 pt-1">
-              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Invoice Description:</span>
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Invoice Details:</span>
               <div className="group relative">
                 <Info className="cursor-pointer w-6 h-6 text-[#0064cb] hover:text-[#0052ae] transition-colors cursor-help" />
                 <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-52 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed font-medium rounded-lg shadow-xl z-50 text-center normal-case pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-800">
@@ -148,7 +148,7 @@ export function InvoiceDetailsCard({
 
           <div className="grid grid-cols-4 p-4 items-start border-t border-slate-50">
             <div className="flex items-center gap-1.5 pt-1">
-              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Shift Description:</span>
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Shift Detail:</span>
               <div className="group relative">
                 <Info className="cursor-pointer w-6 h-6 text-[#0064cb] hover:text-[#0052ae] transition-colors cursor-help" />
                 <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-56 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed font-medium rounded-lg shadow-xl z-50 text-center normal-case pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-800">
@@ -167,7 +167,7 @@ export function InvoiceDetailsCard({
                 />
               ) : (
                 <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
-                  {invoice.shift_description || "No shift description provided."}
+                  {invoice.shift_description || "No shift detail provided."}
                 </div>
               )}
             </div>

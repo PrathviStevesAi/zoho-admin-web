@@ -112,7 +112,7 @@ export default function NotificationDetailPage() {
           </div>
 
           {notification.data?.shift_id && (
-            <Link href={`/shifts/${notification.data.shift_id}`} className="flex flex-col items-center gap-1.5 group cursor-pointer">
+            <Link href={`/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`} className="flex flex-col items-center gap-1.5 group cursor-pointer">
               <div className="w-12 h-12 rounded-full border-2 border-orange-500 flex items-center justify-center text-orange-500 group-hover:bg-orange-50 transition-colors shadow-sm">
                 <ExternalLink className="w-5.5 h-5.5" />
               </div>

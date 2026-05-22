@@ -51,3 +51,15 @@ export async function markNotificationAsReadAction(id: string) {
         return { success: false };
     }
 }
+
+export async function fetchShiftReportsAction(shiftId: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+        const response = await apiFetch<{ success: boolean; message: string; data: any }>(`/api/v1/shift/${shiftId}/reports`);
+        return { success: true, data: response.data };
+    } catch (error: any) {
+        console.error(`Error fetching shift reports for ${shiftId}:`, error);
+        const message = error.message || "Something went wrong";
+        return { success: false, error: message };
+    }
+}
+

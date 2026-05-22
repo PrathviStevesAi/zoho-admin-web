@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { generateToken, onMessageListener } from "@/lib/firebase";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
-
-
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { fetchNotificationByIdAction } from "@/actions/notification.actions";
 
 export default function NotificationProvider() {
     const router = useRouter();
@@ -15,7 +13,7 @@ export default function NotificationProvider() {
 
     useEffect(() => {
         console.log("[NotificationProvider] Status change:", status);
-        
+
         if (typeof window !== "undefined") {
             console.log("[NotificationProvider] Current Permission:", Notification.permission);
         }
@@ -52,13 +50,14 @@ export default function NotificationProvider() {
         // Set up foreground message listener
         const unsubscribe = onMessageListener((payload) => {
             console.log("[NotificationProvider] Foreground message received:", payload);
-            
+
             // Extract info from notification block OR data block
             const title = payload?.notification?.title || payload?.data?.title || "New Notification";
             const body = payload?.notification?.body || payload?.data?.body || "You have a new message.";
-            const notificationId = payload?.data?.notification_id || payload?.data?.id;
+            const notificationId = payload?.data?.notification_id || payload?.data?.notificationId || payload?.data?.id || payload?.id || payload?.notification_id || payload?.notificationId;
+            const shiftId = payload?.data?.shift_id || payload?.data?.shiftId || payload?.shift_id || payload?.shiftId;
 
-            console.log("[NotificationProvider] Processing toast:", { title, body, notificationId });
+            console.log("[NotificationProvider] Processing toast:", { title, body, notificationId, shiftId });
 
             if (title || body) {
                 // Using standard toast with brand-matching styles
@@ -72,9 +71,25 @@ export default function NotificationProvider() {
                     ),
                     action: {
                         label: "View Details",
-                        onClick: () => {
-                            if (notificationId) {
-                                router.push(`/notifications/view?id=${notificationId}`);
+                        onClick: async () => {
+                            let targetShiftId = shiftId;
+                            if (!targetShiftId && notificationId) {
+                                try {
+                                    const res = await fetchNotificationByIdAction(notificationId);
+                                    if (res.success && res.data?.data?.shift_id) {
+                                        targetShiftId = res.data.data.shift_id;
+                                    }
+                                } catch (err) {
+                                    console.error("Failed to fetch notification shift details:", err);
+                                }
+                            }
+
+                            if (targetShiftId && notificationId) {
+                                router.push(`/notifications/view?shift_id=${targetShiftId}&notification_id=${notificationId}`);
+                            } else if (targetShiftId) {
+                                router.push(`/notifications/view?shift_id=${targetShiftId}`);
+                            } else if (notificationId) {
+                                router.push(`/notifications/view?notification_id=${notificationId}`);
                             } else {
                                 router.push(`/notifications/view`);
                             }

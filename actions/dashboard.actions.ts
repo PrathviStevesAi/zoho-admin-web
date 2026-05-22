@@ -352,14 +352,21 @@ export async function fetchInvoiceShiftsAction(
 
 export async function fetchShiftDetailsAction(
   shiftId: string,
+  notificationId?: string,
 ): Promise<SingleFetchResponse<any>> {
   try {
-    const data = await apiFetch<{ success: boolean; data: any }>(
-      `/api/v1/shift/${shiftId}`,
-    );
+    const endpoint = notificationId
+      ? `/api/v1/shift/${shiftId}?notification_id=${notificationId}`
+      : `/api/v1/shift/${shiftId}`;
+    const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
+    console.log("fetchShiftDetailsAction: Requesting URL:", fullUrl);
+    
+    const data = await apiFetch<{ success: boolean; data: any }>(endpoint);
+    console.log("fetchShiftDetailsAction: Response data:", data);
 
     return { success: true, data: data.data };
   } catch (error: any) {
+    console.error("fetchShiftDetailsAction: Error:", error);
     const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
@@ -597,3 +604,47 @@ export async function fetchCalendarShiftsAction(
     return { success: false, error: message };
   }
 }
+
+export interface Comment {
+  id: string;
+  shift_id: string;
+  type: "internal" | "external";
+  user_message: string | null;
+  attach_file_url: string | null;
+  user_role?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function fetchCommentsAction(
+  shiftId: string
+): Promise<{ success: boolean; data?: Comment[]; error?: string }> {
+  try {
+    const data = await apiFetch<{ success: boolean; data?: Comment[] } | Comment[]>(`/api/v1/shift/comment/${shiftId}`);
+    const commentsList = Array.isArray(data) ? data : (data.data || []);
+    return { success: true, data: commentsList };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function addCommentAction(payload: {
+  shift_id: string;
+  type: "internal" | "external";
+  user_message: string | null;
+  attach_file_url: string | null;
+}): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  try {
+    const data = await apiFetch<unknown>(`/api/v1/shift/comment`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return { success: true, data };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+

@@ -279,7 +279,7 @@ const getCommentAuthorName = (comment: any) => {
   return "User";
 };
 
-function NotificationViewContent() {
+function ShiftViewContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const shiftId = searchParams.get("shift_id");
@@ -306,13 +306,11 @@ function NotificationViewContent() {
   const loadShiftDetails = useCallback(async () => {
     if (!shiftId) return;
     setIsLoading(true);
-    const endpoint = notificationId
-      ? `/api/v1/shift/${shiftId}?notification_id=${notificationId}`
-      : `/api/v1/shift/${shiftId}`;
+    const endpoint = `/api/v1/shift/${shiftId}`;
     const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
     console.log("[ShiftDetailsClient] Requesting URL:", fullUrl);
 
-    const res = await fetchShiftDetailsAction(shiftId, notificationId || undefined);
+    const res = await fetchShiftDetailsAction(shiftId);
     console.log("[ShiftDetailsClient] Response data:", res);
 
     if (res.success) {
@@ -322,7 +320,7 @@ function NotificationViewContent() {
       setError(res.error || "Shift not found");
     }
     setIsLoading(false);
-  }, [shiftId, notificationId]);
+  }, [shiftId]);
 
   const loadReportsDetails = useCallback(async () => {
     if (!shiftId) return;
@@ -530,12 +528,18 @@ function NotificationViewContent() {
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
               <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
+              {notificationId && (
+                <>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                  <Link href="/notifications" className="hover:text-[#0064cb] transition-colors">Notifications</Link>
+                </>
+              )}
               <ChevronRight className="w-3.5 h-3.5" />
-              <Link href="/notifications" className="hover:text-[#0064cb] transition-colors">Notifications</Link>
+              <span className="text-slate-500">Shift View</span>
             </div>
             <div className="flex items-center gap-3">
               <Link
-                href="/notifications"
+                href={notificationId ? "/notifications" : "/dashboard"}
                 className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -1502,15 +1506,15 @@ function NotificationViewContent() {
   );
 }
 
-export default function NotificationViewPage() {
+export default function ShiftViewPage() {
   return (
     <Suspense fallback={
       <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6 flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-10 h-10 animate-spin text-[#0064cb]" />
-        <p className="text-slate-700 font-medium animate-pulse mt-4">Loading notification details...</p>
+        <p className="text-slate-700 font-medium animate-pulse mt-4">Loading shift details...</p>
       </div>
     }>
-      <NotificationViewContent />
+      <ShiftViewContent />
     </Suspense>
   );
 }

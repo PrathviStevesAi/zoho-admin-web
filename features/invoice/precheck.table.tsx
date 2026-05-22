@@ -1,6 +1,7 @@
 import { TableColumn } from "@/types/table.types";
 import { Record } from "@/types/dashboard.types";
 import { getStatusBadgeClass, formatStatus } from "@/lib/utils";
+import Link from "next/link";
 
 export const precheckTableColumns: TableColumn<Record>[] = [
     {
@@ -45,11 +46,11 @@ export const precheckTableColumns: TableColumn<Record>[] = [
         width: "100px",
         align: "center",
         render: (row) => (
-            <span
-                className={getStatusBadgeClass(row.status)}
-            >
-                {formatStatus(row.status)}
-            </span>
+            <Link href={`/shift/view?shift_id=${row.id}`} className="cursor-pointer">
+                <span className={getStatusBadgeClass(row.status)}>
+                    {formatStatus(row.status)}
+                </span>
+            </Link>
         ),
     },
     {

@@ -78,7 +78,10 @@ export default function NotificationsPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="text-lg font-semibold text-slate-800">
-                        <Link href={`/notifications/view`} className="hover:text-primary transition-colors">
+                        <Link
+                          href={`/notifications/view?shift_id=${notification.data?.shift_id}&notification_id=${notification.id}`}
+                          className="hover:text-primary transition-colors"
+                        >
                           {notification.title}
                         </Link>
                       </h3>
@@ -100,7 +103,7 @@ export default function NotificationsPage() {
                   {notification.data?.shift_id && (
                     <div className="pt-2">
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/shifts/${notification.data.shift_id}`}>
+                        <Link href={`/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`}>
                           View Shift Details
                         </Link>
                       </Button>

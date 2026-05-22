@@ -127,7 +127,7 @@ export function NotificationsNav() {
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="text-[14px] font-bold text-[#0064cb] leading-tight cursor-pointer hover:underline">
                         <Link
-                          href={notification.data?.shift_id ? `/notifications/view?shift_id=${notification.data.shift_id}` : `/notifications/view`}
+                          href={notification.data?.shift_id ? `/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}` : `/notifications/view`}
                           onClick={() => {
                             if (!notification.is_seen) {
                               markNotificationAsReadAction(notification.id);
