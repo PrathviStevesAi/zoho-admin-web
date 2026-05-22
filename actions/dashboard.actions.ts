@@ -316,17 +316,20 @@ export async function fetchInvoiceDetailsAction(
 export async function updateInvoicePaymentStatusAction(payload: {
   invoice_id: string;
   payment_status: string;
-  reminder_date: string;
-  per_hour_rate: number;
-  per_shift_rate: number;
+  reminder_date?: string;
+  per_hour_rate?: number | string;
+  per_shift_rate?: number | string;
 }): Promise<{ success: boolean; error?: string }> {
+  console.log("[updateInvoicePaymentStatusAction] Called with payload:", payload);
   try {
-    await apiFetch(`/api/v1/invoice/payment-status`, {
+    const res = await apiFetch(`/api/v1/invoice/payment-status`, {
       method: "PATCH",
       body: JSON.stringify(payload),
     });
+    console.log("[updateInvoicePaymentStatusAction] API success response:", res);
     return { success: true };
   } catch (error: any) {
+    console.error("[updateInvoicePaymentStatusAction] API error:", error);
     const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }

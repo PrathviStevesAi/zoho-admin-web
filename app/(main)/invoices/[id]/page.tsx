@@ -82,11 +82,16 @@ export default function InvoiceDetailsPage() {
   const [unassignConfirm, setUnassignConfirm] = useState<{ isOpen: boolean, shiftOfferId: string }>({ isOpen: false, shiftOfferId: "" });
   const [invoiceTimezone, setInvoiceTimezone] = useState<string>('America/Los_Angeles');
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
-  const [paymentFormData, setPaymentFormData] = useState({
+  const [paymentFormData, setPaymentFormData] = useState<{
+    payment_status: string;
+    reminder_date: string;
+    per_hour_rate: string | number;
+    per_shift_rate: string | number;
+  }>({
     payment_status: "",
     reminder_date: "",
-    per_hour_rate: 0,
-    per_shift_rate: 0
+    per_hour_rate: "",
+    per_shift_rate: ""
   });
   const [shifts, setShifts] = useState<any[]>([]);
   const [isShiftsLoading, setIsShiftsLoading] = useState(false);
@@ -120,11 +125,13 @@ export default function InvoiceDetailsPage() {
           description: res.data.invoice_description || res.data.description || "",
           shift_description: res.data.shift_description || ""
         });
+        const initialPerHour = Number(res.data.per_hour_rate);
+        const initialPerShift = Number(res.data.per_shift_rate);
         setPaymentFormData({
           payment_status: res.data.payment_status || "pending",
           reminder_date: res.data.reminder_date || "",
-          per_hour_rate: Number(res.data.per_hour_rate) || 0,
-          per_shift_rate: Number(res.data.per_shift_rate) || 0
+          per_hour_rate: initialPerHour && initialPerHour > 0 ? String(initialPerHour) : "",
+          per_shift_rate: initialPerShift && initialPerShift > 0 ? String(initialPerShift) : ""
         });
       } else {
         toast.error(res.error || "Failed to load invoice");
@@ -259,11 +266,53 @@ export default function InvoiceDetailsPage() {
   };
 
   const handleUpdatePayment = async () => {
+    if (!paymentFormData.payment_status) {
+      toast.error("Payment status is mandatory");
+      return;
+    }
     setIsUpdatingPayment(true);
-    const res = await updateInvoicePaymentStatusAction({
+    const formatRate = (val: any) => {
+      if (val === null || val === undefined) return "";
+      const sVal = String(val).trim();
+      if (sVal === "" || parseFloat(sVal) === 0 || isNaN(parseFloat(sVal))) {
+        return "";
+      }
+      return sVal;
+    };
+
+    const payload: any = {
       invoice_id: id,
-      ...paymentFormData
-    });
+      payment_status: paymentFormData.payment_status
+    };
+
+    if (invoice) {
+      const currentReminder = paymentFormData.reminder_date || "";
+      const originalReminder = invoice.reminder_date || "";
+      if (currentReminder !== originalReminder) {
+        payload.reminder_date = currentReminder;
+      }
+      const currentPerHour = formatRate(paymentFormData.per_hour_rate);
+      const originalPerHour = formatRate(invoice.per_hour_rate);
+      if (currentPerHour !== originalPerHour) {
+        payload.per_hour_rate = currentPerHour;
+      }
+      const currentPerShift = formatRate(paymentFormData.per_shift_rate);
+      const originalPerShift = formatRate(invoice.per_shift_rate);
+      if (currentPerShift !== originalPerShift) {
+        payload.per_shift_rate = currentPerShift;
+      }
+    } else {
+      payload.reminder_date = paymentFormData.reminder_date || "";
+      payload.per_hour_rate = formatRate(paymentFormData.per_hour_rate);
+      payload.per_shift_rate = formatRate(paymentFormData.per_shift_rate);
+    }
+
+    if (payload.per_hour_rate === "") delete payload.per_hour_rate;
+    if (payload.per_shift_rate === "") delete payload.per_shift_rate;
+    if (payload.reminder_date === "") delete payload.reminder_date;
+
+    console.log("[handleUpdatePayment] Submitting payment update payload:", payload);
+    const res = await updateInvoicePaymentStatusAction(payload);
     if (res.success) {
       toast.success("Payment status updated successfully");
       setIsPaymentOpen(false);
@@ -461,8 +510,8 @@ export default function InvoiceDetailsPage() {
     setIsAssigning(true);
     const res = await assignGuardsAction({
       invoice_id: id,
-      per_hour_rate: paymentFormData.per_hour_rate,
-      per_shift_rate: paymentFormData.per_shift_rate,
+      per_hour_rate: Number(paymentFormData.per_hour_rate) || 0,
+      per_shift_rate: Number(paymentFormData.per_shift_rate) || 0,
       assignments
     });
 
