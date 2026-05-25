@@ -367,6 +367,30 @@ export async function fetchShiftDetailsAction(
     const data = await apiFetch<{ success: boolean; data: any }>(endpoint);
     console.log("fetchShiftDetailsAction: Response data:", data);
 
+    if (data.success && data.data && data.data.invoice_no) {
+      try {
+        console.log(`fetchShiftDetailsAction: Looking up invoice ID for ${data.data.invoice_no}`);
+        const searchRes = await apiFetch<{ success: boolean; data: any[] }>(
+          `/api/v1/invoice/global-search?search=${encodeURIComponent(data.data.invoice_no)}`
+        );
+        if (searchRes.success && searchRes.data) {
+          const match = searchRes.data.find(
+            (item: any) =>
+              item.type === "invoice" &&
+              item.invoice_no?.toLowerCase() === data.data.invoice_no.toLowerCase()
+          );
+          if (match && match.invoice_id) {
+            data.data.invoice_id = match.invoice_id;
+            console.log(`fetchShiftDetailsAction: Successfully injected invoice_id: ${match.invoice_id}`);
+          } else {
+            console.warn(`fetchShiftDetailsAction: No matching invoice found in search results for: ${data.data.invoice_no}`);
+          }
+        }
+      } catch (searchErr) {
+        console.error("fetchShiftDetailsAction: Failed to fetch matching invoice details during lookup:", searchErr);
+      }
+    }
+
     return { success: true, data: data.data };
   } catch (error: any) {
     console.error("fetchShiftDetailsAction: Error:", error);
@@ -649,5 +673,50 @@ export async function addCommentAction(payload: {
     return { success: false, error: message };
   }
 }
+
+export async function updateShiftDetailsAction(payload: {
+  shift_id: string;
+  shift_description?: string;
+  shipping_address?: any;
+  shift_time?: any;
+  shift_execution_time?: any;
+  create_checkpoint_interval?: number;
+  guard_break_max_duration?: number;
+  guard_break_limit?: number;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log("[Server Action] updateShiftDetailsAction PATCH Payload to /api/v1/shift/details:", JSON.stringify(payload, null, 2));
+    const result = await apiFetch<any>(`/api/v1/shift/details`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    console.log("[Server Action] updateShiftDetailsAction PATCH Response from /api/v1/shift/details:", JSON.stringify(result, null, 2));
+    return { success: true };
+  } catch (error: any) {
+    console.error("[Server Action] updateShiftDetailsAction PATCH error for /api/v1/shift/details:", error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function manualStartShiftAction(payload: {
+  shift_id: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log("[Server Action] manualStartShiftAction POST Payload to /api/v1/shift/manual-start:", payload);
+    const result = await apiFetch<any>(`/api/v1/shift/manual-start`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    console.log("[Server Action] manualStartShiftAction POST Response:", result);
+    return { success: true };
+  } catch (error: any) {
+    console.error("[Server Action] manualStartShiftAction error:", error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+
 
 

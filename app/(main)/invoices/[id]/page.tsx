@@ -133,6 +133,14 @@ export default function InvoiceDetailsPage() {
           per_hour_rate: initialPerHour && initialPerHour > 0 ? String(initialPerHour) : "",
           per_shift_rate: initialPerShift && initialPerShift > 0 ? String(initialPerShift) : ""
         });
+
+        if (typeof window !== "undefined" && window.location.hash) {
+          if (window.location.hash === "#edit") {
+            setIsEditOpen(true);
+          } else if (window.location.hash === "#edit-location") {
+            setIsEditLocationOpen(true);
+          }
+        }
       } else {
         toast.error(res.error || "Failed to load invoice");
       }
