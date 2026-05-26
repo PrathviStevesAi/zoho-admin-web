@@ -699,8 +699,8 @@ function NotificationViewContent() {
 
   useEffect(() => {
     if (shift && shift.shift_id && shift.assigned_guard) {
-      const guardId = typeof shift.assigned_guard === 'object' 
-        ? (shift.assigned_guard.id || shift.assigned_guard.guard_id) 
+      const guardId = typeof shift.assigned_guard === 'object'
+        ? (shift.assigned_guard.id || shift.assigned_guard.guard_id)
         : shift.assigned_guard;
       if (guardId) {
         // 1. Fetch initial tracking history
@@ -735,7 +735,7 @@ function NotificationViewContent() {
               // Parse latitude and longitude robustly (handles numbers & strings)
               const rawLat = message.latitude !== undefined ? message.latitude : (message.data?.latitude);
               const rawLon = message.longitude !== undefined ? message.longitude : (message.data?.longitude);
-              
+
               const lat = typeof rawLat === 'string' ? parseFloat(rawLat) : rawLat;
               const lon = typeof rawLon === 'string' ? parseFloat(rawLon) : rawLon;
 
@@ -799,7 +799,7 @@ function NotificationViewContent() {
         addr.state,
         addr.country
       ].filter(Boolean).join(", ");
-      
+
       if (addressQuery) {
         fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}`)
           .then(res => res.json())
@@ -2441,7 +2441,6 @@ function NotificationViewContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Service Dialog */}
       <CancelServiceDialog
         isOpen={isCancelServiceOpen}
         onClose={() => setIsCancelServiceOpen(false)}
@@ -2449,7 +2448,6 @@ function NotificationViewContent() {
         isSaving={isCancellingService}
       />
 
-      {/* Select Guard Dialog */}
       <SelectUserDialog
         isOpen={isSelectGuardOpen}
         onClose={() => setIsSelectGuardOpen(false)}
