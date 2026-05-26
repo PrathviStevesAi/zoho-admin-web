@@ -17,9 +17,61 @@ const customIcon = (color: string) => {
 
 const startIcon = new L.DivIcon({
   className: "custom-leaflet-icon",
-  html: `<div style="background-color: #ef4444; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9]
+  html: `
+    <style>
+      @keyframes pinPulse {
+        0% { transform: scale(0.5); opacity: 1; }
+        100% { transform: scale(2.5); opacity: 0; }
+      }
+    </style>
+    <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 32px; height: 32px;">
+      <!-- Teardrop Pin -->
+      <div style="
+        background-color: #ef4444; 
+        width: 22px; 
+        height: 22px; 
+        border-radius: 50% 50% 50% 0; 
+        transform: rotate(-45deg); 
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -6px;
+      ">
+        <!-- Center Core -->
+        <div style="
+          width: 8px; 
+          height: 8px; 
+          background-color: white; 
+          border-radius: 50%;
+        "></div>
+      </div>
+      <!-- Pulse Effect -->
+      <div style="
+        position: absolute;
+        bottom: 0px;
+        width: 12px;
+        height: 4px;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          width: 12px;
+          height: 12px;
+          border: 2px solid #ef4444;
+          border-radius: 50%;
+          animation: pinPulse 1.5s infinite ease-out;
+          opacity: 0;
+        "></div>
+      </div>
+    </div>
+  `,
+  iconSize: [32, 32],
+  iconAnchor: [16, 32]
 });
 
 const endIcon = new L.DivIcon({

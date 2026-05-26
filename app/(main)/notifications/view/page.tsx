@@ -703,6 +703,7 @@ function NotificationViewContent() {
         ? (shift.assigned_guard.id || shift.assigned_guard.guard_id) 
         : shift.assigned_guard;
       if (guardId) {
+        // 1. Fetch initial tracking history
         console.log(`[Tracking API] Fetching tracking for guard_id: ${guardId}, shift_id: ${shift.shift_id}`);
         fetchGuardTrackingAction(guardId, shift.shift_id).then(res => {
           console.log("[Tracking API] Response data:", res);
@@ -711,6 +712,80 @@ function NotificationViewContent() {
             setTrackingPath(mappedPath);
           }
         });
+
+        // 2. Establish live WebSocket connection
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://clanking-bagginess-flammable.ngrok-free.dev";
+        const cleanBase = baseUrl.replace(/\/+$/, "");
+        const wsProtocol = cleanBase.startsWith("https") ? "wss" : "ws";
+        const wsHost = cleanBase.replace(/^https?:\/\//, "").split('/')[0];
+        const wsUrl = `${wsProtocol}://${wsHost}/api/v1/tracking/ws/admin/shift/${shift.shift_id}`;
+
+        console.log("[WebSocket] Connecting to:", wsUrl);
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          console.log("[WebSocket] Connection established successfully!");
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            console.log("[WebSocket] Received message data:", event.data);
+            const message = JSON.parse(event.data);
+            if (message) {
+              // Parse latitude and longitude robustly (handles numbers & strings)
+              const rawLat = message.latitude !== undefined ? message.latitude : (message.data?.latitude);
+              const rawLon = message.longitude !== undefined ? message.longitude : (message.data?.longitude);
+              
+              const lat = typeof rawLat === 'string' ? parseFloat(rawLat) : rawLat;
+              const lon = typeof rawLon === 'string' ? parseFloat(rawLon) : rawLon;
+
+              if (typeof lat === 'number' && !isNaN(lat) && typeof lon === 'number' && !isNaN(lon)) {
+                setTrackingPath(prev => {
+                  if (prev.length > 0) {
+                    const last = prev[prev.length - 1];
+                    if (last[0] === lat && last[1] === lon) {
+                      return prev;
+                    }
+                  }
+                  return [...prev, [lat, lon]];
+                });
+              }
+              // Handle format 3: array of path checkpoints
+              else if (Array.isArray(message.path)) {
+                const freshPath = message.path.map((p: any) => {
+                  const pLat = typeof p.latitude === 'string' ? parseFloat(p.latitude) : p.latitude;
+                  const pLon = typeof p.longitude === 'string' ? parseFloat(p.longitude) : p.longitude;
+                  return [pLat, pLon];
+                }).filter((p: any) => !isNaN(p[0]) && !isNaN(p[1]));
+                setTrackingPath(freshPath);
+              }
+              else if (message.data && Array.isArray(message.data.path)) {
+                const freshPath = message.data.path.map((p: any) => {
+                  const pLat = typeof p.latitude === 'string' ? parseFloat(p.latitude) : p.latitude;
+                  const pLon = typeof p.longitude === 'string' ? parseFloat(p.longitude) : p.longitude;
+                  return [pLat, pLon];
+                }).filter((p: any) => !isNaN(p[0]) && !isNaN(p[1]));
+                setTrackingPath(freshPath);
+              }
+            }
+          } catch (err) {
+            console.error("[WebSocket] Failed to parse message:", err);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.warn("[WebSocket] Connection error:", error);
+        };
+
+        ws.onclose = (event) => {
+          console.log("[WebSocket] Connection closed:", event.reason, "Code:", event.code);
+        };
+
+        // Clean up connection on unmount or shift change
+        return () => {
+          console.log("[WebSocket] Cleaning up connection...");
+          ws.close();
+        };
       }
     }
   }, [shift]);
@@ -1638,7 +1713,7 @@ function NotificationViewContent() {
             </Card>
 
             {/* Map Section */}
-            <DynamicShiftMap center={mapCenter} checkpoints={trackingPath} />
+            <DynamicShiftMap center={trackingPath.length > 0 ? trackingPath[trackingPath.length - 1] : mapCenter} checkpoints={trackingPath} />
           </div>
 
           {/* Sidebar with Vertical Tabs - Increased width to 5/12 */}
