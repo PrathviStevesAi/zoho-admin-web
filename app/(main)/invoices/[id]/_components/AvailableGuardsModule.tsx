@@ -148,6 +148,7 @@ export function AvailableGuardsModule({
   };
 
   const handleSelectGuard = (id: string, checked: boolean) => {
+    console.log("Selected Guard ID:", id);
     if (checked) {
       setSelectedGuardIds(prev => [...prev, id]);
     } else {

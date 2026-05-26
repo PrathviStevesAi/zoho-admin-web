@@ -62,9 +62,16 @@ export function InvoiceDetailsCard({
             </div>
           </div>
 
-          <p className="text-slate-600 font-bold text-sm font-medium">
-            Location - <span className="text-[#0064cb] cursor-pointer cursor-underline">{formatAddress(invoice.shipping_address)}</span>
-          </p>
+          <div className="space-y-1.5">
+            <p className="text-slate-600 font-bold text-sm font-medium">
+              Location - <span className="text-[#0064cb] cursor-pointer cursor-underline">{formatAddress(invoice.shipping_address)}</span>
+            </p>
+            {invoice.timezone && (
+              <p className="text-slate-600 font-bold text-sm font-medium">
+                Timezone - <span className="text-slate-800 font-medium">{invoice.timezone.replace(/_/g, ' ')}</span>
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="border-t border-slate-100 divide-y divide-slate-100">

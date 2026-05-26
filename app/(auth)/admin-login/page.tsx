@@ -16,22 +16,17 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Loader2, Eye, EyeOff, ArrowLeft, KeyRound, CheckCircle2 } from "lucide-react";
+import { Loader2, Eye, EyeOff, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
-import Link from "next/link";
 
 export default function LoginPage() {
     const [isPending, startTransition] = useTransition();
     const [view, setView] = useState<'login' | 'forgot-password'>('login');
     const [forgotStep, setForgotStep] = useState<1 | 2 | 3>(1);
-
-    // Auth State
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState<string>("admin@gmail.com");
     const [password, setPassword] = useState<string>("Admin@123");
-
-    // Forgot Password State
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [forgotEmail, setForgotEmail] = useState("");
@@ -61,8 +56,6 @@ export default function LoginPage() {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const router = useRouter();
-
     const handleSendOtp = async () => {
         if (!forgotEmail) return toast.error("Please enter your email");
 
@@ -71,7 +64,7 @@ export default function LoginPage() {
             if (res.success) {
                 toast.success(res.message);
                 setForgotStep(2);
-                setTimer(300); // 5 minutes
+                setTimer(300);
                 setCanResend(false);
             } else {
                 toast.error(res.error);
@@ -129,7 +122,6 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-background px-4">
             <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 bg-card shadow-xl rounded-2xl overflow-hidden border border-border min-h-[500px]">
 
-                {/* LEFT: IMAGE SECTION */}
                 <div className="hidden md:flex flex-col items-center justify-center p-12 bg-muted/30 border-r border-border/50">
                     <div className="relative w-full aspect-square max-w-[350px] animate-in fade-in zoom-in duration-700">
                         <Image
@@ -142,7 +134,6 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* RIGHT: FORM SECTION */}
                 <div className="flex items-center justify-center p-6 sm:p-12 bg-white">
                     <div className="w-full max-w-[400px]">
                         {view === 'login' ? (

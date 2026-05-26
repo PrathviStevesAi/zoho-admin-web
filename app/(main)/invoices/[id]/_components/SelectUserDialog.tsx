@@ -35,9 +35,10 @@ interface SelectUserDialogProps {
   onClose: () => void;
   onSelect: (guard: any) => void;
   selectedShiftIds?: string[];
+  assigningGuardId?: string | null;
 }
 
-export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }: SelectUserDialogProps) {
+export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, assigningGuardId }: SelectUserDialogProps) {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userFilters, setUserFilters] = useState({
     country: "",
@@ -254,9 +255,11 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds }
                         <TableCell className="py-5 px-6 border-r border-slate-50/50">
                           <button
                             onClick={() => onSelect(guard)}
-                            className="cursor-pointer text-[13px] font-bold text-[#0064cb] hover:text-[#0052ae] flex items-center gap-2 transition-all cursor-pointer"
+                            disabled={assigningGuardId === guard.guard_id}
+                            className="cursor-pointer text-[13px] font-bold text-[#0064cb] hover:text-[#0052ae] flex items-center gap-2 transition-all disabled:opacity-50"
                           >
-                            Select Guard <span className="text-[14px]"></span>
+                            {assigningGuardId === guard.guard_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                            Select Guard
                           </button>
                         </TableCell>
                         <TableCell className="text-[13px] text-slate-800 py-5 px-6 border-r border-slate-50/50 text-center">

@@ -89,7 +89,7 @@ export default function CalendarPage() {
         setTotalShifts(res.count ?? res.data.length);
       } else {
         console.error("Failed to fetch calendar shifts", res.error);
-        successCallback([]); // Return empty so it doesn't crash
+        successCallback([]);
       }
     } catch (error) {
       console.error(error);
@@ -363,7 +363,7 @@ export default function CalendarPage() {
           moreLinkClick={(arg) => {
             const events = arg.allSegs.map((seg: any) => seg.event);
             setShowMoreModal({ date: arg.date, events });
-            return "function"; // prevents the default native popover
+            return "function";
           }}
           eventDisplay="list-item"
           loading={(loadingState) => setIsLoading(loadingState)}

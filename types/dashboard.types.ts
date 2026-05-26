@@ -33,6 +33,14 @@ export type InvoiceData = {
   service_address?: string;
   timezone?: string | null;
   history?: InvoiceHistory[];
+  actions?: {
+    is_update_payment?: boolean;
+    is_schedule_shift?: boolean;
+    is_find_guards?: boolean;
+    is_assigned_guards?: boolean;
+    is_open_crm?: boolean;
+    is_cancel_service?: boolean;
+  };
 };
 
 export type Record = {

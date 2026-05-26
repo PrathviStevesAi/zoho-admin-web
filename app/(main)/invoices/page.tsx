@@ -15,13 +15,11 @@ export default function InvoiceDetailsPage() {
   });
 
   const handleSave = () => {
-    // Logic to save would go here
     setIsEditOpen(false);
   };
 
   return (
     <div className="p-4 md:p-4 max-w-7xl mx-auto space-y-6">
-      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <h1 className="text-2xl font-semibold text-slate-800">
           US Soccer 5 <span className="text-slate-800">[INV-907123]</span>
@@ -45,7 +43,6 @@ export default function InvoiceDetailsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column - Details */}
         <div className="lg:col-span-5 space-y-6">
           <Card className="border-slate-200 shadow-sm overflow-hidden">
             <CardContent className="p-0">

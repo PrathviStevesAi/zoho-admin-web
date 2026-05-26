@@ -29,6 +29,8 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SelectUserDialog } from "@/app/(main)/invoices/[id]/_components/SelectUserDialog";
+import { DynamicShiftMap } from "@/components/map/DynamicShiftMap";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +54,11 @@ import {
   Comment,
   updateShiftDetailsAction,
   cancelInvoiceServiceAction,
-  manualStartShiftAction
+  manualStartShiftAction,
+  fetchGuardsAction,
+  fetchLocationAction,
+  assignGuardToShiftAction,
+  fetchGuardTrackingAction
 } from "@/actions/dashboard.actions";
 import { generateUploadUrlAction } from "@/actions/profile.actions";
 import { fetchShiftReportsAction } from "@/actions/notification.actions";
@@ -321,6 +327,10 @@ function ShiftViewContent() {
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reportsError, setReportsError] = useState<string | null>(null);
+
+  const [trackingPath, setTrackingPath] = useState<[number, number][]>([]);
+  const [mapCenter, setMapCenter] = useState<[number, number] | undefined>(undefined);
+
   const [activeTab, setActiveTab] = useState("");
   const [previewFile, setPreviewFile] = useState<{ url: string; title: string; contentType: string } | null>(null);
 
@@ -347,6 +357,20 @@ function ShiftViewContent() {
   const [isCancellingService, setIsCancellingService] = useState(false);
   const [isStartingShift, setIsStartingShift] = useState(false);
   const [breakDurationUnit, setBreakDurationUnit] = useState<"min" | "hr">("min");
+
+  // Select Guard dialog states
+  const [isSelectGuardOpen, setIsSelectGuardOpen] = useState(false);
+  const [guardSearch, setGuardSearch] = useState("");
+  const [guardCountry, setGuardCountry] = useState("All Country");
+  const [guardState, setGuardState] = useState("All State");
+  const [guardCity, setGuardCity] = useState("All City");
+  const [guardStatus, setGuardStatus] = useState("All Status");
+  const [guardService, setGuardService] = useState("All");
+  const [guardList, setGuardList] = useState<any[]>([]);
+  const [isGuardListLoading, setIsGuardListLoading] = useState(false);
+  const [guardListError, setGuardListError] = useState<string | null>(null);
+  const [locationData, setLocationData] = useState<{ countries: string[]; states: string[]; cities: string[] } | null>(null);
+  const [isAssigningGuard, setIsAssigningGuard] = useState<string | null>(null);
 
   const [editDetailsForm, setEditDetailsForm] = useState({
     shift_description: "",
@@ -674,6 +698,51 @@ function ShiftViewContent() {
   }, [loadShiftDetails, loadReportsDetails]);
 
   useEffect(() => {
+    if (shift && shift.shift_id && shift.assigned_guard) {
+      const guardId = typeof shift.assigned_guard === 'object' 
+        ? (shift.assigned_guard.id || shift.assigned_guard.guard_id) 
+        : shift.assigned_guard;
+      if (guardId) {
+        console.log(`[Tracking API] Fetching tracking for guard_id: ${guardId}, shift_id: ${shift.shift_id}`);
+        fetchGuardTrackingAction(guardId, shift.shift_id).then(res => {
+          console.log("[Tracking API] Response data:", res);
+          if (res.success && res.data && res.data.path) {
+            const mappedPath = res.data.path.map((p: any) => [p.latitude, p.longitude]);
+            setTrackingPath(mappedPath);
+          }
+        });
+      }
+    }
+  }, [shift]);
+
+  useEffect(() => {
+    if (shift && shift.shipping_location?.location) {
+      const addr = shift.shipping_location.location;
+      const addressQuery = [
+        addr.street,
+        addr.city,
+        addr.state,
+        addr.country
+      ].filter(Boolean).join(", ");
+      
+      if (addressQuery) {
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.length > 0) {
+              const lat = parseFloat(data[0].lat);
+              const lon = parseFloat(data[0].lon);
+              setMapCenter([lat, lon]);
+            }
+          })
+          .catch(err => {
+            console.error("Geocoding error:", err);
+          });
+      }
+    }
+  }, [shift]);
+
+  useEffect(() => {
     if (activeTab === "comment") {
       loadComments();
     }
@@ -798,6 +867,62 @@ function ShiftViewContent() {
     });
   };
 
+  const loadGuardsForDialog = useCallback(async () => {
+    setIsGuardListLoading(true);
+    setGuardListError(null);
+    const res = await fetchGuardsAction({
+      search: guardSearch,
+      country: guardCountry === "All Country" ? "" : guardCountry,
+      state: guardState === "All State" ? "" : guardState,
+      city: guardCity === "All City" ? "" : guardCity,
+      status: guardStatus === "All Status" ? "" : guardStatus,
+    });
+    if (res.success && res.data) {
+      setGuardList(res.data);
+    } else {
+      setGuardListError((res as any).error || "Failed to load guards");
+    }
+    setIsGuardListLoading(false);
+  }, [guardSearch, guardCountry, guardState, guardCity, guardStatus]);
+
+  useEffect(() => {
+    if (isSelectGuardOpen) {
+      loadGuardsForDialog();
+    }
+  }, [isSelectGuardOpen, loadGuardsForDialog]);
+
+  useEffect(() => {
+    if (isSelectGuardOpen && !locationData) {
+      fetchLocationAction().then((res) => {
+        if (res.success && res.data) setLocationData(res.data);
+      });
+    }
+  }, [isSelectGuardOpen, locationData]);
+
+  const handleSelectGuard = async (guard: any) => {
+    console.log("Selected Guard ID:", guard.id || guard.guard_id);
+    if (!shift || !shiftId) return;
+    const invoiceId = shift.invoice_id;
+    if (!invoiceId) {
+      toast.error("Invoice ID not found for this shift.");
+      return;
+    }
+    setIsAssigningGuard(guard.id || guard.guard_id);
+    const res = await assignGuardToShiftAction({
+      invoice_id: invoiceId,
+      guard_id: guard.id || guard.guard_id,
+      shift_id: shiftId,
+    });
+    if (res.success) {
+      toast.success("Guard assigned successfully");
+      setIsSelectGuardOpen(false);
+      loadShiftDetails();
+    } else {
+      toast.error(res.error || "Failed to assign guard");
+    }
+    setIsAssigningGuard(null);
+  };
+
   const handleAssignGuard = () => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
@@ -807,8 +932,7 @@ function ShiftViewContent() {
       });
       return;
     }
-    // Logic for successful assignment redirection or action can go here
-    toast.info("Proceeding to assign guard...");
+    setIsSelectGuardOpen(true);
   };
 
   const getStepStatus = (stepName: string) => {
@@ -917,7 +1041,7 @@ function ShiftViewContent() {
               const act = shift.action;
               if (act.is_reassigned) {
                 buttons.push(
-                  { label: "Assign Guard", icon: UserPlus, color: "indigo" as const, onClick: handleAssignGuard }
+                  { label: "Re-assign Guard", icon: UserPlus, color: "indigo" as const, onClick: handleAssignGuard }
                 );
               }
               if (act.is_manual_start_shift) {
@@ -1136,17 +1260,24 @@ function ShiftViewContent() {
                     </div>
 
                     {shift.shipping_location?.location && (
-                      <p className="text-slate-600 font-bold text-sm">
-                        Location - <span className="text-[#0064cb] cursor-pointer hover:underline">
-                          {[
-                            shift.shipping_location.location.street,
-                            shift.shipping_location.location.city,
-                            shift.shipping_location.location.state,
-                            shift.shipping_location.location.country,
-                            shift.shipping_location.location.zip,
-                          ].filter(Boolean).join(", ")}
-                        </span>
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-slate-600 font-bold text-sm">
+                          Location - <span className="text-[#0064cb] cursor-pointer hover:underline">
+                            {[
+                              shift.shipping_location.location.street,
+                              shift.shipping_location.location.city,
+                              shift.shipping_location.location.state,
+                              shift.shipping_location.location.country,
+                              shift.shipping_location.location.zip,
+                            ].filter(Boolean).join(", ")}
+                          </span>
+                        </p>
+                        {shift.shipping_location.timezone && (
+                          <p className="text-slate-600 font-bold text-md">
+                            Timezone: <span className="text-slate-800 font-medium">{shift.shipping_location.timezone}</span>
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -1507,6 +1638,9 @@ function ShiftViewContent() {
                 );
               })()}
             </Card>
+
+            {/* Map Section */}
+            <DynamicShiftMap center={mapCenter} checkpoints={trackingPath} />
           </div>
 
           {/* Sidebar with Vertical Tabs - Increased width to 5/12 */}
@@ -2240,6 +2374,14 @@ function ShiftViewContent() {
         onClose={() => setIsCancelServiceOpen(false)}
         onConfirm={handleCancelServiceConfirm}
         isSaving={isCancellingService}
+      />
+
+      {/* Select Guard Dialog */}
+      <SelectUserDialog
+        isOpen={isSelectGuardOpen}
+        onClose={() => setIsSelectGuardOpen(false)}
+        onSelect={handleSelectGuard}
+        assigningGuardId={isAssigningGuard}
       />
     </div>
   );

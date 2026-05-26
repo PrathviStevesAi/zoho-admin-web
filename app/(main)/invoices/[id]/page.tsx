@@ -621,6 +621,7 @@ export default function InvoiceDetailsPage() {
         onCancelService={handleCancelService}
         currentView={getCurrentViewName()}
         status={invoice.status}
+        actions={invoice.actions}
       />
 
       {isPaymentOpen ? (

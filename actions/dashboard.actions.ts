@@ -514,6 +514,36 @@ export async function assignGuardsAction(payload: {
   }
 }
 
+export async function assignGuardToShiftAction(payload: {
+  invoice_id: string;
+  guard_id: string;
+  shift_id: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/assign-guard`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          invoice_id: payload.invoice_id,
+          per_hour_rate: 0,
+          per_shift_rate: 0,
+          assignments: [
+            {
+              guard_id: payload.guard_id,
+              shift_ids: [payload.shift_id],
+            },
+          ],
+        }),
+      }
+    );
+    return { success: true, message: res.message };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
 export async function unassignGuardAction(shift_offer_id: string): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const res = await apiFetch<{ success: boolean; message?: string }>(
@@ -717,6 +747,11 @@ export async function manualStartShiftAction(payload: {
   }
 }
 
-
-
-
+export async function fetchGuardTrackingAction(guard_id: string, shift_id: string): Promise<SingleFetchResponse<any>> {
+  try {
+    const data = await apiFetch<any>(`/api/v1/tracking/guard/${guard_id}/shift/${shift_id}`);
+    return { success: true, data: data };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to fetch guard tracking data" };
+  }
+}
