@@ -791,28 +791,39 @@ function ShiftViewContent() {
   }, [shift]);
 
   useEffect(() => {
-    if (shift && shift.shipping_location?.location) {
-      const addr = shift.shipping_location.location;
-      const addressQuery = [
-        addr.street,
-        addr.city,
-        addr.state,
-        addr.country
-      ].filter(Boolean).join(", ");
-      
-      if (addressQuery) {
-        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.length > 0) {
-              const lat = parseFloat(data[0].lat);
-              const lon = parseFloat(data[0].lon);
-              setMapCenter([lat, lon]);
-            }
-          })
-          .catch(err => {
-            console.error("Geocoding error:", err);
-          });
+    if (shift) {
+      if (shift.shipping_location?.latitude !== undefined && shift.shipping_location?.longitude !== undefined) {
+        const lat = Number(shift.shipping_location.latitude);
+        const lon = Number(shift.shipping_location.longitude);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          setMapCenter([lat, lon]);
+          return;
+        }
+      }
+
+      if (shift.shipping_location?.location) {
+        const addr = shift.shipping_location.location;
+        const addressQuery = [
+          addr.street,
+          addr.city,
+          addr.state,
+          addr.country
+        ].filter(Boolean).join(", ");
+        
+        if (addressQuery) {
+          fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lon = parseFloat(data[0].lon);
+                setMapCenter([lat, lon]);
+              }
+            })
+            .catch(err => {
+              console.error("Geocoding error:", err);
+            });
+        }
       }
     }
   }, [shift]);
@@ -1715,7 +1726,18 @@ function ShiftViewContent() {
             </Card>
 
             {/* Map Section */}
-            <DynamicShiftMap center={trackingPath.length > 0 ? trackingPath[trackingPath.length - 1] : mapCenter} checkpoints={trackingPath} />
+            {(() => {
+              const shiftLocation = shift?.shipping_location?.latitude !== undefined && shift?.shipping_location?.longitude !== undefined
+                ? [Number(shift.shipping_location.latitude), Number(shift.shipping_location.longitude)] as [number, number]
+                : undefined;
+              return (
+                <DynamicShiftMap 
+                  center={trackingPath.length > 0 ? trackingPath[trackingPath.length - 1] : mapCenter} 
+                  checkpoints={trackingPath} 
+                  shiftLocation={shiftLocation}
+                />
+              );
+            })()}
           </div>
 
           {/* Sidebar with Vertical Tabs - Increased width to 5/12 */}

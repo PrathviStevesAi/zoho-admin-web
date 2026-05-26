@@ -1,17 +1,14 @@
-"use client";
-
-import { MapContainer, TileLayer, Circle, Polyline, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Circle, Polyline, Polygon, Marker, Popup, Tooltip } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Card } from "@/components/ui/card";
 
-// Fix leaflet icon issues in next.js
 const customIcon = (color: string) => {
   return new L.DivIcon({
     className: "custom-leaflet-icon",
-    html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.4);"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7]
+    html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6]
   });
 };
 
@@ -74,26 +71,106 @@ const startIcon = new L.DivIcon({
   iconAnchor: [16, 32]
 });
 
-const endIcon = new L.DivIcon({
+// Guard Avatar Live Location Icon (Compact Premium Guard Avatar Style)
+const guardIcon = new L.DivIcon({
   className: "custom-leaflet-icon",
-  html: `<div style="background-color: #f97316; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;"><div style="width: 4px; height: 4px; background-color: #3b82f6; border-radius: 50%;"></div></div>`,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9]
+  html: `
+    <style>
+      @keyframes guardPulse {
+        0% { transform: scale(0.5); opacity: 1; }
+        100% { transform: scale(2.0); opacity: 0; }
+      }
+    </style>
+    <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+      <!-- Outer Double Pulsing Rings -->
+      <div style="
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        border: 2px solid #0064cb;
+        border-radius: 50%;
+        animation: guardPulse 2s infinite ease-out;
+        opacity: 0;
+        z-index: 1;
+      "></div>
+      <div style="
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        border: 1px solid #00d2ff;
+        border-radius: 50%;
+        animation: guardPulse 2s infinite ease-out;
+        animation-delay: 0.8s;
+        opacity: 0;
+        z-index: 1;
+      "></div>
+      <!-- Inner Avatar Badge with White Background -->
+      <div style="
+        background: #ffffff;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1.5px solid white;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+        overflow: hidden;
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+          <!-- Left Shoulder & Right Shoulder / Uniform -->
+          <path d="M15 88 C 15 72, 30 65, 50 65 C 70 65, 85 72, 85 88 Z" fill="#7fa9d6" stroke="#003057" stroke-width="4" stroke-linejoin="round" />
+          <!-- Epaulets -->
+          <path d="M19 71 L 28 67 C 30 66, 33 69, 31 71 L 25 76 C 24 77, 21 75, 19 71 Z" fill="#005da3" stroke="#003057" stroke-width="2.5" />
+          <path d="M81 71 L 72 67 C 70 66, 67 69, 69 71 L 75 76 C 76 77, 79 75, 81 71 Z" fill="#005da3" stroke="#003057" stroke-width="2.5" />
+          <!-- Tie -->
+          <path d="M46 76 L 50 88 L 54 76 L 50 72 Z" fill="#005da3" stroke="#003057" stroke-width="2.5" stroke-linejoin="round" />
+          <!-- Shirt V-neck / Collar -->
+          <path d="M38 65 L 45 74 L 50 68 L 55 74 L 62 65" fill="none" stroke="#003057" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+          
+          <!-- Left Ear -->
+          <path d="M30 46 C 25 46, 25 56, 30 56 Z" fill="#e8f1f7" stroke="#003057" stroke-width="4" />
+          <!-- Right Ear -->
+          <path d="M70 46 C 75 46, 75 56, 70 56 Z" fill="#e8f1f7" stroke="#003057" stroke-width="4" />
+          
+          <!-- Head/Neck -->
+          <path d="M33 46 C 33 30, 67 30, 67 46 C 67 62, 58 66, 50 66 C 42 66, 33 62, 33 46 Z" fill="#e8f1f7" stroke="#003057" stroke-width="4" stroke-linejoin="round" />
+          
+          <!-- Policeman/Guard Cap -->
+          <!-- Cap Top/Crown -->
+          <path d="M27 34 C 23 20, 35 12, 50 12 C 65 12, 77 20, 73 34 Z" fill="#004b8d" stroke="#003057" stroke-width="4" stroke-linejoin="round" />
+          <!-- Cap Badge (Shield) -->
+          <path d="M50 20 C 47 20, 46 25, 50 29 C 54 25, 53 20, 50 20 Z" fill="#7fa9d6" stroke="#003057" stroke-width="2.5" />
+          <!-- Cap Visor Band -->
+          <path d="M28 34 C 38 31, 62 31, 72 34 C 74 38, 70 42, 50 42 C 30 42, 26 38, 28 34 Z" fill="#005da3" stroke="#003057" stroke-width="4" stroke-linejoin="round" />
+          <!-- Cap Visor Peak shadow -->
+          <path d="M32 38 C 40 45, 60 45, 68 38 C 65 42, 35 42, 32 38 Z" fill="#003057" />
+        </svg>
+      </div>
+    </div>
+  `,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18]
 });
 
 interface ShiftMapProps {
   center?: [number, number];
   radius?: number;
   checkpoints?: [number, number][];
+  shiftLocation?: [number, number];
 }
 
 export default function ShiftMap({
   center,
   radius = 600,
-  checkpoints
+  checkpoints,
+  shiftLocation
 }: ShiftMapProps) {
-  // If checkpoints are provided, default to the first checkpoint; otherwise default center
-  const actualCenter = center || (checkpoints && checkpoints.length > 0 ? checkpoints[0] : [35.4435, -80.8611]);
+  // If checkpoints are provided, default to the first checkpoint; otherwise default shift location or fallback
+  const fallbackCenter = shiftLocation || [35.4435, -80.8611];
+  const actualCenter = center || (checkpoints && checkpoints.length > 0 ? checkpoints[checkpoints.length - 1] : fallbackCenter);
+
   const activeCheckpoints = checkpoints || [
     [35.4400, -80.8620], // Start fallback default checkpoints
     [35.4410, -80.8590],
@@ -104,16 +181,16 @@ export default function ShiftMap({
   ] as [number, number][];
 
   const start = activeCheckpoints.length > 0 ? activeCheckpoints[0] : actualCenter;
-  const end = activeCheckpoints.length > 1 ? activeCheckpoints[activeCheckpoints.length - 1] : actualCenter;
+  const end = activeCheckpoints.length > 0 ? activeCheckpoints[activeCheckpoints.length - 1] : actualCenter;
   const intermediates = activeCheckpoints.length > 2 ? activeCheckpoints.slice(1, -1) : [];
 
   return (
     <Card className="border-slate-200 shadow-sm rounded-xl bg-white overflow-hidden p-1 mt-6 relative z-0">
       <div className="h-[400px] w-full rounded-lg overflow-hidden relative z-0">
-        <MapContainer 
-          key={actualCenter.join(",")} 
-          center={actualCenter} 
-          zoom={15} 
+        <MapContainer
+          key={actualCenter.join(",")}
+          center={actualCenter}
+          zoom={15}
           className="h-full w-full relative z-0"
         >
           <TileLayer
@@ -122,41 +199,62 @@ export default function ShiftMap({
           />
 
           <Circle
-            center={actualCenter}
+            center={shiftLocation || actualCenter}
             radius={radius}
-            pathOptions={{ color: 'gray', fillColor: 'gray', fillOpacity: 0.2, weight: 2 }}
+            pathOptions={{ color: 'gray', fillColor: 'gray', fillOpacity: 0.15, weight: 2 }}
           />
 
-          {activeCheckpoints.length > 0 && (
-            <Polyline
+          {/* Patrol Region Polygon */}
+          {activeCheckpoints.length > 2 && (
+            <Polygon
               positions={activeCheckpoints}
-              pathOptions={{ color: 'blue', weight: 3 }}
+              pathOptions={{ 
+                color: '#0064cb', 
+                fillColor: '#0064cb', 
+                fillOpacity: 0.08, 
+                weight: 1.5, 
+                dashArray: '5, 5' 
+              }}
             />
           )}
 
-          {activeCheckpoints.length === 0 && (
-            <Marker position={actualCenter} icon={startIcon}>
-              <Popup>Shift Location</Popup>
+          {/* Patrol Path Polyline */}
+          {activeCheckpoints.length > 1 && (
+            <Polyline
+              positions={activeCheckpoints}
+              pathOptions={{ color: '#0064cb', weight: 4 }}
+            />
+          )}
+
+          {/* Shift Location Marker - Site Address (Red Pin) */}
+          {(shiftLocation || !checkpoints) && (
+            <Marker position={shiftLocation || actualCenter} icon={startIcon}>
+              <Popup>Shift Location (Site Address)</Popup>
+              <Tooltip direction="top" offset={[0, -32]}>Site Location</Tooltip>
             </Marker>
           )}
 
-          {activeCheckpoints.length > 0 && (
-            <Marker position={start} icon={startIcon}>
-              <Popup>Start Point</Popup>
+          {/* Guard Live Location Marker (Pulsing Avatar) */}
+          {activeCheckpoints.length > 0 && checkpoints && (
+            <Marker position={end} icon={guardIcon}>
+              <Popup>Guard Live Position</Popup>
+              <Tooltip direction="top" offset={[0, -18]}>Guard</Tooltip>
             </Marker>
           )}
 
-          {intermediates.map((pos, idx) => (
-            <Marker key={idx} position={pos} icon={customIcon('#22c55e')}>
+          {/* Patrol Path Start Point */}
+          {activeCheckpoints.length > 0 && checkpoints && (
+            <Marker position={start} icon={customIcon('#10b981')}>
+              <Popup>Patrol Start Point</Popup>
+            </Marker>
+          )}
+
+          {/* Intermediate Checkpoints */}
+          {activeCheckpoints.length > 2 && checkpoints && intermediates.map((pos, idx) => (
+            <Marker key={idx} position={pos} icon={customIcon('#3b82f6')}>
               <Popup>Checkpoint {idx + 1}</Popup>
             </Marker>
           ))}
-
-          {activeCheckpoints.length > 1 && (
-            <Marker position={end} icon={endIcon}>
-              <Popup>End Point</Popup>
-            </Marker>
-          )}
         </MapContainer>
       </div>
     </Card>
