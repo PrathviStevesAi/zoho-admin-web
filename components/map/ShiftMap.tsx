@@ -163,7 +163,7 @@ interface ShiftMapProps {
 
 export default function ShiftMap({
   center,
-  radius = 600,
+  radius = 150,
   checkpoints,
   shiftLocation
 }: ShiftMapProps) {
