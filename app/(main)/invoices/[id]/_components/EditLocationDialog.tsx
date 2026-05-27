@@ -69,12 +69,6 @@ export function EditLocationDialog({
               Update the shipping address details for this invoice.
             </DialogDescription>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 hover:bg-slate-50 rounded-lg cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
