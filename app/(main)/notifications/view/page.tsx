@@ -54,7 +54,7 @@ import {
   addCommentAction,
   Comment,
   updateShiftDetailsAction,
-  cancelInvoiceServiceAction,
+  cancelShiftServiceAction,
   manualStartShiftAction,
   fetchGuardsAction,
   fetchLocationAction,
@@ -620,14 +620,14 @@ function NotificationViewContent() {
   };
 
   const handleCancelServiceConfirm = async (reason: string) => {
-    if (!shift?.invoice_id) {
-      toast.error("Invoice ID not found, unable to cancel service");
+    if (!shiftId) {
+      toast.error("Shift ID not found, unable to cancel service");
       return;
     }
     setIsCancellingService(true);
     try {
-      const res = await cancelInvoiceServiceAction({
-        invoice_id: shift.invoice_id,
+      const res = await cancelShiftServiceAction({
+        shift_id: shiftId,
         reason,
       });
       if (res.success) {

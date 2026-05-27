@@ -592,6 +592,25 @@ export async function cancelInvoiceServiceAction(payload: {
   }
 }
 
+export async function cancelShiftServiceAction(payload: {
+  shift_id: string;
+  reason: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log("[Server Action] Starting cancelShiftServiceAction for:", payload.shift_id);
+    const result = await apiFetch(`/api/v1/shift/service/cancelled`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    console.log("[Server Action] apiFetch completed successfully:", result);
+    return { success: true };
+  } catch (error: any) {
+    console.error("[Server Action] Shift cancellation error:", error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
 export async function updateInvoiceDetailsAction(payload: {
   invoice_id: string;
   customer_name?: string;
