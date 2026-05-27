@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { loginAction, sendOtpAction, verifyOtpAction, resetPasswordAction } from "@/actions/auth.actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

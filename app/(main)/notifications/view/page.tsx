@@ -38,6 +38,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { GooglePlacesAutocomplete } from "@/components/ui/GooglePlacesAutocomplete";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -2380,8 +2381,8 @@ function NotificationViewContent() {
 
       {/* Edit Location Dialog */}
       <Dialog open={isEditLocationOpen} onOpenChange={setIsEditLocationOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-visible border-none shadow-2xl rounded-2xl bg-white">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white rounded-t-2xl">
             <div>
               <DialogTitle className="text-xl font-bold text-slate-900">Edit Location</DialogTitle>
               <DialogDescription className="text-xs text-slate-500 mt-1">
@@ -2393,9 +2394,10 @@ function NotificationViewContent() {
           <div className="p-6 space-y-5">
             <div className="space-y-1.5">
               <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Street</Label>
-              <Input
-                value={editLocationForm.street}
-                onChange={(e) => setEditLocationForm(prev => ({ ...prev, street: e.target.value }))}
+              <GooglePlacesAutocomplete
+                value={editLocationForm.street || ""}
+                onChange={(value) => setEditLocationForm(prev => ({ ...prev, street: value }))}
+                onAddressSelect={(address) => setEditLocationForm(address)}
                 placeholder="Enter street address"
                 className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm text-slate-800"
               />
@@ -2404,7 +2406,7 @@ function NotificationViewContent() {
             <div className="space-y-1.5">
               <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">City</Label>
               <Input
-                value={editLocationForm.city}
+                value={editLocationForm.city || ""}
                 onChange={(e) => setEditLocationForm(prev => ({ ...prev, city: e.target.value }))}
                 placeholder="Enter city name"
                 className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm text-slate-800"
@@ -2415,7 +2417,7 @@ function NotificationViewContent() {
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">State</Label>
                 <Input
-                  value={editLocationForm.state}
+                  value={editLocationForm.state || ""}
                   onChange={(e) => setEditLocationForm(prev => ({ ...prev, state: e.target.value }))}
                   placeholder="Enter state name"
                   className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm text-slate-800"
@@ -2424,7 +2426,7 @@ function NotificationViewContent() {
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">ZIP Code</Label>
                 <Input
-                  value={editLocationForm.zip}
+                  value={editLocationForm.zip || ""}
                   onChange={(e) => setEditLocationForm(prev => ({ ...prev, zip: e.target.value }))}
                   placeholder="Enter zip code"
                   className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm text-slate-800"
@@ -2435,7 +2437,7 @@ function NotificationViewContent() {
             <div className="space-y-1.5">
               <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Country</Label>
               <Input
-                value={editLocationForm.country}
+                value={editLocationForm.country || ""}
                 onChange={(e) => setEditLocationForm(prev => ({ ...prev, country: e.target.value }))}
                 placeholder="Enter country name"
                 className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm text-slate-800"
