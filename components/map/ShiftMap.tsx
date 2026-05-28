@@ -215,11 +215,14 @@ export default function ShiftMap({
   const end = activeCheckpoints.length > 0 ? activeCheckpoints[activeCheckpoints.length - 1] : actualCenter;
   const intermediates = activeCheckpoints.length > 2 ? activeCheckpoints.slice(1, -1) : [];
 
+  const isFallback = actualCenter[0] === 35.4435 && actualCenter[1] === -80.8611;
+  const mapKey = `${shiftLocation ? "geocoded" : "no-loc"}-${isFallback ? "fallback" : "ready"}`;
+
   return (
     <Card className="border-slate-200 shadow-sm rounded-xl bg-white overflow-hidden p-1 mt-6 relative z-0">
       <div className="h-[400px] w-full rounded-lg overflow-hidden relative z-0">
         <MapContainer
-          key={shiftLocation ? "map-loaded" : "static-shift-map"}
+          key={mapKey}
           center={actualCenter}
           zoom={zoomLevel}
           className="h-full w-full relative z-0"
@@ -233,7 +236,13 @@ export default function ShiftMap({
           <Circle
             center={shiftLocation || actualCenter}
             radius={radius}
-            pathOptions={{ color: 'gray', fillColor: 'gray', fillOpacity: 0.15, weight: 2 }}
+            pathOptions={{
+              color: '#3b82f6',
+              fillColor: '#3b82f6',
+              fillOpacity: 0.08,
+              weight: 1.5,
+              dashArray: '3, 3'
+            }}
           />
 
           {/* Patrol Region Polygon */}

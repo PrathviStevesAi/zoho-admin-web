@@ -1,0 +1,485 @@
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Edit2, Loader2, XCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Shift } from "./types";
+import {
+  toLocalDateTimeString,
+  toUTCISO,
+  getStatusColor,
+  formatStatus,
+  formatDateTime
+} from "./utils";
+
+interface ShiftDetailsCardProps {
+  shift: Shift | null;
+  isLoading: boolean;
+  error: string | null;
+  isSavingDetails: boolean;
+  onSaveDetails: (payload: any) => Promise<void>;
+  isAddressEditable: boolean;
+  setIsEditLocationOpen: (open: boolean) => void;
+}
+
+export function ShiftDetailsCard({
+  shift,
+  isLoading,
+  error,
+  isSavingDetails,
+  onSaveDetails,
+  isAddressEditable,
+  setIsEditLocationOpen,
+}: ShiftDetailsCardProps) {
+  const router = useRouter();
+  const [isEditDetailsOpen, setIsEditDetailsOpen] = useState(false);
+  const [breakDurationUnit, setBreakDurationUnit] = useState<"min" | "hr">("min");
+
+  const [editDetailsForm, setEditDetailsForm] = useState({
+    shift_description: "",
+    shift_start_time: "",
+    shift_end_time: "",
+    guard_shift_started_at: "",
+    guard_shift_ended_at: "",
+    total_break_duration_min: ""
+  });
+
+  useEffect(() => {
+    if (shift) {
+      setEditDetailsForm({
+        shift_description: shift.shift_description || "",
+        shift_start_time: toLocalDateTimeString(shift.scheduled_for?.shift_start_time || ""),
+        shift_end_time: toLocalDateTimeString(shift.scheduled_for?.shift_end_time || ""),
+        guard_shift_started_at: toLocalDateTimeString(shift.execution_time?.guard_shift_started_at || ""),
+        guard_shift_ended_at: toLocalDateTimeString(shift.execution_time?.guard_shift_ended_at || ""),
+        total_break_duration_min: (() => {
+          const rawMin = shift.execution_time?.total_break_duration_min;
+          if (rawMin === undefined || rawMin === null) return "";
+          if (rawMin >= 60) {
+            setBreakDurationUnit("hr");
+            const hrs = rawMin / 60;
+            return String(hrs % 1 === 0 ? hrs : parseFloat(hrs.toFixed(2)));
+          }
+          setBreakDurationUnit("min");
+          return String(rawMin);
+        })()
+      });
+    }
+  }, [shift]);
+
+  if (isLoading) {
+    return (
+      <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white p-6 space-y-6 animate-pulse">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="h-7 w-32 bg-slate-200 rounded-lg" />
+          <div className="h-8 w-24 bg-slate-100/80 rounded-lg" />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-20 bg-slate-200 rounded" />
+          <div className="h-4 w-72 bg-slate-100/80 rounded" />
+        </div>
+        <div className="space-y-4 pt-2">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="grid grid-cols-4 py-2 border-b border-slate-55 last:border-none items-center gap-4">
+              <div className="h-3.5 bg-slate-200 rounded w-24" />
+              <div className="col-span-3 h-4 bg-slate-100/80 rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
+  if (!shift) {
+    return (
+      <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-20 text-center">
+        <XCircle className="w-12 h-12 text-red-200 mx-auto mb-4" />
+        <p className="text-sm font-bold text-slate-600 mb-1">{error || "No shift data found"}</p>
+        <p className="text-xs text-slate-700 font-medium">The shift may have been deleted or the ID is invalid.</p>
+        <Button
+          variant="outline"
+          className="mt-6 h-9 rounded-xl text-xs font-bold text-[#0064cb] border-blue-100 hover:bg-blue-50"
+          onClick={() => router.push("/dashboard")}
+        >
+          Return to Dashboard
+        </Button>
+      </Card>
+    );
+  }
+
+  const handleSaveDetails = async () => {
+    const payload: any = {};
+    let dirty = false;
+
+    // 1. Shift Duties
+    if (editDetailsForm.shift_description !== (shift.shift_description || "")) {
+      payload.shift_description = editDetailsForm.shift_description;
+      dirty = true;
+    }
+
+    // 2. Scheduled For
+    const initialScheduledStart = toLocalDateTimeString(shift.scheduled_for?.shift_start_time || "");
+    const initialScheduledEnd = toLocalDateTimeString(shift.scheduled_for?.shift_end_time || "");
+    if (
+      editDetailsForm.shift_start_time !== initialScheduledStart ||
+      editDetailsForm.shift_end_time !== initialScheduledEnd
+    ) {
+      payload.shift_time = {
+        shift_start_time: toUTCISO(editDetailsForm.shift_start_time),
+        shift_end_time: toUTCISO(editDetailsForm.shift_end_time),
+        start_time: toUTCISO(editDetailsForm.shift_start_time),
+        end_time: toUTCISO(editDetailsForm.shift_end_time)
+      };
+      dirty = true;
+    }
+
+    // 3. Execution Time
+    const initialExecStart = toLocalDateTimeString(shift.execution_time?.guard_shift_started_at || "");
+    const initialExecEnd = toLocalDateTimeString(shift.execution_time?.guard_shift_ended_at || "");
+    const initialBreak = shift.execution_time?.total_break_duration_min !== undefined && shift.execution_time?.total_break_duration_min !== null 
+      ? String(shift.execution_time.total_break_duration_min) 
+      : "";
+      
+    const displayBreakInMinutes = editDetailsForm.total_break_duration_min === "" ? 0 : (
+      breakDurationUnit === "hr" ? Math.round(Number(editDetailsForm.total_break_duration_min) * 60) : Number(editDetailsForm.total_break_duration_min)
+    );
+    if (
+      editDetailsForm.guard_shift_started_at !== initialExecStart ||
+      editDetailsForm.guard_shift_ended_at !== initialExecEnd ||
+      String(displayBreakInMinutes) !== initialBreak
+    ) {
+      payload.shift_execution_time = {
+        guard_shift_started_at: toUTCISO(editDetailsForm.guard_shift_started_at),
+        guard_shift_ended_at: toUTCISO(editDetailsForm.guard_shift_ended_at),
+        start_time: toUTCISO(editDetailsForm.guard_shift_started_at),
+        end_time: toUTCISO(editDetailsForm.guard_shift_ended_at),
+        total_break_duration_min: displayBreakInMinutes
+      };
+      dirty = true;
+    }
+
+    if (!dirty) {
+      setIsEditDetailsOpen(false);
+      return;
+    }
+
+    await onSaveDetails(payload);
+    setIsEditDetailsOpen(false);
+  };
+
+  return (
+    <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white">
+      <CardContent className="p-0">
+        <div className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xl font-bold text-slate-700">#SH-{shift.shift_no}</span>
+            <Button
+              variant="outline"
+              disabled={!isAddressEditable}
+              onClick={() => {
+                if (isAddressEditable) {
+                  setIsEditLocationOpen(true);
+                }
+              }}
+              title={isAddressEditable ? "Edit location" : "Location editing is only allowed for: Created, Planned, Accepted, Refused statuses"}
+              className={cn(
+                "h-8 rounded-lg font-bold text-[10px] flex gap-1.5 px-3 transition-all active:scale-95",
+                isAddressEditable
+                  ? "text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 cursor-pointer"
+                  : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed opacity-60"
+              )}
+            >
+              <Edit2 className="w-3 h-3" />
+              Edit Location
+            </Button>
+          </div>
+
+          {shift.shipping_location?.location && (
+            <div className="space-y-1">
+              <p className="text-slate-600 font-bold text-sm">
+                Location - <span className="text-[#0064cb] cursor-pointer hover:underline">
+                  {[
+                    shift.shipping_location.location.street,
+                    shift.shipping_location.location.city,
+                    shift.shipping_location.location.state,
+                    shift.shipping_location.location.country,
+                    shift.shipping_location.location.zip,
+                  ].filter(Boolean).join(", ")}
+                </span>
+              </p>
+              {shift.shipping_location.timezone && (
+                <p className="text-slate-600 font-bold text-md">
+                  Timezone: <span className="text-slate-800 font-medium">{shift.shipping_location.timezone}</span>
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-slate-100 divide-y divide-slate-100">
+          <div className="grid grid-cols-4 p-4 items-center">
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">CUSTOMER NAME:</span>
+            <div className="col-span-3 flex items-center justify-between gap-4">
+              <div className="text-sm text-slate-800 font-medium">{shift.customer_name}</div>
+              <div className="flex items-center gap-2">
+                {isEditDetailsOpen ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditDetailsOpen(false)}
+                      className="px-3 h-8 rounded-lg font-bold border-slate-200 text-[10px] text-slate-800 hover:bg-slate-50 transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveDetails}
+                      disabled={isSavingDetails}
+                      className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-3 h-8 rounded-lg font-bold text-[10px] shadow-md shadow-blue-100 transition-all active:scale-95 flex gap-1.5 cursor-pointer"
+                    >
+                      {isSavingDetails ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditDetailsOpen(true)}
+                    className="h-8 rounded-lg font-bold text-[10px] text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 transition-all active:scale-95 flex gap-1.5 cursor-pointer px-3"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    Edit Details
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {shift.invoice_no && (
+            <div className="grid grid-cols-4 p-4 items-center">
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">INVOICE NO:</span>
+              <div className="col-span-3 text-sm text-slate-800 font-medium">{shift.invoice_no}</div>
+            </div>
+          )}
+
+          {shift.invoice_description && (
+            <div className="grid grid-cols-4 p-4 items-start">
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">INVOICE DETAILS:</span>
+              <div className="col-span-3 text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                {shift.invoice_description}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-4 p-4 items-start">
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">SHIFT DETAILS:</span>
+            <div className="col-span-3">
+              {isEditDetailsOpen ? (
+                <textarea
+                  rows={4}
+                  value={editDetailsForm.shift_description}
+                  onChange={(e) => setEditDetailsForm(prev => ({ ...prev, shift_description: e.target.value }))}
+                  placeholder="Enter shift details..."
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[100px] resize-none text-slate-800"
+                />
+              ) : (
+                <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                  {shift.shift_description || "No shift details provided."}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 p-4 items-center">
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">ASSIGNED GUARD:</span>
+            <div className="col-span-3 text-sm text-slate-800 font-medium">
+              {shift.assigned_guard ? (
+                typeof shift.assigned_guard === 'object'
+                  ? `${shift.assigned_guard.first_name} ${shift.assigned_guard.last_name}`
+                  : shift.assigned_guard
+              ) : (
+                <span className="text-slate-700">No guard assigned</span>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 p-4 items-center">
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">STATUS:</span>
+            <div className="col-span-3">
+              <span className={cn(
+                "text-[10px] font-bold px-2.5 py-1 rounded-full border",
+                getStatusColor(shift.status)
+              )}>
+                {formatStatus(shift.status)}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 p-4 items-center">
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">SCHEDULED FOR:</span>
+            <div className="col-span-3">
+              {isEditDetailsOpen ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-slate-700 uppercase">Start Time</Label>
+                    <Input
+                      type="datetime-local"
+                      value={editDetailsForm.shift_start_time}
+                      onChange={(e) => setEditDetailsForm(prev => ({ ...prev, shift_start_time: e.target.value }))}
+                      className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-slate-700 uppercase">End Time</Label>
+                    <Input
+                      type="datetime-local"
+                      value={editDetailsForm.shift_end_time}
+                      onChange={(e) => setEditDetailsForm(prev => ({ ...prev, shift_end_time: e.target.value }))}
+                      className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {shift.scheduled_for?.shift_start_time && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-700 uppercase font-bold w-12">Start:</span>
+                      <span className="text-sm text-slate-800 font-medium">{formatDateTime(shift.scheduled_for.shift_start_time)}</span>
+                    </div>
+                  )}
+                  {shift.scheduled_for?.shift_end_time && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-700 uppercase font-bold w-12">End:</span>
+                      <span className="text-sm text-slate-800 font-medium">{formatDateTime(shift.scheduled_for.shift_end_time)}</span>
+                    </div>
+                  )}
+                  {!shift.scheduled_for?.shift_start_time && !shift.scheduled_for?.shift_end_time && (
+                    <span className="text-sm text-slate-700 font-medium">N/A</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 p-4 items-center">
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">EXECUTION TIME:</span>
+            <div className="col-span-3">
+              {isEditDetailsOpen ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-700 uppercase">Actual Start Time</Label>
+                      <Input
+                        type="datetime-local"
+                        value={editDetailsForm.guard_shift_started_at}
+                        onChange={(e) => setEditDetailsForm(prev => ({ ...prev, guard_shift_started_at: e.target.value }))}
+                        className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-700 uppercase">Actual End Time</Label>
+                      <Input
+                        type="datetime-local"
+                        value={editDetailsForm.guard_shift_ended_at}
+                        onChange={(e) => setEditDetailsForm(prev => ({ ...prev, guard_shift_ended_at: e.target.value }))}
+                        className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] font-bold text-slate-700 uppercase">
+                        Total Break Duration ({breakDurationUnit === "hr" ? "hours" : "minutes, max 59"})
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (breakDurationUnit === "min") {
+                            const mins = Number(editDetailsForm.total_break_duration_min) || 0;
+                            const hrs = mins / 60;
+                            setEditDetailsForm(prev => ({ ...prev, total_break_duration_min: String(parseFloat(hrs.toFixed(2))) }));
+                            setBreakDurationUnit("hr");
+                          } else {
+                            const hrs = Number(editDetailsForm.total_break_duration_min) || 0;
+                            const mins = Math.min(Math.round(hrs * 60), 59);
+                            setEditDetailsForm(prev => ({ ...prev, total_break_duration_min: String(mins) }));
+                            setBreakDurationUnit("min");
+                          }
+                        }}
+                        className="text-[9px] font-bold text-[#0064cb] hover:underline cursor-pointer border-none bg-transparent"
+                      >
+                        Switch to {breakDurationUnit === "hr" ? "min" : "hr"}
+                      </button>
+                    </div>
+                    <div className="relative flex items-center">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={breakDurationUnit === "min" ? 59 : undefined}
+                        step={breakDurationUnit === "hr" ? 0.01 : 1}
+                        value={editDetailsForm.total_break_duration_min}
+                        onKeyDown={(e) => {
+                          if (e.key === "-" || e.key === "e") e.preventDefault();
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || val === "0") {
+                            setEditDetailsForm(prev => ({ ...prev, total_break_duration_min: val }));
+                            return;
+                          }
+                          const num = Number(val);
+                          if (isNaN(num) || num < 0) return;
+                          if (breakDurationUnit === "min" && num > 59) return;
+                          setEditDetailsForm(prev => ({ ...prev, total_break_duration_min: val }));
+                        }}
+                        placeholder={breakDurationUnit === "hr" ? "e.g. 1.5" : "e.g. 30"}
+                        className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800 w-full pr-16"
+                      />
+                      <span className="absolute right-3 text-[10px] font-bold text-[#0064cb] bg-blue-50 px-2 py-1 rounded-md cursor-default pointer-events-none select-none">
+                        {breakDurationUnit}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {shift.execution_time?.guard_shift_started_at && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-700 uppercase font-bold w-12">Start:</span>
+                      <span className="text-sm text-slate-800 font-medium">{formatDateTime(shift.execution_time.guard_shift_started_at)}</span>
+                    </div>
+                  )}
+                  {shift.execution_time?.guard_shift_ended_at && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-700 uppercase font-bold w-12">End:</span>
+                      <span className="text-sm text-slate-800 font-medium">{formatDateTime(shift.execution_time.guard_shift_ended_at)}</span>
+                    </div>
+                  )}
+                  {shift.execution_time?.total_break_duration_min && shift.execution_time.total_break_duration_min > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-700 uppercase font-bold w-12">Break:</span>
+                      <span className="text-sm text-slate-800 font-medium">
+                        {(() => {
+                          const mins = shift.execution_time.total_break_duration_min;
+                          if (mins < 60) {
+                            return `${mins} min`;
+                          }
+                          const hrs = mins / 60;
+                          return mins % 60 === 0 ? `${hrs.toFixed(1)} hr` : `${hrs.toFixed(2)} hr`;
+                        })()}
+                      </span>
+                    </div>
+                  ) : null}
+                  {!shift.execution_time?.guard_shift_started_at && !shift.execution_time?.guard_shift_ended_at && (
+                    <span className="text-sm text-slate-700 font-medium">N/A</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
