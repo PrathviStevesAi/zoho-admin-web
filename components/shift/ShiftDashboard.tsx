@@ -305,6 +305,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     create_checkpoint_interval: string;
     guard_break_max_duration: string;
     guard_break_limit: string;
+    geofence_radius: string;
   }) => {
     setIsSavingSettings(true);
     const payload = {
@@ -314,6 +315,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       guard_break_max_duration:
         settings.guard_break_max_duration === "" ? 0 : Number(settings.guard_break_max_duration),
       guard_break_limit: settings.guard_break_limit === "" ? 0 : Number(settings.guard_break_limit),
+      geofence_radius: settings.geofence_radius === "" ? 150 : Number(settings.geofence_radius),
     };
 
     console.log("[ShiftDashboard] handleSaveSettings - Payload:", payload);
@@ -465,17 +467,21 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   const settingsFormState = {
     create_checkpoint_interval:
-      shift?.create_checkpoint_interval !== undefined && shift?.create_checkpoint_interval !== null
-        ? String(shift.create_checkpoint_interval)
+      shift?.checkpoint_create_interval !== undefined && shift?.checkpoint_create_interval !== null
+        ? String(shift.checkpoint_create_interval)
         : "0",
     guard_break_max_duration:
-      shift?.guard_break_max_duration !== undefined && shift?.guard_break_max_duration !== null
-        ? String(shift.guard_break_max_duration)
+      shift?.break_max_time !== undefined && shift?.break_max_time !== null
+        ? String(shift.break_max_time)
         : "",
     guard_break_limit:
-      shift?.guard_break_limit !== undefined && shift?.guard_break_limit !== null
-        ? String(shift.guard_break_limit)
+      shift?.total_break_limit !== undefined && shift?.total_break_limit !== null
+        ? String(shift.total_break_limit)
         : "",
+    geofence_radius:
+      shift?.geofence_radius !== undefined && shift?.geofence_radius !== null
+        ? String(shift.geofence_radius)
+        : "150",
   };
 
   return (

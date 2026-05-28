@@ -9,6 +9,7 @@ interface ShiftSettingsForm {
   create_checkpoint_interval: string;
   guard_break_max_duration: string;
   guard_break_limit: string;
+  geofence_radius: string;
 }
 
 interface ShiftSettingsCardProps {
@@ -30,6 +31,7 @@ export function ShiftSettingsCard({
     create_checkpoint_interval: "0",
     guard_break_max_duration: "",
     guard_break_limit: "",
+    geofence_radius: "150",
   });
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export function ShiftSettingsCard({
         create_checkpoint_interval: initialSettings.create_checkpoint_interval || "0",
         guard_break_max_duration: initialSettings.guard_break_max_duration || "",
         guard_break_limit: initialSettings.guard_break_limit || "",
+        geofence_radius: initialSettings.geofence_radius || "150",
       });
     }
   }, [isOpen, initialSettings]);
@@ -54,9 +57,9 @@ export function ShiftSettingsCard({
         <h2 className="text-lg font-bold text-slate-800">Shift Settings</h2>
         <p className="text-xs text-slate-500 mt-1">Configure intervals, break durations and limits for this shift.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Create Checkpoint Interval (Minutes)</Label>
+          <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Create Checkpoint Interval</Label>
           <select
             value={form.create_checkpoint_interval}
             onChange={(e) => setForm(prev => ({ ...prev, create_checkpoint_interval: e.target.value }))}
@@ -70,7 +73,7 @@ export function ShiftSettingsCard({
           </select>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Guard Break Max Duration (Minutes)</Label>
+          <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Guard Break Max Duration</Label>
           <Input
             type="number"
             min={0}
@@ -102,6 +105,24 @@ export function ShiftSettingsCard({
               setForm(prev => ({ ...prev, guard_break_limit: val }));
             }}
             placeholder="e.g. 2"
+            className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Geofence Radius (Meters)</Label>
+          <Input
+            type="number"
+            min={0}
+            value={form.geofence_radius}
+            onKeyDown={(e) => {
+              if (e.key === "-" || e.key === "e") e.preventDefault();
+            }}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val.includes("-")) return;
+              setForm(prev => ({ ...prev, geofence_radius: val }));
+            }}
+            placeholder="e.g. 150"
             className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
           />
         </div>

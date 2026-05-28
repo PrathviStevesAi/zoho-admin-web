@@ -59,6 +59,10 @@ export interface Shift {
   create_checkpoint_interval?: number;
   guard_break_max_duration?: number;
   guard_break_limit?: number;
+  geofence_radius?: number;
+  checkpoint_create_interval?: number;
+  break_max_time?: number;
+  total_break_limit?: number;
 }
 
 export interface ShiftHistoryEvent {

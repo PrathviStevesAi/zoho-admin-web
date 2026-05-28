@@ -22,6 +22,7 @@ export function ShiftMapCard({
       center={trackingPath.length > 0 ? trackingPath[trackingPath.length - 1] : mapCenter}
       checkpoints={trackingPath}
       shiftLocation={shiftLocation}
+      radius={shift?.geofence_radius}
     />
   );
 }

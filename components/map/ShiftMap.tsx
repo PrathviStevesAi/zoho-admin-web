@@ -216,7 +216,7 @@ export default function ShiftMap({
   const intermediates = activeCheckpoints.length > 2 ? activeCheckpoints.slice(1, -1) : [];
 
   const isFallback = actualCenter[0] === 35.4435 && actualCenter[1] === -80.8611;
-  const mapKey = `${shiftLocation ? "geocoded" : "no-loc"}-${isFallback ? "fallback" : "ready"}`;
+  const mapKey = `${shiftLocation ? "geocoded" : "no-loc"}-${isFallback ? "fallback" : "ready"}-${radius}`;
 
   return (
     <Card className="border-slate-200 shadow-sm rounded-xl bg-white overflow-hidden p-1 mt-6 relative z-0">
