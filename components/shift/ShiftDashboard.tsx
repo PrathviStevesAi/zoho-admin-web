@@ -37,6 +37,7 @@ import { ShiftMapCard } from "./ShiftMapCard";
 import { ShiftSettingsCard } from "./ShiftSettingsCard";
 import { ShiftTabsModule } from "./ShiftTabsModule";
 import { EditShiftLocationDialog } from "./dialogs/EditShiftLocationDialog";
+import { ManualStartShiftDialog } from "./dialogs/ManualStartShiftDialog";
 
 // Types & Utils
 import { Shift, ShiftReports, PreviewFile, Address } from "./types";
@@ -73,6 +74,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
+  const [isManualStartOpen, setIsManualStartOpen] = useState(false);
   const [isSelectGuardOpen, setIsSelectGuardOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
 
@@ -330,12 +332,16 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsSavingSettings(false);
   };
 
-  const handleManualStartShift = async () => {
+  const handleManualStartShiftConfirm = async (reason: string) => {
     setIsStartingShift(true);
     try {
-      const res = await manualStartShiftAction({ shift_id: shiftId });
+      const res = await manualStartShiftAction({
+        shift_id: shiftId,
+        reason,
+      });
       if (res.success) {
         toast.success("Shift manually started successfully");
+        setIsManualStartOpen(false);
         loadShiftDetails();
       } else {
         toast.error(res.error || "Failed to start shift");
@@ -494,7 +500,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={setIsSettingsOpen}
         isStartingShift={isStartingShift}
-        onManualStart={handleManualStartShift}
+        onManualStart={() => setIsManualStartOpen(true)}
         onAssignGuard={handleAssignGuard}
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
@@ -624,6 +630,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onClose={() => setIsCancelServiceOpen(false)}
         onConfirm={handleCancelServiceConfirm}
         isSaving={isCancellingService}
+      />
+
+      {/* Manual Start Shift Dialog */}
+      <ManualStartShiftDialog
+        isOpen={isManualStartOpen}
+        onClose={() => setIsManualStartOpen(false)}
+        onConfirm={handleManualStartShiftConfirm}
+        isSaving={isStartingShift}
       />
 
       {/* Select Guard Dialog */}
