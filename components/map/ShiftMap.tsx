@@ -1,7 +1,36 @@
-import { MapContainer, TileLayer, Circle, Polyline, Polygon, Marker, Popup, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Circle, Polyline, Polygon, Marker, Popup, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Card } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+
+function ChangeView({ 
+  center, 
+  onZoomChange 
+}: { 
+  center: [number, number]; 
+  onZoomChange: (zoom: number) => void;
+}) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (center && center[0] && center[1]) {
+      map.panTo(center);
+    }
+  }, [center, map]);
+
+  useEffect(() => {
+    const handleZoomEnd = () => {
+      onZoomChange(map.getZoom());
+    };
+    map.on("zoomend", handleZoomEnd);
+    return () => {
+      map.off("zoomend", handleZoomEnd);
+    };
+  }, [map, onZoomChange]);
+
+  return null;
+}
 
 const customIcon = (color: string) => {
   return new L.DivIcon({
@@ -167,6 +196,8 @@ export default function ShiftMap({
   checkpoints,
   shiftLocation
 }: ShiftMapProps) {
+  const [zoomLevel, setZoomLevel] = useState(15);
+
   // If checkpoints are provided, default to the first checkpoint; otherwise default shift location or fallback
   const fallbackCenter = shiftLocation || [35.4435, -80.8611];
   const actualCenter = center || (checkpoints && checkpoints.length > 0 ? checkpoints[checkpoints.length - 1] : fallbackCenter);
@@ -188,11 +219,12 @@ export default function ShiftMap({
     <Card className="border-slate-200 shadow-sm rounded-xl bg-white overflow-hidden p-1 mt-6 relative z-0">
       <div className="h-[400px] w-full rounded-lg overflow-hidden relative z-0">
         <MapContainer
-          key={actualCenter.join(",")}
+          key={shiftLocation ? "map-loaded" : "static-shift-map"}
           center={actualCenter}
-          zoom={15}
+          zoom={zoomLevel}
           className="h-full w-full relative z-0"
         >
+          <ChangeView center={actualCenter} onZoomChange={setZoomLevel} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
