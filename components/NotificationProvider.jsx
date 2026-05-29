@@ -9,7 +9,7 @@ import { fetchNotificationByIdAction } from "@/actions/notification.actions";
 
 export default function NotificationProvider() {
     const router = useRouter();
-    const { data: session, status } = useSession();
+    const { data: status } = useSession();
 
     useEffect(() => {
         console.log("[NotificationProvider] Status change:", status);
@@ -21,8 +21,6 @@ export default function NotificationProvider() {
         if (status !== "authenticated") return;
 
         console.log("[NotificationProvider] Authenticated! Syncing FCM...");
-
-        // Request token on mount
         const handleToken = async () => {
             const token = await generateToken();
             if (token) {
@@ -47,11 +45,9 @@ export default function NotificationProvider() {
 
         handleToken();
 
-        // Set up foreground message listener
         const unsubscribe = onMessageListener((payload) => {
             console.log("[NotificationProvider] Foreground message received:", payload);
-
-            // Extract info from notification block OR data block
+            if (payload?._focusRefresh) return;
             const title = payload?.notification?.title || payload?.data?.title || "New Notification";
             const body = payload?.notification?.body || payload?.data?.body || "You have a new message.";
             const notificationId = payload?.data?.notification_id || payload?.data?.notificationId || payload?.data?.id || payload?.id || payload?.notification_id || payload?.notificationId;
@@ -60,7 +56,6 @@ export default function NotificationProvider() {
             console.log("[NotificationProvider] Processing toast:", { title, body, notificationId, shiftId });
 
             if (title || body) {
-                // Using standard toast with brand-matching styles
                 toast(title, {
                     description: body,
                     duration: 8000,

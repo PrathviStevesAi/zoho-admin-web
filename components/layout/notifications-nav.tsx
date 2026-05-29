@@ -35,7 +35,6 @@ export function NotificationsNav() {
       const response = await fetch(`/api/notifications?page=${page}&t=${Date.now()}`);
       const res = await response.json();
       if (res.success) {
-        // Sort: Unread (is_seen: false) first within the page
         const sorted = [...res.data].sort((a, b) => {
           if (a.is_seen === b.is_seen) return 0;
           return a.is_seen ? 1 : -1;
@@ -51,22 +50,18 @@ export function NotificationsNav() {
     setLoading(false);
   }, [status]);
 
-  // Keep a stable ref to the latest loadNotifications
   useEffect(() => {
     loadRef.current = loadNotifications;
   }, [loadNotifications]);
 
-  // Initial load when the component mounts or when manually changing pages
   useEffect(() => {
     loadNotifications(currentPage);
   }, [loadNotifications, currentPage]);
 
-  // Real-time updates via Firebase Cloud Messaging
   useEffect(() => {
     const handleFCMMessage = (payload: any) => {
       console.log("[NotificationsNav] FCM message received in foreground:", payload);
       console.log("[NotificationsNav] Refreshing notifications list and count...");
-      // Use the ref to always call the latest version
       if (loadRef.current) {
         loadRef.current(1);
       }
@@ -76,7 +71,7 @@ export function NotificationsNav() {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, []); // Empty deps - the ref handles staleness
+  }, []);
 
 
 
