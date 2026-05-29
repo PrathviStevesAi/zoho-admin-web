@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Bell, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ export function NotificationsNav() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalNotifications, setTotalNotifications] = useState(0);
   const limit = 10;
+  const loadRef = useRef<((page: number) => Promise<void>) | null>(null);
 
   const loadNotifications = useCallback(async (page: number) => {
     console.log("[NotificationsNav] Attempting load, status:", status);
@@ -50,6 +51,11 @@ export function NotificationsNav() {
     setLoading(false);
   }, [status]);
 
+  // Keep a stable ref to the latest loadNotifications
+  useEffect(() => {
+    loadRef.current = loadNotifications;
+  }, [loadNotifications]);
+
   // Initial load when the component mounts or when manually changing pages
   useEffect(() => {
     loadNotifications(currentPage);
@@ -57,16 +63,22 @@ export function NotificationsNav() {
 
   // Real-time updates via Firebase Cloud Messaging
   useEffect(() => {
-    const unsubscribe = onMessageListener((payload: any) => {
+    const handleFCMMessage = (payload: any) => {
       console.log("[NotificationsNav] FCM message received in foreground:", payload);
-      // Refresh the first page to show the latest notification
       console.log("[NotificationsNav] Refreshing notifications list and count...");
-      loadNotifications(1);
-    });
+      // Use the ref to always call the latest version
+      if (loadRef.current) {
+        loadRef.current(1);
+      }
+    };
+
+    const unsubscribe = onMessageListener(handleFCMMessage);
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [loadNotifications]);
+  }, []); // Empty deps - the ref handles staleness
+
+
 
   const hasMore = currentPage * limit < totalNotifications;
   const hasPrevious = currentPage > 1;

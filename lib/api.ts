@@ -24,6 +24,7 @@ export async function apiFetch<T>(
         url,
         {
           ...options,
+          cache: "no-store",
           headers: {
             "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "true",
