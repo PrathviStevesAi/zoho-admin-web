@@ -105,7 +105,8 @@ export function NotificationsNav() {
 
       <DropdownMenuContent
         align="end"
-        className="w-[380px] p-0 mt-2 bg-card border-border shadow-xl rounded-sm animate-in fade-in-0 zoom-in-95"
+        collisionPadding={16}
+        className="w-[calc(100vw-32px)] sm:w-[380px] p-0 mt-2 bg-card border-border shadow-xl rounded-sm animate-in fade-in-0 zoom-in-95"
       >
         <div className="flex items-center justify-between p-4 border-b border-border/50">
           <h3 className="font-semibold text-slate-700">Notifications</h3>

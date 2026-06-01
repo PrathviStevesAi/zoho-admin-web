@@ -217,3 +217,23 @@
 .bg-slate-800 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
+
+/* Card Header mobile responsiveness overrides */
+@media (max-width: 640px) {
+  [data-slot="card-header"].flex-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+  
+  [data-slot="card-header"].flex-row > .flex.items-center.gap-4.shrink-0 {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+
+  [data-slot="card-header"].flex-row > .flex.items-center.gap-4.shrink-0 > .relative.w-\[240px\] {
+    width: 100% !important;
+  }
+}

@@ -34,9 +34,9 @@ export function DashboardHeader() {
 
 
     return (
-        <div className="flex flex-col md:flex-row items-baseline justify-between mb-10 border-b border-border pb-8 gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-0 md:mb-10 border-b border-border pb-4 md:pb-8 gap-6">
             {/* TYPOGRAPHY SECTION */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 w-full md:w-auto">
                 <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-3">
                     {currentView === "guard-management" ? "Operation Dashboard" : "Dispatch View Dashboard"}
                 </h1>
@@ -48,14 +48,14 @@ export function DashboardHeader() {
             </div>
 
             {/* FILTERS SECTION */}
-            <div className="flex flex-col md:flex-row items-end gap-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6 w-full md:w-auto">
                 <PeriodFilter />
 
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 w-full sm:w-auto">
                     <span className="text-[14px] font-semibold text-slate-600 tracking-tight ml-1">View</span>
                     <Select value={currentView} onValueChange={handleValueChange} disabled={isPending}>
                         <SelectTrigger
-                            className="cursor-pointer !h-[42px] w-[220px] bg-card border-border rounded-sm text-xs font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all hover:bg-surface active:scale-[0.98]"
+                            className="cursor-pointer !h-[42px] w-full sm:w-[220px] bg-card border-border rounded-sm text-xs font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all hover:bg-surface active:scale-[0.98]"
                         >
                             <div className="flex items-center gap-2">
                                 <SelectValue placeholder="Select View" />

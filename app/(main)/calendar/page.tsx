@@ -98,7 +98,7 @@ export default function CalendarPage() {
   }, []);
 
   return (
-    <div className="p-4 md:p-8 space-y-4 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+    <div className="p-0 sm:p-4 md:p-8 space-y-4 max-w-[1600px] mx-auto animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-2">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2 border-b-2 border-[#0064cb] pb-3 -mb-[13px]">
@@ -167,26 +167,32 @@ export default function CalendarPage() {
       )}
 
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-2 rounded-xl shadow-sm border border-slate-100">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={handlePrev} className="h-9 w-9 border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer">
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={handleNext} className="h-9 w-9 border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer">
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-          <Button onClick={handleToday} variant="secondary" className="h-9 px-4 font-bold bg-slate-500 text-white hover:bg-slate-600 cursor-pointer transition-colors ml-2 rounded-md">
-            Today
-          </Button>
+        <div className="flex items-center justify-between w-full md:w-auto gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Button variant="outline" size="icon" onClick={handlePrev} className="h-9 w-9 border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer">
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={handleNext} className="h-9 w-9 border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer">
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+            <Button onClick={handleToday} variant="secondary" className="h-9 px-3 sm:px-4 font-bold bg-slate-500 text-white hover:bg-slate-600 cursor-pointer transition-colors ml-1 sm:ml-2 rounded-md text-xs sm:text-sm">
+              Today
+            </Button>
+          </div>
+
+          <h2 className="text-sm sm:text-base font-extrabold text-slate-800 tracking-tight md:hidden truncate max-w-[140px]" title={currentDate}>
+            {currentDate}
+          </h2>
         </div>
 
         <h2 className="text-xl font-bold text-slate-800 tracking-tight hidden md:block">
           {currentDate || "Calendar"}
         </h2>
 
-        <div className="flex bg-slate-50 p-1 rounded-lg border border-slate-200">
+        <div className="flex bg-slate-50 p-1 rounded-lg border border-slate-200 w-full md:w-auto justify-between md:justify-start">
           <button
             onClick={() => changeView("dayGridMonth")}
-            className={`px-5 py-1.5 text-sm font-bold rounded-md transition-all cursor-pointer ${currentView === "dayGridMonth"
+            className={`flex-1 md:flex-none px-3 sm:px-5 py-1.5 text-xs sm:text-sm font-bold rounded-md transition-all cursor-pointer text-center ${currentView === "dayGridMonth"
               ? "bg-blue-100 text-[#0064cb] shadow-sm"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
@@ -195,7 +201,7 @@ export default function CalendarPage() {
           </button>
           <button
             onClick={() => changeView("listWeek")}
-            className={`px-5 py-1.5 text-sm font-bold rounded-md transition-all cursor-pointer ${currentView === "listWeek"
+            className={`flex-1 md:flex-none px-3 sm:px-5 py-1.5 text-xs sm:text-sm font-bold rounded-md transition-all cursor-pointer text-center ${currentView === "listWeek"
               ? "bg-blue-100 text-[#0064cb] shadow-sm"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
@@ -204,7 +210,7 @@ export default function CalendarPage() {
           </button>
           <button
             onClick={() => changeView("listDay")}
-            className={`px-5 py-1.5 text-sm font-bold rounded-md transition-all cursor-pointer ${currentView === "listDay"
+            className={`flex-1 md:flex-none px-3 sm:px-5 py-1.5 text-xs sm:text-sm font-bold rounded-md transition-all cursor-pointer text-center ${currentView === "listDay"
               ? "bg-blue-100 text-[#0064cb] shadow-sm"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
@@ -214,7 +220,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className={`relative bg-white p-4 rounded-xl shadow-lg border border-slate-100 min-h-[600px] h-[calc(100vh-240px)] flex flex-col calendar-wrapper ${!showFullDuration ? 'truncate-events' : ''}`}>
+      <div className={`relative bg-white p-2 sm:p-4 rounded-xl shadow-lg border border-slate-100 min-h-[600px] h-[calc(100vh-240px)] flex flex-col calendar-wrapper ${!showFullDuration ? 'truncate-events' : ''}`}>
 
         {(selectedEvent || showMoreModal) && (
           <div className="absolute inset-0 z-50 bg-slate-900/10 backdrop-blur-[2px] rounded-xl transition-all duration-300"></div>

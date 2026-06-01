@@ -73,27 +73,27 @@ export function PeriodFilter() {
     };
 
     return (
-        <div className="flex flex-col md:flex-row items-end gap-3">
+        <div className="flex flex-col md:flex-row items-start md:items-end gap-3 w-full sm:w-auto">
             {isCustom && (
-                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
-                    <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300 w-full sm:w-auto">
+                    <div className="flex flex-col gap-1 w-full sm:w-auto">
                         <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight ml-1">From</span>
                         <Input
                             type="date"
                             disabled={isPending}
                             value={tempDates.start}
                             onChange={(e) => setTempDates(prev => ({ ...prev, start: e.target.value }))}
-                            className="h-[42px] w-[140px] bg-card border-border rounded-sm text-xs font-medium"
+                            className="h-[42px] w-full sm:w-[140px] bg-card border-border rounded-sm text-xs font-medium"
                         />
                     </div>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1 w-full sm:w-auto">
                         <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight ml-1">To</span>
                         <Input
                             type="date"
                             disabled={isPending}
                             value={tempDates.end}
                             onChange={(e) => setTempDates(prev => ({ ...prev, end: e.target.value }))}
-                            className="h-[42px] w-[140px] bg-card border-border rounded-sm text-xs font-medium"
+                            className="h-[42px] w-full sm:w-[140px] bg-card border-border rounded-sm text-xs font-medium"
                         />
                     </div>
                     <Button
@@ -119,11 +119,11 @@ export function PeriodFilter() {
                 </div>
             )}
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 w-full sm:w-auto">
                 <span className="text-[14px] font-semibold text-slate-600 tracking-tight ml-1">Period</span>
                 <Select value={period} onValueChange={handlePeriodChange} disabled={isPending}>
                     <SelectTrigger
-                        className="cursor-pointer !h-[42px] w-[150px] bg-card border-border rounded-sm text-xs font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all hover:bg-surface active:scale-[0.98]"
+                        className="cursor-pointer !h-[42px] w-full sm:w-[150px] bg-card border-border rounded-sm text-xs font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all hover:bg-surface active:scale-[0.98]"
                     >
                         <div className="flex items-center gap-2">
                             <CalendarIcon className="h-3.5 w-3.5 text-slate-700" />

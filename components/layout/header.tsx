@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, User, Settings, LogOut, ChevronDown, Search, XCircle } from "lucide-react";
+import { Bell, User, Settings, LogOut, ChevronDown, Search, XCircle, Menu } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -122,10 +122,18 @@ export function Header() {
   };
 
   return (
-    <header className="flex items-center justify-between h-16 border-b bg-white px-6 sticky top-0 z-50">
-      {/* LEFT: Logo */}
-      <div className="flex items-center gap-3 shrink-0 w-[240px]">
-        <Link href="/dashboard">
+    <header className="flex items-center justify-between h-16 border-b bg-white px-4 md:px-6 sticky top-0 z-50">
+      {/* LEFT: Logo & Mobile Hamburger Menu */}
+      <div className="flex items-center gap-2 md:gap-3 shrink-0 w-auto md:w-[240px]">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.dispatchEvent(new Event("toggle-sidebar"))}
+          className="md:hidden p-1 mr-1 hover:bg-muted cursor-pointer shrink-0"
+        >
+          <Menu className="size-6 text-slate-700" />
+        </Button>
+        <Link href="/dashboard" className="flex items-center">
           <Image
             src="/images/website-logo.png"
             alt="logo"
@@ -139,7 +147,7 @@ export function Header() {
       </div>
 
       {/* CENTER: Global Search Bar */}
-      <div className="flex-1 flex justify-center px-4 max-w-2xl relative" ref={searchRef}>
+      <div className="hidden md:flex flex-1 justify-center px-4 max-w-2xl relative" ref={searchRef}>
         <div className="relative group w-full max-w-[580px]">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
             {isLoading ? (
@@ -242,7 +250,7 @@ export function Header() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 shrink-0 w-[240px] justify-end">
+      <div className="flex items-center gap-2 md:gap-4 shrink-0 w-auto md:w-[240px] justify-end">
         <NotificationsNav />
         <UserNav session={session} dynamicProfile={profile} />
       </div>

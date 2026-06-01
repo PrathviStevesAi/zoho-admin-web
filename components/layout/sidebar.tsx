@@ -30,6 +30,10 @@ export function Sidebar() {
 
   useEffect(() => {
     setMounted(true);
+
+    const handleToggle = () => setIsCollapsed(prev => !prev);
+    window.addEventListener("toggle-sidebar", handleToggle);
+    return () => window.removeEventListener("toggle-sidebar", handleToggle);
   }, []);
 
   return (
@@ -43,8 +47,8 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 h-screen bg-card border-r transition-all duration-300 ease-in-out z-[60] flex flex-col shadow-2xl",
-          isCollapsed ? "w-[70px]" : "w-64"
+          "fixed top-0 h-screen bg-card border-r transition-all duration-300 ease-in-out z-[60] flex flex-col shadow-2xl",
+          isCollapsed ? "-left-[70px] md:left-0 w-[70px]" : "left-0 w-64"
         )}
       >
         <div className="flex items-center h-16 px-4 justify-between border-b">
@@ -90,7 +94,7 @@ export function Sidebar() {
         </nav>
       </aside>
 
-      <div className="w-[70px] shrink-0" />
+      <div className="hidden md:block w-[70px] shrink-0" />
     </>
   );
 }

@@ -198,7 +198,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <div className="p-0 sm:p-4 md:p-6 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
         <Skeleton className="h-48 w-full rounded-2xl" />
         <Skeleton className="h-64 rounded-2xl" />
       </div>
@@ -215,7 +215,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="p-0 sm:p-4 md:p-6 max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row items-center gap-6 px-2">
         <div className="relative group">
           <Avatar className="w-24 h-24 md:w-28 md:h-28 border-4 border-white shadow-lg rounded-2xl bg-slate-50 overflow-hidden transition-transform duration-500 group-hover:scale-[1.02]">
@@ -278,7 +278,7 @@ export default function ProfilePage() {
       </div>
 
       <Card className="border border-slate-100 shadow-lg rounded-2xl bg-white overflow-hidden">
-        <CardHeader className="px-6 pt-5 pb-3 border-b border-slate-50">
+        <CardHeader className="px-4 sm:px-6 pt-5 pb-3 border-b border-slate-50">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-bold text-black flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -288,7 +288,7 @@ export default function ProfilePage() {
             </CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="px-6 py-6 space-y-6">
+        <CardContent className="p-4 sm:p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
             <div className="space-y-1.5">
               <Label className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">First Name</Label>

@@ -21,7 +21,7 @@ export function DataTable<T extends { id?: string | number }>({
     emptyMessage = "No data found.",
 }: DataTableProps<T>) {
     return (
-        <Table>
+        <Table className="min-w-[550px]">
             <TableHeader className="bg-surface">
                 <TableRow>
                     {columns.filter(col => !col.hidden).map((col) => (

@@ -150,7 +150,7 @@ export default function MemberDirectoryPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-0 sm:p-4 md:p-6 max-w-[1400px] mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Breadcrumbs & Header */}
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
@@ -170,7 +170,7 @@ export default function MemberDirectoryPage() {
         {/* Registration Form */}
         <div className="lg:col-span-5">
           <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-6">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-4 sm:p-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#0064cb]/10 flex items-center justify-center text-[#0064cb]">
                   <UserPlus className="w-5 h-5" />
@@ -180,9 +180,9 @@ export default function MemberDirectoryPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-8">
+            <CardContent className="p-4 sm:p-8">
               <form onSubmit={handleRegister} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">First Name</label>
                     <Input
@@ -279,7 +279,7 @@ export default function MemberDirectoryPage() {
         {/* Member List */}
         <div className="lg:col-span-7">
           <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white min-h-[600px]">
-            <CardHeader className="p-8 pb-4">
+            <CardHeader className="p-4 sm:p-8 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
                   <Users className="w-5 h-5" />
@@ -292,20 +292,20 @@ export default function MemberDirectoryPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[600px]">
                   <TableHeader>
                     <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="w-[200px] h-12 px-8 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Name</TableHead>
+                      <TableHead className="w-[200px] h-12 px-4 sm:px-8 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Name</TableHead>
                       <TableHead className="h-12 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Email</TableHead>
                       <TableHead className="h-12 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Phone Number</TableHead>
-                      <TableHead className="h-12 text-right px-8 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Action</TableHead>
+                      <TableHead className="h-12 text-right px-4 sm:px-8 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <TableRow key={i} className="hover:bg-transparent border-slate-50">
-                          <TableCell className="px-8 py-4">
+                          <TableCell className="px-4 sm:px-8 py-4">
                             <div className="flex items-center gap-3">
                               <Skeleton className="w-9 h-9 rounded-full bg-slate-100" />
                               <Skeleton className="h-4 w-32 bg-slate-100" />
@@ -317,7 +317,7 @@ export default function MemberDirectoryPage() {
                           <TableCell className="py-4">
                             <Skeleton className="h-4 w-32 bg-slate-100" />
                           </TableCell>
-                          <TableCell className="px-8 py-4 text-right">
+                          <TableCell className="px-4 sm:px-8 py-4 text-right">
                             <Skeleton className="w-9 h-9 rounded-lg ml-auto bg-slate-50" />
                           </TableCell>
                         </TableRow>
@@ -334,7 +334,7 @@ export default function MemberDirectoryPage() {
                     ) : (
                       members.map((member) => (
                         <TableRow key={member.id} className="group hover:bg-slate-50/50 border-slate-50 transition-colors">
-                          <TableCell className="px-8 py-4">
+                          <TableCell className="px-4 sm:px-8 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
                                 <User className="w-5 h-5" />
@@ -350,7 +350,7 @@ export default function MemberDirectoryPage() {
                           <TableCell className="py-4">
                             <span className="text-sm text-slate-800 font-medium">{member.phone_number || "---"}</span>
                           </TableCell>
-                          <TableCell className="px-8 py-4 text-right">
+                          <TableCell className="px-4 sm:px-8 py-4 text-right">
                             <Button
                               variant="ghost"
                               size="icon"
