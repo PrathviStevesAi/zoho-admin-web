@@ -274,12 +274,21 @@ export function ShiftModule({
                         <TableCell className="py-4 px-6">
                           <Input
                             type="number"
-                            min="0"
+                            min="0.01"
+                            step="any"
                             placeholder="e.g., 8"
                             value={row.hours}
                             onChange={(e) => {
-                              const val = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
-                              handleRowChange(dateKey, 'hours', val);
+                              const inputVal = e.target.value;
+                              if (inputVal === "") {
+                                handleRowChange(dateKey, 'hours', "");
+                                return;
+                              }
+                              const valNum = Number(inputVal);
+                              if (valNum < 0) {
+                                return;
+                              }
+                              handleRowChange(dateKey, 'hours', inputVal);
                             }}
                             className="h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg font-medium text-slate-700"
                           />

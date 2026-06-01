@@ -214,7 +214,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className={`relative bg-white p-4 rounded-xl shadow-lg border border-slate-100 min-h-[700px] calendar-wrapper ${!showFullDuration ? 'truncate-events' : ''}`}>
+      <div className={`relative bg-white p-4 rounded-xl shadow-lg border border-slate-100 min-h-[600px] h-[calc(100vh-240px)] flex flex-col calendar-wrapper ${!showFullDuration ? 'truncate-events' : ''}`}>
 
         {(selectedEvent || showMoreModal) && (
           <div className="absolute inset-0 z-50 bg-slate-900/10 backdrop-blur-[2px] rounded-xl transition-all duration-300"></div>
@@ -350,40 +350,42 @@ export default function CalendarPage() {
           </div>
         )}
 
-        <FullCalendar
-          ref={calendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
-          events={fetchEvents}
-          headerToolbar={false}
-          height="auto"
-          dayMaxEvents={2}
-          displayEventEnd={showFullDuration}
-          moreLinkContent={(args) => "+" + args.num + " more"}
-          moreLinkClick={(arg) => {
-            const events = arg.allSegs.map((seg: any) => seg.event);
-            setShowMoreModal({ date: arg.date, events });
-            return "function";
-          }}
-          eventDisplay="list-item"
-          loading={(loadingState) => setIsLoading(loadingState)}
-          viewDidMount={(info) => setCurrentDate(info.view.title)}
-          eventDidMount={(info) => {
-            const color = info.event.backgroundColor;
-            if (color) {
-              info.el.style.setProperty('--event-color', color);
-              info.el.style.setProperty('--event-color-light', `color-mix(in srgb, ${color} 15%, transparent)`);
-            }
-          }}
-          eventClick={(info) => {
-            setSelectedEvent({
-              title: info.event.title,
-              start: info.event.start,
-              end: info.event.end,
-              backgroundColor: info.event.backgroundColor || info.el.style.getPropertyValue('--event-color')
-            });
-          }}
-        />
+        <div className="flex-1 min-h-0">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            events={fetchEvents}
+            headerToolbar={false}
+            height="100%"
+            dayMaxEvents={2}
+            displayEventEnd={showFullDuration}
+            moreLinkContent={(args) => "+" + args.num + " more"}
+            moreLinkClick={(arg) => {
+              const events = arg.allSegs.map((seg: any) => seg.event);
+              setShowMoreModal({ date: arg.date, events });
+              return "function";
+            }}
+            eventDisplay="list-item"
+            loading={(loadingState) => setIsLoading(loadingState)}
+            viewDidMount={(info) => setCurrentDate(info.view.title)}
+            eventDidMount={(info) => {
+              const color = info.event.backgroundColor;
+              if (color) {
+                info.el.style.setProperty('--event-color', color);
+                info.el.style.setProperty('--event-color-light', `color-mix(in srgb, ${color} 15%, transparent)`);
+              }
+            }}
+            eventClick={(info) => {
+              setSelectedEvent({
+                title: info.event.title,
+                start: info.event.start,
+                end: info.event.end,
+                backgroundColor: info.event.backgroundColor || info.el.style.getPropertyValue('--event-color')
+              });
+            }}
+          />
+        </div>
       </div>
     </div>
   );

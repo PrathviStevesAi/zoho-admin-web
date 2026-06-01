@@ -39,7 +39,7 @@ export function ShiftDARReportTab({
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between pb-2 border-b border-slate-50">
-          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight">DAR Report Documents</h3>
+          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight">Daily Activity Report Documents</h3>
           <span className="text-[10px] font-bold text-[#0064cb] bg-blue-50 px-2 py-1 rounded-lg">1 File</span>
         </div>
 
@@ -53,7 +53,7 @@ export function ShiftDARReportTab({
                 <span className="text-[12px] font-bold text-slate-700 truncate max-w-[220px]">
                   {getFileNameFromUrl(reports.dar_report.url, "dar_file.pdf")}
                 </span>
-                <span className="text-[10px] text-slate-700 font-medium italic">DAR Report Document</span>
+                <span className="text-[10px] text-slate-700 font-medium italic">Daily Activity Report Document</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
@@ -71,7 +71,7 @@ export function ShiftDARReportTab({
                 onClick={() => {
                   setPreviewFile({
                     url: reports.dar_report!.url,
-                    title: "DAR Report Document",
+                    title: "Daily Activity Report Document",
                     contentType: reports.dar_report!.content_type || "application/pdf",
                   });
                 }}
@@ -94,11 +94,11 @@ export function ShiftDARReportTab({
       </div>
       {reportsError ? (
         <>
-          <p className="text-xs font-bold text-red-500 uppercase tracking-tight">Failed to load DAR Report</p>
+          <p className="text-xs font-bold text-red-500 uppercase tracking-tight">Failed to load Daily Activity Report</p>
           <p className="text-[11px] text-slate-500 font-mono break-all">{reportsError}</p>
         </>
       ) : (
-        <p className="text-xs font-medium text-slate-700">No DAR Report data available yet.</p>
+        <p className="text-xs font-medium text-slate-700">No Daily Activity Report data available yet.</p>
       )}
     </div>
   );

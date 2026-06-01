@@ -539,11 +539,11 @@ export function AvailableGuardsModule({
                           <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">{shift.service_name}</TableCell>
                           <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
                             {new Date(shift.start_time).toLocaleDateString()}<br />
-                            <span className="text-[11px] text-slate-700">{new Date(shift.start_time).toLocaleTimeString()}</span>
+                            <span className="text-[11px] text-slate-700">{new Date(shift.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </TableCell>
                           <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
                             {new Date(shift.end_time).toLocaleDateString()}<br />
-                            <span className="text-[11px] text-slate-700">{new Date(shift.end_time).toLocaleTimeString()}</span>
+                            <span className="text-[11px] text-slate-700">{new Date(shift.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </TableCell>
                         </TableRow>
                       ))

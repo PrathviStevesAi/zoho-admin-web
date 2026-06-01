@@ -15,6 +15,11 @@
   font-size: 15px;
 }
 
+.fc .fc-col-header-cell {
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
 .fc .fc-daygrid-day-number {
   color: #64748b;
   font-weight: 600;
@@ -22,7 +27,21 @@
 }
 
 .fc .fc-day-today {
-  background-color: #f8fafc !important;
+  background-color: rgba(0, 100, 203, 0.04) !important;
+}
+
+.fc .fc-day-today .fc-daygrid-day-number {
+  background-color: #0064cb !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  min-width: 26px !important;
+  height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 4px 6px 4px 4px !important;
+  font-weight: 700 !important;
+  padding: 0 !important;
 }
 
 .fc-direction-ltr .fc-daygrid-event.fc-event-end,
@@ -191,4 +210,10 @@
 .fc-daygrid-more-link:hover {
   color: #0064cb !important;
   text-decoration: none !important;
+}
+
+/* Hide vertical scrollbar specifically in Month View scroller to prevent scrollbar gutters */
+.fc-view-dayGridMonth .fc-scroller,
+.fc-dayGridMonth-view .fc-scroller {
+  overflow: hidden !important;
 }

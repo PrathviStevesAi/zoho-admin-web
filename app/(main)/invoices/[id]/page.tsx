@@ -405,13 +405,23 @@ export default function InvoiceDetailsPage() {
     const dates = getDatesList(addShiftData.dateFrom, addShiftData.dateTo);
     for (const date of dates) {
       const dateKey = formatDateKey(date);
-      const row = rowSchedules[dateKey];
-      if (row && row.checked && row.startTime && row.endTime) {
+      const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
+      if (row.checked) {
+        const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        if (!row.startTime || !row.endTime) {
+          toast.error(`Please select start and end times for ${formattedDate}`);
+          return;
+        }
+        const hoursNum = parseFloat(row.hours);
+        if (isNaN(hoursNum) || hoursNum <= 0) {
+          toast.error(`Hours per Day for ${formattedDate} must be a positive number greater than 0`);
+          return;
+        }
         for (let p = 0; p < (addShiftData.people || 1); p++) {
           schedule.push({
             start_date: DateTime.fromISO(row.startTime, { zone: invoiceTimezone }).toUTC().toISO({ suppressMilliseconds: true }) || row.startTime,
             end_date: DateTime.fromISO(row.endTime, { zone: invoiceTimezone }).toUTC().toISO({ suppressMilliseconds: true }) || row.endTime,
-            total_hr: parseFloat(row.hours)
+            total_hr: hoursNum
           });
         }
       }
@@ -482,7 +492,7 @@ export default function InvoiceDetailsPage() {
       for (const assigned of allAssignedShifts) {
         if (DateTime.fromISO(newShift.start_time) < DateTime.fromISO(assigned.end_time) &&
           DateTime.fromISO(assigned.start_time) < DateTime.fromISO(newShift.end_time)) {
-          toast.error(`Guard ${guard.first_name} is already assigned to shift ${assigned.shift_no} during this time (${new Date(assigned.start_time).toLocaleTimeString()} - ${new Date(assigned.end_time).toLocaleTimeString()}).`);
+          toast.error(`Guard ${guard.first_name} is already assigned to shift ${assigned.shift_no} during this time (${new Date(assigned.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(assigned.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}).`);
           return;
         }
       }

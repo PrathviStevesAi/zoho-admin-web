@@ -79,6 +79,20 @@ export default function MemberDirectoryPage() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (formData.phone) {
+      const digitCount = formData.phone.replace(/\D/g, "").length;
+      if (digitCount < 7 || digitCount > 15) {
+        toast.error("Phone number must be between 7 and 15 digits");
+        return;
+      }
+    }
+
     setIsRegistering(true);
     const res = await registerUserAction({
       email: formData.email,
@@ -213,7 +227,12 @@ export default function MemberDirectoryPage() {
                     <Input
                       placeholder="Enter phone number"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const hasPlus = val.startsWith("+");
+                        const digits = val.replace(/\D/g, "").slice(0, 15);
+                        setFormData({ ...formData, phone: (hasPlus ? "+" : "") + digits });
+                      }}
                       className="h-12 pl-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
                     />
                   </div>

@@ -14,7 +14,7 @@ interface ShiftTabsModuleProps {
   isCommentsLoading: boolean;
   commentsError: string | null;
   onCommentSubmit: (text: string, type: "internal" | "external", file: File | null) => Promise<boolean>;
-  
+
   reports: ShiftReports | null;
   isReportsLoading: boolean;
   reportsError: string | null;
@@ -38,8 +38,8 @@ export function ShiftTabsModule({
 
   const tabs = [
     { id: "comment", label: "Add Comment", icon: MessageSquarePlus },
-    { id: "dar", label: "DAR Report", icon: FileText },
-    { id: "report", label: "Report", icon: ClipboardList },
+    { id: "dar", label: "Daily Activity Report", icon: FileText },
+    { id: "report", label: "Incident Report", icon: ClipboardList },
     { id: "checkpoint", label: "Check Point", icon: MapPin },
     { id: "history", label: "History of changes", icon: History },
   ];
