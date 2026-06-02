@@ -70,10 +70,8 @@ export function AssignmentModule({
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
       <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white max-w-7xl mx-auto">
         <CardContent className="p-0">
-          <div className="px-6 pt-4 pb-4 border-b border-slate-100 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Select guards for shifts</h2>
-            </div>
+          <div className="px-6 py-4 border-b border-slate-100 flex flex-col gap-1 bg-white">
+            <h2 className="text-xl font-bold text-slate-900">Select guards for shifts</h2>
           </div>
 
           <div className="p-6 space-y-8">
@@ -108,13 +106,13 @@ export function AssignmentModule({
               </div>
             </div>
 
-            <div className="border border-slate-100 rounded-xl overflow-hidden shadow-sm">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+            <div className="border border-slate-100 rounded-lg overflow-hidden shadow-sm w-full">
+              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h3 className="text-sm font-bold text-slate-700">Select guards for shifts</h3>
                 <Button
                   variant="outline"
                   className={cn(
-                    "text-[#0064cb] border-[#0064cb] hover:bg-blue-50 h-9 rounded-lg px-4 font-bold text-xs flex gap-2 transition-all cursor-pointer",
+                    "text-[#0064cb] border-[#0064cb] hover:bg-blue-50 h-9 rounded-lg px-4 font-bold text-xs flex gap-2 transition-all cursor-pointer w-full sm:w-auto justify-center items-center shrink-0",
                     selectedShifts.length === 0 && "opacity-50 pointer-events-none grayscale"
                   )}
                   onClick={() => onOpenSelectUser(selectedShifts)}
@@ -123,8 +121,8 @@ export function AssignmentModule({
                   Select Guard <Plus className="w-3.5 h-3.5" />
                 </Button>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto custom-scrollbar w-full">
+                <Table className="min-w-[900px] md:min-w-full">
                   <TableHeader className="bg-slate-50/50">
                     <TableRow className="hover:bg-transparent border-slate-100">
                       <TableHead className="w-[60px] py-4 px-6 text-center">
@@ -257,18 +255,18 @@ export function AssignmentModule({
             </div>
           </div>
 
-          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-6">
+          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-6 w-full">
             <Button
               variant="outline"
               onClick={onBack}
-              className="px-6 h-11 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
+              className="px-6 h-11 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer w-full sm:w-auto text-center"
             >
               Back
             </Button>
             <Button
               onClick={onAdd}
               disabled={isAssigning || Object.keys(pendingAssignments).length === 0}
-              className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer min-w-[120px]"
+              className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer min-w-[120px] w-full sm:w-auto flex justify-center items-center"
             >
               {isAssigning ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
             </Button>

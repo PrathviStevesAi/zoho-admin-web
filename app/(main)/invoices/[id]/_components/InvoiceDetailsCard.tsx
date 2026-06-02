@@ -46,7 +46,7 @@ export function InvoiceDetailsCard({
     <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white">
       <CardContent className="p-0">
         <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span className="text-xl font-bold text-slate-700">#{invoice.invoice_no || "N/A"}</span>
             <div className="flex items-center gap-2">
               {!invoice.status?.toLowerCase().includes('cancelled') && (
@@ -75,9 +75,9 @@ export function InvoiceDetailsCard({
         </div>
 
         <div className="border-t border-slate-100 divide-y divide-slate-100">
-          <div className="grid grid-cols-4 p-4 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 gap-2 md:gap-0 items-start md:items-center">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Customer Name:</span>
-            <div className="col-span-3 flex items-center justify-between gap-4">
+            <div className="w-full md:col-span-3 flex items-center justify-between gap-4">
               <div className="flex-1">
                 {isEditOpen ? (
                   <Input
@@ -126,17 +126,17 @@ export function InvoiceDetailsCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 p-4 items-start">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 gap-2 md:gap-0 items-start">
             <div className="flex items-center gap-1.5 pt-1">
               <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Invoice Details:</span>
               <div className="group relative">
-                <Info className="cursor-pointer w-6 h-6 text-[#0064cb] hover:text-[#0052ae] transition-colors cursor-help" />
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-52 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed font-medium rounded-lg shadow-xl z-50 text-center normal-case pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-800">
+                <Info className="cursor-pointer w-5 h-5 text-[#0064cb] hover:text-[#0052ae] transition-colors cursor-help" />
+                <div className="absolute left-0 md:left-1/2 md:-translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-52 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed font-medium rounded-lg shadow-xl z-50 text-left md:text-center normal-case pointer-events-none before:content-[''] before:absolute before:top-full before:left-4 md:before:left-1/2 md:before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-800">
                   Invoice details are visible only to admins. Guards cannot view invoice information.
                 </div>
               </div>
             </div>
-            <div className="col-span-3">
+            <div className="w-full md:col-span-3">
               {isEditOpen ? (
                 <textarea
                   rows={4}
@@ -153,17 +153,17 @@ export function InvoiceDetailsCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 p-4 items-start border-t border-slate-50">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 gap-2 md:gap-0 items-start border-t border-slate-50">
             <div className="flex items-center gap-1.5 pt-1">
               <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Shift Detail:</span>
               <div className="group relative">
-                <Info className="cursor-pointer w-6 h-6 text-[#0064cb] hover:text-[#0052ae] transition-colors cursor-help" />
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-56 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed font-medium rounded-lg shadow-xl z-50 text-center normal-case pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-800">
+                <Info className="cursor-pointer w-5 h-5 text-[#0064cb] hover:text-[#0052ae] transition-colors cursor-help" />
+                <div className="absolute left-0 md:left-1/2 md:-translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-56 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed font-medium rounded-lg shadow-xl z-50 text-left md:text-center normal-case pointer-events-none before:content-[''] before:absolute before:top-full before:left-4 md:before:left-1/2 md:before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-800">
                   Shift details are visible to guards. You can add post orders, duties, instructions, and shift-related information here.
                 </div>
               </div>
             </div>
-            <div className="col-span-3">
+            <div className="w-full md:col-span-3">
               {isEditOpen ? (
                 <textarea
                   rows={4}
@@ -180,21 +180,21 @@ export function InvoiceDetailsCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 p-4 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 gap-1 md:gap-0 items-start md:items-center">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Status:</span>
-            <span className={cn("col-span-3 text-sm font-bold", invoice.status?.toLowerCase().includes('cancelled') ? "text-red-600" : "text-slate-800")}>
+            <span className={cn("w-full md:col-span-3 text-sm font-bold", invoice.status?.toLowerCase().includes('cancelled') ? "text-red-600" : "text-slate-800")}>
               {formatStatus(invoice.status)}
             </span>
           </div>
 
-          <div className="grid grid-cols-4 p-4 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 gap-1 md:gap-0 items-start md:items-center">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Invoice/Estimate Number:</span>
-            <span className="col-span-3 text-sm text-slate-800 font-medium">{invoice.invoice_no}</span>
+            <span className="w-full md:col-span-3 text-sm text-slate-800 font-medium">{invoice.invoice_no}</span>
           </div>
 
-          <div className="grid grid-cols-4 p-4 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 gap-1 md:gap-0 items-start md:items-center">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Invoice Amount:</span>
-            <span className="col-span-3 text-sm text-slate-800 font-medium">{invoice.invoice_amount || "0"}</span>
+            <span className="w-full md:col-span-3 text-sm text-slate-800 font-medium">{invoice.invoice_amount || "0"}</span>
           </div>
         </div>
       </CardContent>

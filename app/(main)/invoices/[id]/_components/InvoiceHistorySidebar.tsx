@@ -38,9 +38,9 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
                   idx === 0 ? "bg-blue-50/50 border-blue-100" : "bg-white border-slate-100"
                 )}>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                       <h3 className="text-sm font-bold text-slate-700 ">{formatStatus(item.action_name)}</h3>
-                      <span className="text-[10px] text-slate-700 font-bold uppercase">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase whitespace-nowrap">
                         {new Date(item.created_at).toLocaleString()}
                       </span>
                     </div>
@@ -69,11 +69,11 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
                               : value;
 
                           return (
-                            <div key={key} className="flex items-center justify-between gap-4 border-b border-slate-50/50 pb-1 last:border-0 last:pb-0">
-                              <p className="text-[10px] text-slate-800 font-bold uppercase whitespace-nowrap shrink-0">
+                            <div key={key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 border-b border-slate-50/50 pb-1 last:border-0 last:pb-0">
+                              <p className="text-[10px] text-slate-800 font-bold uppercase shrink-0">
                                 {formatStatus(shortenKey(key))}:
                               </p>
-                              <span className="text-sm text-slate-800 font-medium break-all text-right">
+                              <span className="text-sm text-slate-800 font-medium break-all sm:text-right">
                                 {key.toLowerCase().includes('amount') || key.toLowerCase().includes('rate')
                                   ? `$${displayValue}`
                                   : typeof displayValue === 'string' ? formatStatus(displayValue) : String(displayValue)}

@@ -64,12 +64,12 @@ export function ShiftModule({
       <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
         <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white">
           <CardContent className="p-0">
-            <div className="px-6 pt-2 pb-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
+            <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
                 <h2 className="text-xl font-bold text-slate-900">Shift Schedule</h2>
-                <p className="text-slate-800 text-sm">View and manage all scheduled shifts for this invoice.</p>
+                <p className="text-slate-600 text-sm">View and manage all scheduled shifts for this invoice.</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 justify-start sm:justify-end shrink-0">
                 <Button
                   variant="outline"
                   onClick={onBack}
@@ -88,61 +88,63 @@ export function ShiftModule({
             </div>
 
             <div className="p-6">
-              <div className="border border-slate-100 rounded-xl overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Shift No.</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Service Name</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Start Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">End Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6 text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      Array.from({ length: 3 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell colSpan={5} className="py-4 px-6">
-                            <Skeleton className="h-4 w-full rounded" />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : shifts.length > 0 ? (
-                      shifts.map((shift) => (
-                        <TableRow key={shift.shift_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                          <TableCell className="text-sm font-bold text-slate-700 py-4 px-6">{shift.shift_no}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">{shift.service_name}</TableCell>
-                          <TableCell className="text-sm text-slate-800 py-4 px-6">
-                            {DateTime.fromISO(shift.start_time, { setZone: true }).toFormat("MMM d, yyyy, h:mm a")}
-                          </TableCell>
-                          <TableCell className="text-sm text-slate-800 py-4 px-6">
-                            {DateTime.fromISO(shift.end_time, { setZone: true }).toFormat("MMM d, yyyy, h:mm a")}
-                          </TableCell>
-                          <TableCell className="py-4 px-6 text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => onDelete(shift.shift_id)}
-                              className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="py-12 text-center">
-                          <div className="flex flex-col items-center gap-2">
-                            <Calendar className="w-8 h-8 text-slate-200" />
-                            <p className="text-sm font-medium text-slate-700">No shift schedule yet</p>
-                          </div>
-                        </TableCell>
+              <div className="border border-slate-100 rounded-lg overflow-hidden w-full">
+                <div className="overflow-x-auto custom-scrollbar">
+                  <Table className="min-w-[650px] md:min-w-full">
+                    <TableHeader className="bg-slate-50/50">
+                      <TableRow className="hover:bg-transparent border-slate-100">
+                        <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Shift No.</TableHead>
+                        <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Service Name</TableHead>
+                        <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Start Time</TableHead>
+                        <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">End Time</TableHead>
+                        <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6 text-right">Action</TableHead>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        Array.from({ length: 3 }).map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell colSpan={5} className="py-4 px-6">
+                              <Skeleton className="h-4 w-full rounded" />
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : shifts.length > 0 ? (
+                        shifts.map((shift) => (
+                          <TableRow key={shift.shift_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                            <TableCell className="text-sm font-bold text-slate-700 py-4 px-6">{shift.shift_no}</TableCell>
+                            <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">{shift.service_name}</TableCell>
+                            <TableCell className="text-sm text-slate-800 py-4 px-6">
+                              {DateTime.fromISO(shift.start_time, { setZone: true }).toFormat("MMM d, yyyy, h:mm a")}
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-800 py-4 px-6">
+                              {DateTime.fromISO(shift.end_time, { setZone: true }).toFormat("MMM d, yyyy, h:mm a")}
+                            </TableCell>
+                            <TableCell className="py-4 px-6 text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => onDelete(shift.shift_id)}
+                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="py-12 text-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <Calendar className="w-8 h-8 text-slate-200" />
+                              <p className="text-sm font-medium text-slate-700">No shift schedule yet</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -181,11 +183,9 @@ export function ShiftModule({
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
       <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white max-w-7xl mx-auto">
         <CardContent className="p-0">
-          <div className="px-6 pt-4 pb-4 border-b border-slate-100 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Add New Shift</h2>
-              <p className="text-slate-800 text-sm">Create and schedule new shifts for this invoice.</p>
-            </div>
+          <div className="px-6 py-4 border-b border-slate-100 flex flex-col gap-1">
+            <h2 className="text-xl font-bold text-slate-900">Add New Shift</h2>
+            <p className="text-slate-600 text-sm">Create and schedule new shifts for this invoice.</p>
           </div>
 
           <div className="p-6 space-y-8">
@@ -240,101 +240,186 @@ export function ShiftModule({
               </div>
             </div>
 
-            <div className="border border-slate-100 rounded-xl overflow-hidden">
-              <Table>
-                <TableHeader className="bg-slate-50/50">
-                  <TableRow className="hover:bg-transparent border-slate-100">
-                    <TableHead className="text-sm font-bold text-slate-900 py-4 px-6 w-[200px]">Date</TableHead>
-                    <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">Hours per Day</TableHead>
-                    <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">Start Time</TableHead>
-                    <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">End Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {getDatesList(addShiftData.dateFrom, addShiftData.dateTo).map((date, i) => {
-                    const dateKey = formatDateKey(date);
-                    const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
-                    const rowMin = dateKey === today ? now : `${dateKey}T00:00`;
+            {/* Desktop View: Horizontal Table */}
+            <div className="hidden md:block border border-slate-100 rounded-lg overflow-hidden w-full">
+              <div className="overflow-x-auto custom-scrollbar">
+                <Table className="min-w-[650px] md:min-w-full">
+                  <TableHeader className="bg-slate-50/50">
+                    <TableRow className="hover:bg-transparent border-slate-100">
+                      <TableHead className="text-sm font-bold text-slate-900 py-4 px-6 w-[200px]">Date</TableHead>
+                      <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">Hours per Day</TableHead>
+                      <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">Start Time</TableHead>
+                      <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">End Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {getDatesList(addShiftData.dateFrom, addShiftData.dateTo).map((date, i) => {
+                      const dateKey = formatDateKey(date);
+                      const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
+                      const rowMin = dateKey === today ? now : `${dateKey}T00:00`;
 
-                    return (
-                      <TableRow key={i} className="border-slate-50">
-                        <TableCell className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={row.checked}
-                              onChange={(e) => handleRowChange(dateKey, 'checked', e.target.checked)}
-                              className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                      return (
+                        <TableRow key={i} className="border-slate-50">
+                          <TableCell className="py-4 px-6">
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={row.checked}
+                                onChange={(e) => handleRowChange(dateKey, 'checked', e.target.checked)}
+                                className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                              />
+                              <span className="text-sm font-bold text-slate-700">
+                                {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4 px-6">
+                            <Input
+                              type="number"
+                              min="0.01"
+                              step="any"
+                              placeholder="e.g., 8"
+                              value={row.hours}
+                              onChange={(e) => {
+                                const inputVal = e.target.value;
+                                if (inputVal === "") {
+                                  handleRowChange(dateKey, 'hours', "");
+                                  return;
+                                }
+                                const valNum = Number(inputVal);
+                                if (valNum < 0) {
+                                  return;
+                                }
+                                handleRowChange(dateKey, 'hours', inputVal);
+                              }}
+                              className="h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg font-medium text-slate-700"
                             />
-                            <span className="text-sm font-bold text-slate-700">
-                              {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4 px-6">
+                          </TableCell>
+                          <TableCell className="py-4 px-6">
+                            <div className="relative">
+                              <Input
+                                type="datetime-local"
+                                min={rowMin}
+                                value={row.startTime}
+                                onChange={(e) => handleRowChange(dateKey, 'startTime', e.target.value)}
+                                className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg"
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4 px-6">
+                            <div className="relative">
+                              <Input
+                                type="datetime-local"
+                                min={row.startTime || rowMin}
+                                value={row.endTime}
+                                onChange={(e) => handleRowChange(dateKey, 'endTime', e.target.value)}
+                                className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg"
+                              />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            {/* Mobile View: Vertical Card Blocks */}
+            <div className="block md:hidden space-y-4 w-full">
+              {getDatesList(addShiftData.dateFrom, addShiftData.dateTo).map((date, i) => {
+                const dateKey = formatDateKey(date);
+                const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
+                const rowMin = dateKey === today ? now : `${dateKey}T00:00`;
+
+                return (
+                  <div key={i} className={`p-4 rounded-xl border transition-all ${row.checked ? 'bg-white border-slate-100 shadow-sm' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={row.checked}
+                          onChange={(e) => handleRowChange(dateKey, 'checked', e.target.checked)}
+                          className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                        />
+                        <span className="text-sm font-bold text-slate-800">
+                          {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${row.checked ? 'bg-blue-50 text-[#0064cb]' : 'bg-slate-200 text-slate-500'}`}>
+                        {row.checked ? 'Active' : 'Skipped'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Hours per Day</Label>
+                        <Input
+                          type="number"
+                          min="0.01"
+                          step="any"
+                          disabled={!row.checked}
+                          placeholder="e.g., 8"
+                          value={row.hours}
+                          onChange={(e) => {
+                            const inputVal = e.target.value;
+                            if (inputVal === "") {
+                              handleRowChange(dateKey, 'hours', "");
+                              return;
+                            }
+                            const valNum = Number(inputVal);
+                            if (valNum < 0) {
+                              return;
+                            }
+                            handleRowChange(dateKey, 'hours', inputVal);
+                          }}
+                          className="h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg font-medium text-slate-700 disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Start Time</Label>
                           <Input
-                            type="number"
-                            min="0.01"
-                            step="any"
-                            placeholder="e.g., 8"
-                            value={row.hours}
-                            onChange={(e) => {
-                              const inputVal = e.target.value;
-                              if (inputVal === "") {
-                                handleRowChange(dateKey, 'hours', "");
-                                return;
-                              }
-                              const valNum = Number(inputVal);
-                              if (valNum < 0) {
-                                return;
-                              }
-                              handleRowChange(dateKey, 'hours', inputVal);
-                            }}
-                            className="h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg font-medium text-slate-700"
+                            type="datetime-local"
+                            min={rowMin}
+                            disabled={!row.checked}
+                            value={row.startTime}
+                            onChange={(e) => handleRowChange(dateKey, 'startTime', e.target.value)}
+                            className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm disabled:bg-slate-100 disabled:text-slate-400"
                           />
-                        </TableCell>
-                        <TableCell className="py-4 px-6">
-                          <div className="relative">
-                            <Input
-                              type="datetime-local"
-                              min={rowMin}
-                              value={row.startTime}
-                              onChange={(e) => handleRowChange(dateKey, 'startTime', e.target.value)}
-                              className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg"
-                            />
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4 px-6">
-                          <div className="relative">
-                            <Input
-                              type="datetime-local"
-                              min={row.startTime || rowMin}
-                              value={row.endTime}
-                              onChange={(e) => handleRowChange(dateKey, 'endTime', e.target.value)}
-                              className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg"
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">End Time</Label>
+                          <Input
+                            type="datetime-local"
+                            min={row.startTime || rowMin}
+                            disabled={!row.checked}
+                            value={row.endTime}
+                            onChange={(e) => handleRowChange(dateKey, 'endTime', e.target.value)}
+                            className="h-10 border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm disabled:bg-slate-100 disabled:text-slate-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-3">
+          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
             <Button
               variant="outline"
               onClick={onCancelAdd}
-              className="px-6 h-10 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
+              className="px-6 h-10 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer w-full sm:w-auto"
             >
               Back
             </Button>
             <Button
               onClick={onCreateShifts}
               disabled={isCreating}
-              className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-10 rounded-lg font-bold shadow-md shadow-[#0064cb]/10 transition-all min-w-[120px] cursor-pointer"
+              className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-10 rounded-lg font-bold shadow-md shadow-[#0064cb]/10 transition-all min-w-[120px] cursor-pointer w-full sm:w-auto flex justify-center items-center"
             >
               {isCreating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

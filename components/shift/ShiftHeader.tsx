@@ -101,7 +101,7 @@ export function ShiftHeader({
       </div>
 
       {/* Action Buttons Icons Panel */}
-      <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 py-4">
+      <div className="flex flex-wrap items-center justify-center gap-x-6 md:gap-x-12 gap-y-6 py-4">
         {(() => {
           if (!shift) return null;
           const buttons: any[] = [];

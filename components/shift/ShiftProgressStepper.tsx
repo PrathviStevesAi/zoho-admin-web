@@ -41,25 +41,34 @@ export function ShiftProgressStepper({ shift }: ShiftProgressStepperProps) {
   const progressPercentage = steps.length > 1 ? (Math.max(0, progressIndex) / (steps.length - 1)) * 100 : 0;
 
   return (
-    <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-8">
+    <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-6 md:p-8">
       <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight mb-6">Progress</h3>
 
-      <div className="relative px-4">
-        {/* Background Track Line */}
-        <div className="absolute top-4 left-[8.33%] right-[8.33%] h-[3px] bg-slate-100 rounded-full" />
+      <div className="relative md:px-4">
+        {/* Desktop Background Track Line */}
+        <div className="hidden md:block absolute top-4 left-[8.33%] right-[8.33%] h-[3px] bg-slate-100 rounded-full" />
 
-        {/* Active Progress Fill Line */}
+        {/* Desktop Active Progress Fill Line */}
         <div
-          className="absolute top-4 left-[8.33%] h-[3px] bg-gradient-to-r from-[#0064cb] to-[#3b82f6] rounded-full transition-all duration-500"
+          className="hidden md:block absolute top-4 left-[8.33%] h-[3px] bg-gradient-to-r from-[#0064cb] to-[#3b82f6] rounded-full transition-all duration-500"
           style={{ width: `${progressPercentage * 0.8333}%` }}
         />
 
-        <div className="flex justify-between items-start relative">
+        {/* Mobile Background Track Line */}
+        <div className="md:hidden absolute left-4 top-3 bottom-3 w-[3px] bg-slate-100 rounded-full" />
+
+        {/* Mobile Active Progress Fill Line */}
+        <div
+          className="md:hidden absolute left-4 top-3 w-[3px] bg-gradient-to-b from-[#0064cb] to-[#3b82f6] rounded-full transition-all duration-500"
+          style={{ height: `${progressPercentage}%` }}
+        />
+
+        <div className="flex flex-col md:flex-row justify-between items-stretch md:items-start relative gap-6 md:gap-0">
           {steps.map((step, idx) => (
-            <div key={idx} className="flex flex-col items-center flex-1 group">
+            <div key={idx} className="flex flex-row md:flex-col items-center md:items-center flex-1 group gap-4 md:gap-0">
               {/* Circle Indicator */}
               <div className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center relative z-10 transition-all duration-300",
+                "w-8 h-8 rounded-full flex items-center justify-center relative z-10 transition-all duration-300 shrink-0",
                 step.status === "completed" && "bg-emerald-500 border border-emerald-500 text-white shadow-md shadow-emerald-100",
                 step.status === "current" && "bg-white border-2 border-[#0064cb] text-[#0064cb] shadow-[0_0_0_5px_rgba(0,100,203,0.12)]",
                 step.status === "upcoming" && "bg-white border border-slate-200 text-slate-300"
@@ -76,7 +85,7 @@ export function ShiftProgressStepper({ shift }: ShiftProgressStepperProps) {
               </div>
 
               {/* Label */}
-              <div className="mt-4 px-1 text-center">
+              <div className="md:mt-4 px-1 text-left md:text-center flex-1">
                 <span className={cn(
                   "text-[11px] font-bold block leading-snug transition-colors",
                   step.status === "completed" && "text-slate-800",
@@ -85,15 +94,17 @@ export function ShiftProgressStepper({ shift }: ShiftProgressStepperProps) {
                 )}>
                   {step.label}
                 </span>
-                {step.status === "completed" && (
-                  <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mt-0.5">Completed</span>
-                )}
-                {step.status === "current" && (
-                  <span className="text-[9px] font-bold text-[#0064cb] uppercase tracking-wider block mt-0.5 animate-pulse">Active</span>
-                )}
-                {step.status === "upcoming" && (
-                  <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider block mt-0.5">Pending</span>
-                )}
+                <div className="flex items-center gap-1.5 mt-0.5 justify-start md:justify-center">
+                  {step.status === "completed" && (
+                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Completed</span>
+                  )}
+                  {step.status === "current" && (
+                    <span className="text-[9px] font-bold text-[#0064cb] uppercase tracking-wider animate-pulse">Active</span>
+                  )}
+                  {step.status === "upcoming" && (
+                    <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Pending</span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

@@ -57,6 +57,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
   const [pagination, setPagination] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -112,7 +113,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[90vw] 2xl:max-w-7xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white max-h-[90vh] flex flex-col sm:left-[calc(50%+35px)]">
+      <DialogContent className="max-w-[90vw] 2xl:max-w-7xl p-0 overflow-hidden border-none shadow-2xl rounded-xl bg-white max-h-[90vh] flex flex-col sm:left-[calc(50%+35px)]">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-50">
           <div>
             <DialogTitle className="text-xl font-bold text-slate-900">Select Guard</DialogTitle>
@@ -130,102 +131,117 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
 
         <div className="p-6 space-y-6 flex-1 flex flex-col min-h-0">
           {/* Filters Row */}
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div className="space-y-1.5 w-full">
-              <Label className="text-[13px] font-medium text-slate-700">Search</Label>
-              <div className="relative w-full">
-                <Input
-                  value={userSearchQuery || ""}
-                  onChange={(e) => setUserSearchQuery(e.target.value)}
-                  placeholder="Search name or email..."
-                  className="w-full h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
-                />
-                {userSearchQuery && (
-                  <button
-                    onClick={() => setUserSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                )}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="space-y-1.5 flex-1">
+                <Label className="text-[13px] font-medium text-slate-700">Search</Label>
+                <div className="relative w-full">
+                  <Input
+                    value={userSearchQuery || ""}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    placeholder="Search name or email..."
+                    className="w-full h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
+                  />
+                  {userSearchQuery && (
+                    <button
+                      onClick={() => setUserSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilters(prev => !prev)}
+                className="md:hidden self-end h-10 px-4 rounded-lg font-bold text-xs border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto"
+              >
+                <span>{showMobileFilters ? "Hide Filters" : "Show Filters"}</span>
+                <span className={`transition-transform duration-200 text-[9px] ${showMobileFilters ? "rotate-180" : ""}`}>▼</span>
+              </button>
             </div>
 
-            <div className="space-y-1.5 w-full">
-              <Label className="text-[13px] font-medium text-slate-700">Country</Label>
-              <Select value={userFilters.country} onValueChange={(val) => setUserFilters(prev => ({ ...prev, country: val }))}>
-                <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
-                  <SelectValue placeholder="Select Country" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
-                  {locations.countries.map(country => (
-                    <SelectItem key={country} value={country}>{country}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className={cn(
+              "grid grid-cols-1 md:grid-cols-5 gap-4 md:grid",
+              showMobileFilters ? "grid" : "hidden"
+            )}>
+              <div className="space-y-1.5 w-full">
+                <Label className="text-[13px] font-medium text-slate-700">Country</Label>
+                <Select value={userFilters.country} onValueChange={(val) => setUserFilters(prev => ({ ...prev, country: val }))}>
+                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
+                    <SelectValue placeholder="Select Country" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
+                    {locations.countries.map(country => (
+                      <SelectItem key={country} value={country}>{country}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-1.5 w-full">
-              <Label className="text-[13px] font-medium text-slate-700">State</Label>
-              <Select value={userFilters.state} onValueChange={(val) => setUserFilters(prev => ({ ...prev, state: val }))}>
-                <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
-                  <SelectValue placeholder="Select State" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
-                  {locations.states.map(state => (
-                    <SelectItem key={state} value={state}>{state}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-1.5 w-full">
+                <Label className="text-[13px] font-medium text-slate-700">State</Label>
+                <Select value={userFilters.state} onValueChange={(val) => setUserFilters(prev => ({ ...prev, state: val }))}>
+                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
+                    <SelectValue placeholder="Select State" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
+                    {locations.states.map(state => (
+                      <SelectItem key={state} value={state}>{state}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-1.5 w-full">
-              <Label className="text-[13px] font-medium text-slate-700">City</Label>
-              <Select value={userFilters.city} onValueChange={(val) => setUserFilters(prev => ({ ...prev, city: val }))}>
-                <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
-                  <SelectValue placeholder="Select City" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
-                  {locations.cities.map(city => (
-                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-1.5 w-full">
+                <Label className="text-[13px] font-medium text-slate-700">City</Label>
+                <Select value={userFilters.city} onValueChange={(val) => setUserFilters(prev => ({ ...prev, city: val }))}>
+                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
+                    <SelectValue placeholder="Select City" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
+                    {locations.cities.map(city => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-1.5 w-full">
-              <Label className="text-[13px] font-medium text-slate-700">Status</Label>
-              <Select value={userFilters.status} onValueChange={(val) => setUserFilters(prev => ({ ...prev, status: val }))}>
-                <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-1.5 w-full">
+                <Label className="text-[13px] font-medium text-slate-700">Status</Label>
+                <Select value={userFilters.status} onValueChange={(val) => setUserFilters(prev => ({ ...prev, status: val }))}>
+                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="true">Active</SelectItem>
+                    <SelectItem value="false">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-1.5 w-full">
-              <Label className="text-[13px] font-medium text-slate-700">Service</Label>
-              <Select value={userFilters.service} onValueChange={(val) => setUserFilters(prev => ({ ...prev, service: val }))}>
-                <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
-                  <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="both">Both</SelectItem>
-                  <SelectItem value="armed">Armed</SelectItem>
-                  <SelectItem value="unarmed">Unarmed</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5 w-full">
+                <Label className="text-[13px] font-medium text-slate-700">Service</Label>
+                <Select value={userFilters.service} onValueChange={(val) => setUserFilters(prev => ({ ...prev, service: val }))}>
+                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
+                    <SelectItem value="All">All</SelectItem>
+                    <SelectItem value="both">Both</SelectItem>
+                    <SelectItem value="armed">Armed</SelectItem>
+                    <SelectItem value="unarmed">Unarmed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
           {/* Table Area */}
-          <div className="border border-slate-200 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0 bg-white shadow-sm">
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-visible">
+          <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col flex-1 min-h-[250px] bg-white shadow-sm">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto custom-scrollbar-visible">
               <Table className="border-collapse min-w-[1200px]">
                 <TableHeader className="bg-white sticky top-0 z-20">
                   <TableRow className="hover:bg-transparent border-b border-slate-100">

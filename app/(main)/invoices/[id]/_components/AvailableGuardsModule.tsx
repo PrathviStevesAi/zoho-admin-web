@@ -213,29 +213,29 @@ export function AvailableGuardsModule({
   };
 
   const renderStepper = () => (
-    <div className="flex items-center justify-center py-3">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-center py-3 px-4">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Step 1 Button */}
         <button
           onClick={() => setActiveStep(1)}
           disabled={activeStep === 1}
           className={cn(
-            "flex items-center gap-2 px-5 py-2 rounded-full transition-all cursor-pointer",
+            "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 rounded-full transition-all cursor-pointer",
             activeStep === 1
               ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
               : "bg-white text-slate-600 border border-slate-200 hover:border-[#0064cb] hover:text-[#0064cb]"
           )}
         >
           <div className={cn(
-            "w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs",
+            "w-5.5 h-5.5 rounded-full flex items-center justify-center font-bold text-[11px]",
             activeStep === 1 ? "bg-white/20" : "bg-slate-100"
           )}>
             1
           </div>
-          <span className="text-xs font-bold tracking-wider">Select Shift</span>
+          <span className="text-xs font-bold tracking-wider hidden sm:inline">Select Shift</span>
         </button>
 
-        <ChevronRight className="w-4 h-4 text-slate-300" />
+        <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
 
         {/* Step 2 Button */}
         <button
@@ -248,7 +248,7 @@ export function AvailableGuardsModule({
           }}
           disabled={activeStep === 2 || (activeStep === 0)}
           className={cn(
-            "flex items-center gap-2 px-5 py-2 rounded-full transition-all",
+            "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 rounded-full transition-all",
             activeStep === 2
               ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
               : activeStep === 1
@@ -257,15 +257,15 @@ export function AvailableGuardsModule({
           )}
         >
           <div className={cn(
-            "w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs",
+            "w-5.5 h-5.5 rounded-full flex items-center justify-center font-bold text-[11px]",
             activeStep === 2 ? "bg-white/20" : "bg-slate-100"
           )}>
             2
           </div>
-          <span className="text-xs font-bold tracking-wider">Select Guard</span>
+          <span className="text-xs font-bold tracking-wider hidden sm:inline">Select Guard</span>
         </button>
 
-        <ChevronRight className="w-4 h-4 text-slate-300" />
+        <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
 
         {/* Step 3 Button (Find) */}
         <button
@@ -282,7 +282,7 @@ export function AvailableGuardsModule({
           }}
           disabled={activeStep === 3 || activeStep === 0 || activeStep === 1}
           className={cn(
-            "flex items-center gap-2 px-5 py-2 rounded-full transition-all",
+            "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 rounded-full transition-all",
             activeStep === 3
               ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
               : activeStep === 2
@@ -291,12 +291,12 @@ export function AvailableGuardsModule({
           )}
         >
           <div className={cn(
-            "w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs",
+            "w-5.5 h-5.5 rounded-full flex items-center justify-center font-bold text-[11px]",
             activeStep === 3 ? "bg-white/20" : "bg-slate-100"
           )}>
             3
           </div>
-          <span className="text-xs font-bold tracking-wider">Find</span>
+          <span className="text-xs font-bold tracking-wider hidden sm:inline">Find</span>
         </button>
       </div>
     </div>
@@ -403,12 +403,12 @@ export function AvailableGuardsModule({
 
       <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white max-w-7xl mx-auto">
         <CardContent className="p-0">
-          <div className="px-6 pt-4 pb-4 border-b border-slate-100 flex items-center justify-between bg-white">
-            <div>
+          <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+            <div className="space-y-1">
               <h2 className="text-xl font-bold text-slate-900">
                 {activeStep === 0 ? "Available Guards" : activeStep === 1 ? "Select Shifts" : activeStep === 2 ? "Select Guards" : "Finalize Search"}
               </h2>
-              <p className="text-sm text-slate-800 mt-0.5 font-medium">
+              <p className="text-sm text-slate-600 mt-0.5 font-medium">
                 {activeStep === 0 ? (
                   <>Total available guards found: <span className="font-semibold text-[#0064cb]">{totalGuards}</span></>
                 ) : activeStep === 1 ? (
@@ -426,7 +426,7 @@ export function AvailableGuardsModule({
                 setActiveStep(0);
                 resetFilters();
               }}
-              className="px-6 h-10 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
+              className="px-6 h-10 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer w-full sm:w-auto text-center shrink-0"
             >
               {activeStep === 0 ? "Back" : "Cancel"}
             </Button>
@@ -437,8 +437,8 @@ export function AvailableGuardsModule({
           <div className="p-0">
             {activeStep === 0 ? (
               /* RESULTS VIEW */
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto custom-scrollbar w-full">
+                <Table className="min-w-[900px] md:min-w-full">
                   <TableHeader className="bg-slate-50/50">
                     <TableRow className="hover:bg-transparent border-slate-100">
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Guard Name</TableHead>
@@ -505,8 +505,8 @@ export function AvailableGuardsModule({
               </div>
             ) : activeStep === 1 ? (
               /* SHIFT SELECTION VIEW */
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto custom-scrollbar w-full">
+                <Table className="min-w-[650px] md:min-w-full">
                   <TableHeader className="bg-slate-50/50">
                     <TableRow className="hover:bg-transparent border-slate-100">
                       <TableHead className="w-[60px] py-2.5 px-4 text-center">
@@ -559,8 +559,8 @@ export function AvailableGuardsModule({
               </div>
             ) : activeStep === 2 ? (
               /* GUARD SELECTION VIEW */
-              <div className="overflow-x-auto">
-                <Table className="min-w-[1200px]">
+              <div className="overflow-x-auto custom-scrollbar w-full">
+                <Table className="min-w-[1200px] md:min-w-full">
                   <TableHeader className="bg-slate-50/50">
                     <TableRow className="hover:bg-transparent border-slate-100">
                       <TableHead className="w-[60px] py-2.5 px-4 text-center">
@@ -634,7 +634,7 @@ export function AvailableGuardsModule({
               /* STEP 3: FINALIZE VIEW */
               <div className="p-8 text-center space-y-8 animate-in fade-in duration-500">
                 <div className="max-w-2xl mx-auto space-y-6">
-                  <div className="flex items-center justify-center gap-8">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
                     <div className="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 flex flex-col items-center gap-3 w-48 shadow-sm">
                       <div className="w-12 h-12 bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
                         <CalendarDays className="w-6 h-6" />
@@ -658,27 +658,27 @@ export function AvailableGuardsModule({
 
                   <div className="space-y-2">
                     <h3 className="text-xl font-bold text-slate-900">Ready to find?</h3>
-                    <p className="text-sm text-slate-800 leading-relaxed">
+                    <p className="text-sm text-slate-600 leading-relaxed px-4">
                       We will notify the selected guards about these shifts to check their availability.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto px-6 sm:px-0">
                   <Button
                     variant="outline"
                     onClick={() => {
                       setActiveStep(2);
                       resetFilters();
                     }}
-                    className="h-12 px-8 rounded-xl font-bold text-slate-600 border-slate-200 hover:bg-slate-50 cursor-pointer transition-all"
+                    className="h-12 px-8 rounded-xl font-bold text-slate-600 border-slate-200 hover:bg-slate-50 cursor-pointer transition-all w-full sm:w-auto flex justify-center items-center"
                   >
                     Back to Guards
                   </Button>
                   <Button
                     onClick={handleFind}
                     disabled={isFinding}
-                    className="h-12 px-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-xl shadow-[#0064cb]/20 cursor-pointer transition-all active:scale-95 flex gap-2"
+                    className="h-12 px-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-xl shadow-[#0064cb]/20 cursor-pointer transition-all active:scale-95 flex gap-2 w-full sm:w-auto justify-center items-center"
                   >
                     {isFinding ? <Loader2 className="w-5 h-5 animate-spin" /> : "Find Guards"}
                   </Button>
@@ -688,7 +688,7 @@ export function AvailableGuardsModule({
 
             {/* Footer Actions for Steps 1 and 2 */}
             {(activeStep === 1 || activeStep === 2) && (
-              <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-4">
+              <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 w-full">
                 {activeStep === 1 ? (
                   <Button
                     onClick={() => {
@@ -698,7 +698,7 @@ export function AvailableGuardsModule({
                         setActiveStep(2);
                       }
                     }}
-                    className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer"
+                    className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer w-full sm:w-auto flex justify-center items-center"
                   >
                     Go to Step 2
                   </Button>
@@ -707,7 +707,7 @@ export function AvailableGuardsModule({
                     <Button
                       variant="outline"
                       onClick={() => setActiveStep(1)}
-                      className="px-6 h-11 rounded-lg font-bold text-slate-600 border-slate-200 cursor-pointer"
+                      className="px-6 h-11 rounded-lg font-bold text-slate-600 border-slate-200 cursor-pointer w-full sm:w-auto text-center"
                     >
                       Back to Step 1
                     </Button>
@@ -720,7 +720,7 @@ export function AvailableGuardsModule({
                           resetFilters();
                         }
                       }}
-                      className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer"
+                      className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer w-full sm:w-auto flex justify-center items-center"
                     >
                       Go to Step 3
                     </Button>

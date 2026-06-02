@@ -516,8 +516,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Main Shift Details & Map columns */}
-          <div className="lg:col-span-7 space-y-6">
+          {/* 1. ShiftDetailsCard - Column span 7, Order 1 on mobile */}
+          <div className="col-span-1 lg:col-span-7 order-1 lg:order-none">
             <ShiftDetailsCard
               shift={shift}
               isLoading={isLoading}
@@ -527,17 +527,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               isAddressEditable={isAddressEditable}
               setIsEditLocationOpen={setIsEditLocationOpen}
             />
-
-            {!isLoading && shift && (
-              <>
-                <ShiftProgressStepper shift={shift} />
-                <ShiftMapCard shift={shift} trackingPath={trackingPath} mapCenter={mapCenter} />
-              </>
-            )}
           </div>
 
-          {/* Sidebar Tab Panels */}
-          <div className="lg:col-span-5 space-y-6">
+          {/* 2. ShiftTabsModule (menu list section) - Column span 5, Row span 3 on desktop, Order 2 on mobile */}
+          <div className="col-span-1 lg:col-span-5 lg:col-start-8 lg:row-span-3 order-2 lg:order-none space-y-6">
             <ShiftTabsModule
               comments={comments}
               isCommentsLoading={isCommentsLoading}
@@ -552,6 +545,20 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               setPreviewFile={setPreviewFile}
             />
           </div>
+
+          {/* 3. ShiftProgressStepper (progress bar) - Column span 7, Order 4 on mobile, placed last below the map */}
+          {!isLoading && shift && (
+            <div className="col-span-1 lg:col-span-7 order-4 lg:order-none">
+              <ShiftProgressStepper shift={shift} />
+            </div>
+          )}
+
+          {/* 4. ShiftMapCard - Column span 7, Order 3 on mobile */}
+          {!isLoading && shift && (
+            <div className="col-span-1 lg:col-span-7 order-3 lg:order-none">
+              <ShiftMapCard shift={shift} trackingPath={trackingPath} mapCenter={mapCenter} />
+            </div>
+          )}
         </div>
       )}
 

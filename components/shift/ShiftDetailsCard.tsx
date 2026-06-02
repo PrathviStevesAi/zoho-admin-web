@@ -220,9 +220,9 @@ export function ShiftDetailsCard({
         </div>
 
         <div className="border-t border-slate-100 divide-y divide-slate-100">
-          <div className="grid grid-cols-4 p-4 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">CUSTOMER NAME:</span>
-            <div className="col-span-3 flex items-center justify-between gap-4">
+            <div className="w-full md:col-span-3 flex items-center justify-between gap-4">
               <div className="text-sm text-slate-800 font-medium">{shift.customer_name}</div>
               <div className="flex items-center gap-2">
                 {isEditDetailsOpen ? (
@@ -257,24 +257,24 @@ export function ShiftDetailsCard({
           </div>
 
           {shift.invoice_no && (
-            <div className="grid grid-cols-4 p-4 items-center">
+            <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
               <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">INVOICE NO:</span>
-              <div className="col-span-3 text-sm text-slate-800 font-medium">{shift.invoice_no}</div>
+              <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">{shift.invoice_no}</div>
             </div>
           )}
 
           {shift.invoice_description && (
-            <div className="grid grid-cols-4 p-4 items-start">
+            <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start gap-2 md:gap-0">
               <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">INVOICE DETAILS:</span>
-              <div className="col-span-3 text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+              <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
                 {shift.invoice_description}
               </div>
             </div>
           )}
 
-          <div className="grid grid-cols-4 p-4 items-start">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">SHIFT DETAILS:</span>
-            <div className="col-span-3">
+            <div className="w-full md:col-span-3">
               {isEditDetailsOpen ? (
                 <textarea
                   rows={4}
@@ -291,9 +291,9 @@ export function ShiftDetailsCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 p-4 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">ASSIGNED GUARD:</span>
-            <div className="col-span-3 text-sm text-slate-800 font-medium">
+            <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">
               {shift.assigned_guard ? (
                 typeof shift.assigned_guard === 'object'
                   ? `${shift.assigned_guard.first_name} ${shift.assigned_guard.last_name}`
@@ -304,9 +304,9 @@ export function ShiftDetailsCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 p-4 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">STATUS:</span>
-            <div className="col-span-3">
+            <div className="w-full md:col-span-3">
               <span className={cn(
                 "text-[10px] font-bold px-2.5 py-1 rounded-full border",
                 getStatusColor(shift.status)
@@ -316,11 +316,11 @@ export function ShiftDetailsCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 p-4 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">SCHEDULED FOR:</span>
-            <div className="col-span-3">
+            <div className="w-full md:col-span-3">
               {isEditDetailsOpen ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label className="text-[10px] font-bold text-slate-700 uppercase">Start Time</Label>
                     <Input
@@ -362,12 +362,12 @@ export function ShiftDetailsCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 p-4 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">EXECUTION TIME:</span>
-            <div className="col-span-3">
+            <div className="w-full md:col-span-3">
               {isEditDetailsOpen ? (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label className="text-[10px] font-bold text-slate-700 uppercase">Actual Start Time</Label>
                       <Input
