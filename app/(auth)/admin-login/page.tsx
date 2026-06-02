@@ -118,8 +118,8 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background px-4">
-            <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 bg-card shadow-xl rounded-2xl overflow-hidden border border-border min-h-[500px]">
+        <div className="min-h-[100dvh] md:min-h-screen flex items-center justify-center bg-background px-4">
+            <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 bg-card shadow-xl rounded-2xl overflow-hidden border border-border md:min-h-[500px] min-h-fit">
 
                 <div className="hidden md:flex flex-col items-center justify-center p-12 bg-muted/30 border-r border-border/50">
                     <div className="relative w-full aspect-square max-w-[350px] animate-in fade-in zoom-in duration-700">
