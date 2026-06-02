@@ -515,9 +515,50 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           isSaving={isSavingSettings}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* 1. ShiftDetailsCard - Column span 7, Order 1 on mobile */}
-          <div className="col-span-1 lg:col-span-7 order-1 lg:order-none">
+        <>
+          {/* Desktop Layout (100% identical to original layout, no auto-placement side-effects) */}
+          <div className="hidden lg:grid grid-cols-12 gap-6">
+            {/* Main Shift Details & Map columns */}
+            <div className="lg:col-span-7 space-y-6">
+              <ShiftDetailsCard
+                shift={shift}
+                isLoading={isLoading}
+                error={error}
+                isSavingDetails={isSavingDetails}
+                onSaveDetails={handleSaveDetails}
+                isAddressEditable={isAddressEditable}
+                setIsEditLocationOpen={setIsEditLocationOpen}
+              />
+
+              {!isLoading && shift && (
+                <>
+                  <ShiftProgressStepper shift={shift} />
+                  <ShiftMapCard shift={shift} trackingPath={trackingPath} mapCenter={mapCenter} />
+                </>
+              )}
+            </div>
+
+            {/* Sidebar Tab Panels */}
+            <div className="lg:col-span-5 space-y-6">
+              <ShiftTabsModule
+                comments={comments}
+                isCommentsLoading={isCommentsLoading}
+                commentsError={commentsError}
+                onCommentSubmit={handleCommentSubmit}
+                reports={reports}
+                isReportsLoading={isReportsLoading}
+                reportsError={reportsError}
+                onTabChange={(tabId) => {
+                  if (tabId === "comment") loadComments();
+                }}
+                setPreviewFile={setPreviewFile}
+              />
+            </div>
+          </div>
+
+          {/* Mobile/Tablet Layout (Custom vertical stacking and ordered sections) */}
+          <div className="lg:hidden flex flex-col gap-6">
+            {/* 1. ShiftDetailsCard */}
             <ShiftDetailsCard
               shift={shift}
               isLoading={isLoading}
@@ -527,10 +568,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               isAddressEditable={isAddressEditable}
               setIsEditLocationOpen={setIsEditLocationOpen}
             />
-          </div>
 
-          {/* 2. ShiftTabsModule (menu list section) - Column span 5, Row span 3 on desktop, Order 2 on mobile */}
-          <div className="col-span-1 lg:col-span-5 lg:col-start-8 lg:row-span-3 order-2 lg:order-none space-y-6">
+            {/* 2. ShiftTabsModule (menu list section) */}
             <ShiftTabsModule
               comments={comments}
               isCommentsLoading={isCommentsLoading}
@@ -544,22 +583,18 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               }}
               setPreviewFile={setPreviewFile}
             />
-          </div>
 
-          {/* 3. ShiftProgressStepper (progress bar) - Column span 7, Order 4 on mobile, placed last below the map */}
-          {!isLoading && shift && (
-            <div className="col-span-1 lg:col-span-7 order-4 lg:order-none">
-              <ShiftProgressStepper shift={shift} />
-            </div>
-          )}
-
-          {/* 4. ShiftMapCard - Column span 7, Order 3 on mobile */}
-          {!isLoading && shift && (
-            <div className="col-span-1 lg:col-span-7 order-3 lg:order-none">
+            {/* 3. ShiftMapCard */}
+            {!isLoading && shift && (
               <ShiftMapCard shift={shift} trackingPath={trackingPath} mapCenter={mapCenter} />
-            </div>
-          )}
-        </div>
+            )}
+
+            {/* 4. ShiftProgressStepper (progress bar, last below map) */}
+            {!isLoading && shift && (
+              <ShiftProgressStepper shift={shift} />
+            )}
+          </div>
+        </>
       )}
 
       {/* File Preview Dialog Overlay */}

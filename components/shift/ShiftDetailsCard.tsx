@@ -38,6 +38,12 @@ export function ShiftDetailsCard({
   const [isEditDetailsOpen, setIsEditDetailsOpen] = useState(false);
   const [breakDurationUnit, setBreakDurationUnit] = useState<"min" | "hr">("min");
 
+  const isDetailsEditable = shift
+    ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_arrival", "shift_pre_check_in"].includes(
+        shift.status?.toLowerCase()
+      )
+    : false;
+
   const [editDetailsForm, setEditDetailsForm] = useState({
     shift_description: "",
     shift_start_time: "",
@@ -245,8 +251,19 @@ export function ShiftDetailsCard({
                 ) : (
                   <Button
                     variant="outline"
-                    onClick={() => setIsEditDetailsOpen(true)}
-                    className="h-8 rounded-lg font-bold text-[10px] text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 transition-all active:scale-95 flex gap-1.5 cursor-pointer px-3"
+                    disabled={!isDetailsEditable}
+                    onClick={() => {
+                      if (isDetailsEditable) {
+                        setIsEditDetailsOpen(true);
+                      }
+                    }}
+                    title={isDetailsEditable ? "Edit details" : "Editing details is only allowed for Created, Planned, Accepted, Refused, Arrival, and Pre-check-in statuses"}
+                    className={cn(
+                      "h-8 rounded-lg font-bold text-[10px] flex gap-1.5 px-3 transition-all",
+                      isDetailsEditable
+                        ? "text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 active:scale-95 cursor-pointer"
+                        : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed opacity-60"
+                    )}
                   >
                     <Edit2 className="w-3 h-3" />
                     Edit Details

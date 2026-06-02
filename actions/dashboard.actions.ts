@@ -753,8 +753,8 @@ export async function manualStartShiftAction(payload: {
   reason: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log("[Server Action] manualStartShiftAction POST Payload to /api/v1/shiftmanual-shift-start:", payload);
-    const result = await apiFetch<any>(`/api/v1/shiftmanual-shift-start`, {
+    console.log("[Server Action] manualStartShiftAction POST Payload to /api/v1/shift/manual-shift-start:", payload);
+    const result = await apiFetch<any>(`/api/v1/shift/manual-shift-start`, {
       method: "POST",
       body: JSON.stringify(payload),
     });

@@ -29,11 +29,15 @@ export async function updateFcmTokenAction(fcmToken: string) {
         return { success: false };
     }
 }
-export async function fetchNotificationByIdAction(id: string): Promise<{ success: boolean; data?: Notification }> {
+export async function fetchNotificationByIdAction(id: string): Promise<{ success: boolean; data?: Notification; notFound?: boolean }> {
     try {
         const response = await apiFetch<Notification>(`/api/v1/notification/${id}/`);
         return { success: true, data: response };
-    } catch (error) {
+    } catch (error: any) {
+        if (error.message?.includes("status 404") || error.message?.includes("Not Found")) {
+            console.warn(`[Notification] Notification ${id} not found on the server (404) when fetching.`);
+            return { success: false, notFound: true };
+        }
         console.error(`Error fetching notification ${id}:`, error);
         return { success: false };
     }
@@ -46,7 +50,11 @@ export async function markNotificationAsReadAction(id: string) {
             body: JSON.stringify({ is_seen: true }),
         });
         return response;
-    } catch (error) {
+    } catch (error: any) {
+        if (error.message?.includes("status 404") || error.message?.includes("Not Found")) {
+            console.warn(`[Notification] Notification ${id} not found on the server (404) when marking as read.`);
+            return { success: false, notFound: true };
+        }
         console.error(`Error marking notification ${id} as read:`, error);
         return { success: false };
     }
