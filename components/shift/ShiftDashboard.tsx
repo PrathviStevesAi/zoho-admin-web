@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -463,8 +464,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   const showSettingBtn = shift
     ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_arrival", "shift_pre_check_in"].includes(
-        shift.status?.toLowerCase()
-      )
+      shift.status?.toLowerCase()
+    )
     : false;
 
   const isAddressEditable = shift
@@ -599,7 +600,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
       {/* File Preview Dialog Overlay */}
       <Dialog open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>
-        <DialogContent className="max-w-4xl w-[90vw] h-[85vh] p-0 bg-slate-900 border-none rounded-2xl flex flex-col gap-0 overflow-hidden [&>button>svg]:text-white [&>button]:z-50">
+        <DialogContent className="max-w-5xl w-[90vw] h-[85vh] p-0 bg-slate-900 border-none rounded-2xl flex flex-col gap-0 overflow-hidden [&>button>svg]:text-white [&>button]:z-50">
           <DialogHeader className="p-4 bg-white/5 border-b border-white/10 flex flex-row items-center justify-between">
             <DialogTitle className="text-white text-sm font-medium flex items-center gap-3">
               <FileText className="w-4 h-4 text-blue-400" />
@@ -609,13 +610,25 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           <div className="w-full flex-1 bg-slate-800 p-4 md:p-8 flex items-center justify-center overflow-auto">
             {previewFile ? (
               previewFile.contentType?.startsWith("image/") ? (
-                <div className="relative max-w-full max-h-full flex items-center justify-center">
-                  <img
-                    src={previewFile.url}
-                    alt={previewFile.title}
-                    className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
-                  />
-                </div>
+                (() => {
+                  const isSignature =
+                    previewFile.title?.toLowerCase().includes("sig") ||
+                    previewFile.url?.toLowerCase().includes("sig") ||
+                    previewFile.title?.toLowerCase().includes("signature") ||
+                    previewFile.url?.toLowerCase().includes("signature");
+                  return (
+                    <div className={cn(
+                      "relative max-w-full max-h-full flex items-center justify-center rounded-xl",
+                      isSignature ? "bg-white p-6 shadow-2xl" : ""
+                    )}>
+                      <img
+                        src={previewFile.url}
+                        alt={previewFile.title}
+                        className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                      />
+                    </div>
+                  );
+                })()
               ) : previewFile.contentType?.startsWith("video/") ? (
                 <div className="w-full max-w-2xl aspect-video rounded-lg shadow-2xl overflow-hidden bg-black">
                   <video src={previewFile.url} controls className="w-full h-full object-contain" />

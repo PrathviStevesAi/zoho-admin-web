@@ -340,7 +340,7 @@ export default function MemberDirectoryPage() {
                                 <User className="w-5 h-5" />
                               </div>
                               <span className="text-sm font-bold text-slate-700">
-                                {member.first_name} {member.last_name}
+                                {member.first_name || "---"} {member.last_name || "---"}
                               </span>
                             </div>
                           </TableCell>
@@ -354,7 +354,7 @@ export default function MemberDirectoryPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDelete(member.id, `${member.first_name} ${member.last_name}`)}
+                              onClick={() => handleDelete(member.id, `${member.first_name || "---"} ${member.last_name || "---"}`)}
                               className="cursor-pointer w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 transition-all"
                             >
                               <Trash2 className="w-4 h-4" />

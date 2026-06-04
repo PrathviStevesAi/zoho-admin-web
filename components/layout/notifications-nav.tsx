@@ -104,7 +104,7 @@ export function NotificationsNav() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        align="end"
+        align="center"
         collisionPadding={16}
         className="w-[calc(100vw-32px)] sm:w-[380px] p-0 mt-2 bg-card border-border shadow-xl rounded-sm animate-in fade-in-0 zoom-in-95"
       >

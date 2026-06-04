@@ -27,7 +27,6 @@ export function ShiftHeader({
   onManualStart,
   onAssignGuard,
   onCancelService,
-  showSettingBtn,
 }: ShiftHeaderProps) {
   return (
     <div className="flex flex-col gap-6">
@@ -42,7 +41,6 @@ export function ShiftHeader({
             <Link
               href={`/shift/view?shift_id=${shiftId}${notificationId ? `&notification_id=${notificationId}` : ""}`}
               onClick={(e) => {
-                // If it is just closing settings, prevent routing
                 e.preventDefault();
                 setIsSettingsOpen(false);
               }}
@@ -168,9 +166,9 @@ export function ShiftHeader({
                   "w-12 h-12 rounded-full border-2 flex items-center justify-center shadow-sm transition-colors",
                   action.color === "emerald" && "border-emerald-500 text-emerald-500 group-hover:bg-emerald-50",
                   action.color === "blue" &&
-                    (isSettingsOpen && action.label === "Setting"
-                      ? "border-[#0064cb] text-[#0064cb] bg-blue-50"
-                      : "border-[#0064cb] text-[#0064cb] group-hover:bg-blue-50"),
+                  (isSettingsOpen && action.label === "Setting"
+                    ? "border-[#0064cb] text-[#0064cb] bg-blue-50"
+                    : "border-[#0064cb] text-[#0064cb] group-hover:bg-blue-50"),
                   action.color === "orange" && "border-orange-500 text-orange-500 group-hover:bg-orange-50",
                   action.color === "indigo" && "border-indigo-500 text-indigo-500 group-hover:bg-indigo-50",
                   action.color === "slate" && "border-slate-400 text-slate-800 group-hover:bg-slate-50",
