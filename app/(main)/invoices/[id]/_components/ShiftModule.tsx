@@ -229,7 +229,7 @@ export function ShiftModule({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-bold text-slate-800 uppercase"># of People</Label>
+                <Label className="text-[11px] font-bold text-slate-800 uppercase">No of guards required</Label>
                 <Input
                   type="number"
                   min="0"
@@ -248,8 +248,8 @@ export function ShiftModule({
                     <TableRow className="hover:bg-transparent border-slate-100">
                       <TableHead className="text-sm font-bold text-slate-900 py-4 px-6 w-[200px]">Date</TableHead>
                       <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">Hours per Day</TableHead>
-                      <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">Start Time</TableHead>
-                      <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">End Time</TableHead>
+                      <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">Start Date & Time</TableHead>
+                      <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">End Date & Time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

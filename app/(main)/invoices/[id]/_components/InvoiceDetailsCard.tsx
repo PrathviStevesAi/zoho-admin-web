@@ -139,11 +139,11 @@ export function InvoiceDetailsCard({
             <div className="w-full md:col-span-3">
               {isEditOpen ? (
                 <textarea
-                  rows={4}
+                  rows={10}
                   placeholder="Enter invoice description..."
                   value={formData.description}
                   onChange={(e) => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[100px] resize-none"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[220px] resize-y"
                 />
               ) : (
                 <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
@@ -166,11 +166,11 @@ export function InvoiceDetailsCard({
             <div className="w-full md:col-span-3">
               {isEditOpen ? (
                 <textarea
-                  rows={4}
+                  rows={10}
                   placeholder="Enter shift description..."
                   value={formData.shift_description}
                   onChange={(e) => setFormData((prev: any) => ({ ...prev, shift_description: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[100px] resize-none"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[220px] resize-y"
                 />
               ) : (
                 <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">

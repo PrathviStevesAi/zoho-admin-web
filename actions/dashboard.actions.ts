@@ -414,13 +414,16 @@ export async function deleteShiftAction(
 }
 
 export async function fetchSecurityServicesAction(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  const endpoint = `/api/v1/security-service`;
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || ""}${endpoint}`;
+  console.log("[fetchSecurityServicesAction] API URL:", apiUrl);
   try {
-    const data = await apiFetch<{ success: boolean; data: any[] }>(
-      `/api/v1/security-service`,
-    );
+    const data = await apiFetch<{ success: boolean; data: any[] }>(endpoint);
+    console.log("[fetchSecurityServicesAction] Response data:", data);
     return { success: true, data: data.data };
   } catch (error: any) {
     const message = error.message || "Something went wrong";
+    console.error("[fetchSecurityServicesAction] Error fetching security services:", message);
     return { success: false, error: message };
   }
 }

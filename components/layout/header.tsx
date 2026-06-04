@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, User, Settings, LogOut, ChevronDown, Search, XCircle, Menu } from "lucide-react";
+import { User, LogOut, ChevronDown, Search, XCircle, Menu } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -23,10 +23,19 @@ import {
 
 import { NotificationsNav } from "./notifications-nav";
 
+interface SearchResultItem {
+  type: "invoice" | "shift";
+  customer_name: string;
+  invoice_no: string;
+  invoice_id?: string;
+  shift_no?: string | number;
+  shift_id?: string;
+}
+
 export function Header() {
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebounceValue(searchValue, 300);
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<SearchResultItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
@@ -107,11 +116,14 @@ export function Header() {
   }, []);
 
   const groupedResults = results.reduce((acc, item) => {
-    const type = item.type === "invoice" ? "Invoices" : "Shifts";
+    const type = item.type === "invoice" ? "Invoice" : "Shift";
     if (!acc[type]) acc[type] = [];
     acc[type].push(item);
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, SearchResultItem[]>);
+
+  const invoicesList = groupedResults["Invoice"] || [];
+  const shiftsList = groupedResults["Shift"] || [];
 
   const toggleExpand = (type: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -164,7 +176,7 @@ export function Header() {
               if (e.target.value.length >= 2) setIsOpen(true);
             }}
             onFocus={() => {
-              if (results.length > 0) setIsOpen(true);
+              if (searchValue.trim().length >= 2) setIsOpen(true);
             }}
             placeholder="Search INV, Shift,..."
             className={cn(
@@ -187,7 +199,7 @@ export function Header() {
           </div>
 
           {/* Search Results Dropdown */}
-          {isOpen && (results.length > 0 || isLoading) && (
+          {isOpen && (searchValue.trim().length >= 2 || isLoading) && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden z-[60] max-h-[480px] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
               {isLoading && results.length === 0 ? (
                 <div className="p-8 text-center text-slate-700 text-sm">
@@ -195,54 +207,92 @@ export function Header() {
                   Searching...
                 </div>
               ) : (
-                <div className="py-2">
-                  {(Object.entries(groupedResults) as [string, any[]][]).map(([type, items]) => {
-                    const isExpanded = expandedTypes.includes(type);
-                    const displayItems = isExpanded ? items : items.slice(0, 3);
-                    const hasMore = items.length > 3;
-
-                    return (
-                      <div key={type} className="mb-2 last:mb-0">
-                        <div className="px-4 py-2 flex items-center justify-between">
-                          <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">{type}</h3>
-                          {hasMore && (
-                            <button
-                              onClick={(e) => toggleExpand(type, e)}
-                              className="text-[11px] font-semibold text-[#0064cb] hover:underline bg-transparent border-none cursor-pointer"
-                            >
-                              {isExpanded ? "Show less" : "View more..."}
-                            </button>
-                          )}
-                        </div>
-                        <div className="divide-y divide-slate-50">
-                          {displayItems.map((item) => (
-                            <Link
-                              key={item.invoice_id || item.shift_id}
-                              href={item.type === 'invoice' ? `/invoices/${item.invoice_id}` : `/notifications/view?shift_id=${item.shift_id}`}
-                              className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition-colors group/item"
-                              onClick={() => {
-                                setIsOpen(false);
-                                setExpandedTypes([]);
-                              }}
-                            >
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[13px] font-medium text-slate-600 group-hover/item:text-[#0064cb] transition-colors truncate">
-                                    {item.customer_name} - <span className="font-semibold">[{item.invoice_no}]</span>
-                                  </span>
-                                </div>
-                                {item.type === 'shift' && (
-                                  <div className="text-[11px] text-slate-700 mt-0.5">
-                                    Shift #{item.shift_no}
-                                  </div>
-                                )}
-                              </div>
-                            </Link>
-                          ))}
-                        </div>
+                <div className="py-2 divide-y divide-slate-100">
+                  {/* Invoice Section */}
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">Invoice</h3>
+                      {invoicesList.length > 3 && (
+                        <button
+                          onClick={(e) => toggleExpand("Invoice", e)}
+                          className="text-[11px] font-semibold text-[#0064cb] hover:underline bg-transparent border-none cursor-pointer"
+                        >
+                          {expandedTypes.includes("Invoice") ? "Show less" : "View more..."}
+                        </button>
+                      )}
+                    </div>
+                    {invoicesList.length > 0 ? (
+                      <div className="divide-y divide-slate-55">
+                        {(expandedTypes.includes("Invoice") ? invoicesList : invoicesList.slice(0, 3)).map((item) => (
+                          <Link
+                            key={item.invoice_id}
+                            href={`/invoices/${item.invoice_id}`}
+                            className="flex items-center gap-4 py-2.5 hover:bg-slate-50 transition-colors group/item rounded-md px-2 -mx-2"
+                            onClick={() => {
+                              setIsOpen(false);
+                              setExpandedTypes([]);
+                            }}
+                          >
+                            <div className="flex items-center gap-4 w-full text-[13px]">
+                              <span className="font-semibold text-slate-900 min-w-[90px] shrink-0">
+                                {item.invoice_no}
+                              </span>
+                              <span className="text-slate-600 truncate">
+                                {item.customer_name}[{item.invoice_no}]
+                              </span>
+                            </div>
+                          </Link>
+                        ))}
                       </div>
-                    );
-                  })}
+                    ) : (
+                      <div className="text-[12px] text-slate-700 py-1 font-medium">
+                        No Invoice found of this number
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Shift Section */}
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">Shift</h3>
+                      {shiftsList.length > 3 && (
+                        <button
+                          onClick={(e) => toggleExpand("Shift", e)}
+                          className="text-[11px] font-semibold text-[#0064cb] hover:underline bg-transparent border-none cursor-pointer"
+                        >
+                          {expandedTypes.includes("Shift") ? "Show less" : "View more..."}
+                        </button>
+                      )}
+                    </div>
+                    {shiftsList.length > 0 ? (
+                      <div className="divide-y divide-slate-55">
+                        {(expandedTypes.includes("Shift") ? shiftsList : shiftsList.slice(0, 3)).map((item) => (
+                          <Link
+                            key={item.shift_id}
+                            href={`/notifications/view?shift_id=${item.shift_id}`}
+                            className="flex items-center gap-4 py-2.5 hover:bg-slate-50 transition-colors group/item rounded-md px-2 -mx-2"
+                            onClick={() => {
+                              setIsOpen(false);
+                              setExpandedTypes([]);
+                            }}
+                          >
+                            <div className="flex items-center gap-4 w-full text-[13px]">
+                              <span className="font-semibold text-slate-900 min-w-[90px] shrink-0">
+                                {item.shift_no}
+                              </span>
+                              <span className="text-slate-600 truncate">
+                                {item.customer_name}[{item.invoice_no}]
+                              </span>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-[12px] text-slate-700 py-1 font-medium">
+                        No Shift found of this number
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

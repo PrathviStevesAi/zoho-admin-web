@@ -106,6 +106,10 @@ export function ShiftHeader({
           if (!shift) return null;
           const buttons: any[] = [];
 
+          console.log("[ShiftHeader] Shift Data Loaded:", shift);
+          console.log("[ShiftHeader] shift.action:", shift?.action);
+          console.log("[ShiftHeader] shift.action.is_manual_start_shift:", shift?.action?.is_manual_start_shift);
+
           if (shift.action && typeof shift.action === "object") {
             const act = shift.action;
             if (act.is_reassigned) {
@@ -141,39 +145,18 @@ export function ShiftHeader({
                 onClick: onCancelService,
               });
             }
-          } else {
-            // Fallback static buttons
-            buttons.push(
-              { label: "Find Available Guard", icon: Search, color: "orange" as const, onClick: () => {} },
-              { label: "Assign Guard", icon: UserPlus, color: "indigo" as const, onClick: onAssignGuard }
-            );
-            if (showSettingBtn) {
-              buttons.push({
-                label: "Setting",
-                icon: Settings,
-                color: isSettingsOpen ? ("blue" as const) : ("slate" as const),
-                onClick: () => setIsSettingsOpen(!isSettingsOpen),
-              });
-            }
-            buttons.push({
-              label: "Cancel Service",
-              icon: XCircle,
-              color: "red" as const,
-              onClick: onCancelService,
-            });
           }
 
-          // Apply payment status filter only if dynamic actions are not present (fallback mode)
-          const filteredButtons = shift.action
-            ? buttons
-            : buttons.filter((action) => {
-                if (!shift?.payment_status && (action.label === "Find Available Guard" || action.label === "Assign Guard")) {
-                  return false;
-                }
-                return true;
-              });
+          const formatLabel = (label: string) => {
+            const words = label.split(" ");
+            if (words.length <= 2) {
+              return label.replace(" ", "\n");
+            }
+            const lastWord = words.pop();
+            return `${words.join(" ")}\n${lastWord}`;
+          };
 
-          return filteredButtons.map((action, idx) => (
+          return buttons.map((action, idx) => (
             <button
               key={idx}
               className="flex flex-col items-center gap-1.5 group cursor-pointer border-none bg-transparent focus:outline-none"
@@ -206,7 +189,7 @@ export function ShiftHeader({
                   isSettingsOpen && action.label === "Setting" && "text-[#0064cb]"
                 )}
               >
-                {action.label.split(" ").join("\n")}
+                {formatLabel(action.label)}
               </span>
             </button>
           ));

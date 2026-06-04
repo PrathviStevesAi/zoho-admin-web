@@ -4,15 +4,15 @@ import "leaflet/dist/leaflet.css";
 import { Card } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 
-function ChangeView({ 
-  center, 
-  onZoomChange 
-}: { 
-  center: [number, number]; 
+function ChangeView({
+  center,
+  onZoomChange
+}: {
+  center: [number, number];
   onZoomChange: (zoom: number) => void;
 }) {
   const map = useMap();
-  
+
   useEffect(() => {
     if (center && center[0] && center[1]) {
       map.panTo(center);
@@ -208,7 +208,7 @@ export default function ShiftMap({
     [35.4430, -80.8580],
     [35.4445, -80.8590],
     [35.4450, -80.8610],
-    [35.4440, -80.8625], // End fallback
+    [35.4440, -80.8625],
   ] as [number, number][];
 
   const start = activeCheckpoints.length > 0 ? activeCheckpoints[0] : actualCenter;
@@ -250,12 +250,12 @@ export default function ShiftMap({
           {activeCheckpoints.length > 2 && (
             <Polygon
               positions={activeCheckpoints}
-              pathOptions={{ 
-                color: '#0064cb', 
-                fillColor: '#0064cb', 
-                fillOpacity: 0.08, 
-                weight: 1.5, 
-                dashArray: '5, 5' 
+              pathOptions={{
+                color: '#0064cb',
+                fillColor: '#0064cb',
+                fillOpacity: 0.08,
+                weight: 1.5,
+                dashArray: '5, 5'
               }}
             />
           )}

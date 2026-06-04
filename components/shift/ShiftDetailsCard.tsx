@@ -36,7 +36,6 @@ export function ShiftDetailsCard({
 }: ShiftDetailsCardProps) {
   const router = useRouter();
   const [isEditDetailsOpen, setIsEditDetailsOpen] = useState(false);
-  const [breakDurationUnit, setBreakDurationUnit] = useState<"min" | "hr">("min");
 
   const isDetailsEditable = shift
     ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_arrival", "shift_pre_check_in"].includes(
@@ -50,8 +49,19 @@ export function ShiftDetailsCard({
     shift_end_time: "",
     guard_shift_started_at: "",
     guard_shift_ended_at: "",
-    total_break_duration_min: ""
   });
+
+  const [minDateTime, setMinDateTime] = useState("");
+
+  useEffect(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    setMinDateTime(`${year}-${month}-${day}T${hours}:${minutes}`);
+  }, []);
 
   useEffect(() => {
     if (shift) {
@@ -61,17 +71,6 @@ export function ShiftDetailsCard({
         shift_end_time: toLocalDateTimeString(shift.scheduled_for?.shift_end_time || ""),
         guard_shift_started_at: toLocalDateTimeString(shift.execution_time?.guard_shift_started_at || ""),
         guard_shift_ended_at: toLocalDateTimeString(shift.execution_time?.guard_shift_ended_at || ""),
-        total_break_duration_min: (() => {
-          const rawMin = shift.execution_time?.total_break_duration_min;
-          if (rawMin === undefined || rawMin === null) return "";
-          if (rawMin >= 60) {
-            setBreakDurationUnit("hr");
-            const hrs = rawMin / 60;
-            return String(hrs % 1 === 0 ? hrs : parseFloat(hrs.toFixed(2)));
-          }
-          setBreakDurationUnit("min");
-          return String(rawMin);
-        })()
       });
     }
   }, [shift]);
@@ -145,24 +144,17 @@ export function ShiftDetailsCard({
     // 3. Execution Time
     const initialExecStart = toLocalDateTimeString(shift.execution_time?.guard_shift_started_at || "");
     const initialExecEnd = toLocalDateTimeString(shift.execution_time?.guard_shift_ended_at || "");
-    const initialBreak = shift.execution_time?.total_break_duration_min !== undefined && shift.execution_time?.total_break_duration_min !== null 
-      ? String(shift.execution_time.total_break_duration_min) 
-      : "";
-      
-    const displayBreakInMinutes = editDetailsForm.total_break_duration_min === "" ? 0 : (
-      breakDurationUnit === "hr" ? Math.round(Number(editDetailsForm.total_break_duration_min) * 60) : Number(editDetailsForm.total_break_duration_min)
-    );
+    
     if (
       editDetailsForm.guard_shift_started_at !== initialExecStart ||
-      editDetailsForm.guard_shift_ended_at !== initialExecEnd ||
-      String(displayBreakInMinutes) !== initialBreak
+      editDetailsForm.guard_shift_ended_at !== initialExecEnd
     ) {
       payload.shift_execution_time = {
         guard_shift_started_at: toUTCISO(editDetailsForm.guard_shift_started_at),
         guard_shift_ended_at: toUTCISO(editDetailsForm.guard_shift_ended_at),
         start_time: toUTCISO(editDetailsForm.guard_shift_started_at),
         end_time: toUTCISO(editDetailsForm.guard_shift_ended_at),
-        total_break_duration_min: displayBreakInMinutes
+        total_break_duration_min: shift.execution_time?.total_break_duration_min ?? 0
       };
       dirty = true;
     }
@@ -342,6 +334,7 @@ export function ShiftDetailsCard({
                     <Label className="text-[10px] font-bold text-slate-700 uppercase">Start Time</Label>
                     <Input
                       type="datetime-local"
+                      min={minDateTime}
                       value={editDetailsForm.shift_start_time}
                       onChange={(e) => setEditDetailsForm(prev => ({ ...prev, shift_start_time: e.target.value }))}
                       className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
@@ -351,6 +344,7 @@ export function ShiftDetailsCard({
                     <Label className="text-[10px] font-bold text-slate-700 uppercase">End Time</Label>
                     <Input
                       type="datetime-local"
+                      min={editDetailsForm.shift_start_time || minDateTime}
                       value={editDetailsForm.shift_end_time}
                       onChange={(e) => setEditDetailsForm(prev => ({ ...prev, shift_end_time: e.target.value }))}
                       className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
@@ -389,6 +383,7 @@ export function ShiftDetailsCard({
                       <Label className="text-[10px] font-bold text-slate-700 uppercase">Actual Start Time</Label>
                       <Input
                         type="datetime-local"
+                        min={minDateTime}
                         value={editDetailsForm.guard_shift_started_at}
                         onChange={(e) => setEditDetailsForm(prev => ({ ...prev, guard_shift_started_at: e.target.value }))}
                         className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
@@ -398,64 +393,11 @@ export function ShiftDetailsCard({
                       <Label className="text-[10px] font-bold text-slate-700 uppercase">Actual End Time</Label>
                       <Input
                         type="datetime-local"
+                        min={editDetailsForm.guard_shift_started_at || minDateTime}
                         value={editDetailsForm.guard_shift_ended_at}
                         onChange={(e) => setEditDetailsForm(prev => ({ ...prev, guard_shift_ended_at: e.target.value }))}
                         className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
                       />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-[10px] font-bold text-slate-700 uppercase">
-                        Total Break Duration ({breakDurationUnit === "hr" ? "hours" : "minutes, max 59"})
-                      </Label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (breakDurationUnit === "min") {
-                            const mins = Number(editDetailsForm.total_break_duration_min) || 0;
-                            const hrs = mins / 60;
-                            setEditDetailsForm(prev => ({ ...prev, total_break_duration_min: String(parseFloat(hrs.toFixed(2))) }));
-                            setBreakDurationUnit("hr");
-                          } else {
-                            const hrs = Number(editDetailsForm.total_break_duration_min) || 0;
-                            const mins = Math.min(Math.round(hrs * 60), 59);
-                            setEditDetailsForm(prev => ({ ...prev, total_break_duration_min: String(mins) }));
-                            setBreakDurationUnit("min");
-                          }
-                        }}
-                        className="text-[9px] font-bold text-[#0064cb] hover:underline cursor-pointer border-none bg-transparent"
-                      >
-                        Switch to {breakDurationUnit === "hr" ? "min" : "hr"}
-                      </button>
-                    </div>
-                    <div className="relative flex items-center">
-                      <Input
-                        type="number"
-                        min={0}
-                        max={breakDurationUnit === "min" ? 59 : undefined}
-                        step={breakDurationUnit === "hr" ? 0.01 : 1}
-                        value={editDetailsForm.total_break_duration_min}
-                        onKeyDown={(e) => {
-                          if (e.key === "-" || e.key === "e") e.preventDefault();
-                        }}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === "" || val === "0") {
-                            setEditDetailsForm(prev => ({ ...prev, total_break_duration_min: val }));
-                            return;
-                          }
-                          const num = Number(val);
-                          if (isNaN(num) || num < 0) return;
-                          if (breakDurationUnit === "min" && num > 59) return;
-                          setEditDetailsForm(prev => ({ ...prev, total_break_duration_min: val }));
-                        }}
-                        placeholder={breakDurationUnit === "hr" ? "e.g. 1.5" : "e.g. 30"}
-                        className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800 w-full pr-16"
-                      />
-                      <span className="absolute right-3 text-[10px] font-bold text-[#0064cb] bg-blue-50 px-2 py-1 rounded-md cursor-default pointer-events-none select-none">
-                        {breakDurationUnit}
-                      </span>
                     </div>
                   </div>
                 </div>

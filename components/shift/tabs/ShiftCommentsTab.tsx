@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { UserPlus, Paperclip, Loader2, Send, XCircle } from "lucide-react";
+import { UserPlus, Paperclip, Loader2, Send, XCircle, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -10,13 +10,14 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Comment, PreviewFile } from "../types";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { getCommentAuthorName, formatDateTime, FileAttachmentCard } from "../utils";
 
 interface ShiftCommentsTabProps {
   comments: Comment[];
   isCommentsLoading: boolean;
   commentsError: string | null;
-  onCommentSubmit: (text: string, type: "internal" | "external", file: File | null) => Promise<boolean>;
+  onCommentSubmit: (text: string, type: "external" | "internal", file: File | null) => Promise<boolean>;
   setPreviewFile: (file: PreviewFile | null) => void;
 }
 
@@ -27,7 +28,7 @@ export function ShiftCommentsTab({
   onCommentSubmit,
   setPreviewFile,
 }: ShiftCommentsTabProps) {
-  const [commentType, setCommentType] = useState<"internal" | "external">("internal");
+  const [commentType, setCommentType] = useState<"external" | "internal">("external");
   const [commentText, setCommentText] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,6 +94,18 @@ export function ShiftCommentsTab({
                   <div className="flex items-center gap-2">
                     <span className="text-[13px] font-bold text-slate-800">{authorName}</span>
                     <span className="text-[11px] text-slate-700">{formatDateTime(comment.created_at)}</span>
+                    {!isExternal && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="flex items-center cursor-help">
+                            <Lock className="w-3.5 h-3.5 text-black" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          This message only visible to admin/member
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                   {comment.user_message && (
                     <p className="text-[12px] text-slate-600 leading-relaxed whitespace-pre-wrap break-words">

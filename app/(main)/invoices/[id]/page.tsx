@@ -153,6 +153,9 @@ export default function InvoiceDetailsPage() {
 
   const loadServices = async () => {
     const result = await fetchSecurityServicesAction();
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || ""}/api/v1/security-service`;
+    console.log("Select Service Drop Down Data:", result.data);
+    console.log("Select Service API URL:", apiUrl);
     if (result.success && result.data) {
       setServices(result.data);
     }
@@ -364,18 +367,22 @@ export default function InvoiceDetailsPage() {
       const current = prev[dateKey] || {
         checked: true,
         hours: "",
-        startTime: `${dateKey}T09:00`,
-        endTime: `${dateKey}T17:00`
+        startTime: "",
+        endTime: ""
       };
       const updated = { ...current, [field]: value };
       if (field === 'startTime' || field === 'endTime') {
         updated.hours = calculateHours(updated.startTime, updated.endTime);
       } else if (field === 'hours') {
-        const hoursNum = parseFloat(value);
-        if (!isNaN(hoursNum)) {
-          const start = DateTime.fromISO(updated.startTime, { zone: invoiceTimezone });
-          if (start.isValid) {
-            updated.endTime = start.plus({ hours: hoursNum }).toISO({ includeOffset: false }).slice(0, 16);
+        if (value === "") {
+          updated.endTime = "";
+        } else {
+          const hoursNum = parseFloat(value);
+          if (!isNaN(hoursNum)) {
+            const start = DateTime.fromISO(updated.startTime, { zone: invoiceTimezone });
+            if (start.isValid) {
+              updated.endTime = start.plus({ hours: hoursNum }).toISO({ includeOffset: false }).slice(0, 16);
+            }
           }
         }
       }
