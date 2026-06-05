@@ -97,7 +97,6 @@ export default function MemberDirectoryPage() {
     const res = await registerUserAction({
       email: formData.email,
       password: formData.password,
-      role: "member",
       first_name: formData.firstName,
       last_name: formData.lastName,
       phone_number: formData.phone
@@ -169,7 +168,7 @@ export default function MemberDirectoryPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Registration Form */}
         <div className="lg:col-span-5">
-          <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
+          <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-4 sm:p-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#0064cb]/10 flex items-center justify-center text-[#0064cb]">
@@ -278,7 +277,7 @@ export default function MemberDirectoryPage() {
 
         {/* Member List */}
         <div className="lg:col-span-7">
-          <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white min-h-[600px]">
+          <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white min-h-[600px]">
             <CardHeader className="p-4 sm:p-8 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">

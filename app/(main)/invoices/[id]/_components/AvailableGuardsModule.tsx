@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { findAvailableGuardsAction, fetchGuardsAction, fetchLocationAction } from "@/actions/dashboard.actions";
+import { findAvailableGuardsAction, fetchGuardsAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 
 interface AvailableGuardsModuleProps {
@@ -58,35 +58,13 @@ export function AvailableGuardsModule({
   // Filters State
   const [guardSearchQuery, setGuardSearchQuery] = useState("");
   const [guardFilters, setGuardFilters] = useState({
-    country: "All Country",
-    state: "All State",
-    city: "All City",
+    radiusMiles: "20",
     status: "all",
     service: "All"
-  });
-  const [locations, setLocations] = useState<{ countries: string[], states: string[], cities: string[] }>({
-    countries: [],
-    states: [],
-    cities: []
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const debouncedSearchQuery = useDebounceValue(guardSearchQuery, 500);
-
-  // Load Locations
-  useEffect(() => {
-    const loadLocations = async () => {
-      const res = await fetchLocationAction();
-      if (res.success && res.data) {
-        setLocations({
-          countries: ["All Country", ...res.data.countries],
-          states: ["All State", ...res.data.states],
-          cities: ["All City", ...res.data.cities]
-        });
-      }
-    };
-    loadLocations();
-  }, []);
 
   // Load Guards with Filters
   useEffect(() => {
@@ -105,9 +83,7 @@ export function AvailableGuardsModule({
 
     const isFiltered =
       debouncedSearchQuery !== "" ||
-      guardFilters.country !== "All Country" ||
-      guardFilters.state !== "All State" ||
-      guardFilters.city !== "All City" ||
+      guardFilters.radiusMiles !== "all" ||
       guardFilters.status !== "all" ||
       guardFilters.service !== "All";
 
@@ -115,11 +91,10 @@ export function AvailableGuardsModule({
       page: isFiltered ? undefined : currentPage,
       search: debouncedSearchQuery,
       status: guardFilters.status === "all" ? "" : guardFilters.status,
-      city: guardFilters.city === "All City" ? "" : guardFilters.city,
-      state: guardFilters.state === "All State" ? "" : guardFilters.state,
-      country: guardFilters.country === "All Country" ? "" : guardFilters.country,
       armed,
-      unarmed
+      unarmed,
+      invoice_id: guardFilters.radiusMiles === "all" ? undefined : invoiceId,
+      radius_miles: guardFilters.radiusMiles === "all" ? "" : guardFilters.radiusMiles
     });
 
     if (res.success) {
@@ -198,9 +173,7 @@ export function AvailableGuardsModule({
   const resetFilters = () => {
     setGuardSearchQuery("");
     setGuardFilters({
-      country: "All Country",
-      state: "All State",
-      city: "All City",
+      radiusMiles: "20",
       status: "all",
       service: "All"
     });
@@ -303,7 +276,7 @@ export function AvailableGuardsModule({
   );
 
   const renderFilters = () => (
-    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100">
       <div className="space-y-1.5 w-full">
         <Label className="text-[13px] font-medium text-slate-700">Search</Label>
         <div className="relative w-full">
@@ -325,43 +298,23 @@ export function AvailableGuardsModule({
       </div>
 
       <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Country</Label>
-        <Select value={guardFilters.country} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, country: val }))}>
+        <Label className="text-[13px] font-medium text-slate-700">Find Guard Within</Label>
+        <Select value={guardFilters.radiusMiles} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, radiusMiles: val }))}>
           <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All Country" />
+            <SelectValue placeholder="All" />
           </SelectTrigger>
           <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            {locations.countries.map(country => (
-              <SelectItem key={country} value={country} className="cursor-pointer">{country}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">State</Label>
-        <Select value={guardFilters.state} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, state: val }))}>
-          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All State" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            {locations.states.map(state => (
-              <SelectItem key={state} value={state} className="cursor-pointer">{state}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">City</Label>
-        <Select value={guardFilters.city} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, city: val }))}>
-          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All City" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            {locations.cities.map(city => (
-              <SelectItem key={city} value={city} className="cursor-pointer">{city}</SelectItem>
-            ))}
+            <SelectItem value="all" className="cursor-pointer">All</SelectItem>
+            <SelectItem value="10" className="cursor-pointer">10 Meter</SelectItem>
+            <SelectItem value="20" className="cursor-pointer">20 Meter</SelectItem>
+            <SelectItem value="30" className="cursor-pointer">30 Meter</SelectItem>
+            <SelectItem value="40" className="cursor-pointer">40 Meter</SelectItem>
+            <SelectItem value="50" className="cursor-pointer">50 Meter</SelectItem>
+            <SelectItem value="60" className="cursor-pointer">60 Meter</SelectItem>
+            <SelectItem value="70" className="cursor-pointer">70 Meter</SelectItem>
+            <SelectItem value="80" className="cursor-pointer">80 Meter</SelectItem>
+            <SelectItem value="90" className="cursor-pointer">90 Meter</SelectItem>
+            <SelectItem value="100" className="cursor-pointer">100 Meter</SelectItem>
           </SelectContent>
         </Select>
       </div>

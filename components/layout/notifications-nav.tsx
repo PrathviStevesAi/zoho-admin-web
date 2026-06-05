@@ -15,6 +15,18 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { onMessageListener } from "@/lib/firebase";
 
+const formatHeaderDate = (dateStr: string) => {
+  try {
+    const date = new Date(dateStr);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  } catch (e) {
+    return dateStr;
+  }
+};
+
 export function NotificationsNav() {
   const { status } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -73,8 +85,6 @@ export function NotificationsNav() {
     };
   }, []);
 
-
-
   const hasMore = currentPage * limit < totalNotifications;
   const hasPrevious = currentPage > 1;
 
@@ -85,6 +95,8 @@ export function NotificationsNav() {
   const handlePreviousPage = () => {
     if (hasPrevious) loadNotifications(currentPage - 1);
   };
+
+  const dates = Array.from(new Set(notifications.map((n) => formatHeaderDate(n.created_at))));
 
   return (
     <DropdownMenu modal={false}>
@@ -112,7 +124,7 @@ export function NotificationsNav() {
           <h3 className="font-semibold text-slate-700">Notifications</h3>
         </div>
 
-        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+        <div className="max-h-[400px] overflow-y-auto custom-scrollbar bg-[#f8fafc] p-3">
           {loading && notifications.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
               Loading notifications...
@@ -122,47 +134,83 @@ export function NotificationsNav() {
               No notifications yet.
             </div>
           ) : (
-            <div className={cn("transition-opacity", loading && "opacity-50")}>
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={cn(
-                    "p-4 border-b border-border/40 last:border-0 hover:bg-slate-50/50 transition-colors flex gap-3",
-                    !notification.is_seen && "bg-sky-50/10"
-                  )}
-                >
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-[14px] font-bold text-[#0064cb] leading-tight cursor-pointer hover:underline">
-                        <Link
-                          href={notification.data?.shift_id ? `/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}` : `/notifications/view`}
-                          onClick={() => {
-                            if (!notification.is_seen) {
-                              markNotificationAsReadAction(notification.id);
-                            }
-                          }}
-                        >
-                          {notification.title}
-                        </Link>
-                      </h4>
+            <div className={cn("transition-opacity space-y-4", loading && "opacity-50")}>
+              {dates.map((dateKey) => {
+                const group = notifications.filter((n) => formatHeaderDate(n.created_at) === dateKey);
+                return (
+                  <div key={dateKey} className="space-y-2">
+                    <div className="text-[12px] font-bold text-black px-1 py-1">
+                      {dateKey}
                     </div>
-                    <p className="text-[13px] text-slate-800 leading-normal">
-                      {notification.message}
-                    </p>
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-[11px] text-slate-700">
-                        {new Date(notification.created_at).toLocaleString("en-GB", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }).replace(",", "")}
-                      </span>
+                    <div className="space-y-3">
+                      {group.map((notification) => {
+                        const isUnread = !notification.is_seen;
+                        return (
+                          <div
+                            key={notification.id}
+                            className={cn(
+                              "bg-white rounded-l-lg rounded-r-none border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-4 flex gap-3 relative transition-all duration-200 overflow-hidden",
+                              isUnread ? "border-l-[4px] border-l-[#0064cb]" : "border-l-[4px] border-l-transparent"
+                            )}
+                          >
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <h4
+                                  className={cn(
+                                    "text-[14px] leading-tight cursor-pointer hover:underline",
+                                    isUnread ? "font-bold text-[#0064cb]" : "font-medium text-slate-400"
+                                  )}
+                                >
+                                  <Link
+                                    href={
+                                      notification.data?.shift_id
+                                        ? `/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`
+                                        : `/notifications/view`
+                                    }
+                                    onClick={() => {
+                                      if (isUnread) {
+                                        markNotificationAsReadAction(notification.id);
+                                      }
+                                    }}
+                                  >
+                                    {notification.title}
+                                  </Link>
+                                </h4>
+                              </div>
+                              <p
+                                className={cn(
+                                  "text-[13px] leading-normal",
+                                  isUnread ? "text-slate-800" : "text-slate-400"
+                                )}
+                              >
+                                {notification.message}
+                              </p>
+                              <div className="flex items-center justify-between pt-1">
+                                <span
+                                  className={cn(
+                                    "text-[11px]",
+                                    isUnread ? "text-slate-700" : "text-slate-400"
+                                  )}
+                                >
+                                  {new Date(notification.created_at)
+                                    .toLocaleString("en-GB", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                    .replace(",", "")}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

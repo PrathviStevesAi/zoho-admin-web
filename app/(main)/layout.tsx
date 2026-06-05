@@ -4,12 +4,12 @@ import NotificationProvider from "@/components/NotificationProvider";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <NotificationProvider />
       <Sidebar />
       <div className="flex flex-1 flex-col min-w-0">
         <Header />
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6">
+        <main className="flex-1 p-3 sm:p-6">
           {children}
         </main>
       </div>

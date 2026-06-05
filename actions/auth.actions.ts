@@ -30,10 +30,12 @@ export async function registerUserAction(userData: any) {
         const session = await auth();
         const token = session?.accessToken;
 
-        console.log("Sending registration data:", userData);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/member/register`, {
+        const { role, ...cleanUserData } = userData;
+
+        console.log("Sending registration data:", cleanUserData);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/member/register`, {
             method: "POST",
-            body: JSON.stringify(userData),
+            body: JSON.stringify(cleanUserData),
             headers: {
                 "Content-Type": "application/json",
                 "ngrok-skip-browser-warning": "true",
@@ -56,6 +58,41 @@ export async function registerUserAction(userData: any) {
         }
     } catch (error) {
         console.error("Registration Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
+export async function registerGuardAction(guardData: any) {
+    try {
+        const session = await auth();
+        const token = session?.accessToken;
+
+        console.log("Sending guard registration data:", guardData);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/guard/register`, {
+            method: "POST",
+            body: JSON.stringify(guardData),
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        console.log("Guard Registration API Response Status:", response.status);
+        const result = await response.json();
+
+        if (response.ok) {
+            return { success: true, data: result };
+        } else {
+            console.error("Guard Registration API Failure Body:", result);
+            const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.error || result.message || result.msg || "Guard registration failed";
+            return {
+                success: false,
+                error: errorMsg
+            };
+        }
+    } catch (error) {
+        console.error("Guard Registration Error:", error);
         return { success: false, error: "An unexpected error occurred." };
     }
 }

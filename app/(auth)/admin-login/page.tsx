@@ -307,7 +307,7 @@ export default function LoginPage() {
                                                             disabled={isPending}
                                                             className="text-sm font-bold text-[#0064cb] hover:underline cursor-pointer"
                                                         >
-                                                            Didn't receive code? Resend OTP
+                                                            Resend OTP
                                                         </button>
                                                     </div>
                                                 )}

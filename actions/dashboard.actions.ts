@@ -470,8 +470,21 @@ export async function fetchGuardsAction(params: {
   country?: string;
   armed?: string;
   unarmed?: string;
+  invoice_id?: string;
+  radius_miles?: string | number;
 }): Promise<FetchResponse<any>> {
-  const { page = 1, search = "", status = "", city = "", state = "", country = "", armed = "", unarmed = "" } = params;
+  const {
+    page = 1,
+    search = "",
+    status = "",
+    city = "",
+    state = "",
+    country = "",
+    armed = "",
+    unarmed = "",
+    invoice_id = "",
+    radius_miles = ""
+  } = params;
   const query = new URLSearchParams();
   query.append("page", page.toString());
   if (search) query.append("search", search);
@@ -481,6 +494,8 @@ export async function fetchGuardsAction(params: {
   if (country && country !== "All Country") query.append("country", country);
   if (armed) query.append("armed", armed);
   if (unarmed) query.append("unarmed", unarmed);
+  if (invoice_id) query.append("invoice_id", invoice_id);
+  if (radius_miles) query.append("radius_miles", radius_miles.toString());
 
   try {
     const data = await apiFetch<BaseApiResponse<any>>(
