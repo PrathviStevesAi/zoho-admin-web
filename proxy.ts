@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 
-export const middleware = auth((req) => {
+export const proxy = auth((req) => {
   const isLoggedIn = !!req.auth;
   const { nextUrl } = req;
 
@@ -33,7 +33,7 @@ export const middleware = auth((req) => {
   }
 });
 
-export default middleware;
+export default proxy;
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
