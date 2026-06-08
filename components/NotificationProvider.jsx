@@ -9,7 +9,7 @@ import { fetchNotificationByIdAction } from "@/actions/notification.actions";
 
 export default function NotificationProvider() {
     const router = useRouter();
-    const { data: status } = useSession();
+    const { status } = useSession();
 
     useEffect(() => {
         console.log("[NotificationProvider] Status change:", status);
