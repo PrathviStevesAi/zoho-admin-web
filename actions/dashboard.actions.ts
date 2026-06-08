@@ -799,3 +799,18 @@ export async function fetchGuardTrackingAction(guard_id: string, shift_id: strin
     return { success: false, error: error.message || "Failed to fetch guard tracking data" };
   }
 }
+
+export async function globalSearchAction(
+  search: string
+): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  try {
+    const data = await apiFetch<{ success: boolean; data: any[] }>(
+      `/api/v1/invoice/global-search?search=${encodeURIComponent(search)}`
+    );
+    return { success: true, data: data.data };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Something went wrong";
+    return { success: false, data: [], error: message };
+  }
+}
+

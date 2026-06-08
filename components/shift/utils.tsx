@@ -2,7 +2,13 @@ import { Download, Maximize2, FileText } from "lucide-react";
 
 export const toUTCISO = (localDateTimeStr: string) => {
   if (!localDateTimeStr) return null;
-  return new Date(localDateTimeStr).toISOString();
+  try {
+    const d = new Date(localDateTimeStr);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  } catch {
+    return null;
+  }
 };
 
 export const toLocalDateTimeString = (isoStr: string) => {
@@ -175,13 +181,19 @@ export const formatStatus = (status: string) => {
 
 export const formatDateTime = (dateStr: string) => {
   if (!dateStr) return 'N/A';
-  return new Date(dateStr).toLocaleString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return 'N/A';
+  }
 };
 
 export const FileAttachmentCard = ({

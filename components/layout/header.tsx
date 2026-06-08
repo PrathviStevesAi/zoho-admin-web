@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { NotificationsNav } from "./notifications-nav";
+import { fetchProfileAction } from "@/actions/profile.actions";
+import { globalSearchAction } from "@/actions/dashboard.actions";
 
 interface SearchResultItem {
   type: "invoice" | "shift";
@@ -47,15 +49,9 @@ export function Header() {
   const loadProfile = useCallback(async () => {
     if (!session?.accessToken) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/user/profile`, {
-        headers: {
-          "ngrok-skip-browser-warning": "true",
-          Authorization: `Bearer ${session.accessToken}`,
-        }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setProfile(data.data);
+      const res = await fetchProfileAction();
+      if (res.success && res.data) {
+        setProfile(res.data);
       }
     } catch (error) {
       console.error("Failed to load header profile:", error);
@@ -81,15 +77,9 @@ export function Header() {
 
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/invoice/global-search?search=${debouncedSearch}`, {
-          headers: {
-            "ngrok-skip-browser-warning": "true",
-            ...(session?.accessToken && { Authorization: `Bearer ${session.accessToken}` }),
-          }
-        });
-        const data = await response.json();
-        if (data.success) {
-          setResults(data.data);
+        const res = await globalSearchAction(debouncedSearch);
+        if (res.success && res.data) {
+          setResults(res.data);
           setIsOpen(true);
         } else {
           setResults([]);
