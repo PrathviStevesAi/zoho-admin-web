@@ -503,7 +503,7 @@ export default function GuardDirectoryPage() {
                       <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider text-center">Unarmed</TableHead>
                       <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Address</TableHead>
                       <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Status</TableHead>
-                      <TableHead className="py-4 px-6 text-right text-[11px] font-bold text-slate-700 uppercase tracking-wider">Action</TableHead>
+                      {/* <TableHead className="py-4 px-6 text-right text-[11px] font-bold text-slate-700 uppercase tracking-wider">Action</TableHead> */}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -584,7 +584,7 @@ export default function GuardDirectoryPage() {
                               {guard.status ? "Active" : "Inactive"}
                             </span>
                           </TableCell>
-                          <TableCell className="px-6 py-4 text-right">
+                          {/* <TableCell className="px-6 py-4 text-right">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -593,7 +593,7 @@ export default function GuardDirectoryPage() {
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
-                          </TableCell>
+                          </TableCell> */}
                         </TableRow>
                       ))
                     )}

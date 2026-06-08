@@ -531,7 +531,7 @@ export function AvailableGuardsModule({
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">ADDRESS</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">LAST ACTIVE</TableHead>
+                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">AWAY DISTANCE (Miles)</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">STATUS</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -563,8 +563,8 @@ export function AvailableGuardsModule({
                           <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.phone_number || "-"}</TableCell>
                           <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.armed ? "Yes" : "No"}</TableCell>
                           <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.unarmed ? "Yes" : "No"}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4 max-w-[200px] truncate">{guard.address || "-"}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.last_active_at ? new Date(guard.last_active_at).toLocaleDateString() : "-"}</TableCell>
+                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4 max-w-[200px] truncate">{guard.address || "--"}</TableCell>
+                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.distance_miles ?? "--"}</TableCell>
                           <TableCell className="py-2.5 px-4">
                             <span className={cn(
                               "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
