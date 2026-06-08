@@ -90,11 +90,14 @@ async function refreshAccessToken(token: any) {
         const refreshedTokens = await response.json();
         if (!response.ok) throw refreshedTokens;
 
+        const newAccessToken = refreshedTokens.data?.access_token || refreshedTokens.access_token;
+        const newRefreshToken = refreshedTokens.data?.refresh_token || refreshedTokens.refresh_token || token.refreshToken;
+
         return {
             ...token,
-            accessToken: refreshedTokens.access_token,
+            accessToken: newAccessToken,
             expiresAt: Math.floor(Date.now() / 1000) + 3600,
-            refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
+            refreshToken: newRefreshToken,
         };
     } catch (error) {
         return { ...token, error: "RefreshAccessTokenError" };

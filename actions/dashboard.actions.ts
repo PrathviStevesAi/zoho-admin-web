@@ -510,11 +510,14 @@ export async function fetchGuardsAction(params: {
 
 export async function assignGuardsAction(payload: {
   invoice_id: string;
-  per_hour_rate: number;
-  per_shift_rate: number;
+  per_hour_rate?: number | null;
+  per_shift_rate?: number | null;
   assignments: {
     guard_id: string;
     shift_ids: string[];
+    per_hour_rate?: number | null;
+    per_shift_rate?: number | null;
+    travel_fee?: number | null;
   }[];
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
@@ -550,6 +553,9 @@ export async function assignGuardToShiftAction(payload: {
             {
               guard_id: payload.guard_id,
               shift_ids: [payload.shift_id],
+              per_hour_rate: 0,
+              per_shift_rate: 0,
+              travel_fee: 0
             },
           ],
         }),

@@ -311,13 +311,13 @@ export default function GuardDirectoryPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Address</label>
+                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Street Address</label>
                   <div className="relative">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700 z-10 pointer-events-none" />
                     <GooglePlacesAutocomplete
-                      placeholder="Enter street, city, state"
-                      value={formData.address}
-                      onChange={(val) => setFormData({ ...formData, address: val })}
+                      placeholder="Enter street address"
+                      value={formData.streetAddress}
+                      onChange={(val) => setFormData({ ...formData, streetAddress: val, address: val })}
                       onAddressSelect={(address) => {
                         const formattedAddress = `${address.street}${address.city ? ', ' + address.city : ''}${address.state ? ', ' + address.state : ''}${address.country ? ', ' + address.country : ''}`;
                         setFormData(prev => ({
@@ -331,6 +331,48 @@ export default function GuardDirectoryPage() {
                         }));
                       }}
                       className="h-12 pl-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">City</label>
+                    <Input
+                      placeholder="City"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">State</label>
+                    <Input
+                      placeholder="State"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">ZIP Code</label>
+                    <Input
+                      placeholder="ZIP Code"
+                      value={formData.zipCode}
+                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
+                    <Input
+                      placeholder="Country"
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
                   </div>
                 </div>
@@ -530,7 +572,7 @@ export default function GuardDirectoryPage() {
                         <TableCell colSpan={8} className="h-96 text-center">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <Shield className="w-12 h-12 text-slate-200" />
-                            <p className="text-sm font-medium text-slate-700 italic">No guards found</p>
+                            <p className="text-sm font-medium text-slate-700">No guards found</p>
                           </div>
                         </TableCell>
                       </TableRow>

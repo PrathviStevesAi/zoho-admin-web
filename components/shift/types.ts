@@ -63,6 +63,9 @@ export interface Shift {
   checkpoint_create_interval?: number;
   break_max_time?: number;
   total_break_limit?: number;
+  per_hour_rate?: number | null;
+  per_shift_rate?: number | null;
+  travel_fee?: number | null;
 }
 
 export interface ShiftHistoryEvent {

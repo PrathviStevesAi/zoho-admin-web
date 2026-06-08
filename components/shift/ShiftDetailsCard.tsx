@@ -37,6 +37,13 @@ export function ShiftDetailsCard({
   const router = useRouter();
   const [isEditDetailsOpen, setIsEditDetailsOpen] = useState(false);
 
+  const formatPrice = (val: any) => {
+    if (val === null || val === undefined || val === "") return "----";
+    const num = Number(val);
+    if (isNaN(num)) return "----";
+    return `$${num.toFixed(2)}`;
+  };
+
   const isDetailsEditable = shift
     ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_arrival", "shift_pre_check_in"].includes(
         shift.status?.toLowerCase()
@@ -435,6 +442,27 @@ export function ShiftDetailsCard({
                   )}
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Per Hour Rate:</span>
+            <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">
+              {shift ? formatPrice(shift.per_hour_rate) : "----"}
+            </div>
+          </div>
+
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Flat Rate:</span>
+            <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">
+              {shift ? formatPrice(shift.per_shift_rate) : "----"}
+            </div>
+          </div>
+
+          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Travel Fees:</span>
+            <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">
+              {shift ? formatPrice(shift.travel_fee) : "----"}
             </div>
           </div>
         </div>
