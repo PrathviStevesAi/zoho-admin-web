@@ -326,7 +326,7 @@ export default function MemberDirectoryPage() {
                         <TableCell colSpan={4} className="h-64 text-center">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <Users className="w-10 h-10 text-slate-200" />
-                            <p className="text-sm font-medium text-slate-700 italic">No members found</p>
+                            <p className="text-sm font-medium text-slate-700">No members found</p>
                           </div>
                         </TableCell>
                       </TableRow>
