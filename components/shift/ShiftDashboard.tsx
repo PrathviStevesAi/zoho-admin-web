@@ -43,6 +43,7 @@ import { ManualStartShiftDialog } from "./dialogs/ManualStartShiftDialog";
 // Types & Utils
 import { Shift, ShiftReports, PreviewFile, Address } from "./types";
 import { triggerFileDownload } from "./utils";
+import { useVideoCall } from "@/context/VideoCallContext";
 
 interface ShiftDashboardProps {
   shiftId: string;
@@ -51,6 +52,7 @@ interface ShiftDashboardProps {
 
 export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps) {
   const router = useRouter();
+  const { startCall } = useVideoCall();
 
   // Core Data State
   const [shift, setShift] = useState<Shift | null>(null);
@@ -505,6 +507,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onAssignGuard={handleAssignGuard}
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
+        onStartVideoCall={() => startCall(shiftId)}
       />
 
       {isSettingsOpen ? (

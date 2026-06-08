@@ -5,6 +5,7 @@ import NextTopLoader from "nextjs-toploader";
 import { SessionProvider } from "next-auth/react";
 import { AuthErrorHandler } from "@/components/auth/auth-error-handler";
 import { Toaster } from "@/components/ui/sonner";
+import { VideoCallProvider } from "@/context/VideoCallContext";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -28,10 +29,12 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
-          <AuthErrorHandler />
-          <NextTopLoader color="var(--primary)" showSpinner={false} />
-          {children}
-          <Toaster position="top-right" richColors />
+          <VideoCallProvider>
+            <AuthErrorHandler />
+            <NextTopLoader color="var(--primary)" showSpinner={false} />
+            {children}
+            <Toaster position="top-right" richColors />
+          </VideoCallProvider>
         </SessionProvider>
       </body>
     </html>

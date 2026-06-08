@@ -48,6 +48,20 @@ export default function NotificationProvider() {
         const unsubscribe = onMessageListener((payload) => {
             console.log("[NotificationProvider] Foreground message received:", payload);
             if (payload?._focusRefresh) return;
+
+            const type = payload?.data?.type || payload?.type;
+            if (type === "incoming_vc_call") {
+                console.log("[NotificationProvider] Intercepted incoming_vc_call foreground notification");
+                if (typeof window !== "undefined") {
+                    const callId = payload?.data?.call_id || payload?.call_id;
+                    const shiftId = payload?.data?.shift_id || payload?.shift_id;
+                    window.dispatchEvent(new CustomEvent("incoming-vc-call", { 
+                        detail: { type: "incoming_vc_call", call_id: callId, shift_id: shiftId } 
+                    }));
+                }
+                return;
+            }
+
             const title = payload?.notification?.title || payload?.data?.title || "New Notification";
             const body = payload?.notification?.body || payload?.data?.body || "You have a new message.";
             const notificationId = payload?.data?.notification_id || payload?.data?.notificationId || payload?.data?.id || payload?.id || payload?.notification_id || payload?.notificationId;

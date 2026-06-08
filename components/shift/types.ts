@@ -31,6 +31,7 @@ export interface ShiftActions {
   is_manual_start_shift?: boolean;
   is_config_settings?: boolean;
   is_cancel_service?: boolean;
+  is_vc_active?: boolean;
 }
 
 export interface AssignedGuard {

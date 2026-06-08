@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, Search, UserPlus } from "lucide-react";
+import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, Search, UserPlus, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
@@ -15,6 +15,7 @@ interface ShiftHeaderProps {
   onAssignGuard: () => void;
   onCancelService: () => void;
   showSettingBtn: boolean;
+  onStartVideoCall: () => void;
 }
 
 export function ShiftHeader({
@@ -27,6 +28,7 @@ export function ShiftHeader({
   onManualStart,
   onAssignGuard,
   onCancelService,
+  onStartVideoCall,
 }: ShiftHeaderProps) {
   return (
     <div className="flex flex-col gap-6">
@@ -133,6 +135,14 @@ export function ShiftHeader({
                 icon: Settings,
                 color: isSettingsOpen ? ("blue" as const) : ("slate" as const),
                 onClick: () => setIsSettingsOpen(!isSettingsOpen),
+              });
+            }
+            if (act.is_vc_active) {
+              buttons.push({
+                label: "Video Call",
+                icon: Video,
+                color: "orange" as const,
+                onClick: onStartVideoCall,
               });
             }
             if (act.is_cancel_service) {
