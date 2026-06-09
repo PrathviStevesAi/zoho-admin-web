@@ -17,6 +17,7 @@ interface GooglePlacesAutocompleteProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  required?: boolean;
 }
 
 let scriptLoadingPromise: Promise<void> | null = null;
@@ -54,6 +55,7 @@ export function GooglePlacesAutocomplete({
   className,
   placeholder = "Enter street address",
   disabled,
+  required,
 }: GooglePlacesAutocompleteProps) {
   const [predictions, setPredictions] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -190,26 +192,24 @@ export function GooglePlacesAutocomplete({
           let zip = "";
           let country = "";
 
-          if (addressComponents) {
-            for (const component of addressComponents) {
-              const types = component.types;
-              if (types.includes("street_number")) {
-                streetNumber = component.long_name;
-              } else if (types.includes("route")) {
-                route = component.long_name;
-              } else if (types.includes("locality")) {
-                city = component.long_name;
-              } else if (types.includes("administrative_area_level_1")) {
-                state = component.long_name;
-              } else if (types.includes("postal_code")) {
-                zip = component.long_name;
-              } else if (types.includes("country")) {
-                country = component.long_name;
-              } else if (!city && types.includes("sublocality_level_1")) {
-                city = component.long_name;
-              } else if (!city && types.includes("neighborhood")) {
-                city = component.long_name;
-              }
+          for (const component of addressComponents) {
+            const types = component.types;
+            if (types.includes("street_number")) {
+              streetNumber = component.long_name;
+            } else if (types.includes("route")) {
+              route = component.long_name;
+            } else if (types.includes("locality")) {
+              city = component.long_name;
+            } else if (types.includes("administrative_area_level_1")) {
+              state = component.long_name;
+            } else if (types.includes("postal_code")) {
+              zip = component.long_name;
+            } else if (types.includes("country")) {
+              country = component.long_name;
+            } else if (!city && types.includes("sublocality_level_1")) {
+              city = component.long_name;
+            } else if (!city && types.includes("neighborhood")) {
+              city = component.long_name;
             }
           }
 
@@ -279,6 +279,7 @@ export function GooglePlacesAutocomplete({
           placeholder={placeholder}
           className={className}
           disabled={disabled}
+          required={required}
         />
         {isSearching && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">

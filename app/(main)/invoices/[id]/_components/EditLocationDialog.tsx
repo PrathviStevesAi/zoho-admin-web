@@ -52,6 +52,9 @@ export function EditLocationDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.street || !formData.city || !formData.state || !formData.country) {
+      return;
+    }
     await onUpdate(formData);
   };
 
@@ -76,6 +79,7 @@ export function EditLocationDialog({
             <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Street</Label>
             <GooglePlacesAutocomplete
               value={formData.street || ""}
+              required
               onChange={(value) => setFormData(prev => ({ ...prev, street: value }))}
               onAddressSelect={handleAddressSelect}
               placeholder="Enter street address"
@@ -87,6 +91,7 @@ export function EditLocationDialog({
             <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">City</Label>
             <Input
               value={formData.city || ""}
+              required
               onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
               placeholder="Enter city name"
               className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm"
@@ -98,6 +103,7 @@ export function EditLocationDialog({
               <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">State</Label>
               <Input
                 value={formData.state || ""}
+                required
                 onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
                 placeholder="Enter state name"
                 className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm"
@@ -118,6 +124,7 @@ export function EditLocationDialog({
             <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Country</Label>
             <Input
               value={formData.country || ""}
+              required
               onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
               placeholder="Enter country name"
               className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm"

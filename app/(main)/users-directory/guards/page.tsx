@@ -104,7 +104,16 @@ export default function GuardDirectoryPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+    if (
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.email ||
+      !formData.password ||
+      !(formData.streetAddress || formData.address) ||
+      !formData.city ||
+      !formData.state ||
+      !formData.country
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -318,6 +327,7 @@ export default function GuardDirectoryPage() {
                     <GooglePlacesAutocomplete
                       placeholder="Enter street address"
                       value={formData.streetAddress}
+                      required
                       onChange={(val) => setFormData({ ...formData, streetAddress: val, address: val })}
                       onAddressSelect={(address) => {
                         const formattedAddress = `${address.street}${address.city ? ', ' + address.city : ''}${address.state ? ', ' + address.state : ''}${address.country ? ', ' + address.country : ''}`;
@@ -342,6 +352,7 @@ export default function GuardDirectoryPage() {
                     <Input
                       placeholder="City"
                       value={formData.city}
+                      required
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
@@ -351,6 +362,7 @@ export default function GuardDirectoryPage() {
                     <Input
                       placeholder="State"
                       value={formData.state}
+                      required
                       onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
@@ -372,6 +384,7 @@ export default function GuardDirectoryPage() {
                     <Input
                       placeholder="Country"
                       value={formData.country}
+                      required
                       onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
