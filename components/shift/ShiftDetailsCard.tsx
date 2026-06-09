@@ -473,7 +473,7 @@ export function ShiftDetailsCard({
           </div>
 
           <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Per Hour Rate:</span>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Hourly rate paid to guard:</span>
             <div className="w-full md:col-span-3">
               {isEditDetailsOpen ? (
                 <Input
@@ -494,7 +494,7 @@ export function ShiftDetailsCard({
           </div>
 
           <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Flat Rate:</span>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Flat rate paid to guard:</span>
             <div className="w-full md:col-span-3">
               {isEditDetailsOpen ? (
                 <Input
