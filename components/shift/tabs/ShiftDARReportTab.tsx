@@ -17,7 +17,7 @@ export function ShiftDARReportTab({
   setPreviewFile,
   securityServiceId,
 }: ShiftDARReportTabProps) {
-  const isFirewatch = securityServiceId === "09af9505-e73d-4cb4-837f-821aaa4bcad6";
+  const isFirewatch = securityServiceId === "38ade601-2dc3-4fc8-ac0e-90cf99f2a045";
 
   if (isReportsLoading) {
     return (

@@ -40,12 +40,12 @@ export function ShiftTabsModule({
 
   const tabs = [
     { id: "comment", label: "Add Comment", icon: MessageSquarePlus },
-    { 
-      id: "dar", 
-      label: securityServiceId === "09af9505-e73d-4cb4-837f-821aaa4bcad6" 
-        ? "Firewatch Log Report" 
-        : "Daily Activity Report", 
-      icon: FileText 
+    {
+      id: "dar",
+      label: securityServiceId === "38ade601-2dc3-4fc8-ac0e-90cf99f2a045"
+        ? "Firewatch Log Report"
+        : "Daily Activity Report",
+      icon: FileText
     },
     { id: "report", label: "Incident Report", icon: ClipboardList },
     { id: "checkpoint", label: "Check Point", icon: MapPin },

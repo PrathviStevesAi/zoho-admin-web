@@ -6,39 +6,60 @@ interface ShiftProgressStepperProps {
   shift: Shift | null;
 }
 
+const STATUS_STEPS_MAP: Record<string, string[]> = {
+  shift_created: ["shift_created"],
+  shift_planned: ["shift_created", "shift_planned"],
+  shift_accepted: ["shift_created", "shift_planned", "shift_accepted"],
+  shift_refused: ["shift_created", "shift_planned", "shift_refused"],
+  shift_arrival: ["shift_created", "shift_planned", "shift_accepted", "shift_arrival"],
+  shift_pre_check_in: ["shift_created", "shift_planned", "shift_accepted", "shift_arrival", "shift_pre_check_in"],
+  shift_in_progress: ["shift_created", "shift_planned", "shift_accepted", "shift_arrival", "shift_pre_check_in", "shift_in_progress"],
+  shift_in_break: ["shift_created", "shift_planned", "shift_accepted", "shift_arrival", "shift_pre_check_in", "shift_in_break"],
+  shift_finished: ["shift_created", "shift_planned", "shift_accepted", "shift_arrival", "shift_pre_check_in", "shift_in_progress", "shift_finished"],
+  shift_approved: ["shift_created", "shift_planned", "shift_accepted", "shift_arrival", "shift_pre_check_in", "shift_in_progress", "shift_finished", "shift_approved"],
+  shift_not_approved: ["shift_created", "shift_planned", "shift_accepted", "shift_arrival", "shift_pre_check_in", "shift_in_progress", "shift_finished", "shift_not_approved"],
+  shift_cancelled: ["shift_cancelled"],
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  shift_created: "Shift Created",
+  shift_planned: "Shift Planned",
+  shift_accepted: "Shift Accepted",
+  shift_refused: "Shift Refused",
+  shift_arrival: "Shift Arrival",
+  shift_pre_check_in: "Pre-shift Check-in completed",
+  shift_in_progress: "Shift In Progress",
+  shift_in_break: "Shift In Break",
+  shift_finished: "Shift Finished",
+  shift_approved: "Shift Approved",
+  shift_not_approved: "Shift Not Approved",
+  shift_cancelled: "Shift Cancelled",
+};
+
 export function ShiftProgressStepper({ shift }: ShiftProgressStepperProps) {
-  const getStepStatus = (stepName: string) => {
-    if (!shift) return "upcoming";
-    const statusOrder = [
-      "shift_planned",
-      "shift_accepted",
-      "shift_in_progress",
-      "shift_finished",
-      "shift_approved"
-    ];
+  const currentStatus = shift?.status?.toLowerCase() || "shift_created";
+  const statusSteps = STATUS_STEPS_MAP[currentStatus] || [currentStatus];
 
-    const currentStatus = shift.status;
-    const currentIndex = statusOrder.indexOf(currentStatus);
-    const stepIndex = statusOrder.indexOf(stepName);
-
-    if (stepIndex < currentIndex) return "completed";
-    if (stepIndex === currentIndex) return "current";
-    return "upcoming";
-  };
-
-  const steps = [
-    { label: "Shift Planned", status: getStepStatus("shift_planned") },
-    { label: "Shift Accepted", status: getStepStatus("shift_accepted") },
-    { label: "Shift In Progress", status: getStepStatus("shift_in_progress") },
-    { label: "Shift Finished", status: getStepStatus("shift_finished") },
-    { label: "Shift Approved", status: getStepStatus("shift_approved") },
-    { label: "Pre-shift Check-in completed", status: "upcoming" },
-  ];
+  const steps = statusSteps.map((statusName, idx) => {
+    let status: "completed" | "current" | "upcoming" = "upcoming";
+    if (idx === statusSteps.length - 1) {
+      status = "current";
+    } else if (idx < statusSteps.length - 1) {
+      status = "completed";
+    }
+    return {
+      label: STATUS_LABELS[statusName] || statusName,
+      status,
+    };
+  });
 
   const activeIndex = steps.findIndex(s => s.status === "current");
   const lastCompletedIndex = steps.reduce((acc, s, idx) => s.status === "completed" ? idx : acc, -1);
   const progressIndex = activeIndex !== -1 ? activeIndex : lastCompletedIndex;
+  
   const progressPercentage = steps.length > 1 ? (Math.max(0, progressIndex) / (steps.length - 1)) * 100 : 0;
+  const startPercent = steps.length > 0 ? 50 / steps.length : 0;
+  const fillWidthPercent = steps.length > 1 ? progressPercentage * ((steps.length - 1) / steps.length) : 0;
 
   return (
     <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-6 md:p-8">
@@ -46,12 +67,15 @@ export function ShiftProgressStepper({ shift }: ShiftProgressStepperProps) {
 
       <div className="relative md:px-4">
         {/* Desktop Background Track Line */}
-        <div className="hidden md:block absolute top-4 left-[8.33%] right-[8.33%] h-[3px] bg-slate-100 rounded-full" />
+        <div 
+          className="hidden md:block absolute top-4 h-[3px] bg-slate-100 rounded-full" 
+          style={{ left: `${startPercent}%`, right: `${startPercent}%` }}
+        />
 
         {/* Desktop Active Progress Fill Line */}
         <div
-          className="hidden md:block absolute top-4 left-[8.33%] h-[3px] bg-gradient-to-r from-[#0064cb] to-[#3b82f6] rounded-full transition-all duration-500"
-          style={{ width: `${progressPercentage * 0.8333}%` }}
+          className="hidden md:block absolute top-4 h-[3px] bg-gradient-to-r from-[#0064cb] to-[#3b82f6] rounded-full transition-all duration-500"
+          style={{ left: `${startPercent}%`, width: `${fillWidthPercent}%` }}
         />
 
         {/* Mobile Background Track Line */}
