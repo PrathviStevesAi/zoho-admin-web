@@ -46,8 +46,8 @@ export function ShiftDetailsCard({
 
   const isDetailsEditable = shift
     ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_arrival", "shift_pre_check_in"].includes(
-        shift.status?.toLowerCase()
-      )
+      shift.status?.toLowerCase()
+    )
     : false;
 
   const [editDetailsForm, setEditDetailsForm] = useState({
@@ -56,6 +56,9 @@ export function ShiftDetailsCard({
     shift_end_time: "",
     guard_shift_started_at: "",
     guard_shift_ended_at: "",
+    per_hour_rate: "",
+    per_shift_rate: "",
+    travel_fee: "",
   });
 
   const [minDateTime, setMinDateTime] = useState("");
@@ -78,6 +81,9 @@ export function ShiftDetailsCard({
         shift_end_time: toLocalDateTimeString(shift.scheduled_for?.shift_end_time || ""),
         guard_shift_started_at: toLocalDateTimeString(shift.execution_time?.guard_shift_started_at || ""),
         guard_shift_ended_at: toLocalDateTimeString(shift.execution_time?.guard_shift_ended_at || ""),
+        per_hour_rate: shift.per_hour_rate !== null && shift.per_hour_rate !== undefined ? String(shift.per_hour_rate) : "",
+        per_shift_rate: shift.per_shift_rate !== null && shift.per_shift_rate !== undefined ? String(shift.per_shift_rate) : "",
+        travel_fee: shift.travel_fee !== null && shift.travel_fee !== undefined ? String(shift.travel_fee) : "",
       });
     }
   }, [shift]);
@@ -151,7 +157,7 @@ export function ShiftDetailsCard({
     // 3. Execution Time
     const initialExecStart = toLocalDateTimeString(shift.execution_time?.guard_shift_started_at || "");
     const initialExecEnd = toLocalDateTimeString(shift.execution_time?.guard_shift_ended_at || "");
-    
+
     if (
       editDetailsForm.guard_shift_started_at !== initialExecStart ||
       editDetailsForm.guard_shift_ended_at !== initialExecEnd
@@ -163,6 +169,27 @@ export function ShiftDetailsCard({
         end_time: toUTCISO(editDetailsForm.guard_shift_ended_at),
         total_break_duration_min: shift.execution_time?.total_break_duration_min ?? 0
       };
+      dirty = true;
+    }
+
+    // 4. Per Hour Rate
+    const initialPerHourRate = shift.per_hour_rate !== null && shift.per_hour_rate !== undefined ? String(shift.per_hour_rate) : "";
+    if (editDetailsForm.per_hour_rate !== initialPerHourRate) {
+      payload.per_hour_rate = editDetailsForm.per_hour_rate === "" ? 0 : Number(editDetailsForm.per_hour_rate);
+      dirty = true;
+    }
+
+    // 5. Flat Rate (per_shift_rate)
+    const initialPerShiftRate = shift.per_shift_rate !== null && shift.per_shift_rate !== undefined ? String(shift.per_shift_rate) : "";
+    if (editDetailsForm.per_shift_rate !== initialPerShiftRate) {
+      payload.per_shift_rate = editDetailsForm.per_shift_rate === "" ? 0 : Number(editDetailsForm.per_shift_rate);
+      dirty = true;
+    }
+
+    // 6. Travel Fee
+    const initialTravelFee = shift.travel_fee !== null && shift.travel_fee !== undefined ? String(shift.travel_fee) : "";
+    if (editDetailsForm.travel_fee !== initialTravelFee) {
+      payload.travel_fee = editDetailsForm.travel_fee === "" ? 0 : Number(editDetailsForm.travel_fee);
       dirty = true;
     }
 
@@ -447,22 +474,64 @@ export function ShiftDetailsCard({
 
           <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Per Hour Rate:</span>
-            <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">
-              {shift ? formatPrice(shift.per_hour_rate) : "----"}
+            <div className="w-full md:col-span-3">
+              {isEditDetailsOpen ? (
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={editDetailsForm.per_hour_rate}
+                  onChange={(e) => setEditDetailsForm(prev => ({ ...prev, per_hour_rate: e.target.value }))}
+                  className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                />
+              ) : (
+                <span className="text-sm text-slate-800 font-medium">
+                  {shift ? formatPrice(shift.per_hour_rate) : "----"}
+                </span>
+              )}
             </div>
           </div>
 
           <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Flat Rate:</span>
-            <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">
-              {shift ? formatPrice(shift.per_shift_rate) : "----"}
+            <div className="w-full md:col-span-3">
+              {isEditDetailsOpen ? (
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={editDetailsForm.per_shift_rate}
+                  onChange={(e) => setEditDetailsForm(prev => ({ ...prev, per_shift_rate: e.target.value }))}
+                  className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                />
+              ) : (
+                <span className="text-sm text-slate-800 font-medium">
+                  {shift ? formatPrice(shift.per_shift_rate) : "----"}
+                </span>
+              )}
             </div>
           </div>
 
           <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Travel Fees:</span>
-            <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">
-              {shift ? formatPrice(shift.travel_fee) : "----"}
+            <div className="w-full md:col-span-3">
+              {isEditDetailsOpen ? (
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={editDetailsForm.travel_fee}
+                  onChange={(e) => setEditDetailsForm(prev => ({ ...prev, travel_fee: e.target.value }))}
+                  className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                />
+              ) : (
+                <span className="text-sm text-slate-800 font-medium">
+                  {shift ? formatPrice(shift.travel_fee) : "----"}
+                </span>
+              )}
             </div>
           </div>
         </div>

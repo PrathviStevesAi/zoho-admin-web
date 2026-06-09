@@ -756,6 +756,9 @@ export async function updateShiftDetailsAction(payload: {
   create_checkpoint_interval?: number;
   guard_break_max_duration?: number;
   guard_break_limit?: number;
+  per_hour_rate?: number;
+  per_shift_rate?: number;
+  travel_fee?: number;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     console.log("[Server Action] updateShiftDetailsAction PATCH Payload to /api/v1/shift/details:", JSON.stringify(payload, null, 2));
