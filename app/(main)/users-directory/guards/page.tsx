@@ -178,6 +178,7 @@ export default function GuardDirectoryPage() {
         licenseExpirationDate: "",
         gender: "male"
       });
+      setShowPassword(false);
       loadGuards(1);
     } else {
       toast.error(res.error || "Guard registration failed");

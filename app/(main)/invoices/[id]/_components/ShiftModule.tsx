@@ -200,11 +200,17 @@ export function ShiftModule({
                     <SelectValue placeholder="Select the service" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-slate-200 shadow-xl z-[100]">
-                    {services.map((service) => (
-                      <SelectItem key={service.id} value={service.id} className="cursor-pointer">
-                        {service.service_name}
+                    {!services || services.length === 0 ? (
+                      <SelectItem value="none" disabled className="text-slate-500 justify-center">
+                        No Security Service found.
                       </SelectItem>
-                    ))}
+                    ) : (
+                      services.map((service) => (
+                        <SelectItem key={service.id} value={service.id} className="cursor-pointer">
+                          {service.service_name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>

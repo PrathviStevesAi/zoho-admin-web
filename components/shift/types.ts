@@ -66,6 +66,7 @@ export interface Shift {
   per_hour_rate?: number | null;
   per_shift_rate?: number | null;
   travel_fee?: number | null;
+  security_service_id?: string | null;
 }
 
 export interface ShiftHistoryEvent {

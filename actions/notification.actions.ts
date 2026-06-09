@@ -31,8 +31,8 @@ export async function updateFcmTokenAction(fcmToken: string) {
 }
 export async function fetchNotificationByIdAction(id: string): Promise<{ success: boolean; data?: Notification; notFound?: boolean }> {
     try {
-        const response = await apiFetch<Notification>(`/api/v1/notification/${id}/`);
-        return { success: true, data: response };
+        const response = await apiFetch<{ success: boolean; data: Notification }>(`/api/v1/notification/${id}/`);
+        return { success: true, data: response.data };
     } catch (error: any) {
         if (error.message?.includes("status 404") || error.message?.includes("Not Found")) {
             console.warn(`[Notification] Notification ${id} not found on the server (404) when fetching.`);

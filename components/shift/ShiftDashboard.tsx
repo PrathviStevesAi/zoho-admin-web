@@ -311,15 +311,57 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     geofence_radius: string;
   }) => {
     setIsSavingSettings(true);
-    const payload = {
+
+    const initialCreateCheckpointInterval =
+      shift?.checkpoint_create_interval !== undefined && shift?.checkpoint_create_interval !== null
+        ? String(shift.checkpoint_create_interval)
+        : "0";
+    const initialGuardBreakMaxDuration =
+      shift?.break_max_time !== undefined && shift?.break_max_time !== null
+        ? String(shift.break_max_time)
+        : "";
+    const initialGuardBreakLimit =
+      shift?.total_break_limit !== undefined && shift?.total_break_limit !== null
+        ? String(shift.total_break_limit)
+        : "";
+    const initialGeofenceRadius =
+      shift?.geofence_radius !== undefined && shift?.geofence_radius !== null
+        ? String(shift.geofence_radius)
+        : "150";
+
+    const payload: any = {
       shift_id: shiftId,
-      create_checkpoint_interval:
-        settings.create_checkpoint_interval === "" ? 0 : Number(settings.create_checkpoint_interval),
-      guard_break_max_duration:
-        settings.guard_break_max_duration === "" ? 0 : Number(settings.guard_break_max_duration),
-      guard_break_limit: settings.guard_break_limit === "" ? 0 : Number(settings.guard_break_limit),
-      geofence_radius: settings.geofence_radius === "" ? 150 : Number(settings.geofence_radius),
     };
+
+    let dirty = false;
+
+    if (settings.create_checkpoint_interval !== initialCreateCheckpointInterval) {
+      payload.create_checkpoint_interval =
+        settings.create_checkpoint_interval === "" ? 0 : Number(settings.create_checkpoint_interval);
+      dirty = true;
+    }
+    if (settings.guard_break_max_duration !== initialGuardBreakMaxDuration) {
+      payload.guard_break_max_duration =
+        settings.guard_break_max_duration === "" ? 0 : Number(settings.guard_break_max_duration);
+      dirty = true;
+    }
+    if (settings.guard_break_limit !== initialGuardBreakLimit) {
+      payload.guard_break_limit =
+        settings.guard_break_limit === "" ? 0 : Number(settings.guard_break_limit);
+      dirty = true;
+    }
+    if (settings.geofence_radius !== initialGeofenceRadius) {
+      payload.geofence_radius =
+        settings.geofence_radius === "" ? 150 : Number(settings.geofence_radius);
+      dirty = true;
+    }
+
+    if (!dirty) {
+      toast.info("No settings were changed");
+      setIsSettingsOpen(false);
+      setIsSavingSettings(false);
+      return;
+    }
 
     console.log("[ShiftDashboard] handleSaveSettings - Payload:", payload);
     const res = await updateShiftDetailsAction(payload);
@@ -553,6 +595,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                   if (tabId === "comment") loadComments();
                 }}
                 setPreviewFile={setPreviewFile}
+                securityServiceId={shift?.security_service_id}
               />
             </div>
           </div>
@@ -583,6 +626,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 if (tabId === "comment") loadComments();
               }}
               setPreviewFile={setPreviewFile}
+              securityServiceId={shift?.security_service_id}
             />
 
             {/* 3. ShiftMapCard */}

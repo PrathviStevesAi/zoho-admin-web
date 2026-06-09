@@ -107,6 +107,7 @@ export default function MemberDirectoryPage() {
     if (res.success) {
       toast.success("Member registered successfully");
       setFormData({ firstName: "", lastName: "", email: "", phone: "", password: "" });
+      setShowPassword(false);
       loadMembers();
     } else {
       toast.error(res.error || "Registration failed");

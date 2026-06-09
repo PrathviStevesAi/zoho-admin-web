@@ -67,44 +67,44 @@ export default function NotificationProvider() {
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0064cb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
                         </div>
                     ),
-                    action: {
+                    /* action: {
                         label: "View Details",
                         onClick: async () => {
-                            let targetShiftId = shiftId;
-                            let targetInvoiceId = invoiceId;
-                            let targetView = view;
+                let targetShiftId = shiftId;
+                let targetInvoiceId = invoiceId;
+                let targetView = view;
                             if ((!targetShiftId || !targetView || !targetInvoiceId) && notificationId) {
-                                try {
-                                    const res = await fetchNotificationByIdAction(notificationId);
+                    try {
+                        const res = await fetchNotificationByIdAction(notificationId);
                                     if (res.success) {
                                         if (res.data?.data?.shift_id) {
-                                            targetShiftId = res.data.data.shift_id;
-                                        }
+                                targetShiftId = res.data.data.shift_id;
+                            }
                                         if (res.data?.data?.invoice_id) {
-                                            targetInvoiceId = res.data.data.invoice_id;
-                                        }
+                                targetInvoiceId = res.data.data.invoice_id;
+                            }
                                         if (res.data?.data?.view) {
-                                            targetView = res.data.data.view;
-                                        }
-                                    }
-                                } catch (err) {
-                                    console.error("Failed to fetch notification details:", err);
-                                }
+                                targetView = res.data.data.view;
                             }
+                        }
+                    } catch (err) {
+                        console.error("Failed to fetch notification details:", err);
+                    }
+                }
 
-                            if (targetView === "shift_invoice_view" && targetInvoiceId && notificationId) {
-                                router.push(`/invoices/${targetInvoiceId}?notification_id=${notificationId}`);
-                            } else if (targetShiftId && notificationId) {
-                                router.push(`/notifications/view?shift_id=${targetShiftId}&notification_id=${notificationId}`);
-                            } else if (targetShiftId) {
-                                router.push(`/notifications/view?shift_id=${targetShiftId}`);
-                            } else if (notificationId) {
-                                router.push(`/notifications/view?notification_id=${notificationId}`);
-                            } else {
-                                router.push(`/notifications/view`);
-                            }
+                if (targetView === "shift_invoice_view" && targetInvoiceId && notificationId) {
+                    router.push(`/invoices/${targetInvoiceId}?notification_id=${notificationId}`);
+                } else if (targetShiftId && notificationId) {
+                    router.push(`/notifications/view?shift_id=${targetShiftId}&notification_id=${notificationId}`);
+                } else if (targetShiftId) {
+                    router.push(`/notifications/view?shift_id=${targetShiftId}`);
+                } else if (notificationId) {
+                    router.push(`/notifications/view?notification_id=${notificationId}`);
+                } else {
+                    router.push(`/notifications/view`);
+                }
                         },
-                    },
+                    }, */
                     cancel: {
                         label: "Dismiss",
                         onClick: () => toast.dismiss(),
@@ -134,7 +134,7 @@ export default function NotificationProvider() {
                             let targetShiftId = shiftId;
                             let targetInvoiceId = invoiceId;
                             let targetView = view;
-                            
+
                             if (targetView === "shift_invoice_view" && targetInvoiceId && notificationId) {
                                 router.push(`/invoices/${targetInvoiceId}?notification_id=${notificationId}`);
                             } else if (targetShiftId && notificationId) {

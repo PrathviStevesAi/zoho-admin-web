@@ -96,6 +96,15 @@ export function GooglePlacesAutocomplete({
     };
   }, []);
 
+  // Clear predictions/dropdown when value is cleared externally
+  useEffect(() => {
+    if (!value) {
+      setPredictions([]);
+      setShowDropdown(false);
+      setIsSearching(false);
+    }
+  }, [value]);
+
   const handleInputChange = (inputValue: string) => {
     onChange(inputValue);
 
@@ -204,7 +213,39 @@ export function GooglePlacesAutocomplete({
             }
           }
 
-          const finalStreet = streetNumber ? `${streetNumber} ${route}` : (route || streetLabel);
+          let finalStreet = "";
+          const formattedAddress = place.formatted_address || "";
+          if (formattedAddress) {
+            let cityPartIndex = -1;
+            if (city) {
+              cityPartIndex = formattedAddress.indexOf(`, ${city}`);
+              if (cityPartIndex === -1) {
+                cityPartIndex = formattedAddress.indexOf(city);
+              }
+            }
+            
+            if (cityPartIndex > 0) {
+              finalStreet = formattedAddress.slice(0, cityPartIndex).trim();
+            } else {
+              let nextPartIndex = -1;
+              if (state) {
+                nextPartIndex = formattedAddress.indexOf(`, ${state}`);
+              }
+              if (nextPartIndex === -1 && country) {
+                nextPartIndex = formattedAddress.indexOf(`, ${country}`);
+              }
+              
+              if (nextPartIndex > 0) {
+                finalStreet = formattedAddress.slice(0, nextPartIndex).trim();
+              } else {
+                finalStreet = formattedAddress;
+              }
+            }
+          }
+          
+          if (!finalStreet || finalStreet.trim() === "") {
+            finalStreet = streetNumber ? `${streetNumber} ${route}` : (route || streetLabel);
+          }
 
           onAddressSelect({
             street: finalStreet,

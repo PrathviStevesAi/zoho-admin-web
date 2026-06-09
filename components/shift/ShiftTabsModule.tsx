@@ -21,6 +21,7 @@ interface ShiftTabsModuleProps {
   onTabChange?: (tabId: string) => void;
 
   setPreviewFile: (file: PreviewFile | null) => void;
+  securityServiceId?: string | null;
 }
 
 export function ShiftTabsModule({
@@ -33,12 +34,19 @@ export function ShiftTabsModule({
   reportsError,
   onTabChange,
   setPreviewFile,
+  securityServiceId,
 }: ShiftTabsModuleProps) {
   const [activeTab, setActiveTab] = useState("");
 
   const tabs = [
     { id: "comment", label: "Add Comment", icon: MessageSquarePlus },
-    { id: "dar", label: "Daily Activity Report", icon: FileText },
+    { 
+      id: "dar", 
+      label: securityServiceId === "09af9505-e73d-4cb4-837f-821aaa4bcad6" 
+        ? "Firewatch Log Report" 
+        : "Daily Activity Report", 
+      icon: FileText 
+    },
     { id: "report", label: "Incident Report", icon: ClipboardList },
     { id: "checkpoint", label: "Check Point", icon: MapPin },
     { id: "history", label: "History of changes", icon: History },
@@ -99,6 +107,7 @@ export function ShiftTabsModule({
                       isReportsLoading={isReportsLoading}
                       reportsError={reportsError}
                       setPreviewFile={setPreviewFile}
+                      securityServiceId={securityServiceId}
                     />
                   )}
                   {tab.id === "report" && (
