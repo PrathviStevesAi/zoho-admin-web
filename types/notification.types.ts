@@ -7,6 +7,8 @@ export interface Notification {
     data: {
         type: string;
         shift_id?: string;
+        invoice_id?: string;
+        view?: string;
     };
     status: string;
 }

@@ -79,7 +79,13 @@ export default function NotificationsPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-slate-800">
                         <Link
-                          href={`/notifications/view?shift_id=${notification.data?.shift_id}&notification_id=${notification.id}`}
+                          href={
+                            notification.data?.view === "shift_invoice_view" && notification.data?.invoice_id
+                              ? `/invoices/${notification.data.invoice_id}?notification_id=${notification.id}`
+                              : notification.data?.shift_id
+                              ? `/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`
+                              : `/notifications/view`
+                          }
                           className="hover:text-primary transition-colors"
                         >
                           {notification.title}
@@ -100,15 +106,25 @@ export default function NotificationsPage() {
                       })}
                     </div>
                   </div>
-                  {notification.data?.shift_id && (
+                  {notification.data?.view === "shift_invoice_view" && notification.data?.invoice_id ? (
                     <div className="pt-2">
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`}>
+                        <Link href={`/invoices/${notification.data.invoice_id}?notification_id=${notification.id}`}>
+                          View Invoice Details
+                        </Link>
+                      </Button>
+                    </div>
+                  ) : notification.data?.shift_id ? (
+                    <div className="pt-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link
+                          href={`/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`}
+                        >
                           View Shift Details
                         </Link>
                       </Button>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             ))}

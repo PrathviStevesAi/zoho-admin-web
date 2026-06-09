@@ -111,14 +111,27 @@ export default function NotificationDetailPage() {
             <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Archive<br />Notification</span>
           </div>
 
-          {notification.data?.shift_id && (
-            <Link href={`/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`} className="flex flex-col items-center gap-1.5 group cursor-pointer">
+          {notification.data?.view === "shift_invoice_view" && notification.data?.invoice_id ? (
+            <Link
+              href={`/invoices/${notification.data.invoice_id}?notification_id=${notification.id}`}
+              className="flex flex-col items-center gap-1.5 group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full border-2 border-orange-500 flex items-center justify-center text-orange-500 group-hover:bg-orange-50 transition-colors shadow-sm">
+                <ExternalLink className="w-5.5 h-5.5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">View Related<br />Invoice</span>
+            </Link>
+          ) : notification.data?.shift_id ? (
+            <Link
+              href={`/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`}
+              className="flex flex-col items-center gap-1.5 group cursor-pointer"
+            >
               <div className="w-12 h-12 rounded-full border-2 border-orange-500 flex items-center justify-center text-orange-500 group-hover:bg-orange-50 transition-colors shadow-sm">
                 <ExternalLink className="w-5.5 h-5.5" />
               </div>
               <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">View Related<br />Shift</span>
             </Link>
-          )}
+          ) : null}
 
           <div className="flex flex-col items-center gap-1.5 group cursor-not-allowed opacity-50">
             <div className="w-12 h-12 rounded-full border-2 border-indigo-500 flex items-center justify-center text-indigo-500 shadow-sm">

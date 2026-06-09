@@ -72,6 +72,7 @@ export function NotificationsNav() {
 
   useEffect(() => {
     const handleFCMMessage = (payload: any) => {
+      if (payload?._focusRefresh) return;
       console.log("[NotificationsNav] FCM message received in foreground:", payload);
       console.log("[NotificationsNav] Refreshing notifications list and count...");
       if (loadRef.current) {
@@ -163,9 +164,11 @@ export function NotificationsNav() {
                                 >
                                   <Link
                                     href={
-                                      notification.data?.shift_id
-                                        ? `/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`
-                                        : `/notifications/view`
+                                      notification.data?.view === "shift_invoice_view" && notification.data?.invoice_id
+                                        ? `/invoices/${notification.data.invoice_id}?notification_id=${notification.id}`
+                                        : notification.data?.shift_id
+                                          ? `/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`
+                                          : `/notifications/view`
                                     }
                                     onClick={() => {
                                       if (isUnread) {

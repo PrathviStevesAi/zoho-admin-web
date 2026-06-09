@@ -24,11 +24,8 @@ export default function NotificationProvider() {
         const handleToken = async () => {
             const token = await generateToken();
             if (token) {
-                console.log("[NotificationProvider] FCM Token generated.");
-                const lastToken = localStorage.getItem("last_fcm_token");
-                if (lastToken === token) {
-                    console.log("[NotificationProvider] FCM Token already synced.");
-                } else {
+                console.log("[NotificationProvider] FCM Token generated. Syncing with server...");
+                try {
                     const res = await fetch("/api/fcm-token", {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
@@ -37,8 +34,12 @@ export default function NotificationProvider() {
 
                     if (res.ok) {
                         localStorage.setItem("last_fcm_token", token);
-                        console.log("[NotificationProvider] FCM Token synced to server.");
+                        console.log("[NotificationProvider] FCM Token synced to server successfully.");
+                    } else {
+                        console.warn("[NotificationProvider] Failed to sync FCM token to server, status:", res.status);
                     }
+                } catch (err) {
+                    console.error("[NotificationProvider] Error syncing FCM token to server:", err);
                 }
             }
         };
@@ -49,11 +50,13 @@ export default function NotificationProvider() {
             console.log("[NotificationProvider] Foreground message received:", payload);
             if (payload?._focusRefresh) return;
             const title = payload?.notification?.title || payload?.data?.title || "New Notification";
-            const body = payload?.notification?.body || payload?.data?.body || "You have a new message.";
+            const body = payload?.notification?.body || payload?.data?.body || payload?.notification?.message || payload?.data?.message || payload?.message || "You have a new message.";
             const notificationId = payload?.data?.notification_id || payload?.data?.notificationId || payload?.data?.id || payload?.id || payload?.notification_id || payload?.notificationId;
             const shiftId = payload?.data?.shift_id || payload?.data?.shiftId || payload?.shift_id || payload?.shiftId;
+            const invoiceId = payload?.data?.invoice_id || payload?.data?.invoiceId || payload?.invoice_id || payload?.invoiceId;
+            const view = payload?.data?.view || payload?.view;
 
-            console.log("[NotificationProvider] Processing toast:", { title, body, notificationId, shiftId });
+            console.log("[NotificationProvider] Processing toast:", { title, body, notificationId, shiftId, invoiceId, view });
 
             if (title || body) {
                 toast(title, {
@@ -68,18 +71,30 @@ export default function NotificationProvider() {
                         label: "View Details",
                         onClick: async () => {
                             let targetShiftId = shiftId;
-                            if (!targetShiftId && notificationId) {
+                            let targetInvoiceId = invoiceId;
+                            let targetView = view;
+                            if ((!targetShiftId || !targetView || !targetInvoiceId) && notificationId) {
                                 try {
                                     const res = await fetchNotificationByIdAction(notificationId);
-                                    if (res.success && res.data?.data?.shift_id) {
-                                        targetShiftId = res.data.data.shift_id;
+                                    if (res.success) {
+                                        if (res.data?.data?.shift_id) {
+                                            targetShiftId = res.data.data.shift_id;
+                                        }
+                                        if (res.data?.data?.invoice_id) {
+                                            targetInvoiceId = res.data.data.invoice_id;
+                                        }
+                                        if (res.data?.data?.view) {
+                                            targetView = res.data.data.view;
+                                        }
                                     }
                                 } catch (err) {
-                                    console.error("Failed to fetch notification shift details:", err);
+                                    console.error("Failed to fetch notification details:", err);
                                 }
                             }
 
-                            if (targetShiftId && notificationId) {
+                            if (targetView === "shift_invoice_view" && targetInvoiceId && notificationId) {
+                                router.push(`/invoices/${targetInvoiceId}?notification_id=${notificationId}`);
+                            } else if (targetShiftId && notificationId) {
                                 router.push(`/notifications/view?shift_id=${targetShiftId}&notification_id=${notificationId}`);
                             } else if (targetShiftId) {
                                 router.push(`/notifications/view?shift_id=${targetShiftId}`);
@@ -105,6 +120,37 @@ export default function NotificationProvider() {
                     },
                     className: "group font-montserrat",
                 });
+
+                // Show Google Notification toaster (native browser notification)
+                if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+                    try {
+                        const nativeNotification = new Notification(title, {
+                            body: body,
+                            icon: "/images/website-logo.png",
+                        });
+
+                        nativeNotification.onclick = () => {
+                            window.focus();
+                            let targetShiftId = shiftId;
+                            let targetInvoiceId = invoiceId;
+                            let targetView = view;
+                            
+                            if (targetView === "shift_invoice_view" && targetInvoiceId && notificationId) {
+                                router.push(`/invoices/${targetInvoiceId}?notification_id=${notificationId}`);
+                            } else if (targetShiftId && notificationId) {
+                                router.push(`/notifications/view?shift_id=${targetShiftId}&notification_id=${notificationId}`);
+                            } else if (targetShiftId) {
+                                router.push(`/notifications/view?shift_id=${targetShiftId}`);
+                            } else if (notificationId) {
+                                router.push(`/notifications/view?notification_id=${notificationId}`);
+                            } else {
+                                router.push(`/notifications/view`);
+                            }
+                        };
+                    } catch (err) {
+                        console.error("Failed to show native browser notification:", err);
+                    }
+                }
             }
         });
 
