@@ -105,6 +105,7 @@ export function NotificationsNav() {
         <Button
           variant="ghost"
           size="icon"
+          onClick={() => loadNotifications(1)}
           className="relative text-[#474d56] hover:text-primary transition-colors h-10 w-10 rounded-full cursor-pointer"
         >
           <Bell className="size-[22px] stroke-[1.5px]" />
