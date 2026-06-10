@@ -99,21 +99,45 @@ export default function ProfilePage() {
 
   const loadProfile = async () => {
     setLoading(true);
-    const res = await fetchProfileAction();
-    console.log("fetchProfileAction Response:", res);
-    if (res.success && res.data) {
-      setUser(res.data);
-      const parsed = getCountryAndPhone(res.data.phone_number || "");
-      setSelectedCountry(parsed.country);
-      setEditFormData({
-        first_name: res.data.first_name || "",
-        last_name: res.data.last_name || "",
-        phone_number: parsed.phone,
-        old_password: "",
-        new_password: "",
-        profile_img_url: res.data.profile_img_url || ""
-      });
-    } else {
+    try {
+      const res = await fetchProfileAction();
+      console.log("fetchProfileAction Response:", res);
+      if (res.success && res.data) {
+        setUser(res.data);
+        const parsed = getCountryAndPhone(res.data.phone_number || "");
+        setSelectedCountry(parsed.country);
+        setEditFormData({
+          first_name: res.data.first_name || "",
+          last_name: res.data.last_name || "",
+          phone_number: parsed.phone,
+          old_password: "",
+          new_password: "",
+          profile_img_url: res.data.profile_img_url || ""
+        });
+      } else {
+        const defaultUser = {
+          first_name: "not found",
+          last_name: "not found",
+          email: "not found",
+          phone_number: "0000000000",
+          role: "not found",
+          profile_img_url: "",
+        } as any;
+        setUser(defaultUser);
+        const parsed = getCountryAndPhone(defaultUser.phone_number);
+        setSelectedCountry(parsed.country);
+        setEditFormData({
+          first_name: defaultUser.first_name || "",
+          last_name: defaultUser.last_name || "",
+          phone_number: parsed.phone,
+          old_password: "",
+          new_password: "",
+          profile_img_url: defaultUser.profile_img_url || ""
+        });
+        toast.error(res?.error || "Failed to load profile, showing guest view");
+      }
+    } catch (err: any) {
+      console.error("Error loading profile:", err);
       const defaultUser = {
         first_name: "not found",
         last_name: "not found",
@@ -133,9 +157,10 @@ export default function ProfilePage() {
         new_password: "",
         profile_img_url: defaultUser.profile_img_url || ""
       });
-      toast.error(res.error || "Failed to load profile, showing guest view");
+      toast.error(err?.message || "Failed to load profile, showing guest view");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -144,47 +169,53 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async () => {
     setIsUpdating(true);
-    const payload: any = {
-      first_name: editFormData.first_name,
-      last_name: editFormData.last_name,
-      phone_number: currentFullPhone,
-    };
+    try {
+      const payload: any = {
+        first_name: editFormData.first_name,
+        last_name: editFormData.last_name,
+        phone_number: currentFullPhone,
+      };
 
-    if (editFormData.profile_img_url && !editFormData.profile_img_url.startsWith('http')) {
-      payload.profile_img_url = editFormData.profile_img_url;
-    }
-
-    if (editFormData.old_password && editFormData.new_password) {
-      payload.old_password = editFormData.old_password;
-      payload.new_password = editFormData.new_password;
-    }
-
-    console.log("updateProfileAction Payload:", payload);
-    const res = await updateProfileAction(payload);
-    console.log("updateProfileAction Response:", res);
-
-    if (res.success) {
-      toast.success("Profile updated successfully");
-      setIsEditing(false);
-      const refreshed = await fetchProfileAction();
-      if (refreshed.success && refreshed.data) {
-        const profileData = refreshed.data;
-        setUser(profileData);
-        const parsed = getCountryAndPhone(profileData.phone_number || "");
-        setSelectedCountry(parsed.country);
-        setEditFormData(prev => ({
-          ...prev,
-          first_name: profileData.first_name || "",
-          last_name: profileData.last_name || "",
-          phone_number: parsed.phone,
-          profile_img_url: profileData.profile_img_url || ""
-        }));
-        window.dispatchEvent(new CustomEvent("profile-updated"));
+      if (editFormData.profile_img_url && !editFormData.profile_img_url.startsWith('http')) {
+        payload.profile_img_url = editFormData.profile_img_url;
       }
-    } else {
-      toast.error(res.error || "Failed to update profile");
+
+      if (editFormData.old_password && editFormData.new_password) {
+        payload.old_password = editFormData.old_password;
+        payload.new_password = editFormData.new_password;
+      }
+
+      console.log("updateProfileAction Payload:", payload);
+      const res = await updateProfileAction(payload);
+      console.log("updateProfileAction Response:", res);
+
+      if (res.success) {
+        toast.success("Profile updated successfully");
+        setIsEditing(false);
+        const refreshed = await fetchProfileAction();
+        if (refreshed.success && refreshed.data) {
+          const profileData = refreshed.data;
+          setUser(profileData);
+          const parsed = getCountryAndPhone(profileData.phone_number || "");
+          setSelectedCountry(parsed.country);
+          setEditFormData(prev => ({
+            ...prev,
+            first_name: profileData.first_name || "",
+            last_name: profileData.last_name || "",
+            phone_number: parsed.phone,
+            profile_img_url: profileData.profile_img_url || ""
+          }));
+          window.dispatchEvent(new CustomEvent("profile-updated"));
+        }
+      } else {
+        toast.error(res?.error || "Failed to update profile");
+      }
+    } catch (err: any) {
+      console.error("Error updating profile:", err);
+      toast.error(err?.message || "Failed to update profile");
+    } finally {
+      setIsUpdating(false);
     }
-    setIsUpdating(false);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
