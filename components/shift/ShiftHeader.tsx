@@ -72,7 +72,7 @@ export function ShiftHeader({
                 {shift ? (
                   <>
                     <span className="hover:text-[#0064cb] transition-colors">{shift.customer_name}</span>
-                    <span className="text-slate-700 font-normal ml-1">[ #SH-{shift.shift_no} ]</span>
+                    <span className="text-slate-700 font-normal ml-1">[ #{shift.invoice_no || "not found"} ]</span>
                   </>
                 ) : (
                   <div className="flex items-center gap-2 animate-pulse py-1">
