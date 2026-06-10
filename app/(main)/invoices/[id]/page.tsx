@@ -642,6 +642,7 @@ export default function InvoiceDetailsPage() {
         customerName={invoice.customer_name}
         zohoInvoiceId={invoice.zoho_invoice_id}
         description={invoice.invoice_description || invoice.description || ""}
+        shippingAddress={invoice.shipping_address}
         onOpenPayment={() => { setIsPaymentOpen(true); setIsScheduleOpen(false); setIsAssignGuardOpen(false); }}
         onOpenSchedule={() => { setIsScheduleOpen(true); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAddingShift(false); loadShifts("schedule"); }}
         onOpenAssignGuard={() => {

@@ -313,7 +313,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsSavingSettings(true);
 
     const initialCheckpointCreateInterval =
-      shift?.checkpoint_create_interval !== undefined && shift?.checkpoint_create_interval !== null
+      shift?.checkpoint_create_interval !== undefined &&
+      shift?.checkpoint_create_interval !== null &&
+      [15, 30, 60].includes(Number(shift.checkpoint_create_interval))
         ? String(shift.checkpoint_create_interval)
         : "0";
     const initialGuardBreakMaxDuration =
@@ -331,6 +333,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
     const payload: any = {
       shift_id: shiftId,
+      shift_description: shift?.shift_description || "",
     };
 
     let dirty = false;
@@ -518,7 +521,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   const settingsFormState = {
     checkpoint_create_interval:
-      shift?.checkpoint_create_interval !== undefined && shift?.checkpoint_create_interval !== null
+      shift?.checkpoint_create_interval !== undefined &&
+      shift?.checkpoint_create_interval !== null &&
+      [15, 30, 60].includes(Number(shift.checkpoint_create_interval))
         ? String(shift.checkpoint_create_interval)
         : "0",
     guard_break_max_duration:

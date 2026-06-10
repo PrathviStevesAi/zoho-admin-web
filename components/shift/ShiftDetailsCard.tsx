@@ -198,6 +198,7 @@ export function ShiftDetailsCard({
       return;
     }
 
+    payload.shift_description = editDetailsForm.shift_description;
     await onSaveDetails(payload);
     setIsEditDetailsOpen(false);
   };

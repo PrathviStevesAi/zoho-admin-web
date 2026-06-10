@@ -305,16 +305,16 @@ export function AvailableGuardsModule({
           </SelectTrigger>
           <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
             <SelectItem value="all" className="cursor-pointer">All</SelectItem>
-            <SelectItem value="10" className="cursor-pointer">10 Meter</SelectItem>
-            <SelectItem value="20" className="cursor-pointer">20 Meter</SelectItem>
-            <SelectItem value="30" className="cursor-pointer">30 Meter</SelectItem>
-            <SelectItem value="40" className="cursor-pointer">40 Meter</SelectItem>
-            <SelectItem value="50" className="cursor-pointer">50 Meter</SelectItem>
-            <SelectItem value="60" className="cursor-pointer">60 Meter</SelectItem>
-            <SelectItem value="70" className="cursor-pointer">70 Meter</SelectItem>
-            <SelectItem value="80" className="cursor-pointer">80 Meter</SelectItem>
-            <SelectItem value="90" className="cursor-pointer">90 Meter</SelectItem>
-            <SelectItem value="100" className="cursor-pointer">100 Meter</SelectItem>
+            <SelectItem value="10" className="cursor-pointer">10 Miles</SelectItem>
+            <SelectItem value="20" className="cursor-pointer">20 Miles</SelectItem>
+            <SelectItem value="30" className="cursor-pointer">30 Miles</SelectItem>
+            <SelectItem value="40" className="cursor-pointer">40 Miles</SelectItem>
+            <SelectItem value="50" className="cursor-pointer">50 Miles</SelectItem>
+            <SelectItem value="60" className="cursor-pointer">60 Miles</SelectItem>
+            <SelectItem value="70" className="cursor-pointer">70 Miles</SelectItem>
+            <SelectItem value="80" className="cursor-pointer">80 Miles</SelectItem>
+            <SelectItem value="90" className="cursor-pointer">90 Miles</SelectItem>
+            <SelectItem value="100" className="cursor-pointer">100 Miles</SelectItem>
           </SelectContent>
         </Select>
       </div>
