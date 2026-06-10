@@ -305,14 +305,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   };
 
   const handleSaveSettings = async (settings: {
-    create_checkpoint_interval: string;
+    checkpoint_create_interval: string;
     guard_break_max_duration: string;
     guard_break_limit: string;
     geofence_radius: string;
   }) => {
     setIsSavingSettings(true);
 
-    const initialCreateCheckpointInterval =
+    const initialCheckpointCreateInterval =
       shift?.checkpoint_create_interval !== undefined && shift?.checkpoint_create_interval !== null
         ? String(shift.checkpoint_create_interval)
         : "0";
@@ -335,19 +335,21 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
     let dirty = false;
 
-    if (settings.create_checkpoint_interval !== initialCreateCheckpointInterval) {
-      payload.create_checkpoint_interval =
-        settings.create_checkpoint_interval === "" ? 0 : Number(settings.create_checkpoint_interval);
+    if (settings.checkpoint_create_interval !== initialCheckpointCreateInterval) {
+      const val = settings.checkpoint_create_interval === "" ? 0 : Number(settings.checkpoint_create_interval);
+      payload.checkpoint_create_interval = val;
       dirty = true;
     }
     if (settings.guard_break_max_duration !== initialGuardBreakMaxDuration) {
-      payload.guard_break_max_duration =
-        settings.guard_break_max_duration === "" ? 0 : Number(settings.guard_break_max_duration);
+      const val = settings.guard_break_max_duration === "" ? 0 : Number(settings.guard_break_max_duration);
+      payload.guard_break_max_duration = val;
+      payload.break_max_time = val;
       dirty = true;
     }
     if (settings.guard_break_limit !== initialGuardBreakLimit) {
-      payload.guard_break_limit =
-        settings.guard_break_limit === "" ? 0 : Number(settings.guard_break_limit);
+      const val = settings.guard_break_limit === "" ? 0 : Number(settings.guard_break_limit);
+      payload.guard_break_limit = val;
+      payload.total_break_limit = val;
       dirty = true;
     }
     if (settings.geofence_radius !== initialGeofenceRadius) {
@@ -515,7 +517,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     : false;
 
   const settingsFormState = {
-    create_checkpoint_interval:
+    checkpoint_create_interval:
       shift?.checkpoint_create_interval !== undefined && shift?.checkpoint_create_interval !== null
         ? String(shift.checkpoint_create_interval)
         : "0",

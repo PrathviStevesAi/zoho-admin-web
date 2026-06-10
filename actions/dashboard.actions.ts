@@ -753,9 +753,11 @@ export async function updateShiftDetailsAction(payload: {
   shipping_address?: any;
   shift_time?: any;
   shift_execution_time?: any;
-  create_checkpoint_interval?: number;
+  checkpoint_create_interval?: number;
   guard_break_max_duration?: number;
+  break_max_time?: number;
   guard_break_limit?: number;
+  total_break_limit?: number;
   per_hour_rate?: number;
   per_shift_rate?: number;
   travel_fee?: number;

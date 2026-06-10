@@ -56,7 +56,6 @@ export interface Shift {
   execution_time?: ExecutionTime;
   shipping_location?: ShippingLocation;
   action?: ShiftActions;
-  create_checkpoint_interval?: number;
   guard_break_max_duration?: number;
   guard_break_limit?: number;
   geofence_radius?: number;
