@@ -39,7 +39,7 @@ export function EditLocationDialog({
 
   useEffect(() => {
     if (isOpen) {
-      const addr = typeof initialAddress === 'string' ? {} : initialAddress;
+      const addr = (initialAddress && typeof initialAddress === 'object') ? initialAddress : {};
       setFormData({
         street: (addr as any).street || "",
         city: (addr as any).city || "",
