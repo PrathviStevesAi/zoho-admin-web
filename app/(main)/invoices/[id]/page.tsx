@@ -128,7 +128,7 @@ export default function InvoiceDetailsPage() {
         const initialPerHour = Number(res.data.per_hour_rate);
         const initialPerShift = Number(res.data.per_shift_rate);
         setPaymentFormData({
-          payment_status: res.data.payment_status || "pending",
+          payment_status: res.data.payment_status || "",
           reminder_date: res.data.reminder_date || "",
           per_hour_rate: initialPerHour && initialPerHour > 0 ? String(initialPerHour) : "",
           per_shift_rate: initialPerShift && initialPerShift > 0 ? String(initialPerShift) : ""
@@ -647,7 +647,7 @@ export default function InvoiceDetailsPage() {
         onOpenSchedule={() => { setIsScheduleOpen(true); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAddingShift(false); loadShifts("schedule"); }}
         onOpenAssignGuard={() => {
           const paymentStatus = invoice?.payment_status?.toLowerCase();
-          if (paymentStatus === 'pending' || paymentStatus === 'unpaid') {
+          if (!paymentStatus || paymentStatus === 'pending' || paymentStatus === 'unpaid') {
             toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", {
               duration: 5000,
             });

@@ -500,7 +500,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const handleAssignGuard = () => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
-    if (paymentStatus === "pending" || paymentStatus === "unpaid") {
+    if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
       toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", {
         duration: 5000,
       });

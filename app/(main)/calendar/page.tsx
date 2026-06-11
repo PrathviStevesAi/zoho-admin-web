@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -59,6 +60,7 @@ export default function CalendarPage() {
       const to_date = fetchInfo.end.toISOString().split("T")[0];
 
       const res = await fetchCalendarShiftsAction(from_date, to_date);
+      console.log("[Calendar Page] fetchCalendarShiftsAction response:", res);
       if (res.success && res.data) {
         const events = res.data.map((shift) => {
           let bgColor = "#9ca3af";
@@ -291,21 +293,26 @@ export default function CalendarPage() {
                 </button>
               </div>
               <div className="p-5">
-                <div
-                  className="p-4 rounded-lg border-l-[3px]"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${selectedEvent.backgroundColor} 15%, transparent)`,
-                    borderColor: selectedEvent.backgroundColor,
-                    color: selectedEvent.backgroundColor
-                  }}
+                <Link
+                  href={`/shift/view?shift_id=${selectedEvent.id}`}
+                  className="block"
                 >
-                  <div className="font-bold mb-2 flex items-center gap-2">
-                    <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: selectedEvent.backgroundColor }}></div>
-                    {selectedEvent.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                    {selectedEvent.end ? ` - ${selectedEvent.end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
+                  <div
+                    className="p-4 rounded-lg border-l-[3px] cursor-pointer hover:opacity-90 hover:translate-x-0.5 transition-all"
+                    style={{
+                      backgroundColor: `color-mix(in srgb, ${selectedEvent.backgroundColor} 15%, transparent)`,
+                      borderColor: selectedEvent.backgroundColor,
+                      color: selectedEvent.backgroundColor
+                    }}
+                  >
+                    <div className="font-bold mb-2 flex items-center gap-2">
+                      <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: selectedEvent.backgroundColor }}></div>
+                      {selectedEvent.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      {selectedEvent.end ? ` - ${selectedEvent.end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
+                    </div>
+                    <div className="font-semibold text-[14px] leading-relaxed ml-[14px]">{selectedEvent.title}</div>
                   </div>
-                  <div className="font-semibold text-[14px] leading-relaxed ml-[14px]">{selectedEvent.title}</div>
-                </div>
+                </Link>
               </div>
             </div>
           </div>
@@ -336,6 +343,7 @@ export default function CalendarPage() {
                       onClick={() => {
                         setShowMoreModal(null);
                         setSelectedEvent({
+                          id: event.id,
                           title: event.title,
                           start: event.start,
                           end: event.end,
@@ -384,6 +392,7 @@ export default function CalendarPage() {
             }}
             eventClick={(info) => {
               setSelectedEvent({
+                id: info.event.id,
                 title: info.event.title,
                 start: info.event.start,
                 end: info.event.end,

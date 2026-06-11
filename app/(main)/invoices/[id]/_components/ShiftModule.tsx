@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Calendar, Clock, Loader2, Plus, Trash2 } from "lucide-react";
 import { DateTime } from "luxon";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +23,72 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const getStatusBadge = (status: string) => {
+  const normalized = status?.toLowerCase() || "shift_created";
+
+  const statusStyles: Record<string, { label: string; className: string }> = {
+    shift_created: {
+      label: "Shift Created",
+      className: "bg-slate-50 text-slate-600 border-slate-200"
+    },
+    shift_planned: {
+      label: "Shift Planned",
+      className: "bg-amber-50 text-amber-700 border-amber-200/60"
+    },
+    shift_accepted: {
+      label: "Shift Accepted",
+      className: "bg-blue-50 text-blue-700 border-blue-200/60"
+    },
+    shift_refused: {
+      label: "Shift Refused",
+      className: "bg-rose-50 text-rose-700 border-rose-200/60"
+    },
+    shift_arrival: {
+      label: "Shift Arrival",
+      className: "bg-cyan-50 text-cyan-700 border-cyan-200/60"
+    },
+    shift_pre_check_in: {
+      label: "Pre-Check-In",
+      className: "bg-indigo-50 text-indigo-700 border-indigo-200/60"
+    },
+    shift_in_progress: {
+      label: "In Progress",
+      className: "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+    },
+    shift_in_break: {
+      label: "In Break",
+      className: "bg-amber-100 text-amber-800 border-amber-300"
+    },
+    shift_finished: {
+      label: "Shift Finished",
+      className: "bg-purple-50 text-purple-700 border-purple-200/60"
+    },
+    shift_approved: {
+      label: "Shift Completed",
+      className: "bg-emerald-800 text-emerald-100 border-emerald-900"
+    },
+    shift_not_approved: {
+      label: "Not Approved",
+      className: "bg-rose-100 text-rose-800 border-rose-200"
+    },
+    shift_cancelled: {
+      label: "Cancelled",
+      className: "bg-slate-100 text-slate-600 border-slate-200"
+    }
+  };
+
+  const config = statusStyles[normalized] || {
+    label: status ? status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : "Shift Created",
+    className: "bg-slate-50 text-slate-600 border-slate-200"
+  };
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${config.className}`}>
+      {config.label}
+    </span>
+  );
+};
 
 interface ShiftModuleProps {
   shifts: any[];
@@ -97,6 +164,7 @@ export function ShiftModule({
                         <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Service Name</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Start Time</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">End Time</TableHead>
+                        <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Status</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6 text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -104,7 +172,7 @@ export function ShiftModule({
                       {isLoading ? (
                         Array.from({ length: 3 }).map((_, i) => (
                           <TableRow key={i}>
-                            <TableCell colSpan={5} className="py-4 px-6">
+                            <TableCell colSpan={6} className="py-4 px-6">
                               <Skeleton className="h-4 w-full rounded" />
                             </TableCell>
                           </TableRow>
@@ -112,13 +180,23 @@ export function ShiftModule({
                       ) : shifts.length > 0 ? (
                         shifts.map((shift) => (
                           <TableRow key={shift.shift_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                            <TableCell className="text-sm font-bold text-slate-700 py-4 px-6">{shift.shift_no}</TableCell>
+                            <TableCell className="text-sm font-bold text-slate-700 py-4 px-6">
+                              <Link
+                                href={`/shift/view?shift_id=${shift.shift_id}`}
+                                className="text-[#0064cb] hover:text-[#0052ae] hover:underline cursor-pointer transition-all"
+                              >
+                                {shift.shift_no}
+                              </Link>
+                            </TableCell>
                             <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">{shift.service_name}</TableCell>
                             <TableCell className="text-sm text-slate-800 py-4 px-6">
                               {DateTime.fromISO(shift.start_time, { setZone: true }).toFormat("MMM d, yyyy, h:mm a")}
                             </TableCell>
                             <TableCell className="text-sm text-slate-800 py-4 px-6">
                               {DateTime.fromISO(shift.end_time, { setZone: true }).toFormat("MMM d, yyyy, h:mm a")}
+                            </TableCell>
+                            <TableCell className="py-4 px-6">
+                              {getStatusBadge(shift.status)}
                             </TableCell>
                             <TableCell className="py-4 px-6 text-right">
                               <Button
@@ -134,7 +212,7 @@ export function ShiftModule({
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={5} className="py-12 text-center">
+                          <TableCell colSpan={6} className="py-12 text-center">
                             <div className="flex flex-col items-center gap-2">
                               <Calendar className="w-8 h-8 text-slate-200" />
                               <p className="text-sm font-medium text-slate-700">No shift schedule yet</p>

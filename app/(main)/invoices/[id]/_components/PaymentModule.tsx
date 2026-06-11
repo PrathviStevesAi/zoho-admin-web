@@ -50,7 +50,7 @@ export function PaymentModule({
                   onValueChange={(value) => setFormData((prev: any) => ({ ...prev, payment_status: value }))}
                 >
                   <SelectTrigger className="w-full !h-11 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg px-3 transition-all">
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder="Select Payment Status" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-slate-200 shadow-xl z-[100]">
                     <SelectItem value="pending" className="py-2.5 cursor-pointer text-sm">Pending</SelectItem>
