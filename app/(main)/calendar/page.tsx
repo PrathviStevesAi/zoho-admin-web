@@ -85,6 +85,9 @@ export default function CalendarPage() {
             backgroundColor: bgColor,
             borderColor: "transparent",
             textColor: "#ffffff",
+            extendedProps: {
+              shift_no: shift.shift_no
+            }
           };
         });
         successCallback(events);
@@ -305,10 +308,23 @@ export default function CalendarPage() {
                       color: selectedEvent.backgroundColor
                     }}
                   >
-                    <div className="font-bold mb-2 flex items-center gap-2">
-                      <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: selectedEvent.backgroundColor }}></div>
-                      {selectedEvent.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                      {selectedEvent.end ? ` - ${selectedEvent.end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
+                    <div className="font-bold mb-2 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: selectedEvent.backgroundColor }}></div>
+                        {selectedEvent.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        {selectedEvent.end ? ` - ${selectedEvent.end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
+                      </div>
+                      {selectedEvent.shift_no && (
+                        <span
+                          className="text-xs font-bold px-2.5 py-0.5 rounded border tracking-wide"
+                          style={{
+                            backgroundColor: `color-mix(in srgb, ${selectedEvent.backgroundColor} 25%, transparent)`,
+                            borderColor: `color-mix(in srgb, ${selectedEvent.backgroundColor} 40%, transparent)`
+                          }}
+                        >
+                          Shift No: {selectedEvent.shift_no}
+                        </span>
+                      )}
                     </div>
                     <div className="font-semibold text-[14px] leading-relaxed ml-[14px]">{selectedEvent.title}</div>
                   </div>
@@ -344,6 +360,7 @@ export default function CalendarPage() {
                         setShowMoreModal(null);
                         setSelectedEvent({
                           id: event.id,
+                          shift_no: event.extendedProps?.shift_no,
                           title: event.title,
                           start: event.start,
                           end: event.end,
@@ -351,9 +368,22 @@ export default function CalendarPage() {
                         });
                       }}
                     >
-                      <div className="font-bold mb-1 flex items-center gap-2 text-[13px]">
-                        <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: event.backgroundColor }}></div>
-                        {event.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      <div className="font-bold mb-1 flex items-center justify-between gap-2 text-[13px]">
+                        <div className="flex items-center gap-2">
+                          <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: event.backgroundColor }}></div>
+                          {event.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </div>
+                        {event.extendedProps?.shift_no && (
+                          <span
+                            className="text-[11px] font-bold px-1.5 py-0.5 rounded border tracking-wide"
+                            style={{
+                              backgroundColor: `color-mix(in srgb, ${event.backgroundColor} 25%, transparent)`,
+                              borderColor: `color-mix(in srgb, ${event.backgroundColor} 40%, transparent)`
+                            }}
+                          >
+                            Shift No: {event.extendedProps.shift_no}
+                          </span>
+                        )}
                       </div>
                       <div className="font-semibold text-[14px] ml-[14px] truncate">{event.title}</div>
                     </div>
@@ -393,6 +423,7 @@ export default function CalendarPage() {
             eventClick={(info) => {
               setSelectedEvent({
                 id: info.event.id,
+                shift_no: info.event.extendedProps?.shift_no,
                 title: info.event.title,
                 start: info.event.start,
                 end: info.event.end,
