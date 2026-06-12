@@ -23,9 +23,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         "ngrok-skip-browser-warning": "true"
                     },
                 });
-                const result = await res.json();
+                
+                const text = await res.text();
+                let result: any = null;
+                try {
+                    result = JSON.parse(text);
+                } catch (err) {
+                    console.error("Auth login JSON parse error. Response starts with:", text.substring(0, 200));
+                    return null;
+                }
 
-                if (res.ok && result) {
+                if (res.ok && result && result.data) {
                     return {
                         id: result.data.user_id,
                         accessToken: result.access_token,
@@ -87,7 +95,15 @@ async function refreshAccessToken(token: any) {
             body: JSON.stringify({ refresh_token: token.refreshToken }),
         });
 
-        const refreshedTokens = await response.json();
+        const text = await response.text();
+        let refreshedTokens: any = null;
+        try {
+            refreshedTokens = JSON.parse(text);
+        } catch (err) {
+            console.error("Auth refresh token JSON parse error. Response starts with:", text.substring(0, 200));
+            throw new Error("Invalid refresh token response format");
+        }
+
         if (!response.ok) throw refreshedTokens;
 
         const newAccessToken = refreshedTokens.data?.access_token || refreshedTokens.access_token;
