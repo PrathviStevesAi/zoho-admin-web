@@ -53,14 +53,4 @@ export const precheckTableColumns: TableColumn<Record>[] = [
             </Link>
         ),
     },
-    {
-        key: "service_address",
-        header: "Service Address",
-        width: "250px",
-        render: (row) => (
-            <span className="text-[13px] text-foreground block truncate max-w-[250px]" title={row.service_address || ""}>
-                {row.service_address || "—"}
-            </span>
-        ),
-    },
 ];

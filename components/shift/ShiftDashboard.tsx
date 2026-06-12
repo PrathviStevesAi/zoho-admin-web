@@ -616,6 +616,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 }}
                 setPreviewFile={setPreviewFile}
                 securityServiceId={shift?.security_service_id}
+                isLoading={isLoading}
               />
             </div>
           </div>
@@ -647,6 +648,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               }}
               setPreviewFile={setPreviewFile}
               securityServiceId={shift?.security_service_id}
+              isLoading={isLoading}
             />
 
             {/* 3. ShiftMapCard */}
