@@ -14,6 +14,7 @@ import { fetchRefusedShiftAction } from "@/actions/dashboard.actions";
 import { GenericRowSkeleton } from "@/components/skeletons/generic-row-skeleton";
 import { precheckTableColumns } from "@/features/invoice/precheck.table";
 import { useDashboard } from "../dashboard-context";
+import { Pagination as PaginationComponent } from "@/components/table/pagination";
 
 export default function Refused({ initialData, pagination }: { initialData: Record[]; pagination: Pagination }) {
   const searchParams = useSearchParams();
@@ -26,9 +27,11 @@ export default function Refused({ initialData, pagination }: { initialData: Reco
     searchTerm,
     setSearchTerm,
     isPending,
-    hasMore,
-    isSearching,
-    loadMoreRef
+    page,
+    totalPages,
+    total,
+    limit,
+    goToPage,
   } = useInfiniteSearch<Record>(
     initialData,
     pagination,
@@ -37,13 +40,14 @@ export default function Refused({ initialData, pagination }: { initialData: Reco
     dateFrom,
     dateTo
   );
+
   return (
-    <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col">
+    <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col gap-2">
       <CardHeader className="flex flex-row items-center justify-between px-7 py-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-[19px] font-bold shrink-0 text-red-500">Refused Shifts</CardTitle>
           <span className="text-[19px] text-slate-900">
-            [ {pagination.total} ]
+            [ {total} ]
           </span>
         </div>
 
@@ -61,8 +65,8 @@ export default function Refused({ initialData, pagination }: { initialData: Reco
         </div>
       </CardHeader>
 
-      <CardContent className="p-0 overflow-y-auto flex-1 custom-scrollbar">
-        {(isPending && isSearching) || isDashboardPending ? (
+      <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+        {isPending || isDashboardPending ? (
           Array.from({ length: 5 }).map((_, i) => (
             <GenericRowSkeleton
               key={i}
@@ -70,16 +74,17 @@ export default function Refused({ initialData, pagination }: { initialData: Reco
             />
           ))
         ) : (
-          <>
-            <DataTable columns={precheckTableColumns} data={displayedData} emptyMessage="No shifts found." />
-            {!isSearching && hasMore && (
-              <div ref={loadMoreRef} className="py-6 flex justify-center">
-                <Loader2 className="animate-spin text-primary" />
-              </div>
-            )}
-          </>
+          <DataTable columns={precheckTableColumns} data={displayedData} emptyMessage="No shifts found." />
         )}
       </CardContent>
+      <PaginationComponent
+        page={page}
+        totalPages={totalPages}
+        totalItems={total}
+        limit={limit}
+        onPageChange={goToPage}
+        isPending={isPending}
+      />
     </Card>
   );
 }

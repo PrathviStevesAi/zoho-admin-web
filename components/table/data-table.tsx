@@ -42,7 +42,7 @@ export function DataTable<T extends { id?: string | number }>({
     };
 
     return (
-        <Table className="min-w-[550px]">
+        <Table className="min-w-[800px]">
             <TableHeader className="bg-surface">
                 <TableRow>
                     {columns.filter(col => !col.hidden).map((col) => (

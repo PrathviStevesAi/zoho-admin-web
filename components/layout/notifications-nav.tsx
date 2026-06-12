@@ -239,7 +239,7 @@ export function NotificationsNav() {
                 onClick={handleNextPage}
                 className="cursor-pointer text-[13px] text-[#0064cb] hover:text-[#0052ae] hover:bg-white font-semibold"
               >
-                See More
+                Next
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             )}

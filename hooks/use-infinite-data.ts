@@ -1,18 +1,13 @@
 "use client";
 
-import { useState, useEffect, useTransition, useRef, useCallback } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import { toast } from "sonner";
 import useDebounceValue from "@/hooks/use-debounce";
-import { FetchResponse } from "@/types/dashboard.types";
-
-interface PaginationBase {
-  page: number;
-  total_pages: number;
-}
+import { FetchResponse, Pagination } from "@/types/dashboard.types";
 
 export function useInfiniteSearch<T>(
   initialData: T[],
-  pagination: PaginationBase,
+  pagination: Pagination,
   fetchAction: (
     page: number,
     query?: string,
@@ -24,85 +19,69 @@ export function useInfiniteSearch<T>(
   date_to: string = "",
 ) {
   const [data, setData] = useState<T[]>(initialData);
-  const [searchResults, setSearchResults] = useState<T[]>([]);
   const [page, setPage] = useState(pagination.page);
-  const [hasMore, setHasMore] = useState(
-    pagination.page < pagination.total_pages,
-  );
+  const [totalPages, setTotalPages] = useState(pagination.total_pages);
+  const [total, setTotal] = useState(pagination.total);
+  const [limit, setLimit] = useState(pagination.limit);
 
   // Sync state when initial props change (e.g. on filter change)
   useEffect(() => {
     setData(initialData);
     setPage(pagination.page);
-    setHasMore(pagination.page < pagination.total_pages);
+    setTotalPages(pagination.total_pages);
+    setTotal(pagination.total);
+    setLimit(pagination.limit);
   }, [initialData, pagination]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [isPending, startTransition] = useTransition();
   const debouncedValue = useDebounceValue(searchTerm, debounceMs);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef(false);
-  const isSearching = !!debouncedValue;
-
-  // Load More Logic
-  const loadMore = useCallback(async () => {
-    if (isPending || !hasMore || isSearching || loadingRef.current) return;
-
-    const nextPage = page + 1;
-    loadingRef.current = true;
-
-    startTransition(async () => {
-      const res = await fetchAction(nextPage, debouncedValue, date_from, date_to);
-      if (!res.success) {
-        toast.error(res.error);
-      } else if (res?.data && res.pagination) {
-        setData((prev) => [...prev, ...res.data]);
-        setPage(nextPage);
-        setHasMore(nextPage < res.pagination.total_pages);
-      }
-      loadingRef.current = false;
-    });
-  }, [isPending, hasMore, isSearching, page, debouncedValue, fetchAction, date_from, date_to]);
 
   // Search Logic
   useEffect(() => {
-    if (!debouncedValue) {
-      setSearchResults([]);
-      return;
-    }
-
     startTransition(async () => {
       const res = await fetchAction(1, debouncedValue, date_from, date_to);
-      if (!res.success) {
-        toast.error(res.error);
-        return;
+      if (res.success && res.data && res.pagination) {
+        setData(res.data);
+        setPage(1);
+        setTotalPages(res.pagination.total_pages);
+        setTotal(res.pagination.total);
+        setLimit(res.pagination.limit);
+      } else if (!res.success) {
+        toast.error(res.error || "Failed to fetch search results");
       }
-      setSearchResults(res.data);
     });
   }, [debouncedValue, fetchAction, date_from, date_to]);
 
-  // Observer Logic
-  useEffect(() => {
-    const target = loadMoreRef.current;
-    if (!target) return;
+  // Go to page
+  const goToPage = useCallback(async (p: number) => {
+    if (p < 1 || p > totalPages || isPending) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMore();
-      },
-      { rootMargin: "100px" },
-    );
-
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [loadMore]);
+    startTransition(async () => {
+      const res = await fetchAction(p, debouncedValue, date_from, date_to);
+      if (res.success && res.data && res.pagination) {
+        setData(res.data);
+        setPage(p);
+        setTotalPages(res.pagination.total_pages);
+        setTotal(res.pagination.total);
+        setLimit(res.pagination.limit);
+      } else if (!res.success) {
+        toast.error(res.error || "Failed to fetch page");
+      }
+    });
+  }, [totalPages, isPending, fetchAction, debouncedValue, date_from, date_to]);
 
   return {
-    displayedData: isSearching ? searchResults : data,
+    displayedData: data,
     searchTerm,
     setSearchTerm,
     isPending,
-    hasMore,
-    isSearching,
-    loadMoreRef,
+    page,
+    totalPages,
+    total,
+    limit,
+    goToPage,
+    nextPage: () => goToPage(page + 1),
+    prevPage: () => goToPage(page - 1),
   };
 }
