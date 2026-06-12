@@ -420,6 +420,30 @@ export default function CalendarPage() {
                 info.el.style.setProperty('--event-color-light', `color-mix(in srgb, ${color} 15%, transparent)`);
               }
             }}
+            eventContent={(eventInfo) => {
+              const isListView = eventInfo.view.type.startsWith("list");
+              const shiftNo = eventInfo.event.extendedProps?.shift_no;
+
+              if (isListView) {
+                return (
+                  <div className="flex flex-col w-full">
+                    <span className="fc-event-title leading-normal">{eventInfo.event.title}</span>
+                    {shiftNo && (
+                      <span className="self-end text-[11px] font-extrabold tracking-wider mt-1 opacity-90 select-none">
+                        #SH-{shiftNo}
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {eventInfo.timeText && <span className="fc-event-time">{eventInfo.timeText}</span>}
+                  <span className="fc-event-title">{eventInfo.event.title}</span>
+                </>
+              );
+            }}
             eventClick={(info) => {
               setSelectedEvent({
                 id: info.event.id,
