@@ -15,6 +15,7 @@ interface ShiftHeaderProps {
   onAssignGuard: () => void;
   onCancelService: () => void;
   showSettingBtn: boolean;
+  isLoading?: boolean;
 }
 
 export function ShiftHeader({
@@ -27,6 +28,7 @@ export function ShiftHeader({
   onManualStart,
   onAssignGuard,
   onCancelService,
+  isLoading,
 }: ShiftHeaderProps) {
   return (
     <div className="flex flex-col gap-6">
@@ -72,13 +74,24 @@ export function ShiftHeader({
                 {shift ? (
                   <>
                     <span className="hover:text-[#0064cb] transition-colors">{shift.customer_name}</span>
-                    <span className="text-slate-700 font-normal ml-1">[ #{shift.invoice_no || "not found"} ]</span>
+                    {shift.invoice_id ? (
+                      <Link
+                        href={`/invoices/${shift.invoice_id}`}
+                        className="text-slate-700 font-normal ml-1 hover:text-[#0064cb] hover:underline cursor-pointer"
+                      >
+                        [ #{shift.invoice_no || "not found"} ]
+                      </Link>
+                    ) : (
+                      <span className="text-slate-700 font-normal ml-1">[ #{shift.invoice_no || "not found"} ]</span>
+                    )}
                   </>
-                ) : (
+                ) : isLoading ? (
                   <div className="flex items-center gap-2 animate-pulse py-1">
                     <div className="h-6 w-32 bg-slate-200 rounded-md"></div>
                     <div className="h-6 w-24 bg-slate-100 rounded-md"></div>
                   </div>
+                ) : (
+                  <span className="hover:text-[#0064cb] transition-colors">Shift View</span>
                 )}
               </h1>
 

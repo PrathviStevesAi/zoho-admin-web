@@ -113,13 +113,13 @@ export function ShiftDetailsCard({
 
   if (!shift) {
     return (
-      <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-20 text-center">
+      <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-10 text-center">
         <XCircle className="w-12 h-12 text-red-200 mx-auto mb-4" />
         <p className="text-sm font-bold text-slate-600 mb-1">{error || "No shift data found"}</p>
         <p className="text-xs text-slate-700 font-medium">The shift may have been deleted or the ID is invalid.</p>
         <Button
           variant="outline"
-          className="mt-6 h-9 rounded-xl text-xs font-bold text-[#0064cb] border-blue-100 hover:bg-blue-50"
+          className="cursor-pointer mt-6 h-9 rounded-xl text-xs font-bold text-[#0064cb] border-blue-100 hover:bg-blue-50"
           onClick={() => router.push("/dashboard")}
         >
           Return to Dashboard

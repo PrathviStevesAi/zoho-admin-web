@@ -58,7 +58,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [comments, setComments] = useState<any[]>([]);
 
   // Loading States
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
 
@@ -554,6 +554,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onAssignGuard={handleAssignGuard}
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
+        isLoading={isLoading}
       />
 
       {isSettingsOpen ? (
@@ -564,6 +565,18 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           onClose={() => setIsSettingsOpen(false)}
           isSaving={isSavingSettings}
         />
+      ) : !isLoading && !shift ? (
+        <div className="max-w-2xl mx-auto w-full">
+          <ShiftDetailsCard
+            shift={shift}
+            isLoading={isLoading}
+            error={error}
+            isSavingDetails={isSavingDetails}
+            onSaveDetails={handleSaveDetails}
+            isAddressEditable={isAddressEditable}
+            setIsEditLocationOpen={setIsEditLocationOpen}
+          />
+        </div>
       ) : (
         <>
           {/* Desktop Layout (100% identical to original layout, no auto-placement side-effects) */}
