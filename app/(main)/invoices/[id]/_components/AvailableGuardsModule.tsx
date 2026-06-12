@@ -58,7 +58,7 @@ export function AvailableGuardsModule({
   // Filters State
   const [guardSearchQuery, setGuardSearchQuery] = useState("");
   const [guardFilters, setGuardFilters] = useState({
-    radiusMiles: "20",
+    radiusMiles: "all",
     status: "all",
     service: "All"
   });
