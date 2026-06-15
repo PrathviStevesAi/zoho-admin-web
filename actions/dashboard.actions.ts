@@ -462,7 +462,7 @@ export async function fetchLocationAction(): Promise<{ success: boolean; data?: 
 }
 
 export async function fetchGuardsAction(params: {
-  page?: number;
+  page?: number | null;
   search?: string;
   status?: string;
   city?: string;
@@ -486,7 +486,9 @@ export async function fetchGuardsAction(params: {
     radius_miles = ""
   } = params;
   const query = new URLSearchParams();
-  query.append("page", page.toString());
+  if (page !== null) {
+    query.append("page", page.toString());
+  }
   if (search) query.append("search", search);
   if (status) query.append("status", status);
   if (city && city !== "All City") query.append("city", city);

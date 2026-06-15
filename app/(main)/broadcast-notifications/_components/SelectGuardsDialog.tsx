@@ -57,8 +57,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
     state: "All State",
     city: "All City",
     status: "all",
-    service: "All",
-    radius_miles: ""
+    service: "All"
   });
   const [locations, setLocations] = useState<{ countries: string[], states: string[], cities: string[] }>({
     countries: [],
@@ -74,6 +73,15 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
 
   // Local selection state (only apply to parent state when confirmed)
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
+
+  const isFilterActive =
+    debouncedSearchQuery !== "" ||
+    userFilters.country !== "All Country" ||
+    userFilters.state !== "All State" ||
+    userFilters.city !== "All City" ||
+    userFilters.status !== "all" ||
+    userFilters.service !== "All";
+
 
   useEffect(() => {
     if (isOpen) {
@@ -102,15 +110,14 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
         if (userFilters.service === "both") { armed = "true"; unarmed = "true"; }
 
         const res = await fetchGuardsAction({
-          page: currentPage,
+          page: isFilterActive ? null : currentPage,
           search: debouncedSearchQuery,
           status: userFilters.status === "all" ? "" : userFilters.status,
           city: userFilters.city === "All City" ? "" : userFilters.city,
           state: userFilters.state === "All State" ? "" : userFilters.state,
           country: userFilters.country === "All Country" ? "" : userFilters.country,
           armed,
-          unarmed,
-          radius_miles: userFilters.radius_miles
+          unarmed
         });
         if (res.success && res.data) {
           setGuards(res.data);
@@ -139,7 +146,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
           <div className="space-y-2 shrink-0">
             {/* Row 1: Search & Miles & Mobile Toggle */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
-              <div className="space-y-1 md:col-span-9">
+              <div className="space-y-1 md:col-span-12">
                 <Label className="text-[12px] font-semibold text-slate-700">Search</Label>
                 <div className="relative w-full">
                   <Input
@@ -163,29 +170,6 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                     </button>
                   )}
                 </div>
-              </div>
-
-              <div className="space-y-1 md:col-span-3">
-                <Label className="text-[12px] font-semibold text-slate-700">Within Miles</Label>
-                <Select
-                  value={userFilters.radius_miles || "all"}
-                  onValueChange={(val) => {
-                    setUserFilters(prev => ({ ...prev, radius_miles: val === "all" ? "" : val }));
-                    setCurrentPage(1);
-                  }}
-                >
-                  <SelectTrigger className="w-full !h-9 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-slate-200 shadow-xl z-[200] text-xs">
-                    <SelectItem value="all" className="cursor-pointer text-xs">All</SelectItem>
-                    {Array.from({ length: 10 }, (_, i) => (i + 1) * 10).map((miles) => (
-                      <SelectItem key={miles} value={miles.toString()} className="cursor-pointer text-xs">
-                        {miles} Miles
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className="md:hidden w-full">
@@ -409,7 +393,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
             </Table>
 
             {/* Pagination Controls */}
-            {pagination && pagination.total_pages > 1 && (
+            {!isFilterActive && pagination && pagination.total_pages > 1 && (
               <div className="p-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/30 shrink-0">
                 <span className="text-xs text-slate-700 font-medium">
                   Showing Page {currentPage} of {pagination.total_pages} ({pagination.total} guards total)
