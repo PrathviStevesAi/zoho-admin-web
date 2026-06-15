@@ -31,6 +31,15 @@ export interface ShiftActions {
   is_manual_start_shift?: boolean;
   is_config_settings?: boolean;
   is_cancel_service?: boolean;
+  is_edit_schedule?: boolean;
+  is_vc_active?: boolean;
+  is_location_edit?: boolean;
+  is_shift_details_edit?: boolean;
+  is_schedule_for_edit?: boolean;
+  is_execution_time_edit?: boolean;
+  is_hourly_rate_edit?: boolean;
+  is_flat_rate_edit?: boolean;
+  is_travel_fee_edit?: boolean;
 }
 
 export interface AssignedGuard {

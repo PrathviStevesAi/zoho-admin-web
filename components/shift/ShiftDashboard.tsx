@@ -515,9 +515,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     )
     : false;
 
-  const isAddressEditable = shift
-    ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused"].includes(shift.status?.toLowerCase())
-    : false;
+  const isAddressEditable = shift?.action
+    ? !!shift.action.is_location_edit
+    : (shift
+      ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused"].includes(shift.status?.toLowerCase())
+      : false);
 
   const settingsFormState = {
     checkpoint_create_interval:
