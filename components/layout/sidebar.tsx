@@ -11,7 +11,8 @@ import {
   User,
   Users,
   Calendar,
-  ChevronDown
+  ChevronDown,
+  Megaphone
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ const routes = [
       { label: "Guards", href: "/users-directory/guards" }
     ]
   },
+  { label: "Broadcast Notification", icon: Megaphone, href: "/broadcast-notifications" },
   { label: "Profile", icon: User, href: "/profile" },
 ];
 
