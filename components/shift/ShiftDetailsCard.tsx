@@ -152,9 +152,10 @@ export function ShiftDetailsCard({
           editDetailsForm.shift_start_time !== initialScheduledStart ||
           editDetailsForm.shift_end_time !== initialScheduledEnd
         ) {
+          const tz = shift.shipping_location?.timezone;
           payload.shift_time = {
-            start_time: toUTCISO(editDetailsForm.shift_start_time),
-            end_time: toUTCISO(editDetailsForm.shift_end_time)
+            start_time: toUTCISO(editDetailsForm.shift_start_time, tz),
+            end_time: toUTCISO(editDetailsForm.shift_end_time, tz)
           };
           dirty = true;
         }
@@ -166,11 +167,12 @@ export function ShiftDetailsCard({
           editDetailsForm.guard_shift_started_at !== initialExecStart ||
           editDetailsForm.guard_shift_ended_at !== initialExecEnd
         ) {
+          const tz = shift.shipping_location?.timezone;
           payload.shift_execution_time = {
-            guard_shift_started_at: toUTCISO(editDetailsForm.guard_shift_started_at),
-            guard_shift_ended_at: toUTCISO(editDetailsForm.guard_shift_ended_at),
-            start_time: toUTCISO(editDetailsForm.guard_shift_started_at),
-            end_time: toUTCISO(editDetailsForm.guard_shift_ended_at),
+            guard_shift_started_at: toUTCISO(editDetailsForm.guard_shift_started_at, tz),
+            guard_shift_ended_at: toUTCISO(editDetailsForm.guard_shift_ended_at, tz),
+            start_time: toUTCISO(editDetailsForm.guard_shift_started_at, tz),
+            end_time: toUTCISO(editDetailsForm.guard_shift_ended_at, tz),
             total_break_duration_min: shift.execution_time?.total_break_duration_min ?? 0
           };
           dirty = true;
