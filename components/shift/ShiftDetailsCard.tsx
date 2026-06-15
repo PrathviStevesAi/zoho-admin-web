@@ -153,8 +153,6 @@ export function ShiftDetailsCard({
           editDetailsForm.shift_end_time !== initialScheduledEnd
         ) {
           payload.shift_time = {
-            shift_start_time: toUTCISO(editDetailsForm.shift_start_time),
-            shift_end_time: toUTCISO(editDetailsForm.shift_end_time),
             start_time: toUTCISO(editDetailsForm.shift_start_time),
             end_time: toUTCISO(editDetailsForm.shift_end_time)
           };
