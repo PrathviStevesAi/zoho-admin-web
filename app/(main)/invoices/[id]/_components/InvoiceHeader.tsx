@@ -17,6 +17,7 @@ interface InvoiceHeaderProps {
   customerName: string;
   zohoInvoiceId?: string;
   description: string;
+  shippingAddress?: any;
   onOpenPayment: () => void;
   onOpenSchedule: () => void;
   onOpenAssignGuard: () => void;
@@ -40,6 +41,7 @@ export function InvoiceHeader({
   customerName,
   zohoInvoiceId,
   description,
+  shippingAddress,
   onOpenPayment,
   onOpenSchedule,
   onOpenAssignGuard,
@@ -50,6 +52,19 @@ export function InvoiceHeader({
   status,
   actions
 }: InvoiceHeaderProps) {
+  const formatAddress = (addr: any) => {
+    if (!addr) return "N/A";
+    if (typeof addr === 'string') return addr;
+    const parts = [
+      addr.street,
+      addr.address,
+      addr.city,
+      addr.state,
+      addr.zip,
+      addr.country
+    ].filter(Boolean);
+    return parts.join(", ");
+  };
   const handleOpenCRM = () => {
     if (zohoInvoiceId) {
       window.open(`https://books.zoho.com/app/678357323#/invoices/${zohoInvoiceId}`, '_blank');
@@ -144,9 +159,17 @@ export function InvoiceHeader({
                   <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800">
                     <p className="font-bold text-blue-400">Invoice Description</p>
                   </div>
-                  <div className="max-h-[350px] overflow-y-auto custom-scrollbar pr-1">
+                  <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-1 mb-3">
                     {formatDescription(description)}
                   </div>
+                  {shippingAddress && (
+                    <div className="pt-2 border-t border-slate-800 space-y-1">
+                      <p className="font-bold text-blue-400 uppercase tracking-wider text-[9px]">Location</p>
+                      <p className="text-slate-300 leading-normal">
+                        {formatAddress(shippingAddress)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

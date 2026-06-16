@@ -60,7 +60,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [comments, setComments] = useState<any[]>([]);
 
   // Loading States
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
 
@@ -307,21 +307,68 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   };
 
   const handleSaveSettings = async (settings: {
-    create_checkpoint_interval: string;
+    checkpoint_create_interval: string;
     guard_break_max_duration: string;
     guard_break_limit: string;
     geofence_radius: string;
   }) => {
     setIsSavingSettings(true);
-    const payload = {
+
+    const initialCheckpointCreateInterval =
+      shift?.checkpoint_create_interval !== undefined &&
+      shift?.checkpoint_create_interval !== null &&
+      [15, 30, 60].includes(Number(shift.checkpoint_create_interval))
+        ? String(shift.checkpoint_create_interval)
+        : "0";
+    const initialGuardBreakMaxDuration =
+      shift?.break_max_time !== undefined && shift?.break_max_time !== null
+        ? String(shift.break_max_time)
+        : "";
+    const initialGuardBreakLimit =
+      shift?.total_break_limit !== undefined && shift?.total_break_limit !== null
+        ? String(shift.total_break_limit)
+        : "";
+    const initialGeofenceRadius =
+      shift?.geofence_radius !== undefined && shift?.geofence_radius !== null
+        ? String(shift.geofence_radius)
+        : "150";
+
+    const payload: any = {
       shift_id: shiftId,
-      create_checkpoint_interval:
-        settings.create_checkpoint_interval === "" ? 0 : Number(settings.create_checkpoint_interval),
-      guard_break_max_duration:
-        settings.guard_break_max_duration === "" ? 0 : Number(settings.guard_break_max_duration),
-      guard_break_limit: settings.guard_break_limit === "" ? 0 : Number(settings.guard_break_limit),
-      geofence_radius: settings.geofence_radius === "" ? 150 : Number(settings.geofence_radius),
+      shift_description: shift?.shift_description || "",
     };
+
+    let dirty = false;
+
+    if (settings.checkpoint_create_interval !== initialCheckpointCreateInterval) {
+      const val = settings.checkpoint_create_interval === "" ? 0 : Number(settings.checkpoint_create_interval);
+      payload.checkpoint_create_interval = val;
+      dirty = true;
+    }
+    if (settings.guard_break_max_duration !== initialGuardBreakMaxDuration) {
+      const val = settings.guard_break_max_duration === "" ? 0 : Number(settings.guard_break_max_duration);
+      payload.guard_break_max_duration = val;
+      payload.break_max_time = val;
+      dirty = true;
+    }
+    if (settings.guard_break_limit !== initialGuardBreakLimit) {
+      const val = settings.guard_break_limit === "" ? 0 : Number(settings.guard_break_limit);
+      payload.guard_break_limit = val;
+      payload.total_break_limit = val;
+      dirty = true;
+    }
+    if (settings.geofence_radius !== initialGeofenceRadius) {
+      payload.geofence_radius =
+        settings.geofence_radius === "" ? 150 : Number(settings.geofence_radius);
+      dirty = true;
+    }
+
+    if (!dirty) {
+      toast.info("No settings were changed");
+      setIsSettingsOpen(false);
+      setIsSavingSettings(false);
+      return;
+    }
 
     console.log("[ShiftDashboard] handleSaveSettings - Payload:", payload);
     const res = await updateShiftDetailsAction(payload);
@@ -455,7 +502,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const handleAssignGuard = () => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
-    if (paymentStatus === "pending" || paymentStatus === "unpaid") {
+    if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
       toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", {
         duration: 5000,
       });
@@ -470,13 +517,17 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     )
     : false;
 
-  const isAddressEditable = shift
-    ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused"].includes(shift.status?.toLowerCase())
-    : false;
+  const isAddressEditable = shift?.action
+    ? !!shift.action.is_location_edit
+    : (shift
+      ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused"].includes(shift.status?.toLowerCase())
+      : false);
 
   const settingsFormState = {
-    create_checkpoint_interval:
-      shift?.checkpoint_create_interval !== undefined && shift?.checkpoint_create_interval !== null
+    checkpoint_create_interval:
+      shift?.checkpoint_create_interval !== undefined &&
+      shift?.checkpoint_create_interval !== null &&
+      [15, 30, 60].includes(Number(shift.checkpoint_create_interval))
         ? String(shift.checkpoint_create_interval)
         : "0",
     guard_break_max_duration:
@@ -508,6 +559,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
         onStartVideoCall={() => startCall(shiftId)}
+        isLoading={isLoading}
       />
 
       {isSettingsOpen ? (
@@ -518,6 +570,18 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           onClose={() => setIsSettingsOpen(false)}
           isSaving={isSavingSettings}
         />
+      ) : !isLoading && !shift ? (
+        <div className="max-w-2xl mx-auto w-full">
+          <ShiftDetailsCard
+            shift={shift}
+            isLoading={isLoading}
+            error={error}
+            isSavingDetails={isSavingDetails}
+            onSaveDetails={handleSaveDetails}
+            isAddressEditable={isAddressEditable}
+            setIsEditLocationOpen={setIsEditLocationOpen}
+          />
+        </div>
       ) : (
         <>
           {/* Desktop Layout (100% identical to original layout, no auto-placement side-effects) */}
@@ -556,6 +620,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                   if (tabId === "comment") loadComments();
                 }}
                 setPreviewFile={setPreviewFile}
+                securityServiceId={shift?.security_service_id}
+                isLoading={isLoading}
               />
             </div>
           </div>
@@ -586,6 +652,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 if (tabId === "comment") loadComments();
               }}
               setPreviewFile={setPreviewFile}
+              securityServiceId={shift?.security_service_id}
+              isLoading={isLoading}
             />
 
             {/* 3. ShiftMapCard */}

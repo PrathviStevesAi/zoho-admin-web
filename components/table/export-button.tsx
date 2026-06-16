@@ -16,7 +16,16 @@ export function ExportButton({ data, columns, fileName }: ExportButtonProps) {
       variant="ghost"
       size="icon"
       className="cursor-pointer text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-full transition-all active:scale-95 h-9 w-9"
-      onClick={() => exportToExcel(data, columns, fileName)}
+      onClick={() => {
+        const hasServiceAddress = columns.some(col => col.key === "service_address");
+        const exportColumns = hasServiceAddress
+          ? columns
+          : [
+              ...columns,
+              { key: "service_address", header: "Service Address" }
+            ];
+        exportToExcel(data, exportColumns, fileName);
+      }}
       title="Export to Excel"
     >
       <Download className="w-5 h-5" />

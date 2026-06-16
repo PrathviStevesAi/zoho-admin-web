@@ -24,8 +24,8 @@ export default function LoginPage() {
     const [view, setView] = useState<'login' | 'forgot-password'>('login');
     const [forgotStep, setForgotStep] = useState<1 | 2 | 3>(1);
     const [showPassword, setShowPassword] = useState(false);
-    const [email, setEmail] = useState<string>("admin@gmail.com");
-    const [password, setPassword] = useState<string>("Admin@123");
+    const [email, setEmail] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [forgotEmail, setForgotEmail] = useState("");
@@ -129,6 +129,7 @@ export default function LoginPage() {
                             fill
                             className="object-contain"
                             priority
+                            unoptimized
                         />
                     </div>
                 </div>

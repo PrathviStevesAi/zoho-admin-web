@@ -39,7 +39,7 @@ messaging.onBackgroundMessage(function (payload) {
     );
 
     const title = payload.notification?.title || payload.data?.title || "New Notification";
-    const body = payload.notification?.body || payload.data?.body || "You have a new message.";
+    const body = payload.notification?.body || payload.data?.body || payload.notification?.message || payload.data?.message || payload.message || "You have a new message.";
 
     const notificationOptions = {
         body: body,

@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/table";
 import { TableColumn } from "@/types/table.types";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 type DataTableProps<T> = {
     columns: TableColumn<T>[];
@@ -20,8 +21,28 @@ export function DataTable<T extends { id?: string | number }>({
     onRowClick,
     emptyMessage = "No data found.",
 }: DataTableProps<T>) {
+    const router = useRouter();
+
+    const handleRowClick = (row: T) => {
+        if (onRowClick) {
+            onRowClick(row);
+            return;
+        }
+
+        if (!row.id) return;
+
+        const rowObj = row as any;
+        // Check if it's an invoice row:
+        if ('invoice_no' in rowObj && !('shift_no' in rowObj)) {
+            router.push(`/invoices/${rowObj.id}`);
+        } else {
+            // It's a shift row:
+            router.push(`/shift/view?shift_id=${rowObj.id}`);
+        }
+    };
+
     return (
-        <Table className="min-w-[550px]">
+        <Table className="min-w-[800px]">
             <TableHeader className="bg-surface">
                 <TableRow>
                     {columns.filter(col => !col.hidden).map((col) => (
@@ -54,10 +75,11 @@ export function DataTable<T extends { id?: string | number }>({
                     data.map((row, i) => (
                         <TableRow
                             key={(row as any).id ?? i}
-                            onClick={() => onRowClick?.(row)}
+                            onClick={() => handleRowClick(row)}
                             className={cn(
-                                onRowClick && "cursor-pointer",
-                                "!border-b-0", "!p-10"
+                                "cursor-pointer",
+                                "!border-b-0", "!p-10",
+                                "hover:bg-slate-50 transition-colors"
                             )}
                         >
                             {columns.filter(col => !col.hidden).map((col) => (

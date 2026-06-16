@@ -16,6 +16,7 @@ import { useInfiniteSearch } from "@/hooks/use-infinite-data";
 import { GenericRowSkeleton } from "@/components/skeletons/generic-row-skeleton";
 import { useSearchParams } from "next/navigation";
 import { useDashboard } from "../dashboard-context";
+import { Pagination as PaginationComponent } from "@/components/table/pagination";
 
 export default function Invoice({ initialData, pagination }: { initialData: InvoiceData[]; pagination: Pagination }) {
   const searchParams = useSearchParams();
@@ -31,9 +32,11 @@ export default function Invoice({ initialData, pagination }: { initialData: Invo
     searchTerm,
     setSearchTerm,
     isPending,
-    hasMore,
-    isSearching,
-    loadMoreRef
+    page,
+    totalPages,
+    total,
+    limit,
+    goToPage,
   } = useInfiniteSearch<InvoiceData>(
     initialData,
     pagination,
@@ -44,12 +47,12 @@ export default function Invoice({ initialData, pagination }: { initialData: Invo
   );
 
   return (
-    <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col">
+    <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col gap-2">
       <CardHeader className="flex flex-row items-center justify-between px-7 py-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-[19px] font-bold shrink-0">New Invoices</CardTitle>
           <span className="text-[19px] text-slate-900">
-            [ {pagination.total} ]
+            [ {total} ]
           </span>
         </div>
 
@@ -67,8 +70,8 @@ export default function Invoice({ initialData, pagination }: { initialData: Invo
         </div>
       </CardHeader>
 
-      <CardContent className="p-0 overflow-y-auto flex-1 custom-scrollbar">
-        {(isPending && isSearching) || isDashboardPending ? (
+      <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+        {(isPending && !displayedData.length) || isDashboardPending ? (
           Array.from({ length: 5 }).map((_, i) => (
             <GenericRowSkeleton
               key={i}
@@ -76,16 +79,17 @@ export default function Invoice({ initialData, pagination }: { initialData: Invo
             />
           ))
         ) : (
-          <>
-            <DataTable columns={invoiceTableColumns} data={displayedData} emptyMessage="No invoices found." />
-            {!isSearching && hasMore && (
-              <div ref={loadMoreRef} className="py-6 flex justify-center">
-                <Loader2 className="animate-spin text-primary" />
-              </div>
-            )}
-          </>
+          <DataTable columns={invoiceTableColumns} data={displayedData} emptyMessage="No invoices found." />
         )}
       </CardContent>
+      <PaginationComponent
+        page={page}
+        totalPages={totalPages}
+        totalItems={total}
+        limit={limit}
+        onPageChange={goToPage}
+        isPending={isPending}
+      />
     </Card>
   );
 }

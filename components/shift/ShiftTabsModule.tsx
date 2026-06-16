@@ -21,6 +21,8 @@ interface ShiftTabsModuleProps {
   onTabChange?: (tabId: string) => void;
 
   setPreviewFile: (file: PreviewFile | null) => void;
+  securityServiceId?: string | null;
+  isLoading?: boolean;
 }
 
 export function ShiftTabsModule({
@@ -33,12 +35,43 @@ export function ShiftTabsModule({
   reportsError,
   onTabChange,
   setPreviewFile,
+  securityServiceId,
+  isLoading,
 }: ShiftTabsModuleProps) {
   const [activeTab, setActiveTab] = useState("");
 
+  if (isLoading) {
+    return (
+      <Card className="border-slate-200 shadow-xl overflow-hidden rounded-[1.5rem] bg-white border-none animate-pulse">
+        <CardContent className="p-0">
+          <div className="flex flex-col">
+            {[...Array(5)].map((_, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-5 border-b border-slate-55 last:border-0"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-200" />
+                  <div className="h-3 bg-slate-200 rounded w-36" />
+                </div>
+                <div className="w-4 h-4 bg-slate-200 rounded" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const tabs = [
     { id: "comment", label: "Add Comment", icon: MessageSquarePlus },
-    { id: "dar", label: "Daily Activity Report", icon: FileText },
+    {
+      id: "dar",
+      label: securityServiceId === "38ade601-2dc3-4fc8-ac0e-90cf99f2a045"
+        ? "Firewatch Log Report"
+        : "Daily Activity Report",
+      icon: FileText
+    },
     { id: "report", label: "Incident Report", icon: ClipboardList },
     { id: "checkpoint", label: "Check Point", icon: MapPin },
     { id: "history", label: "History of changes", icon: History },
@@ -99,6 +132,7 @@ export function ShiftTabsModule({
                       isReportsLoading={isReportsLoading}
                       reportsError={reportsError}
                       setPreviewFile={setPreviewFile}
+                      securityServiceId={securityServiceId}
                     />
                   )}
                   {tab.id === "report" && (

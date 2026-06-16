@@ -128,7 +128,7 @@ export default function InvoiceDetailsPage() {
         const initialPerHour = Number(res.data.per_hour_rate);
         const initialPerShift = Number(res.data.per_shift_rate);
         setPaymentFormData({
-          payment_status: res.data.payment_status || "pending",
+          payment_status: res.data.payment_status || "",
           reminder_date: res.data.reminder_date || "",
           per_hour_rate: initialPerHour && initialPerHour > 0 ? String(initialPerHour) : "",
           per_shift_rate: initialPerShift && initialPerShift > 0 ? String(initialPerShift) : ""
@@ -515,30 +515,62 @@ export default function InvoiceDetailsPage() {
     toast.success(`Guard ${guard.first_name} ${guard.last_name} selected for ${selectedShiftIds.length} shifts`);
   };
 
-  const handleAssignGuards = async () => {
-    const guardGroups: Record<string, string[]> = {};
+  const handleAssignGuards = async (
+    shiftRates: Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>
+  ) => {
+    // Group shifts assigned to the same guard with the same rates together to optimize payload size
+    const groups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; perShiftRate?: number; travelFee?: number }> = {};
+
     Object.entries(pendingAssignments).forEach(([shiftId, data]) => {
-      if (!guardGroups[data.guard_id]) guardGroups[data.guard_id] = [];
-      guardGroups[data.guard_id].push(shiftId);
+      const rates = shiftRates[shiftId] || {};
+      const key = `${data.guard_id}_${rates.hourlyRate ?? ""}_${rates.perShiftRate ?? ""}_${rates.travelFee ?? ""}`;
+      
+      if (!groups[key]) {
+        groups[key] = {
+          guard_id: data.guard_id,
+          shift_ids: [],
+          hourlyRate: rates.hourlyRate,
+          perShiftRate: rates.perShiftRate,
+          travelFee: rates.travelFee
+        };
+      }
+      groups[key].shift_ids.push(shiftId);
     });
 
-    const assignments = Object.entries(guardGroups).map(([guard_id, shift_ids]) => ({
-      guard_id,
-      shift_ids
-    }));
+    const assignments = Object.values(groups).map((group) => {
+      const cleanValue = (val: any) => {
+        if (val === undefined || val === null || val === "" || val === 0) {
+          return null;
+        }
+        return val;
+      };
+
+      const assignment: any = {
+        guard_id: group.guard_id,
+        shift_ids: group.shift_ids,
+        per_hour_rate: cleanValue(group.hourlyRate),
+        per_shift_rate: cleanValue(group.perShiftRate),
+        travel_fee: cleanValue(group.travelFee)
+      };
+      return assignment;
+    });
 
     if (assignments.length === 0) {
       toast.error("Please assign at least one guard");
       return;
     }
 
-    setIsAssigning(true);
-    const res = await assignGuardsAction({
+    const payload: any = {
       invoice_id: id,
-      per_hour_rate: Number(paymentFormData.per_hour_rate) || 0,
-      per_shift_rate: Number(paymentFormData.per_shift_rate) || 0,
       assignments
-    });
+    };
+
+    console.log("[handleAssignGuards] Payload to assignGuardsAction:", JSON.stringify(payload, null, 2));
+
+    setIsAssigning(true);
+    const res = await assignGuardsAction(payload);
+
+    console.log("[handleAssignGuards] API Response:", JSON.stringify(res, null, 2));
 
     if (res.success) {
       toast.success("Guards assigned successfully");
@@ -610,11 +642,12 @@ export default function InvoiceDetailsPage() {
         customerName={invoice.customer_name}
         zohoInvoiceId={invoice.zoho_invoice_id}
         description={invoice.invoice_description || invoice.description || ""}
+        shippingAddress={invoice.shipping_address}
         onOpenPayment={() => { setIsPaymentOpen(true); setIsScheduleOpen(false); setIsAssignGuardOpen(false); }}
         onOpenSchedule={() => { setIsScheduleOpen(true); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAddingShift(false); loadShifts("schedule"); }}
         onOpenAssignGuard={() => {
           const paymentStatus = invoice?.payment_status?.toLowerCase();
-          if (paymentStatus === 'pending' || paymentStatus === 'unpaid') {
+          if (!paymentStatus || paymentStatus === 'pending' || paymentStatus === 'unpaid') {
             toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", {
               duration: 5000,
             });

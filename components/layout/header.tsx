@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { User, LogOut, ChevronDown, Search, XCircle, Menu } from "lucide-react";
+import { User, LogOut, ChevronDown, Search, XCircle, Menu, ArrowLeft } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { NotificationsNav } from "./notifications-nav";
+import { fetchProfileAction } from "@/actions/profile.actions";
+import { globalSearchAction } from "@/actions/dashboard.actions";
 
 interface SearchResultItem {
   type: "invoice" | "shift";
@@ -42,20 +44,18 @@ export function Header() {
   const searchRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState<any>(null);
 
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+
   const { data: session } = useSession();
 
   const loadProfile = useCallback(async () => {
     if (!session?.accessToken) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/user/profile`, {
-        headers: {
-          "ngrok-skip-browser-warning": "true",
-          Authorization: `Bearer ${session.accessToken}`,
-        }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setProfile(data.data);
+      const res = await fetchProfileAction();
+      if (res.success && res.data) {
+        setProfile(res.data);
       }
     } catch (error) {
       console.error("Failed to load header profile:", error);
@@ -81,15 +81,9 @@ export function Header() {
 
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/invoice/global-search?search=${debouncedSearch}`, {
-          headers: {
-            "ngrok-skip-browser-warning": "true",
-            ...(session?.accessToken && { Authorization: `Bearer ${session.accessToken}` }),
-          }
-        });
-        const data = await response.json();
-        if (data.success) {
-          setResults(data.data);
+        const res = await globalSearchAction(debouncedSearch);
+        if (res.success && res.data) {
+          setResults(res.data);
           setIsOpen(true);
         } else {
           setResults([]);
@@ -107,7 +101,9 @@ export function Header() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      const isOutsideDesktop = !searchRef.current || !searchRef.current.contains(event.target as Node);
+      const isOutsideMobile = !mobileSearchRef.current || !mobileSearchRef.current.contains(event.target as Node);
+      if (isOutsideDesktop && isOutsideMobile) {
         setIsOpen(false);
       }
     };
@@ -133,8 +129,175 @@ export function Header() {
     );
   };
 
+  const renderSearchResultsDropdown = () => {
+    if (!isOpen || (searchValue.trim().length < 2 && !isLoading)) return null;
+
+    return (
+      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden z-[60] max-h-[480px] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+        {isLoading && results.length === 0 ? (
+          <div className="p-8 text-center text-slate-700 text-sm">
+            <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-[#0064cb]" />
+            Searching...
+          </div>
+        ) : (
+          <div className="py-2 divide-y divide-slate-100">
+            {/* Invoice Section */}
+            <div className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">Invoice</h3>
+                {invoicesList.length > 3 && (
+                  <button
+                    onClick={(e) => toggleExpand("Invoice", e)}
+                    className="text-[11px] font-semibold text-[#0064cb] hover:underline bg-transparent border-none cursor-pointer"
+                  >
+                    {expandedTypes.includes("Invoice") ? "Show less" : "View more..."}
+                  </button>
+                )}
+              </div>
+              {invoicesList.length > 0 ? (
+                <div className="divide-y divide-slate-55">
+                  {(expandedTypes.includes("Invoice") ? invoicesList : invoicesList.slice(0, 3)).map((item) => (
+                    <Link
+                      key={item.invoice_id}
+                      href={`/invoices/${item.invoice_id}`}
+                      className="flex items-center gap-4 py-2.5 hover:bg-slate-50 transition-colors group/item rounded-md px-2 -mx-2"
+                      onClick={() => {
+                        setIsOpen(false);
+                        setExpandedTypes([]);
+                        setIsMobileSearchOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center gap-4 w-full text-[13px]">
+                        <span className="font-semibold text-slate-900 min-w-[90px] shrink-0">
+                          {item.invoice_no}
+                        </span>
+                        <span className="text-slate-600 truncate">
+                          {item.customer_name}[{item.invoice_no}]
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[12px] text-slate-700 py-1 font-medium">
+                  No Invoice found of this number
+                </div>
+              )}
+            </div>
+
+            {/* Shift Section */}
+            <div className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">Shift</h3>
+                {shiftsList.length > 3 && (
+                  <button
+                    onClick={(e) => toggleExpand("Shift", e)}
+                    className="text-[11px] font-semibold text-[#0064cb] hover:underline bg-transparent border-none cursor-pointer"
+                  >
+                    {expandedTypes.includes("Shift") ? "Show less" : "View more..."}
+                  </button>
+                )}
+              </div>
+              {shiftsList.length > 0 ? (
+                <div className="divide-y divide-slate-55">
+                  {(expandedTypes.includes("Shift") ? shiftsList : shiftsList.slice(0, 3)).map((item) => (
+                    <Link
+                      key={item.shift_id}
+                      href={`/notifications/view?shift_id=${item.shift_id}`}
+                      className="flex items-center gap-4 py-2.5 hover:bg-slate-50 transition-colors group/item rounded-md px-2 -mx-2"
+                      onClick={() => {
+                        setIsOpen(false);
+                        setExpandedTypes([]);
+                        setIsMobileSearchOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center gap-4 w-full text-[13px]">
+                        <span className="font-semibold text-slate-900 min-w-[90px] shrink-0">
+                          {item.shift_no}
+                        </span>
+                        <span className="text-slate-600 truncate">
+                          {item.customer_name}[{item.invoice_no}]
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[12px] text-slate-700 py-1 font-medium">
+                  No Shift found of this number
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <header className="flex items-center justify-between h-16 border-b bg-white px-4 md:px-6 sticky top-0 z-50">
+      {/* Mobile Search Overlay */}
+      {isMobileSearchOpen && (
+        <div className="absolute inset-0 bg-white z-50 flex items-center px-2 gap-2 md:hidden animate-in slide-in-from-top duration-250">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setIsMobileSearchOpen(false);
+              setSearchValue("");
+              setResults([]);
+              setIsOpen(false);
+            }}
+            className="text-slate-700 hover:bg-muted cursor-pointer shrink-0 rounded-full h-10 w-10 flex items-center justify-center"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="relative flex-1" ref={mobileSearchRef}>
+            <div className="relative group w-full">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 text-[#0064cb] animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4 text-slate-700" />
+                )}
+              </div>
+              <input
+                ref={mobileSearchInputRef}
+                type="text"
+                value={searchValue}
+                onChange={(e) => {
+                  setSearchValue(e.target.value);
+                  if (e.target.value.length >= 2) setIsOpen(true);
+                }}
+                onFocus={() => {
+                  if (searchValue.trim().length >= 2) setIsOpen(true);
+                }}
+                placeholder="Search INV, Shift,..."
+                className={cn(
+                  "w-full h-10 pl-11 bg-slate-50/80 border border-slate-300 rounded-lg text-[13px] placeholder:text-slate-700 focus:outline-none focus:bg-white focus:ring-4 focus:ring-[#0064cb]/5 focus:border-[#0064cb] focus:shadow-sm transition-all duration-300",
+                  searchValue ? "pr-10" : "pr-4"
+                )}
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                {searchValue && (
+                  <XCircle
+                    className="h-4 w-4 text-slate-700 hover:text-red-500 cursor-pointer transition-colors"
+                    onClick={() => {
+                      setSearchValue("");
+                      setResults([]);
+                      setIsOpen(false);
+                      setExpandedTypes([]);
+                      mobileSearchInputRef.current?.focus();
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+            {renderSearchResultsDropdown()}
+          </div>
+        </div>
+      )}
+
       {/* LEFT: Logo & Mobile Hamburger Menu */}
       <div className="flex items-center gap-2 md:gap-3 shrink-0 w-auto md:w-[240px]">
         <Button
@@ -199,108 +362,24 @@ export function Header() {
           </div>
 
           {/* Search Results Dropdown */}
-          {isOpen && (searchValue.trim().length >= 2 || isLoading) && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden z-[60] max-h-[480px] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-              {isLoading && results.length === 0 ? (
-                <div className="p-8 text-center text-slate-700 text-sm">
-                  <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-[#0064cb]" />
-                  Searching...
-                </div>
-              ) : (
-                <div className="py-2 divide-y divide-slate-100">
-                  {/* Invoice Section */}
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">Invoice</h3>
-                      {invoicesList.length > 3 && (
-                        <button
-                          onClick={(e) => toggleExpand("Invoice", e)}
-                          className="text-[11px] font-semibold text-[#0064cb] hover:underline bg-transparent border-none cursor-pointer"
-                        >
-                          {expandedTypes.includes("Invoice") ? "Show less" : "View more..."}
-                        </button>
-                      )}
-                    </div>
-                    {invoicesList.length > 0 ? (
-                      <div className="divide-y divide-slate-55">
-                        {(expandedTypes.includes("Invoice") ? invoicesList : invoicesList.slice(0, 3)).map((item) => (
-                          <Link
-                            key={item.invoice_id}
-                            href={`/invoices/${item.invoice_id}`}
-                            className="flex items-center gap-4 py-2.5 hover:bg-slate-50 transition-colors group/item rounded-md px-2 -mx-2"
-                            onClick={() => {
-                              setIsOpen(false);
-                              setExpandedTypes([]);
-                            }}
-                          >
-                            <div className="flex items-center gap-4 w-full text-[13px]">
-                              <span className="font-semibold text-slate-900 min-w-[90px] shrink-0">
-                                {item.invoice_no}
-                              </span>
-                              <span className="text-slate-600 truncate">
-                                {item.customer_name}[{item.invoice_no}]
-                              </span>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-[12px] text-slate-700 py-1 font-medium">
-                        No Invoice found of this number
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Shift Section */}
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">Shift</h3>
-                      {shiftsList.length > 3 && (
-                        <button
-                          onClick={(e) => toggleExpand("Shift", e)}
-                          className="text-[11px] font-semibold text-[#0064cb] hover:underline bg-transparent border-none cursor-pointer"
-                        >
-                          {expandedTypes.includes("Shift") ? "Show less" : "View more..."}
-                        </button>
-                      )}
-                    </div>
-                    {shiftsList.length > 0 ? (
-                      <div className="divide-y divide-slate-55">
-                        {(expandedTypes.includes("Shift") ? shiftsList : shiftsList.slice(0, 3)).map((item) => (
-                          <Link
-                            key={item.shift_id}
-                            href={`/notifications/view?shift_id=${item.shift_id}`}
-                            className="flex items-center gap-4 py-2.5 hover:bg-slate-50 transition-colors group/item rounded-md px-2 -mx-2"
-                            onClick={() => {
-                              setIsOpen(false);
-                              setExpandedTypes([]);
-                            }}
-                          >
-                            <div className="flex items-center gap-4 w-full text-[13px]">
-                              <span className="font-semibold text-slate-900 min-w-[90px] shrink-0">
-                                {item.shift_no}
-                              </span>
-                              <span className="text-slate-600 truncate">
-                                {item.customer_name}[{item.invoice_no}]
-                              </span>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-[12px] text-slate-700 py-1 font-medium">
-                        No Shift found of this number
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {renderSearchResultsDropdown()}
         </div>
       </div>
 
       <div className="flex items-center gap-2 md:gap-4 shrink-0 w-auto md:w-[240px] justify-end">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            setIsMobileSearchOpen(true);
+            setTimeout(() => {
+              mobileSearchInputRef.current?.focus();
+            }, 50);
+          }}
+          className="md:hidden text-[#474d56] hover:text-[#0064cb] transition-colors h-10 w-10 rounded-full cursor-pointer flex items-center justify-center shrink-0"
+        >
+          <Search className="size-[22px] stroke-[1.5px]" />
+        </Button>
         <NotificationsNav />
         <UserNav session={session} dynamicProfile={profile} />
       </div>

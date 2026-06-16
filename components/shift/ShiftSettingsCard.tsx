@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 interface ShiftSettingsForm {
-  create_checkpoint_interval: string;
+  checkpoint_create_interval: string;
   guard_break_max_duration: string;
   guard_break_limit: string;
   geofence_radius: string;
@@ -28,7 +28,7 @@ export function ShiftSettingsCard({
   isSaving,
 }: ShiftSettingsCardProps) {
   const [form, setForm] = useState<ShiftSettingsForm>({
-    create_checkpoint_interval: "0",
+    checkpoint_create_interval: "0",
     guard_break_max_duration: "",
     guard_break_limit: "",
     geofence_radius: "150",
@@ -37,7 +37,10 @@ export function ShiftSettingsCard({
   useEffect(() => {
     if (isOpen) {
       setForm({
-        create_checkpoint_interval: initialSettings.create_checkpoint_interval || "0",
+        checkpoint_create_interval:
+          initialSettings.checkpoint_create_interval !== undefined && initialSettings.checkpoint_create_interval !== null
+            ? String(initialSettings.checkpoint_create_interval)
+            : "0",
         guard_break_max_duration: initialSettings.guard_break_max_duration || "",
         guard_break_limit: initialSettings.guard_break_limit || "",
         geofence_radius: initialSettings.geofence_radius || "150",
@@ -61,8 +64,8 @@ export function ShiftSettingsCard({
         <div className="space-y-1.5">
           <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Create Checkpoint Interval</Label>
           <select
-            value={form.create_checkpoint_interval}
-            onChange={(e) => setForm(prev => ({ ...prev, create_checkpoint_interval: e.target.value }))}
+            value={form.checkpoint_create_interval}
+            onChange={(e) => setForm(prev => ({ ...prev, checkpoint_create_interval: e.target.value }))}
             className="w-full h-11 px-3 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800 transition-all cursor-pointer"
           >
             <option value="">Select interval...</option>

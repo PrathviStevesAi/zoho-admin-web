@@ -4,13 +4,13 @@ export const proxy = auth((req) => {
   const isLoggedIn = !!req.auth;
   const { nextUrl } = req;
 
-  const isRootPage = nextUrl.pathname === "/"; // Root path check
+  const isRootPage = nextUrl.pathname === "/";
   const isAuthPage = nextUrl.pathname.startsWith("/admin-login");
-  const isDashboardPage = nextUrl.pathname.startsWith("/dashboard");
+  const isProtectedRoute = !isAuthPage;
   const hasError = req.auth?.error === "RefreshAccessTokenError";
 
   if (hasError) {
-    if (isDashboardPage || isRootPage) {
+    if (isProtectedRoute) {
       return Response.redirect(new URL("/admin-login", nextUrl));
     }
     return;
@@ -28,12 +28,14 @@ export const proxy = auth((req) => {
     return Response.redirect(new URL("/dashboard", nextUrl));
   }
 
-  if (!isLoggedIn && isDashboardPage) {
+  if (!isLoggedIn && isProtectedRoute) {
     return Response.redirect(new URL("/admin-login", nextUrl));
   }
 });
+
 export default proxy;
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|images|firebase-messaging-sw.js|favicon.ico).*)"],
 };
+

@@ -17,6 +17,7 @@ interface GooglePlacesAutocompleteProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  required?: boolean;
 }
 
 let scriptLoadingPromise: Promise<void> | null = null;
@@ -54,6 +55,7 @@ export function GooglePlacesAutocomplete({
   className,
   placeholder = "Enter street address",
   disabled,
+  required,
 }: GooglePlacesAutocompleteProps) {
   const [predictions, setPredictions] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -95,6 +97,15 @@ export function GooglePlacesAutocomplete({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Clear predictions/dropdown when value is cleared externally
+  useEffect(() => {
+    if (!value) {
+      setPredictions([]);
+      setShowDropdown(false);
+      setIsSearching(false);
+    }
+  }, [value]);
 
   const handleInputChange = (inputValue: string) => {
     onChange(inputValue);
@@ -181,30 +192,60 @@ export function GooglePlacesAutocomplete({
           let zip = "";
           let country = "";
 
-          if (addressComponents) {
-            for (const component of addressComponents) {
-              const types = component.types;
-              if (types.includes("street_number")) {
-                streetNumber = component.long_name;
-              } else if (types.includes("route")) {
-                route = component.long_name;
-              } else if (types.includes("locality")) {
-                city = component.long_name;
-              } else if (types.includes("administrative_area_level_1")) {
-                state = component.long_name;
-              } else if (types.includes("postal_code")) {
-                zip = component.long_name;
-              } else if (types.includes("country")) {
-                country = component.long_name;
-              } else if (!city && types.includes("sublocality_level_1")) {
-                city = component.long_name;
-              } else if (!city && types.includes("neighborhood")) {
-                city = component.long_name;
-              }
+          for (const component of addressComponents) {
+            const types = component.types;
+            if (types.includes("street_number")) {
+              streetNumber = component.long_name;
+            } else if (types.includes("route")) {
+              route = component.long_name;
+            } else if (types.includes("locality")) {
+              city = component.long_name;
+            } else if (types.includes("administrative_area_level_1")) {
+              state = component.long_name;
+            } else if (types.includes("postal_code")) {
+              zip = component.long_name;
+            } else if (types.includes("country")) {
+              country = component.long_name;
+            } else if (!city && types.includes("sublocality_level_1")) {
+              city = component.long_name;
+            } else if (!city && types.includes("neighborhood")) {
+              city = component.long_name;
             }
           }
 
-          const finalStreet = streetNumber ? `${streetNumber} ${route}` : (route || streetLabel);
+          let finalStreet = "";
+          const formattedAddress = place.formatted_address || "";
+          if (formattedAddress) {
+            let cityPartIndex = -1;
+            if (city) {
+              cityPartIndex = formattedAddress.indexOf(`, ${city}`);
+              if (cityPartIndex === -1) {
+                cityPartIndex = formattedAddress.indexOf(city);
+              }
+            }
+            
+            if (cityPartIndex > 0) {
+              finalStreet = formattedAddress.slice(0, cityPartIndex).trim();
+            } else {
+              let nextPartIndex = -1;
+              if (state) {
+                nextPartIndex = formattedAddress.indexOf(`, ${state}`);
+              }
+              if (nextPartIndex === -1 && country) {
+                nextPartIndex = formattedAddress.indexOf(`, ${country}`);
+              }
+              
+              if (nextPartIndex > 0) {
+                finalStreet = formattedAddress.slice(0, nextPartIndex).trim();
+              } else {
+                finalStreet = formattedAddress;
+              }
+            }
+          }
+          
+          if (!finalStreet || finalStreet.trim() === "") {
+            finalStreet = streetNumber ? `${streetNumber} ${route}` : (route || streetLabel);
+          }
 
           onAddressSelect({
             street: finalStreet,
@@ -238,6 +279,7 @@ export function GooglePlacesAutocomplete({
           placeholder={placeholder}
           className={className}
           disabled={disabled}
+          required={required}
         />
         {isSearching && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">

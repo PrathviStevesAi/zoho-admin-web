@@ -42,17 +42,26 @@ export async function apiFetch<T>(
           continue;
         }
 
-        const errorData = await response.json().catch(() => ({}));
-        console.error(`API Error [${response.status}] ${endpoint}:`, errorData);
-        const errorMessage = 
-          (typeof errorData.detail === "string" ? errorData.detail : errorData.detail?.error) || 
-          errorData.message || 
-          errorData.error || 
-          errorData.msg || 
-          `API Request Failed with status ${response.status}`;
-        throw new Error(errorMessage);
+        const errorText = await response.text().catch(() => "");
+        let errorData: any = {};
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || `API Request Failed with status ${response.status}` };
+        }
+        console.error(`[apiFetch] ERROR [${response.status}] ${url}:`, errorData);
+        throw new Error(errorData.detail?.error || errorData.message || `API Request Failed with status ${response.status}`);
       }
-      return response.json();
+      const successText = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(successText);
+      } catch (err) {
+        console.error(`[apiFetch] Failed to parse JSON response from ${url}. Response text starts with:`, successText.substring(0, 200));
+        throw new Error(`Invalid response format from server (expected JSON but got: ${successText.substring(0, 100)}...)`);
+      }
+      console.log(`[apiFetch] SUCCESS [${response.status}] ${url}:`, data);
+      return data;
     } catch (error: any) {
       lastError = error;
       if (error.message?.includes('fetch failed') || error.code === 'ECONNRESET' || error.cause?.code === 'ECONNRESET') {

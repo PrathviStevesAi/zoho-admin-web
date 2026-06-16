@@ -10,7 +10,8 @@ import {
   Edit3,
   Loader2,
   Eye,
-  EyeOff
+  EyeOff,
+  ChevronDown
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +24,48 @@ import { toast } from "sonner";
 import { fetchProfileAction, updateProfileAction, generateUploadUrlAction } from "@/actions/profile.actions";
 import { UserProfile } from "@/types/profile.types";
 
+const countries = [
+  { name: "Argentina", code: "ar", dialCode: "+54" },
+  { name: "Bolivia", code: "bo", dialCode: "+591" },
+  { name: "Brazil", code: "br", dialCode: "+55" },
+  { name: "Canada", code: "ca", dialCode: "+1" },
+  { name: "Chile", code: "cl", dialCode: "+56" },
+  { name: "Colombia", code: "co", dialCode: "+57" },
+  { name: "Ecuador", code: "ec", dialCode: "+593" },
+  { name: "Guyana", code: "gy", dialCode: "+592" },
+  { name: "Paraguay", code: "py", dialCode: "+595" },
+  { name: "Peru", code: "pe", dialCode: "+51" },
+  { name: "Suriname", code: "sr", dialCode: "+597" },
+  { name: "United States", code: "us", dialCode: "+1" },
+  { name: "Uruguay", code: "uy", dialCode: "+598" },
+  { name: "Venezuela", code: "ve", dialCode: "+58" }
+];
+
+const findCountryFromPhone = (phone: string) => {
+  if (!phone || !phone.startsWith("+")) return null;
+  const sortedCountries = [...countries].sort((a, b) => b.dialCode.length - a.dialCode.length);
+  for (const country of sortedCountries) {
+    if (phone.startsWith(country.dialCode)) {
+      return country;
+    }
+  }
+  return null;
+};
+
+const getCountryAndPhone = (phoneVal: string) => {
+  const countryMatch = findCountryFromPhone(phoneVal);
+  if (countryMatch) {
+    return {
+      country: countryMatch,
+      phone: phoneVal.slice(countryMatch.dialCode.length)
+    };
+  }
+  return {
+    country: countries[11], // default to US
+    phone: phoneVal
+  };
+};
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -31,6 +74,8 @@ export default function ProfilePage() {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedCountry, setSelectedCountry] = useState(countries[11]); // Default to US
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     first_name: "",
     last_name: "",
@@ -40,40 +85,82 @@ export default function ProfilePage() {
     profile_img_url: ""
   });
 
+  const currentFullPhone = editFormData.phone_number 
+    ? `${selectedCountry.dialCode}${editFormData.phone_number}` 
+    : "";
+
   const isFormChanged = user ? (
     editFormData.first_name !== user.first_name ||
     editFormData.last_name !== user.last_name ||
-    editFormData.phone_number !== (user.phone_number || "") ||
+    currentFullPhone !== (user.phone_number || "") ||
     editFormData.old_password !== "" ||
     editFormData.new_password !== ""
   ) : false;
 
   const loadProfile = async () => {
     setLoading(true);
-    const res = await fetchProfileAction();
-    console.log("fetchProfileAction Response:", res);
-    if (res.success && res.data) {
-      setUser(res.data);
-      setEditFormData({
-        first_name: res.data.first_name || "",
-        last_name: res.data.last_name || "",
-        phone_number: res.data.phone_number || "",
-        old_password: "",
-        new_password: "",
-        profile_img_url: res.data.profile_img_url || ""
-      });
-    } else {
-      setUser({
+    try {
+      const res = await fetchProfileAction();
+      console.log("fetchProfileAction Response:", res);
+      if (res.success && res.data) {
+        setUser(res.data);
+        const parsed = getCountryAndPhone(res.data.phone_number || "");
+        setSelectedCountry(parsed.country);
+        setEditFormData({
+          first_name: res.data.first_name || "",
+          last_name: res.data.last_name || "",
+          phone_number: parsed.phone,
+          old_password: "",
+          new_password: "",
+          profile_img_url: res.data.profile_img_url || ""
+        });
+      } else {
+        const defaultUser = {
+          first_name: "not found",
+          last_name: "not found",
+          email: "not found",
+          phone_number: "0000000000",
+          role: "not found",
+          profile_img_url: "",
+        } as any;
+        setUser(defaultUser);
+        const parsed = getCountryAndPhone(defaultUser.phone_number);
+        setSelectedCountry(parsed.country);
+        setEditFormData({
+          first_name: defaultUser.first_name || "",
+          last_name: defaultUser.last_name || "",
+          phone_number: parsed.phone,
+          old_password: "",
+          new_password: "",
+          profile_img_url: defaultUser.profile_img_url || ""
+        });
+        toast.error(res?.error || "Failed to load profile, showing guest view");
+      }
+    } catch (err: any) {
+      console.error("Error loading profile:", err);
+      const defaultUser = {
         first_name: "not found",
         last_name: "not found",
         email: "not found",
         phone_number: "0000000000",
         role: "not found",
         profile_img_url: "",
-      } as any);
-      toast.error(res.error || "Failed to load profile, showing guest view");
+      } as any;
+      setUser(defaultUser);
+      const parsed = getCountryAndPhone(defaultUser.phone_number);
+      setSelectedCountry(parsed.country);
+      setEditFormData({
+        first_name: defaultUser.first_name || "",
+        last_name: defaultUser.last_name || "",
+        phone_number: parsed.phone,
+        old_password: "",
+        new_password: "",
+        profile_img_url: defaultUser.profile_img_url || ""
+      });
+      toast.error(err?.message || "Failed to load profile, showing guest view");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -82,45 +169,53 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async () => {
     setIsUpdating(true);
-    const payload: any = {
-      first_name: editFormData.first_name,
-      last_name: editFormData.last_name,
-      phone_number: editFormData.phone_number,
-    };
+    try {
+      const payload: any = {
+        first_name: editFormData.first_name,
+        last_name: editFormData.last_name,
+        phone_number: currentFullPhone,
+      };
 
-    if (editFormData.profile_img_url && !editFormData.profile_img_url.startsWith('http')) {
-      payload.profile_img_url = editFormData.profile_img_url;
-    }
-
-    if (editFormData.old_password && editFormData.new_password) {
-      payload.old_password = editFormData.old_password;
-      payload.new_password = editFormData.new_password;
-    }
-
-    console.log("updateProfileAction Payload:", payload);
-    const res = await updateProfileAction(payload);
-    console.log("updateProfileAction Response:", res);
-
-    if (res.success) {
-      toast.success("Profile updated successfully");
-      setIsEditing(false);
-      const refreshed = await fetchProfileAction();
-      if (refreshed.success && refreshed.data) {
-        const profileData = refreshed.data;
-        setUser(profileData);
-        setEditFormData(prev => ({
-          ...prev,
-          first_name: profileData.first_name || "",
-          last_name: profileData.last_name || "",
-          phone_number: profileData.phone_number || "",
-          profile_img_url: profileData.profile_img_url || ""
-        }));
-        window.dispatchEvent(new CustomEvent("profile-updated"));
+      if (editFormData.profile_img_url && !editFormData.profile_img_url.startsWith('http')) {
+        payload.profile_img_url = editFormData.profile_img_url;
       }
-    } else {
-      toast.error(res.error || "Failed to update profile");
+
+      if (editFormData.old_password && editFormData.new_password) {
+        payload.old_password = editFormData.old_password;
+        payload.new_password = editFormData.new_password;
+      }
+
+      console.log("updateProfileAction Payload:", payload);
+      const res = await updateProfileAction(payload);
+      console.log("updateProfileAction Response:", res);
+
+      if (res.success) {
+        toast.success("Profile updated successfully");
+        setIsEditing(false);
+        const refreshed = await fetchProfileAction();
+        if (refreshed.success && refreshed.data) {
+          const profileData = refreshed.data;
+          setUser(profileData);
+          const parsed = getCountryAndPhone(profileData.phone_number || "");
+          setSelectedCountry(parsed.country);
+          setEditFormData(prev => ({
+            ...prev,
+            first_name: profileData.first_name || "",
+            last_name: profileData.last_name || "",
+            phone_number: parsed.phone,
+            profile_img_url: profileData.profile_img_url || ""
+          }));
+          window.dispatchEvent(new CustomEvent("profile-updated"));
+        }
+      } else {
+        toast.error(res?.error || "Failed to update profile");
+      }
+    } catch (err: any) {
+      console.error("Error updating profile:", err);
+      toast.error(err?.message || "Failed to update profile");
+    } finally {
+      setIsUpdating(false);
     }
-    setIsUpdating(false);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -328,18 +423,93 @@ export default function ProfilePage() {
             <div className="space-y-1.5">
               <Label className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">Phone Number</Label>
               {isEditing ? (
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
-                  <Input
-                    placeholder="Enter phone number"
-                    value={editFormData.phone_number}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, phone_number: e.target.value }))}
-                    className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl pl-10 pr-4 text-sm font-medium transition-all"
-                  />
+                <div className="relative flex items-center h-11 bg-slate-50 border border-slate-200 rounded-xl focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0064cb]/10 focus-within:border-[#0064cb] transition-all">
+                  {/* Country Code Trigger */}
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="flex items-center gap-1.5 px-3 h-full rounded-l-xl hover:bg-slate-100/50 border-r border-slate-200/80 transition-colors focus:outline-none cursor-pointer"
+                  >
+                    <img
+                      src={`https://flagcdn.com/w20/${selectedCountry.code}.png`}
+                      alt={selectedCountry.name}
+                      className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
+                    />
+                    <span className="text-sm font-semibold text-slate-700">{selectedCountry.dialCode}</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
+
+                  {/* Phone Input */}
+                  <div className="relative flex-1 h-full flex items-center">
+                    <Phone className="absolute left-3 w-4 h-4 text-slate-700" />
+                    <input
+                      type="text"
+                      placeholder="Enter phone number"
+                      value={editFormData.phone_number}
+                      onChange={(e) => {
+                        // Allow only digits
+                        const digits = e.target.value.replace(/\D/g, "").slice(0, 15);
+                        setEditFormData(prev => ({ ...prev, phone_number: digits }));
+                      }}
+                      className="w-full h-full bg-transparent outline-none border-none pl-9 pr-3 text-slate-800 font-medium placeholder-slate-400 text-sm"
+                    />
+                  </div>
+
+                  {/* Backdrop/Overlay for closing dropdown when clicking outside */}
+                  {isDropdownOpen && (
+                    <div 
+                      className="fixed inset-0 z-40 cursor-default" 
+                      onClick={() => setIsDropdownOpen(false)}
+                    />
+                  )}
+
+                  {/* Country Dropdown list */}
+                  {isDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-[260px] max-h-[220px] overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 animate-in fade-in duration-100">
+                      {countries.map((country) => (
+                        <button
+                          key={country.code}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCountry(country);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${
+                            selectedCountry.code === country.code ? "bg-blue-50/30 font-semibold text-[#0064cb]" : "text-slate-700"
+                          }`}
+                        >
+                          <img
+                            src={`https://flagcdn.com/w20/${country.code}.png`}
+                            alt={country.name}
+                            className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
+                          />
+                          <span className="flex-1 truncate font-medium">{country.name}</span>
+                          <span className="text-slate-700 text-xs font-semibold">{country.dialCode}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 px-0.5">
-                  <p className="text-[14px] font-medium text-slate-700">{currentUser.phone_number || "Not provided"}</p>
+                  {(() => {
+                    const countryMatch = findCountryFromPhone(currentUser.phone_number || "");
+                    if (countryMatch) {
+                      const displayNum = (currentUser.phone_number || "").slice(countryMatch.dialCode.length);
+                      return (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={`https://flagcdn.com/w20/${countryMatch.code}.png`}
+                            alt={countryMatch.name}
+                            className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
+                          />
+                          <span className="text-slate-700 font-semibold text-sm">{countryMatch.dialCode}</span>
+                          <span className="text-[14px] font-medium text-slate-700">{displayNum}</span>
+                        </div>
+                      );
+                    }
+                    return <p className="text-[14px] font-medium text-slate-700">{currentUser.phone_number || "Not provided"}</p>;
+                  })()}
                 </div>
               )}
             </div>

@@ -53,9 +53,4 @@ export const precheckTableColumns: TableColumn<Record>[] = [
             </Link>
         ),
     },
-    {
-        key: "service_address",
-        header: "Service Address",
-        hidden: true,
-    },
 ];

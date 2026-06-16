@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -59,6 +60,7 @@ export default function CalendarPage() {
       const to_date = fetchInfo.end.toISOString().split("T")[0];
 
       const res = await fetchCalendarShiftsAction(from_date, to_date);
+      console.log("[Calendar Page] fetchCalendarShiftsAction response:", res);
       if (res.success && res.data) {
         const events = res.data.map((shift) => {
           let bgColor = "#9ca3af";
@@ -83,6 +85,9 @@ export default function CalendarPage() {
             backgroundColor: bgColor,
             borderColor: "transparent",
             textColor: "#ffffff",
+            extendedProps: {
+              shift_no: shift.shift_no
+            }
           };
         });
         successCallback(events);
@@ -291,21 +296,39 @@ export default function CalendarPage() {
                 </button>
               </div>
               <div className="p-5">
-                <div
-                  className="p-4 rounded-lg border-l-[3px]"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${selectedEvent.backgroundColor} 15%, transparent)`,
-                    borderColor: selectedEvent.backgroundColor,
-                    color: selectedEvent.backgroundColor
-                  }}
+                <Link
+                  href={`/shift/view?shift_id=${selectedEvent.id}`}
+                  className="block"
                 >
-                  <div className="font-bold mb-2 flex items-center gap-2">
-                    <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: selectedEvent.backgroundColor }}></div>
-                    {selectedEvent.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                    {selectedEvent.end ? ` - ${selectedEvent.end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
+                  <div
+                    className="p-4 rounded-lg border-l-[3px] cursor-pointer hover:opacity-90 hover:translate-x-0.5 transition-all"
+                    style={{
+                      backgroundColor: `color-mix(in srgb, ${selectedEvent.backgroundColor} 15%, transparent)`,
+                      borderColor: selectedEvent.backgroundColor,
+                      color: selectedEvent.backgroundColor
+                    }}
+                  >
+                    <div className="font-bold mb-2 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: selectedEvent.backgroundColor }}></div>
+                        {selectedEvent.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        {selectedEvent.end ? ` - ${selectedEvent.end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
+                      </div>
+                      {selectedEvent.shift_no && (
+                        <span
+                          className="text-xs font-bold px-2.5 py-0.5 rounded border tracking-wide"
+                          style={{
+                            backgroundColor: `color-mix(in srgb, ${selectedEvent.backgroundColor} 25%, transparent)`,
+                            borderColor: `color-mix(in srgb, ${selectedEvent.backgroundColor} 40%, transparent)`
+                          }}
+                        >
+                          Shift No: {selectedEvent.shift_no}
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-semibold text-[14px] leading-relaxed ml-[14px]">{selectedEvent.title}</div>
                   </div>
-                  <div className="font-semibold text-[14px] leading-relaxed ml-[14px]">{selectedEvent.title}</div>
-                </div>
+                </Link>
               </div>
             </div>
           </div>
@@ -336,6 +359,8 @@ export default function CalendarPage() {
                       onClick={() => {
                         setShowMoreModal(null);
                         setSelectedEvent({
+                          id: event.id,
+                          shift_no: event.extendedProps?.shift_no,
                           title: event.title,
                           start: event.start,
                           end: event.end,
@@ -343,9 +368,22 @@ export default function CalendarPage() {
                         });
                       }}
                     >
-                      <div className="font-bold mb-1 flex items-center gap-2 text-[13px]">
-                        <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: event.backgroundColor }}></div>
-                        {event.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      <div className="font-bold mb-1 flex items-center justify-between gap-2 text-[13px]">
+                        <div className="flex items-center gap-2">
+                          <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: event.backgroundColor }}></div>
+                          {event.start?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </div>
+                        {event.extendedProps?.shift_no && (
+                          <span
+                            className="text-[11px] font-bold px-1.5 py-0.5 rounded border tracking-wide"
+                            style={{
+                              backgroundColor: `color-mix(in srgb, ${event.backgroundColor} 25%, transparent)`,
+                              borderColor: `color-mix(in srgb, ${event.backgroundColor} 40%, transparent)`
+                            }}
+                          >
+                            Shift No: {event.extendedProps.shift_no}
+                          </span>
+                        )}
                       </div>
                       <div className="font-semibold text-[14px] ml-[14px] truncate">{event.title}</div>
                     </div>
@@ -382,8 +420,34 @@ export default function CalendarPage() {
                 info.el.style.setProperty('--event-color-light', `color-mix(in srgb, ${color} 15%, transparent)`);
               }
             }}
+            eventContent={(eventInfo) => {
+              const isListView = eventInfo.view.type.startsWith("list");
+              const shiftNo = eventInfo.event.extendedProps?.shift_no;
+
+              if (isListView) {
+                return (
+                  <div className="flex flex-col w-full">
+                    <span className="fc-event-title leading-normal">{eventInfo.event.title}</span>
+                    {shiftNo && (
+                      <span className="self-end text-[11px] font-extrabold tracking-wider mt-1 opacity-90 select-none">
+                        #SH-{shiftNo}
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {eventInfo.timeText && <span className="fc-event-time">{eventInfo.timeText}</span>}
+                  <span className="fc-event-title">{eventInfo.event.title}</span>
+                </>
+              );
+            }}
             eventClick={(info) => {
               setSelectedEvent({
+                id: info.event.id,
+                shift_no: info.event.extendedProps?.shift_no,
                 title: info.event.title,
                 start: info.event.start,
                 end: info.event.end,

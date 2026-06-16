@@ -462,7 +462,7 @@ export async function fetchLocationAction(): Promise<{ success: boolean; data?: 
 }
 
 export async function fetchGuardsAction(params: {
-  page?: number;
+  page?: number | null;
   search?: string;
   status?: string;
   city?: string;
@@ -486,7 +486,9 @@ export async function fetchGuardsAction(params: {
     radius_miles = ""
   } = params;
   const query = new URLSearchParams();
-  query.append("page", page.toString());
+  if (page !== null) {
+    query.append("page", page.toString());
+  }
   if (search) query.append("search", search);
   if (status) query.append("status", status);
   if (city && city !== "All City") query.append("city", city);
@@ -510,11 +512,14 @@ export async function fetchGuardsAction(params: {
 
 export async function assignGuardsAction(payload: {
   invoice_id: string;
-  per_hour_rate: number;
-  per_shift_rate: number;
+  per_hour_rate?: number | null;
+  per_shift_rate?: number | null;
   assignments: {
     guard_id: string;
     shift_ids: string[];
+    per_hour_rate?: number | null;
+    per_shift_rate?: number | null;
+    travel_fee?: number | null;
   }[];
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
@@ -550,6 +555,9 @@ export async function assignGuardToShiftAction(payload: {
             {
               guard_id: payload.guard_id,
               shift_ids: [payload.shift_id],
+              per_hour_rate: 0,
+              per_shift_rate: 0,
+              travel_fee: 0
             },
           ],
         }),
@@ -692,6 +700,7 @@ export async function fetchCalendarShiftsAction(
     const data = await apiFetch<{ success: boolean; count: number; data: any[] }>(
       `/api/v1/calender/shifts?from_date=${from_date}&to_date=${to_date}`
     );
+    console.log("[fetchCalendarShiftsAction] Response from /api/v1/calender/shifts:", data);
     return { success: true, data: data.data, count: data.count };
   } catch (error: any) {
     const message = error.message || "Something went wrong";
@@ -747,9 +756,14 @@ export async function updateShiftDetailsAction(payload: {
   shipping_address?: any;
   shift_time?: any;
   shift_execution_time?: any;
-  create_checkpoint_interval?: number;
+  checkpoint_create_interval?: number;
   guard_break_max_duration?: number;
+  break_max_time?: number;
   guard_break_limit?: number;
+  total_break_limit?: number;
+  per_hour_rate?: number;
+  per_shift_rate?: number;
+  travel_fee?: number;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     console.log("[Server Action] updateShiftDetailsAction PATCH Payload to /api/v1/shift/details:", JSON.stringify(payload, null, 2));
@@ -793,3 +807,18 @@ export async function fetchGuardTrackingAction(guard_id: string, shift_id: strin
     return { success: false, error: error.message || "Failed to fetch guard tracking data" };
   }
 }
+
+export async function globalSearchAction(
+  search: string
+): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  try {
+    const data = await apiFetch<{ success: boolean; data: any[] }>(
+      `/api/v1/invoice/global-search?search=${encodeURIComponent(search)}`
+    );
+    return { success: true, data: data.data };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Something went wrong";
+    return { success: false, data: [], error: message };
+  }
+}
+

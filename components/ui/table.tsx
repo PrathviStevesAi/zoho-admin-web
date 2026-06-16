@@ -8,7 +8,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto custom-scrollbar"
+      className="relative w-full flex-1 min-h-0 overflow-x-scroll overflow-y-auto custom-scrollbar"
     >
       <table
         data-slot="table"
@@ -23,7 +23,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      className={cn("[&_tr]:border-b sticky top-0 bg-surface z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.05)]", className)}
       {...props}
     />
   )

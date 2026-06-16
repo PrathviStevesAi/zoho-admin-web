@@ -49,6 +49,9 @@ export function EditShiftLocationDialog({
   }, [isOpen, initialLocation]);
 
   const handleUpdate = () => {
+    if (!form.street || !form.city || !form.state || !form.country) {
+      return;
+    }
     onSave(form);
   };
 
@@ -64,11 +67,12 @@ export function EditShiftLocationDialog({
           </div>
         </div>
 
-        <div className="p-6 space-y-5">
+        <form onSubmit={(e) => { e.preventDefault(); handleUpdate(); }} className="p-6 space-y-5">
           <div className="space-y-1.5">
             <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Street</Label>
             <GooglePlacesAutocomplete
               value={form.street || ""}
+              required
               onChange={(value) => setForm((prev) => ({ ...prev, street: value }))}
               onAddressSelect={(address) => setForm(address)}
               placeholder="Enter street address"
@@ -80,6 +84,7 @@ export function EditShiftLocationDialog({
             <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">City</Label>
             <Input
               value={form.city || ""}
+              required
               onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
               placeholder="Enter city name"
               className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm text-slate-800"
@@ -91,6 +96,7 @@ export function EditShiftLocationDialog({
               <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">State</Label>
               <Input
                 value={form.state || ""}
+                required
                 onChange={(e) => setForm((prev) => ({ ...prev, state: e.target.value }))}
                 placeholder="Enter state name"
                 className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm text-slate-800"
@@ -111,6 +117,7 @@ export function EditShiftLocationDialog({
             <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Country</Label>
             <Input
               value={form.country || ""}
+              required
               onChange={(e) => setForm((prev) => ({ ...prev, country: e.target.value }))}
               placeholder="Enter country name"
               className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl text-sm text-slate-800"
@@ -127,14 +134,14 @@ export function EditShiftLocationDialog({
               Cancel
             </Button>
             <Button
-              onClick={handleUpdate}
+              type="submit"
               disabled={isSaving}
               className="h-11 px-8 rounded-xl font-bold bg-[#0064cb] hover:bg-[#0052ae] text-white shadow-lg shadow-[#0064cb]/20 transition-all active:scale-95 flex gap-2 cursor-pointer"
             >
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update"}
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

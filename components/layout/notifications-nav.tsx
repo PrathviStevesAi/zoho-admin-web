@@ -72,6 +72,7 @@ export function NotificationsNav() {
 
   useEffect(() => {
     const handleFCMMessage = (payload: any) => {
+      if (payload?._focusRefresh) return;
       console.log("[NotificationsNav] FCM message received in foreground:", payload);
       console.log("[NotificationsNav] Refreshing notifications list and count...");
       if (loadRef.current) {
@@ -104,6 +105,7 @@ export function NotificationsNav() {
         <Button
           variant="ghost"
           size="icon"
+          onClick={() => loadNotifications(1)}
           className="relative text-[#474d56] hover:text-primary transition-colors h-10 w-10 rounded-full cursor-pointer"
         >
           <Bell className="size-[22px] stroke-[1.5px]" />
@@ -163,9 +165,11 @@ export function NotificationsNav() {
                                 >
                                   <Link
                                     href={
-                                      notification.data?.shift_id
-                                        ? `/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`
-                                        : `/notifications/view`
+                                      notification.data?.view === "shift_invoice_view" && notification.data?.invoice_id
+                                        ? `/invoices/${notification.data.invoice_id}?notification_id=${notification.id}`
+                                        : notification.data?.shift_id
+                                          ? `/notifications/view?shift_id=${notification.data.shift_id}&notification_id=${notification.id}`
+                                          : `/notifications/view`
                                     }
                                     onClick={() => {
                                       if (isUnread) {
@@ -235,7 +239,7 @@ export function NotificationsNav() {
                 onClick={handleNextPage}
                 className="cursor-pointer text-[13px] text-[#0064cb] hover:text-[#0052ae] hover:bg-white font-semibold"
               >
-                See More
+                Next
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             )}

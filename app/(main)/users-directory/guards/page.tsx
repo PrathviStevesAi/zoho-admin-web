@@ -6,15 +6,13 @@ import {
   UserPlus,
   Mail,
   Phone,
-  Lock,
   Trash2,
   Search,
   ChevronRight,
+  ChevronDown,
   ArrowLeft,
   User,
   Loader2,
-  Eye,
-  EyeOff,
   MapPin,
   CheckCircle,
   AlertCircle
@@ -47,12 +45,30 @@ import Swal from "sweetalert2";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+const countries = [
+  { name: "Argentina", code: "ar", dialCode: "+54" },
+  { name: "Bolivia", code: "bo", dialCode: "+591" },
+  { name: "Brazil", code: "br", dialCode: "+55" },
+  { name: "Canada", code: "ca", dialCode: "+1" },
+  { name: "Chile", code: "cl", dialCode: "+56" },
+  { name: "Colombia", code: "co", dialCode: "+57" },
+  { name: "Ecuador", code: "ec", dialCode: "+593" },
+  { name: "Guyana", code: "gy", dialCode: "+592" },
+  { name: "Paraguay", code: "py", dialCode: "+595" },
+  { name: "Peru", code: "pe", dialCode: "+51" },
+  { name: "Suriname", code: "sr", dialCode: "+597" },
+  { name: "United States", code: "us", dialCode: "+1" },
+  { name: "Uruguay", code: "uy", dialCode: "+598" },
+  { name: "Venezuela", code: "ve", dialCode: "+58" }
+];
+
 export default function GuardDirectoryPage() {
   const [guards, setGuards] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState(countries[11]); // Default to United States
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -104,7 +120,15 @@ export default function GuardDirectoryPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+    if (
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.email ||
+      !(formData.streetAddress || formData.address) ||
+      !formData.city ||
+      !formData.state ||
+      !formData.country
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -129,13 +153,14 @@ export default function GuardDirectoryPage() {
     }
 
     setIsRegistering(true);
+    const randomPassword = Math.random().toString(36).slice(-8) + "aB1!";
     const res = await registerGuardAction({
       email: formData.email,
-      password: formData.password,
+      password: randomPassword,
       role: "guard",
       first_name: formData.firstName,
       last_name: formData.lastName,
-      phone_number: formData.phone,
+      phone_number: formData.phone ? `${selectedCountry.dialCode}${formData.phone}` : "",
       street_address: formData.streetAddress || formData.address,
       city: formData.city,
       state: formData.state,
@@ -178,6 +203,7 @@ export default function GuardDirectoryPage() {
         licenseExpirationDate: "",
         gender: "male"
       });
+      setSelectedCountry(countries[11]);
       loadGuards(1);
     } else {
       toast.error(res.error || "Guard registration failed");
@@ -294,30 +320,84 @@ export default function GuardDirectoryPage() {
 
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Phone Number</label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
-                    <Input
-                      placeholder="Enter phone number"
-                      value={formData.phone}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const hasPlus = val.startsWith("+");
-                        const digits = val.replace(/\D/g, "").slice(0, 15);
-                        setFormData({ ...formData, phone: (hasPlus ? "+" : "") + digits });
-                      }}
-                      className="h-12 pl-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
-                    />
+                  <div className="relative flex items-center h-12 bg-slate-50/50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-[#0064cb]/10 focus-within:border-[#0064cb] transition-all">
+                    {/* Country Code Trigger */}
+                    <button
+                      type="button"
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="flex items-center gap-1.5 px-3 h-full rounded-l-xl hover:bg-slate-100/50 border-r border-slate-200/80 transition-colors focus:outline-none cursor-pointer"
+                    >
+                      <img
+                        src={`https://flagcdn.com/w20/${selectedCountry.code}.png`}
+                        alt={selectedCountry.name}
+                        className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
+                      />
+                      <span className="text-sm font-semibold text-slate-700">{selectedCountry.dialCode}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
+
+                    {/* Phone Input */}
+                    <div className="relative flex-1 h-full flex items-center">
+                      <Phone className="absolute left-3 w-4 h-4 text-slate-700" />
+                      <input
+                        type="text"
+                        placeholder="Enter phone number"
+                        value={formData.phone}
+                        onChange={(e) => {
+                          // Allow only digits (no + or other characters)
+                          const digits = e.target.value.replace(/\D/g, "").slice(0, 15);
+                          setFormData({ ...formData, phone: digits });
+                        }}
+                        className="w-full h-full bg-transparent outline-none border-none pl-9 pr-3 text-slate-800 font-medium placeholder-slate-400 text-sm"
+                      />
+                    </div>
+
+                    {/* Backdrop/Overlay for closing dropdown when clicking outside */}
+                    {isDropdownOpen && (
+                      <div 
+                        className="fixed inset-0 z-40 cursor-default" 
+                        onClick={() => setIsDropdownOpen(false)}
+                      />
+                    )}
+
+                    {/* Country Dropdown list */}
+                    {isDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-[260px] max-h-[220px] overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 animate-in fade-in duration-100">
+                        {countries.map((country) => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            onClick={() => {
+                              setSelectedCountry(country);
+                              setIsDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${
+                              selectedCountry.code === country.code ? "bg-blue-50/30 font-semibold text-[#0064cb]" : "text-slate-700"
+                            }`}
+                          >
+                            <img
+                              src={`https://flagcdn.com/w20/${country.code}.png`}
+                              alt={country.name}
+                              className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
+                            />
+                            <span className="flex-1 truncate font-medium">{country.name}</span>
+                            <span className="text-slate-700 text-xs font-semibold">{country.dialCode}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Address</label>
+                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Street Address</label>
                   <div className="relative">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700 z-10 pointer-events-none" />
                     <GooglePlacesAutocomplete
-                      placeholder="Enter street, city, state"
-                      value={formData.address}
-                      onChange={(val) => setFormData({ ...formData, address: val })}
+                      placeholder="Enter street address"
+                      value={formData.streetAddress}
+                      required
+                      onChange={(val) => setFormData({ ...formData, streetAddress: val, address: val })}
                       onAddressSelect={(address) => {
                         const formattedAddress = `${address.street}${address.city ? ', ' + address.city : ''}${address.state ? ', ' + address.state : ''}${address.country ? ', ' + address.country : ''}`;
                         setFormData(prev => ({
@@ -335,27 +415,52 @@ export default function GuardDirectoryPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Access Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">City</label>
                     <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter password"
+                      placeholder="City"
+                      value={formData.city}
                       required
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="h-12 pl-11 pr-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">State</label>
+                    <Input
+                      placeholder="State"
+                      value={formData.state}
+                      required
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
+                    />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">ZIP Code</label>
+                    <Input
+                      placeholder="ZIP Code"
+                      value={formData.zipCode}
+                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
+                    <Input
+                      placeholder="Country"
+                      value={formData.country}
+                      required
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
+                    />
+                  </div>
+                </div>
+
+
 
                 <div className="space-y-1 pt-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Gender</label>
@@ -530,7 +635,7 @@ export default function GuardDirectoryPage() {
                         <TableCell colSpan={8} className="h-96 text-center">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <Shield className="w-12 h-12 text-slate-200" />
-                            <p className="text-sm font-medium text-slate-700 italic">No guards found</p>
+                            <p className="text-sm font-medium text-slate-700">No guards found</p>
                           </div>
                         </TableCell>
                       </TableRow>

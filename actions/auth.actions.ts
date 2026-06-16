@@ -33,7 +33,7 @@ export async function registerUserAction(userData: any) {
         const { role, ...cleanUserData } = userData;
 
         console.log("Sending registration data:", cleanUserData);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/member/register`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/member/register`, {
             method: "POST",
             body: JSON.stringify(cleanUserData),
             headers: {
@@ -68,7 +68,7 @@ export async function registerGuardAction(guardData: any) {
         const token = session?.accessToken;
 
         console.log("Sending guard registration data:", guardData);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/guard/register`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/guards/register`, {
             method: "POST",
             body: JSON.stringify(guardData),
             headers: {

@@ -1,17 +1,23 @@
 import { Download, Maximize2, FileText } from "lucide-react";
+import { DateTime } from "luxon";
 
-export const toUTCISO = (localDateTimeStr: string) => {
+export const toUTCISO = (localDateTimeStr: string, timezone?: string) => {
   if (!localDateTimeStr) return null;
-  return new Date(localDateTimeStr).toISOString();
+  try {
+    const dt = DateTime.fromISO(localDateTimeStr, { zone: timezone || 'local' });
+    if (!dt.isValid) return null;
+    return dt.toUTC().toISO();
+  } catch {
+    return null;
+  }
 };
 
 export const toLocalDateTimeString = (isoStr: string) => {
   if (!isoStr) return "";
   try {
-    const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return "";
-    const pad = (num: number) => String(num).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const dt = DateTime.fromISO(isoStr, { setZone: true });
+    if (!dt.isValid) return "";
+    return dt.toFormat("yyyy-MM-dd'T'HH:mm");
   } catch {
     return "";
   }
@@ -175,13 +181,13 @@ export const formatStatus = (status: string) => {
 
 export const formatDateTime = (dateStr: string) => {
   if (!dateStr) return 'N/A';
-  return new Date(dateStr).toLocaleString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  try {
+    const dt = DateTime.fromISO(dateStr, { setZone: true });
+    if (!dt.isValid) return 'N/A';
+    return dt.toFormat('dd/MM/yyyy, HH:mm');
+  } catch {
+    return 'N/A';
+  }
 };
 
 export const FileAttachmentCard = ({
