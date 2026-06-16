@@ -49,8 +49,10 @@ export async function apiFetch<T>(
         } catch {
           errorData = { message: errorText || `API Request Failed with status ${response.status}` };
         }
-        console.error(`[apiFetch] ERROR [${response.status}] ${url}:`, errorData);
-        throw new Error(errorData.detail?.error || errorData.message || `API Request Failed with status ${response.status}`);
+        const detailMessage = typeof errorData.detail === "string"
+          ? errorData.detail
+          : (errorData.detail?.error || errorData.detail?.message || errorData.message || `API Request Failed with status ${response.status}`);
+        throw new Error(detailMessage);
       }
       const successText = await response.text();
       let data: any;

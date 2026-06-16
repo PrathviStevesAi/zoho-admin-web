@@ -4,16 +4,12 @@ import React, { createContext, useContext, useState, useEffect, useRef } from "r
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
-  Phone,
-  PhoneOff,
-  Video,
   UserPlus,
   X,
   Minimize2,
   Maximize2,
   Loader2,
-  Users,
-  VideoOff
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -77,13 +73,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           console.log("[VideoCall] Active call detected on mount:", call);
 
           // Verify if we are already in this call or if we should display invitation popup
-          if (!activeCall && call.status === "initiated") {
-            setIncomingCall({
-              call_id: call.id,
-              shift_id: call.shift_id,
-              sender_name: "Security Guard"
-            });
-          }
+          // (Incoming call popup disabled as only admins & members initiate calls)
         }
       } catch (err) {
         console.error("Failed to fetch active calls on mount:", err);
@@ -97,22 +87,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const handleIncomingCall = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      console.log("[VideoCall] Foreground FCM Event received:", detail);
-      if (detail && detail.call_id) {
-        setIncomingCall({
-          call_id: detail.call_id,
-          shift_id: detail.shift_id,
-          sender_name: "Security Guard"
-        });
-      }
-    };
-
-    window.addEventListener("incoming-vc-call", handleIncomingCall);
-    return () => {
-      window.removeEventListener("incoming-vc-call", handleIncomingCall);
-    };
+    // FCM event listener for incoming calls disabled as only admins & members initiate calls
   }, []);
 
   // 3. Initialize Zego Room when activeCall is set and zegoContainerRef is available
@@ -129,27 +104,24 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
         if (!active) return;
 
-        let finalToken = activeCall.token;
-        const isValidToken = finalToken && finalToken !== "zego_token" && finalToken.startsWith("04");
+        // Always generate Zego Kit Token on client to prevent credential mismatches with backend ngrok environment
+        console.log("[VideoCall] Generating Zego Kit Token on client...");
+        const appID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID || 727438037);
+        const serverSecret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || "dd1d31a37620b0d4a6cc9c237a7cd370";
+        const roomID = activeCall.room_id;
+        const userID = activeCall.user_id || session?.user?.id || `user_${Math.floor(Math.random() * 10000)}`;
+        const userName = session?.user?.name || session?.user?.email || "Administrator";
 
-        if (!isValidToken) {
-          console.log("[VideoCall] ActiveCall token is mock or invalid. Generating Kit Token on client...");
-          const appID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID || 727438037);
-          const serverSecret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || "dd1d31a37620b0d4a6cc9c237a7cd370";
-          const roomID = activeCall.room_id;
-          const userID = activeCall.user_id || session?.user?.id || `user_${Math.floor(Math.random() * 10000)}`;
-          const userName = session?.user?.name || session?.user?.email || "Administrator";
-
-          finalToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-            appID,
-            serverSecret,
-            roomID,
-            userID,
-            userName
-          );
-        }
+        const finalToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+          appID,
+          serverSecret,
+          roomID,
+          userID,
+          userName
+        );
 
         console.log("[VideoCall] Initializing Zego with details:", {
+          call_id: activeCall.call_id,
           room_id: activeCall.room_id,
           user_id: activeCall.user_id,
           token: finalToken ? `${finalToken.slice(0, 20)}...` : "null"
@@ -368,44 +340,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     }}>
       {children}
 
-      {/* --- INCOMING CALL MODAL POPUP --- */}
-      {incomingCall && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[999] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm border border-slate-100 shadow-2xl flex flex-col items-center text-center space-y-6 animate-in zoom-in-95 duration-300">
-            <div className="relative">
-              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 shadow-inner">
-                <Video className="w-10 h-10 animate-bounce" />
-              </div>
-              <div className="absolute inset-0 rounded-full border-4 border-emerald-500/30 animate-ping" />
-            </div>
 
-            <div className="space-y-1">
-              <h3 className="text-lg font-bold text-slate-800">Incoming Video Call</h3>
-              <p className="text-sm text-slate-700 font-medium">From: {incomingCall.sender_name || "Security Guard"}</p>
-              <p className="text-xs text-slate-700">Shift ID: #{incomingCall.shift_id.slice(0, 8)}...</p>
-            </div>
-
-            <div className="flex w-full gap-4 pt-2">
-              <button
-                onClick={declineIncomingCall}
-                disabled={isActionPending}
-                className="flex-1 h-12 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-red-200 hover:shadow-lg hover:shadow-red-300 active:scale-95 transition-all disabled:opacity-50"
-              >
-                <PhoneOff className="w-5 h-5" />
-                Decline
-              </button>
-              <button
-                onClick={() => joinCall(incomingCall.call_id)}
-                disabled={isActionPending}
-                className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-200 hover:shadow-lg hover:shadow-emerald-300 active:scale-95 transition-all disabled:opacity-50"
-              >
-                <Phone className="w-5 h-5" />
-                Accept
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* --- ACTIVE FLOATING VIDEO CALL OVERLAY --- */}
       {activeCall && (
@@ -446,7 +381,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
               </button>
               <button
                 onClick={leaveCall}
-                className="p-2 text-slate-700 hover:text-red-500 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                disabled={isActionPending}
+                className="p-2 text-slate-700 hover:text-red-500 hover:bg-white/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                 title="Leave Call"
               >
                 <X className="w-4 h-4" />
@@ -481,7 +417,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
                         </span>
                         <button
                           onClick={() => inviteMember(member.id || member.member_id)}
-                          className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-2.5 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-colors"
+                          disabled={isActionPending}
+                          className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-2.5 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-colors disabled:opacity-50"
                         >
                           Invite
                         </button>
@@ -508,13 +445,15 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
             <div className="h-14 bg-slate-950 border-t border-slate-800 px-4 flex items-center justify-end gap-3 shrink-0">
               <button
                 onClick={leaveCall}
-                className="bg-slate-700 hover:bg-slate-600 text-white px-4 h-9 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                disabled={isActionPending}
+                className="bg-slate-700 hover:bg-slate-600 text-white px-4 h-9 rounded-lg text-xs font-bold cursor-pointer transition-colors disabled:opacity-50"
               >
                 Leave
               </button>
               <button
                 onClick={endCall}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 h-9 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-md shadow-red-900/10"
+                disabled={isActionPending}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 h-9 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-md shadow-red-900/10 disabled:opacity-50"
               >
                 End Call
               </button>
