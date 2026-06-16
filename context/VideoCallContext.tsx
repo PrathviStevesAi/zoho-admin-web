@@ -10,8 +10,6 @@ import {
   Minus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// Server Actions
 import {
   startVideoCallAction,
   joinVideoCallAction,
@@ -51,15 +49,14 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const zegoContainerRef = useRef<HTMLDivElement | null>(null);
   const zegoInstanceRef = useRef<any | null>(null);
 
-  // 0. Suppress Zego SDK unmount telemetry bug (createSpan of null)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const handleGlobalError = (event: ErrorEvent) => {
-      const isZegoBug = 
-        (event.message && event.message.includes("createSpan")) || 
+      const isZegoBug =
+        (event.message && event.message.includes("createSpan")) ||
         (event.error && event.error.message && event.error.message.includes("createSpan"));
-      
+
       if (isZegoBug) {
         console.warn("[VideoCall] Suppressed Zego SDK unmount error:", event.error || event.message);
         event.preventDefault();
@@ -68,11 +65,11 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      const isZegoBug = 
-        event.reason && 
-        event.reason.message && 
+      const isZegoBug =
+        event.reason &&
+        event.reason.message &&
         event.reason.message.includes("createSpan");
-      
+
       if (isZegoBug) {
         console.warn("[VideoCall] Suppressed Zego SDK unmount rejection:", event.reason);
         event.preventDefault();
@@ -80,19 +77,27 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Monkey-patch console.error to intercept React's internal logging of unhandled lifecycle exceptions
     const originalConsoleError = console.error;
     console.error = (...args: any[]) => {
-      const argStr = args.map(a => {
-        if (!a) return "";
-        if (a instanceof Error) return a.stack || a.message;
-        if (typeof a === "object") {
-          try { return JSON.stringify(a); } catch (e) { return String(a); }
-        }
-        return String(a);
-      }).join(" ");
+      const argStr = args
+        .map((a) => {
+          if (!a) return "";
+          if (a instanceof Error) return a.stack || a.message;
+          if (typeof a === "object") {
+            try {
+              return JSON.stringify(a);
+            } catch {
+              return String(a);
+            }
+          }
+          return String(a);
+        })
+        .join(" ");
 
-      if (argStr.includes("createSpan") || argStr.includes("Cannot read properties of null (reading 'createSpan')")) {
+      if (
+        argStr.includes("createSpan") ||
+        argStr.includes("Cannot read properties of null (reading 'createSpan')")
+      ) {
         console.warn("[VideoCall] Suppressed Zego SDK unmount console.error:", ...args);
         return;
       }
@@ -109,44 +114,34 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // 1. Fetch active calls and team members on auth load
   useEffect(() => {
     if (authStatus !== "authenticated") return;
 
-    // Load members
     fetchMembersAction().then((res) => {
       if (res.success && res.data) {
         setMembers(res.data);
       }
     });
 
-    // Check for active calls
     const checkActiveCalls = async () => {
       try {
         const res = await activeVideoCallsAction();
         if (res.success && res.data && res.data.length > 0) {
           const call = res.data[0];
           console.log("[VideoCall] Active call detected on mount:", call);
-
-          // Verify if we are already in this call or if we should display invitation popup
-          // (Incoming call popup disabled as only admins & members initiate calls)
         }
       } catch (err) {
-        console.error("Failed to fetch active calls on mount:", err);
+        console.error("[VideoCall] Failed to fetch active calls on mount:", err);
       }
     };
 
     checkActiveCalls();
   }, [authStatus]);
 
-  // 2. Listen to custom FCM event for foreground incoming video calls
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    // FCM event listener for incoming calls disabled as only admins & members initiate calls
   }, []);
 
-  // 3. Initialize Zego Room when activeCall is set and zegoContainerRef is available
   useEffect(() => {
     if (!activeCall || !zegoContainerRef.current) return;
 
@@ -155,21 +150,23 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     const initZego = async () => {
       setIsZegoLoading(true);
       try {
-        // Dynamically import Zego to prevent SSR compilation errors
         const { ZegoUIKitPrebuilt } = await import("@zegocloud/zego-uikit-prebuilt");
 
-        // Monkey-patch destroy to prevent unmount telemetry crash (createSpan of null)
-        if (ZegoUIKitPrebuilt && ZegoUIKitPrebuilt.prototype && !(ZegoUIKitPrebuilt.prototype as any).__patchedDestroy) {
+        if (
+          ZegoUIKitPrebuilt &&
+          ZegoUIKitPrebuilt.prototype &&
+          !(ZegoUIKitPrebuilt.prototype as any).__patchedDestroy
+        ) {
           const originalDestroy = ZegoUIKitPrebuilt.prototype.destroy;
           ZegoUIKitPrebuilt.prototype.destroy = function (this: any) {
             if (this.root) {
-              console.log("[VideoCall] Pre-emptively unmounting Zego React root safely in monkey-patched destroy...");
+              console.log("[VideoCall] Pre-emptively unmounting Zego React root safely...");
               try {
                 this.root.unmount();
               } catch (e) {
                 console.warn("[VideoCall] Error during safe pre-unmount:", e);
               }
-              this.root.unmount = () => {};
+              this.root.unmount = () => { };
             }
             return originalDestroy.apply(this);
           };
@@ -178,13 +175,17 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
         if (!active) return;
 
-        // Always generate Zego Kit Token on client to prevent credential mismatches with backend ngrok environment
         console.log("[VideoCall] Generating Zego Kit Token on client...");
         const appID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID || 727438037);
-        const serverSecret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || "dd1d31a37620b0d4a6cc9c237a7cd370";
+        const serverSecret =
+          process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || "dd1d31a37620b0d4a6cc9c237a7cd370";
         const roomID = activeCall.room_id;
-        const userID = activeCall.user_id || session?.user?.id || `user_${Math.floor(Math.random() * 10000)}`;
-        const userName = session?.user?.name || session?.user?.email || "Administrator";
+        const userID =
+          activeCall.user_id ||
+          session?.user?.id ||
+          `user_${Math.floor(Math.random() * 10000)}`;
+        const userName =
+          session?.user?.name || session?.user?.email || "Administrator";
 
         const finalToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
           appID,
@@ -198,7 +199,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           call_id: activeCall.call_id,
           room_id: activeCall.room_id,
           user_id: activeCall.user_id,
-          token: finalToken ? `${finalToken.slice(0, 20)}...` : "null"
+          token: finalToken ? `${finalToken.slice(0, 20)}...` : "null",
         });
 
         const zp = ZegoUIKitPrebuilt.create(finalToken);
@@ -209,8 +210,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           sharedLinks: [
             {
               name: "Join Link",
-              url: `${window.location.origin}/shift/view?shift_id=${activeCall.shift_id}`
-            }
+              url: `${window.location.origin}/shift/view?shift_id=${activeCall.shift_id}`,
+            },
           ],
           scenario: {
             mode: ZegoUIKitPrebuilt.GroupCall,
@@ -222,13 +223,12 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           showUserList: true,
           showLayoutButton: true,
           onLeaveRoom: () => {
-            console.log("[VideoCall] Left Zego room callback");
-            // If user leaves through Zego built-in leave, clean up call state
+            console.log("[VideoCall] Left Zego room via built-in button");
             handleCleanupState();
-          }
+          },
         });
       } catch (err) {
-        console.error("Zego initialization error:", err);
+        console.error("[VideoCall] Zego initialization error:", err);
         toast.error("Failed to initialize video call room");
         setActiveCall(null);
       } finally {
@@ -251,9 +251,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     zegoInstanceRef.current = null;
   };
 
-  // --- ACTIONS ---
-
-  // Start video call
   const startCall = async (shiftId: string) => {
     if (activeCall) {
       toast.warning("You are already in an active call");
@@ -265,40 +262,39 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await startVideoCallAction(shiftId);
       if (res.success && res.data) {
-        // Fallback: If token is mock or invalid (doesn't start with Zego kit token signature '04'), call join to get real token
-        const isTokenMock = !res.data.token || res.data.token === "zego_token" || !res.data.token.startsWith("04");
+        const isTokenMock =
+          !res.data.token ||
+          res.data.token === "zego_token" ||
+          !res.data.token.startsWith("04");
 
         if (isTokenMock) {
-          console.log("[VideoCall] Received mock token from start call, automatically joining to fetch real Zego token...");
+          console.log(
+            "[VideoCall] Mock token received from start — auto-joining to fetch real token..."
+          );
           const joinRes = await joinVideoCallAction(res.data.call_id);
           if (joinRes.success && joinRes.data) {
             toast.success("Call room created and joined successfully", { id: toastId });
-            setActiveCall({
-              ...joinRes.data,
-              shift_id: shiftId
-            });
+            setActiveCall({ ...joinRes.data, shift_id: shiftId });
           } else {
-            toast.error(joinRes.error || "Failed to fetch Zego token via join endpoint", { id: toastId });
+            toast.error(joinRes.error || "Failed to fetch Zego token via join endpoint", {
+              id: toastId,
+            });
           }
         } else {
           toast.success("Call room created successfully", { id: toastId });
-          setActiveCall({
-            ...res.data,
-            shift_id: shiftId
-          });
+          setActiveCall({ ...res.data, shift_id: shiftId });
         }
       } else {
         toast.error(res.error || "Failed to start call", { id: toastId });
       }
     } catch (err) {
-      console.error("Error starting video call:", err);
+      console.error("[VideoCall] Error starting call:", err);
       toast.error("An unexpected error occurred", { id: toastId });
     } finally {
       setIsActionPending(false);
     }
   };
 
-  // Join existing call
   const joinCall = async (callId: string) => {
     setIsActionPending(true);
     const toastId = toast.loading("Connecting to call...");
@@ -306,29 +302,24 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       const res = await joinVideoCallAction(callId);
       if (res.success && res.data) {
         toast.success("Connected!", { id: toastId });
-        setActiveCall({
-          ...res.data,
-          shift_id: incomingCall?.shift_id || ""
-        });
+        setActiveCall({ ...res.data, shift_id: incomingCall?.shift_id || "" });
         setIncomingCall(null);
       } else {
         toast.error(res.error || "Failed to join call", { id: toastId });
       }
     } catch (err) {
-      console.error("Error joining video call:", err);
+      console.error("[VideoCall] Error joining call:", err);
       toast.error("An unexpected error occurred", { id: toastId });
     } finally {
       setIsActionPending(false);
     }
   };
 
-  // Decline/Dismiss incoming call
   const declineIncomingCall = () => {
     setIncomingCall(null);
     toast.info("Call invitation dismissed");
   };
 
-  // Leave active call (current user only)
   const leaveCall = async () => {
     if (!activeCall) return;
 
@@ -341,21 +332,20 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         if (zegoInstanceRef.current) {
           try {
             zegoInstanceRef.current.destroy();
-          } catch (e) { }
+          } catch { }
         }
         handleCleanupState();
       } else {
         toast.error(res.error || "Failed to leave call", { id: toastId });
       }
     } catch (err) {
-      console.error("Error leaving call:", err);
+      console.error("[VideoCall] Error leaving call:", err);
       toast.error("An unexpected error occurred", { id: toastId });
     } finally {
       setIsActionPending(false);
     }
   };
 
-  // End active call (for everyone)
   const endCall = async () => {
     if (!activeCall) return;
 
@@ -368,21 +358,20 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         if (zegoInstanceRef.current) {
           try {
             zegoInstanceRef.current.destroy();
-          } catch (e) { }
+          } catch { }
         }
         handleCleanupState();
       } else {
         toast.error(res.error || "Failed to end call", { id: toastId });
       }
     } catch (err) {
-      console.error("Error ending call:", err);
+      console.error("[VideoCall] Error ending call:", err);
       toast.error("An unexpected error occurred", { id: toastId });
     } finally {
       setIsActionPending(false);
     }
   };
 
-  // Invite another administrator/member to call
   const inviteMember = async (memberId: string) => {
     if (!activeCall) return;
 
@@ -395,48 +384,29 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         toast.error(res.error || "Failed to send invitation", { id: toastId });
       }
     } catch (err) {
-      console.error("Error sending invitation:", err);
+      console.error("[VideoCall] Error sending invitation:", err);
       toast.error("An unexpected error occurred", { id: toastId });
     }
   };
 
-  // 4. Auto end call after 60 seconds
-  useEffect(() => {
-    if (!activeCall) return;
-
-    console.log("[VideoCall] Setting auto-end timer for 60 seconds for call ID:", activeCall.call_id);
-
-    const timer = setTimeout(() => {
-      console.log("[VideoCall] 60 seconds elapsed. Auto-ending call...");
-      toast.info("Call auto-ended after 60 seconds");
-      endCall();
-    }, 60000);
-
-    return () => {
-      console.log("[VideoCall] Clearing auto-end timer for call ID:", activeCall?.call_id);
-      clearTimeout(timer);
-    };
-  }, [activeCall?.call_id]);
-
   return (
-    <VideoCallContext.Provider value={{
-      activeCall,
-      incomingCall,
-      startCall,
-      joinCall,
-      declineIncomingCall,
-      leaveCall,
-      endCall,
-      inviteMember,
-      isMinimized,
-      setIsMinimized,
-      members
-    }}>
+    <VideoCallContext.Provider
+      value={{
+        activeCall,
+        incomingCall,
+        startCall,
+        joinCall,
+        declineIncomingCall,
+        leaveCall,
+        endCall,
+        inviteMember,
+        isMinimized,
+        setIsMinimized,
+        members,
+      }}
+    >
       {children}
 
-
-
-      {/* --- ACTIVE FLOATING VIDEO CALL OVERLAY --- */}
       {activeCall && (
         <div
           className={cn(
@@ -448,20 +418,21 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
                 : "bottom-4 right-4 w-[90vw] sm:w-[500px] md:w-[720px] h-[600px]"
           )}
         >
-          {/* Active Call Header */}
           <div className="h-14 px-4 bg-slate-950 flex items-center justify-between border-b border-slate-800 select-none shrink-0">
             <div className="flex items-center gap-3">
               <div className="relative flex items-center justify-center">
                 <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse mr-1" />
-                <span className="text-white text-xs font-bold uppercase tracking-wider">Live Call</span>
+                <span className="text-white text-xs font-bold uppercase tracking-wider">
+                  Live Call
+                </span>
               </div>
               <span className="text-slate-700 text-xs font-bold hidden sm:inline">|</span>
-              <span className="text-slate-700 text-xs font-medium">Shift ID: #{activeCall.shift_id.slice(0, 8)}...</span>
+              <span className="text-slate-700 text-xs font-medium">
+                Shift ID: #{activeCall.shift_id.slice(0, 8)}...
+              </span>
             </div>
 
-            {/* Header Control Buttons */}
             <div className="flex items-center gap-1">
-              {/* Minimize/Restore Toggle Button */}
               <button
                 onClick={() => {
                   setIsMinimized(!isMinimized);
@@ -470,35 +441,46 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
                 className="p-2 text-slate-700 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                 title={isMinimized ? "Maximize Window" : "Minimize Window"}
               >
-                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                {isMinimized ? (
+                  <Maximize2 className="w-4 h-4" />
+                ) : (
+                  <Minus className="w-4 h-4" />
+                )}
               </button>
 
-              {/* Fullscreen Toggle Button */}
               {!isMinimized && (
                 <button
                   onClick={() => setIsFullscreen(!isFullscreen)}
                   className="p-2 text-slate-700 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                   title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
                 >
-                  {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  {isFullscreen ? (
+                    <Minimize2 className="w-4 h-4" />
+                  ) : (
+                    <Maximize2 className="w-4 h-4" />
+                  )}
                 </button>
               )}
-
             </div>
           </div>
 
-          {/* ZEGO Cloud SDK DOM Node Container */}
-          <div className={cn("w-full flex-1 relative bg-slate-950", isMinimized ? "hidden" : "block")}>
+          <div
+            className={cn(
+              "w-full flex-1 relative bg-slate-950",
+              isMinimized ? "hidden" : "block"
+            )}
+          >
             {isZegoLoading && (
               <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center space-y-3 z-10">
                 <Loader2 className="w-8 h-8 text-[#0064cb] animate-spin" />
-                <span className="text-slate-700 font-medium text-xs">Connecting to secure server...</span>
+                <span className="text-slate-700 font-medium text-xs">
+                  Connecting to secure server...
+                </span>
               </div>
             )}
             <div ref={zegoContainerRef} className="w-full h-full text-white" />
           </div>
 
-          {/* Call Footer (End Call action button for active call) */}
           {!isMinimized && (
             <div className="h-14 bg-slate-950 border-t border-slate-800 px-4 flex items-center justify-end gap-3 shrink-0">
               <button

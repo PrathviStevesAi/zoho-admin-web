@@ -37,7 +37,7 @@ export function ShiftHeader({
       {/* Breadcrumbs & Title Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
+          <div className="flex flex-wrap items-center gap-2 text-slate-700 text-[13px] mb-1">
             <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">
               Dashboard
             </Link>
@@ -64,27 +64,27 @@ export function ShiftHeader({
               </>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-start sm:items-center gap-3">
             <Link
               href="/dashboard"
-              className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all"
+              className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all shrink-0 mt-0.5 sm:mt-0"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div className="group relative">
-              <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2 cursor-default">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 flex flex-wrap items-center gap-x-2 gap-y-1 cursor-default">
                 {shift ? (
                   <>
                     <span className="hover:text-[#0064cb] transition-colors">{shift.customer_name}</span>
                     {shift.invoice_id ? (
                       <Link
                         href={`/invoices/${shift.invoice_id}`}
-                        className="text-slate-700 font-normal ml-1 hover:text-[#0064cb] hover:underline cursor-pointer"
+                        className="text-slate-700 font-normal hover:text-[#0064cb] hover:underline cursor-pointer whitespace-nowrap"
                       >
                         [ #{shift.invoice_no || "not found"} ]
                       </Link>
                     ) : (
-                      <span className="text-slate-700 font-normal ml-1">[ #{shift.invoice_no || "not found"} ]</span>
+                      <span className="text-slate-700 font-normal whitespace-nowrap">[ #{shift.invoice_no || "not found"} ]</span>
                     )}
                   </>
                 ) : isLoading ? (

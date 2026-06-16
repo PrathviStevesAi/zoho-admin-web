@@ -123,7 +123,7 @@ export function InvoiceHeader({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
+          <div className="flex flex-wrap items-center gap-2 text-slate-700 text-[13px] mb-1">
             <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Dashboard</Link>
             <ChevronRight className="w-3.5 h-3.5 shrink-0" />
             <span
@@ -141,16 +141,17 @@ export function InvoiceHeader({
               </>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
+          <div className="flex items-start sm:items-center gap-3">
+            <Link href="/dashboard" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all shrink-0 mt-0.5 sm:mt-0">
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div className="group relative">
               <h1
-                className="text-2xl font-bold text-slate-900 cursor-pointer hover:text-[#0064cb] transition-all"
+                className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 flex flex-wrap items-center gap-x-2 gap-y-1 cursor-pointer hover:text-[#0064cb] transition-all"
                 onClick={onResetView}
               >
-                {customerName} <span className="text-slate-700 font-normal ml-2"> [ #{invoiceNo} ]</span>
+                <span>{customerName}</span>
+                <span className="text-slate-700 font-normal whitespace-nowrap"> [ #{invoiceNo} ]</span>
               </h1>
 
               {description && (
