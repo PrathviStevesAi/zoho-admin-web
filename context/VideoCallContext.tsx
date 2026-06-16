@@ -179,7 +179,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         const appID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID || 727438037);
         const serverSecret =
           process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || "dd1d31a37620b0d4a6cc9c237a7cd370";
-        const roomID = activeCall.room_id;
+        const roomID = activeCall.call_id;
         const userID =
           activeCall.user_id ||
           session?.user?.id ||
