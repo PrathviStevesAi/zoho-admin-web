@@ -12,7 +12,8 @@ import {
   Users,
   Calendar,
   ChevronDown,
-  Megaphone
+  Megaphone,
+  Activity
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ const routes = [
     ]
   },
   { label: "Broadcast Notification", icon: Megaphone, href: "/broadcast-notifications" },
+  { label: "Service Logs", icon: Activity, href: "/service-logs" },
   { label: "Profile", icon: User, href: "/profile" },
 ];
 
