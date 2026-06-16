@@ -53,6 +53,64 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const zegoContainerRef = useRef<HTMLDivElement | null>(null);
   const zegoInstanceRef = useRef<any | null>(null);
 
+  // 0. Suppress Zego SDK unmount telemetry bug (createSpan of null)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleGlobalError = (event: ErrorEvent) => {
+      const isZegoBug = 
+        (event.message && event.message.includes("createSpan")) || 
+        (event.error && event.error.message && event.error.message.includes("createSpan"));
+      
+      if (isZegoBug) {
+        console.warn("[VideoCall] Suppressed Zego SDK unmount error:", event.error || event.message);
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const isZegoBug = 
+        event.reason && 
+        event.reason.message && 
+        event.reason.message.includes("createSpan");
+      
+      if (isZegoBug) {
+        console.warn("[VideoCall] Suppressed Zego SDK unmount rejection:", event.reason);
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    };
+
+    // Monkey-patch console.error to intercept React's internal logging of unhandled lifecycle exceptions
+    const originalConsoleError = console.error;
+    console.error = (...args: any[]) => {
+      const argStr = args.map(a => {
+        if (!a) return "";
+        if (a instanceof Error) return a.stack || a.message;
+        if (typeof a === "object") {
+          try { return JSON.stringify(a); } catch (e) { return String(a); }
+        }
+        return String(a);
+      }).join(" ");
+
+      if (argStr.includes("createSpan") || argStr.includes("Cannot read properties of null (reading 'createSpan')")) {
+        console.warn("[VideoCall] Suppressed Zego SDK unmount console.error:", ...args);
+        return;
+      }
+      originalConsoleError.apply(console, args);
+    };
+
+    window.addEventListener("error", handleGlobalError, true);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection, true);
+
+    return () => {
+      window.removeEventListener("error", handleGlobalError, true);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection, true);
+      console.error = originalConsoleError;
+    };
+  }, []);
+
   // 1. Fetch active calls and team members on auth load
   useEffect(() => {
     if (authStatus !== "authenticated") return;
@@ -141,6 +199,9 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           scenario: {
             mode: ZegoUIKitPrebuilt.GroupCall,
           },
+          showPreJoinView: false,
+          turnOnCameraWhenJoining: false,
+          turnOnMicrophoneWhenJoining: false,
           showScreenSharingButton: true,
           showUserList: true,
           showLayoutButton: true,
@@ -260,7 +321,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await leaveVideoCallAction(activeCall.call_id);
       if (res.success) {
-        toast.success("You left the call", { id: toastId });
+        toast.success(res.message || "You left the call", { id: toastId });
         if (zegoInstanceRef.current) {
           try {
             zegoInstanceRef.current.destroy();
@@ -287,7 +348,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await endVideoCallAction(activeCall.call_id);
       if (res.success) {
-        toast.success("Call ended successfully", { id: toastId });
+        toast.success(res.message || "Call ended successfully", { id: toastId });
         if (zegoInstanceRef.current) {
           try {
             zegoInstanceRef.current.destroy();
@@ -323,6 +384,24 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       toast.error("An unexpected error occurred", { id: toastId });
     }
   };
+
+  // 4. Auto end call after 60 seconds
+  useEffect(() => {
+    if (!activeCall) return;
+
+    console.log("[VideoCall] Setting auto-end timer for 60 seconds for call ID:", activeCall.call_id);
+
+    const timer = setTimeout(() => {
+      console.log("[VideoCall] 60 seconds elapsed. Auto-ending call...");
+      toast.info("Call auto-ended after 60 seconds");
+      endCall();
+    }, 60000);
+
+    return () => {
+      console.log("[VideoCall] Clearing auto-end timer for call ID:", activeCall?.call_id);
+      clearTimeout(timer);
+    };
+  }, [activeCall?.call_id]);
 
   return (
     <VideoCallContext.Provider value={{
