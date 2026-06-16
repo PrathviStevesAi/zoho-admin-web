@@ -4,12 +4,10 @@ import React, { createContext, useContext, useState, useEffect, useRef } from "r
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
-  UserPlus,
-  X,
   Minimize2,
   Maximize2,
   Loader2,
-  Users
+  Minus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +43,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const [activeCall, setActiveCall] = useState<any | null>(null);
   const [incomingCall, setIncomingCall] = useState<any | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [members, setMembers] = useState<any[]>([]);
   const [isZegoLoading, setIsZegoLoading] = useState(false);
   const [isActionPending, setIsActionPending] = useState(false);
@@ -160,6 +158,24 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         // Dynamically import Zego to prevent SSR compilation errors
         const { ZegoUIKitPrebuilt } = await import("@zegocloud/zego-uikit-prebuilt");
 
+        // Monkey-patch destroy to prevent unmount telemetry crash (createSpan of null)
+        if (ZegoUIKitPrebuilt && ZegoUIKitPrebuilt.prototype && !(ZegoUIKitPrebuilt.prototype as any).__patchedDestroy) {
+          const originalDestroy = ZegoUIKitPrebuilt.prototype.destroy;
+          ZegoUIKitPrebuilt.prototype.destroy = function (this: any) {
+            if (this.root) {
+              console.log("[VideoCall] Pre-emptively unmounting Zego React root safely in monkey-patched destroy...");
+              try {
+                this.root.unmount();
+              } catch (e) {
+                console.warn("[VideoCall] Error during safe pre-unmount:", e);
+              }
+              this.root.unmount = () => {};
+            }
+            return originalDestroy.apply(this);
+          };
+          (ZegoUIKitPrebuilt.prototype as any).__patchedDestroy = true;
+        }
+
         if (!active) return;
 
         // Always generate Zego Kit Token on client to prevent credential mismatches with backend ngrok environment
@@ -231,7 +247,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     setActiveCall(null);
     setIncomingCall(null);
     setIsMinimized(false);
-    setIsInviteOpen(false);
+    setIsFullscreen(false);
     zegoInstanceRef.current = null;
   };
 
@@ -375,7 +391,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       const res = await inviteMemberAction(activeCall.call_id, memberId);
       if (res.success) {
         toast.success("Invitation sent successfully", { id: toastId });
-        setIsInviteOpen(false);
       } else {
         toast.error(res.error || "Failed to send invitation", { id: toastId });
       }
@@ -428,7 +443,9 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
             "fixed bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl z-[990] transition-all duration-300 overflow-hidden flex flex-col",
             isMinimized
               ? "bottom-4 right-4 w-72 h-14"
-              : "bottom-4 right-4 w-[90vw] sm:w-[450px] md:w-[640px] h-[500px]"
+              : isFullscreen
+                ? "inset-4"
+                : "bottom-4 right-4 w-[90vw] sm:w-[500px] md:w-[720px] h-[600px]"
           )}
         >
           {/* Active Call Header */}
@@ -444,69 +461,31 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
             {/* Header Control Buttons */}
             <div className="flex items-center gap-1">
+              {/* Minimize/Restore Toggle Button */}
               <button
-                onClick={() => setIsInviteOpen(!isInviteOpen)}
-                className="p-2 text-slate-700 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-                title="Invite Member"
-              >
-                <UserPlus className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setIsMinimized(!isMinimized)}
+                onClick={() => {
+                  setIsMinimized(!isMinimized);
+                  setIsFullscreen(false);
+                }}
                 className="p-2 text-slate-700 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                 title={isMinimized ? "Maximize Window" : "Minimize Window"}
               >
-                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
               </button>
-              <button
-                onClick={leaveCall}
-                disabled={isActionPending}
-                className="p-2 text-slate-700 hover:text-red-500 hover:bg-white/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                title="Leave Call"
-              >
-                <X className="w-4 h-4" />
-              </button>
+
+              {/* Fullscreen Toggle Button */}
+              {!isMinimized && (
+                <button
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="p-2 text-slate-700 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                  title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                >
+                  {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </button>
+              )}
+
             </div>
           </div>
-
-          {/* Members Invite Popover Panel */}
-          {isInviteOpen && !isMinimized && (
-            <div className="absolute top-14 left-0 right-0 max-h-[200px] overflow-y-auto bg-slate-950 border-b border-slate-800 z-50 p-3 space-y-2 custom-scrollbar">
-              <div className="flex items-center justify-between pb-1 border-b border-slate-800">
-                <span className="text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5" /> Invite Team Members
-                </span>
-                <button
-                  onClick={() => setIsInviteOpen(false)}
-                  className="text-slate-700 hover:text-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="space-y-1">
-                {members.length === 0 ? (
-                  <p className="text-xs text-slate-700 italic text-center py-2">No other members available</p>
-                ) : (
-                  members
-                    .filter(m => m.id !== activeCall.user_id && m.member_id !== activeCall.user_id)
-                    .map((member) => (
-                      <div key={member.id || member.member_id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors">
-                        <span className="text-xs text-white font-medium">
-                          {member.first_name} {member.last_name} ({member.email})
-                        </span>
-                        <button
-                          onClick={() => inviteMember(member.id || member.member_id)}
-                          disabled={isActionPending}
-                          className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-2.5 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-colors disabled:opacity-50"
-                        >
-                          Invite
-                        </button>
-                      </div>
-                    ))
-                )}
-              </div>
-            </div>
-          )}
 
           {/* ZEGO Cloud SDK DOM Node Container */}
           <div className={cn("w-full flex-1 relative bg-slate-950", isMinimized ? "hidden" : "block")}>
@@ -522,13 +501,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           {/* Call Footer (End Call action button for active call) */}
           {!isMinimized && (
             <div className="h-14 bg-slate-950 border-t border-slate-800 px-4 flex items-center justify-end gap-3 shrink-0">
-              <button
-                onClick={leaveCall}
-                disabled={isActionPending}
-                className="bg-slate-700 hover:bg-slate-600 text-white px-4 h-9 rounded-lg text-xs font-bold cursor-pointer transition-colors disabled:opacity-50"
-              >
-                Leave
-              </button>
               <button
                 onClick={endCall}
                 disabled={isActionPending}
