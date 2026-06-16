@@ -3,15 +3,15 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { 
-  Phone, 
-  PhoneOff, 
-  Video, 
-  UserPlus, 
-  X, 
-  Minimize2, 
-  Maximize2, 
-  Loader2, 
+import {
+  Phone,
+  PhoneOff,
+  Video,
+  UserPlus,
+  X,
+  Minimize2,
+  Maximize2,
+  Loader2,
   Users,
   VideoOff
 } from "lucide-react";
@@ -75,7 +75,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         if (res.success && res.data && res.data.length > 0) {
           const call = res.data[0];
           console.log("[VideoCall] Active call detected on mount:", call);
-          
+
           // Verify if we are already in this call or if we should display invitation popup
           if (!activeCall && call.status === "initiated") {
             setIncomingCall({
@@ -126,7 +126,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       try {
         // Dynamically import Zego to prevent SSR compilation errors
         const { ZegoUIKitPrebuilt } = await import("@zegocloud/zego-uikit-prebuilt");
-        
+
         if (!active) return;
 
         let finalToken = activeCall.token;
@@ -134,12 +134,12 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
         if (!isValidToken) {
           console.log("[VideoCall] ActiveCall token is mock or invalid. Generating Kit Token on client...");
-          const appID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID || 295132678);
-          const serverSecret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || "4f14aa5614176cc292e876da6fb92b6e";
+          const appID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID || 727438037);
+          const serverSecret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || "dd1d31a37620b0d4a6cc9c237a7cd370";
           const roomID = activeCall.room_id;
           const userID = activeCall.user_id || session?.user?.id || `user_${Math.floor(Math.random() * 10000)}`;
           const userName = session?.user?.name || session?.user?.email || "Administrator";
-          
+
           finalToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
             appID,
             serverSecret,
@@ -218,7 +218,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       if (res.success && res.data) {
         // Fallback: If token is mock or invalid (doesn't start with Zego kit token signature '04'), call join to get real token
         const isTokenMock = !res.data.token || res.data.token === "zego_token" || !res.data.token.startsWith("04");
-        
+
         if (isTokenMock) {
           console.log("[VideoCall] Received mock token from start call, automatically joining to fetch real Zego token...");
           const joinRes = await joinVideoCallAction(res.data.call_id);
@@ -292,7 +292,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         if (zegoInstanceRef.current) {
           try {
             zegoInstanceRef.current.destroy();
-          } catch (e) {}
+          } catch (e) { }
         }
         handleCleanupState();
       } else {
@@ -319,7 +319,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         if (zegoInstanceRef.current) {
           try {
             zegoInstanceRef.current.destroy();
-          } catch (e) {}
+          } catch (e) { }
         }
         handleCleanupState();
       } else {
@@ -409,11 +409,11 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
       {/* --- ACTIVE FLOATING VIDEO CALL OVERLAY --- */}
       {activeCall && (
-        <div 
+        <div
           className={cn(
             "fixed bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl z-[990] transition-all duration-300 overflow-hidden flex flex-col",
-            isMinimized 
-              ? "bottom-4 right-4 w-72 h-14" 
+            isMinimized
+              ? "bottom-4 right-4 w-72 h-14"
               : "bottom-4 right-4 w-[90vw] sm:w-[450px] md:w-[640px] h-[500px]"
           )}
         >
@@ -461,8 +461,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
                 <span className="text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5" /> Invite Team Members
                 </span>
-                <button 
-                  onClick={() => setIsInviteOpen(false)} 
+                <button
+                  onClick={() => setIsInviteOpen(false)}
                   className="text-slate-700 hover:text-white"
                 >
                   <X className="w-3.5 h-3.5" />
