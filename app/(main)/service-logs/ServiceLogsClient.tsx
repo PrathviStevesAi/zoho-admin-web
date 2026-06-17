@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Database,
   Cloud,
@@ -80,6 +80,26 @@ const SERVICES_META = [
   },
 ];
 
+function ServiceLogsSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-2">
+          <div className="h-8 w-48 bg-slate-200 rounded-md"></div>
+          <div className="h-4 w-96 bg-slate-200 rounded-md"></div>
+        </div>
+        <div className="h-9 w-32 bg-slate-200 rounded-lg"></div>
+      </div>
+      <div className="w-full h-[104px] bg-slate-200 rounded-xl"></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="w-full h-[112px] bg-slate-200 rounded-xl"></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ServiceLogsClient({ initialData }: ServiceLogsClientProps) {
   const [healthData, setHealthData] = useState<SystemHealthResponse | null>(initialData);
   const [isLoading, setIsLoading] = useState(false);
@@ -90,23 +110,29 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
   const [copied, setCopied] = useState(false);
 
   // Core manual refresh function
-  const handleRefresh = useCallback(async () => {
+  const handleRefresh = useCallback(async (isInitial = false) => {
     setIsLoading(true);
     try {
       const res = await fetchSystemHealthAction();
       if (res.success && res.data) {
         setHealthData(res.data);
         setLastUpdated(new Date());
-        toast.success("Health status updated successfully!");
+        if (!isInitial) toast.success("Health status updated successfully!");
       } else {
-        toast.error(res.error || "Failed to update status");
+        if (!isInitial) toast.error(res.error || "Failed to update status");
       }
     } catch {
-      toast.error("An error occurred while fetching system health");
+      if (!isInitial) toast.error("An error occurred while fetching system health");
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!healthData) {
+      handleRefresh(true);
+    }
+  }, [healthData, handleRefresh]);
 
   const handleCopyError = () => {
     if (!activeError) return;
@@ -115,6 +141,10 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
     toast.success("Error logs copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (!healthData) {
+    return <ServiceLogsSkeleton />;
+  }
 
   const isAllOperational = healthData?.overall_status === "healthy";
 
@@ -135,7 +165,7 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
         {/* Action Controls */}
         <div className="flex items-center gap-3 self-start sm:self-center shrink-0">
           <Button
-            onClick={handleRefresh}
+            onClick={() => handleRefresh(false)}
             disabled={isLoading}
             size="sm"
             className="h-9 px-4 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg flex items-center gap-1.5 font-bold cursor-pointer transition-colors"
