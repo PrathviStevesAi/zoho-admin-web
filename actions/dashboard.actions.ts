@@ -822,3 +822,36 @@ export async function globalSearchAction(
   }
 }
 
+
+export async function createManualInvoiceAction(payload: {
+  customer_name: string;
+  customer_email: string;
+  invoice_no: string;
+  invoice_description: string;
+  invoice_amount: number;
+  shipping_address: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+    address: string;
+  };
+}): Promise<{ success: boolean; invoice_id?: string; error?: string }> {
+  try {
+    console.log("[Server Action] createManualInvoiceAction POST Payload to /api/v1/invoice/manual:", JSON.stringify(payload, null, 2));
+    const result = await apiFetch<any>(`/api/v1/invoice/manual`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    console.log("[Server Action] createManualInvoiceAction POST Response:", result);
+    // Support nested or direct structures:
+    const invoice_id = result?.invoice_id || result?.data?.invoice_id || result?.data?.id || result?.id;
+    return { success: true, invoice_id };
+  } catch (error: any) {
+    console.error("[Server Action] createManualInvoiceAction error:", error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
