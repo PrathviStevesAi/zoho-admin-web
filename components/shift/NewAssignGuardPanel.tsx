@@ -24,22 +24,28 @@ import {
 } from "@/components/ui/table";
 
 interface GuardRates {
-  per_hour_rate: number;
-  per_shift_rate: number;
-  travel_fee: number;
+  per_hour_rate?: number;
+  per_shift_rate?: number;
+  travel_fee?: number;
 }
 
 interface NewAssignGuardPanelProps {
   onSelect: (guard: any, rates: GuardRates) => void;
   onClose: () => void;
   assigningGuardId?: string | null;
+  isReassign?: boolean;
+  initialRates?: {
+    per_hour_rate?: number;
+    per_shift_rate?: number;
+    travel_fee?: number;
+  };
 }
 
-export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId }: NewAssignGuardPanelProps) {
+export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates }: NewAssignGuardPanelProps) {
   // Rate inputs
-  const [hourlyRate, setHourlyRate] = useState("");
-  const [perShiftRate, setPerShiftRate] = useState("");
-  const [travelFee, setTravelFee] = useState("");
+  const [hourlyRate, setHourlyRate] = useState(initialRates?.per_hour_rate ? String(initialRates.per_hour_rate) : "");
+  const [perShiftRate, setPerShiftRate] = useState(initialRates?.per_shift_rate ? String(initialRates.per_shift_rate) : "");
+  const [travelFee, setTravelFee] = useState(initialRates?.travel_fee ? String(initialRates.travel_fee) : "");
 
   // Guard search & filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -113,11 +119,15 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId }: New
   }, [currentPage, debouncedSearchQuery, filters]);
 
   const handleSelectGuard = (guard: any) => {
-    const rates: GuardRates = {
-      per_hour_rate: hourlyRate ? parseFloat(hourlyRate) : 0,
-      per_shift_rate: perShiftRate ? parseFloat(perShiftRate) : 0,
-      travel_fee: travelFee ? parseFloat(travelFee) : 0,
-    };
+    const rates: GuardRates = {};
+    const hr = parseFloat(hourlyRate);
+    const sr = parseFloat(perShiftRate);
+    const tf = parseFloat(travelFee);
+
+    if (!isNaN(hr) && hr > 0) rates.per_hour_rate = hr;
+    if (!isNaN(sr) && sr > 0) rates.per_shift_rate = sr;
+    if (!isNaN(tf) && tf > 0) rates.travel_fee = tf;
+
     onSelect(guard, rates);
   };
 
@@ -126,7 +136,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId }: New
       {/* Header */}
       <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-blue-50/60 to-white">
         <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2.5">
-          Assign New Guard
+          {isReassign ? "Re-Assign Guard" : "Assign New Guard"}
         </h2>
         <p className="text-[13px] text-slate-500 mt-1">Enter guard pay rates and select a guard to assign to this shift</p>
       </div>

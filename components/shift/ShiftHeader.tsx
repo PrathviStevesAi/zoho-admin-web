@@ -11,6 +11,7 @@ interface ShiftHeaderProps {
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
   isNewAssignOpen: boolean;
+  isReassign?: boolean;
   onCloseNewAssign: () => void;
   isStartingShift: boolean;
   onManualStart: () => void;
@@ -29,6 +30,7 @@ export function ShiftHeader({
   isSettingsOpen,
   setIsSettingsOpen,
   isNewAssignOpen,
+  isReassign,
   onCloseNewAssign,
   isStartingShift,
   onManualStart,
@@ -73,7 +75,7 @@ export function ShiftHeader({
             {isNewAssignOpen && (
               <>
                 <ChevronRight className="w-3.5 h-3.5" />
-                <span className="text-[#0064cb] font-bold">New Assign Guard</span>
+                <span className="text-[#0064cb] font-bold">{isReassign ? "Re-Assign Guard" : "New Assign Guard"}</span>
               </>
             )}
           </div>

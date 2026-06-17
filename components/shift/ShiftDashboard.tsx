@@ -77,10 +77,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   // Dialog & Visibility Flags
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isNewAssignOpen, setIsNewAssignOpen] = useState(false);
+  const [isReassign, setIsReassign] = useState(false);
   const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
   const [isManualStartOpen, setIsManualStartOpen] = useState(false);
-  const [isSelectGuardOpen, setIsSelectGuardOpen] = useState(false);
+
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
 
   // Action Pending States
@@ -426,30 +427,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     }
   };
 
-  const handleSelectGuard = async (guard: any) => {
-    const targetGuardId = guard.id || guard.guard_id;
-    console.log("[ShiftDashboard] Selected Guard ID:", targetGuardId);
-    if (!shift) return;
-    const invoiceId = shift.invoice_id;
-    if (!invoiceId) {
-      toast.error("Invoice ID not found for this shift.");
-      return;
-    }
-    setIsAssigningGuard(targetGuardId);
-    const res = await assignGuardToShiftAction({
-      invoice_id: invoiceId,
-      guard_id: targetGuardId,
-      shift_id: shiftId,
-    });
-    if (res.success) {
-      toast.success("Guard assigned successfully");
-      setIsSelectGuardOpen(false);
-      loadShiftDetails();
-    } else {
-      toast.error(res.error || "Failed to assign guard");
-    }
-    setIsAssigningGuard(null);
-  };
+
 
   const handleCommentSubmit = async (text: string, type: "internal" | "external", file: File | null) => {
     try {
@@ -510,7 +488,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       });
       return;
     }
-    setIsSelectGuardOpen(true);
+    setIsNewAssignOpen(true);
+    setIsReassign(true);
+    setIsSettingsOpen(false);
   };
 
   const handleNewAssignGuard = () => {
@@ -523,10 +503,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       return;
     }
     setIsNewAssignOpen(true);
+    setIsReassign(false);
     setIsSettingsOpen(false);
   };
 
-  const handleNewAssignSelect = async (guard: any, rates: { per_hour_rate: number; per_shift_rate: number; travel_fee: number }) => {
+  const handleNewAssignSelect = async (guard: any, rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number }) => {
     const targetGuardId = guard.id || guard.guard_id;
     console.log("[ShiftDashboard] New Assign Guard ID:", targetGuardId, "Rates:", rates);
     if (!shift) return;
@@ -598,6 +579,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) setIsNewAssignOpen(false); }}
         isNewAssignOpen={isNewAssignOpen}
+        isReassign={isReassign}
         onCloseNewAssign={() => setIsNewAssignOpen(false)}
         isStartingShift={isStartingShift}
         onManualStart={() => setIsManualStartOpen(true)}
@@ -614,6 +596,12 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           onSelect={handleNewAssignSelect}
           onClose={() => setIsNewAssignOpen(false)}
           assigningGuardId={isAssigningGuard}
+          isReassign={isReassign}
+          initialRates={{
+            per_hour_rate: shift?.per_hour_rate ?? undefined,
+            per_shift_rate: shift?.per_shift_rate ?? undefined,
+            travel_fee: shift?.travel_fee ?? undefined,
+          }}
         />
       ) : isSettingsOpen ? (
         <ShiftSettingsCard
@@ -819,13 +807,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         isSaving={isStartingShift}
       />
 
-      {/* Select Guard Dialog */}
-      <SelectUserDialog
-        isOpen={isSelectGuardOpen}
-        onClose={() => setIsSelectGuardOpen(false)}
-        onSelect={handleSelectGuard}
-        assigningGuardId={isAssigningGuard}
-      />
+
     </div>
   );
 }
