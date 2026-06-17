@@ -34,6 +34,7 @@ export function NotificationsNav() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalNotifications, setTotalNotifications] = useState(0);
+  const [open, setOpen] = useState(false);
   const limit = 10;
   const loadRef = useRef<((page: number) => Promise<void>) | null>(null);
 
@@ -100,7 +101,7 @@ export function NotificationsNav() {
   const dates = Array.from(new Set(notifications.map((n) => formatHeaderDate(n.created_at))));
 
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -175,6 +176,7 @@ export function NotificationsNav() {
                                       if (isUnread) {
                                         markNotificationAsReadAction(notification.id);
                                       }
+                                      setOpen(false);
                                     }}
                                   >
                                     {notification.title}

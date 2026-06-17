@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Calendar, Clock, Loader2, Plus, Trash2 } from "lucide-react";
+import { Calendar, Clock, Loader2, Plus, Trash2, Pencil, Copy } from "lucide-react";
 import { DateTime } from "luxon";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,8 @@ interface ShiftModuleProps {
   onAdd: () => void;
   onCancelAdd: () => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onEdit: (id: string) => void;
   onBack: () => void;
   services: any[];
   addShiftData: any;
@@ -116,6 +118,8 @@ export function ShiftModule({
   onAdd,
   onCancelAdd,
   onDelete,
+  onDuplicate,
+  onEdit,
   onBack,
   services,
   addShiftData,
@@ -199,14 +203,46 @@ export function ShiftModule({
                               {getStatusBadge(shift.status)}
                             </TableCell>
                             <TableCell className="py-4 px-6 text-right">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => onDelete(shift.shift_id)}
-                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <div className="flex items-center justify-end gap-1.5">
+                                {/* Edit Action */}
+                                {(shift.actions ? shift.actions.is_shift_edit : false) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onEdit(shift.shift_id)}
+                                    className="h-8 w-8 text-[#0064cb] hover:text-[#0052ae] hover:bg-blue-50 rounded-lg transition-all cursor-pointer"
+                                    title="Edit Shift"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                )}
+
+                                {/* Duplicate/Copy Action */}
+                                {(shift.actions ? shift.actions.is_shift_duplicate : false) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onDuplicate(shift.shift_id)}
+                                    className="h-8 w-8 text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all cursor-pointer"
+                                    title="Duplicate Shift"
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </Button>
+                                )}
+
+                                {/* Delete Action */}
+                                {(shift.actions ? shift.actions.is_shift_delete : true) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onDelete(shift.shift_id)}
+                                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
+                                    title="Delete Shift"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))

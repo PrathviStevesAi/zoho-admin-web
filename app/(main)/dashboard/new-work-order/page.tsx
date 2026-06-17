@@ -32,15 +32,20 @@ export default function NewWorkOrderPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const clearError = (fieldKey: string) => {
+    setErrors((prev) => {
+      if (!prev[fieldKey]) return prev;
+      const copy = { ...prev };
+      delete copy[fieldKey];
+      return copy;
+    });
+  };
+
   // Generate random 5-digit invoice number
   const handleGenerateInvoiceNo = () => {
     const randDigits = Math.floor(10000 + Math.random() * 90000).toString();
     setInvoiceDigits(randDigits);
-    setErrors((prev) => {
-      const copy = { ...prev };
-      delete copy.invoice_no;
-      return copy;
-    });
+    clearError("invoiceNo");
   };
 
   // Validation
@@ -51,9 +56,7 @@ export default function NewWorkOrderPage() {
       newErrors.customerName = "Customer name is required.";
     }
 
-    if (!customerEmail.trim()) {
-      newErrors.customerEmail = "Customer email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+    if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
       newErrors.customerEmail = "Please enter a valid email address.";
     }
 
@@ -97,7 +100,7 @@ export default function NewWorkOrderPage() {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please fix the validation errors in the form.", {
+      toast.error("Please fill all the required fields.", {
         icon: <AlertCircle className="h-4 w-4 text-red-500" />
       });
       return;
@@ -150,7 +153,7 @@ export default function NewWorkOrderPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6 px-4 font-sans">
+    <div className="max-w-4xl mx-auto py-0 px-4 font-sans">
       {/* Back button */}
       <button
         onClick={handleCancel}
@@ -185,7 +188,10 @@ export default function NewWorkOrderPage() {
                 <Input
                   id="customer_name"
                   value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    clearError("customerName");
+                  }}
                   placeholder="Enter Customer Name"
                   className={errors.customerName ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
@@ -196,13 +202,16 @@ export default function NewWorkOrderPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="customer_email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Customer Email <span className="text-red-500">*</span>
+                  Customer Email
                 </Label>
                 <Input
                   id="customer_email"
                   type="email"
                   value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  onChange={(e) => {
+                    setCustomerEmail(e.target.value);
+                    clearError("customerEmail");
+                  }}
                   placeholder="Enter Customer Email"
                   className={errors.customerEmail ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
@@ -231,6 +240,7 @@ export default function NewWorkOrderPage() {
                       onChange={(e) => {
                         const val = e.target.value.replace(/\D/g, "").substring(0, 5);
                         setInvoiceDigits(val);
+                        clearError("invoiceNo");
                       }}
                       placeholder="Enter Invoice Number"
                     />
@@ -262,6 +272,7 @@ export default function NewWorkOrderPage() {
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, "");
                     setInvoiceAmount(val);
+                    clearError("invoiceAmount");
                   }}
                   placeholder="Enter Invoice Amount"
                   className={errors.invoiceAmount ? "border-red-500 focus-visible:ring-red-500" : ""}
@@ -304,13 +315,29 @@ export default function NewWorkOrderPage() {
                   <GooglePlacesAutocomplete
                     placeholder="Enter Street Address"
                     value={streetAddress}
-                    onChange={(val) => setStreetAddress(val)}
+                    onChange={(val) => {
+                      setStreetAddress(val);
+                      clearError("streetAddress");
+                    }}
                     onAddressSelect={(address) => {
                       setStreetAddress(address.street || "");
-                      if (address.city) setCity(address.city);
-                      if (address.state) setState(address.state);
-                      if (address.zip) setZipCode(address.zip);
-                      if (address.country) setCountry(address.country);
+                      clearError("streetAddress");
+                      if (address.city) {
+                        setCity(address.city);
+                        clearError("city");
+                      }
+                      if (address.state) {
+                        setState(address.state);
+                        clearError("state");
+                      }
+                      if (address.zip) {
+                        setZipCode(address.zip);
+                        clearError("zipCode");
+                      }
+                      if (address.country) {
+                        setCountry(address.country);
+                        clearError("country");
+                      }
                     }}
                     className={`pl-11 bg-slate-50/50 border-slate-200 transition-all text-slate-800 font-medium ${errors.streetAddress ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
@@ -328,7 +355,10 @@ export default function NewWorkOrderPage() {
                   <Input
                     id="city"
                     value={city}
-                    onChange={(e) => setCity(e.target.value)}
+                    onChange={(e) => {
+                      setCity(e.target.value);
+                      clearError("city");
+                    }}
                     placeholder="Enter City"
                     className={errors.city ? "border-red-500 focus-visible:ring-red-500" : ""}
                   />
@@ -344,7 +374,10 @@ export default function NewWorkOrderPage() {
                   <Input
                     id="state"
                     value={state}
-                    onChange={(e) => setState(e.target.value)}
+                    onChange={(e) => {
+                      setState(e.target.value);
+                      clearError("state");
+                    }}
                     placeholder="Enter State"
                     className={errors.state ? "border-red-500 focus-visible:ring-red-500" : ""}
                   />
@@ -360,7 +393,10 @@ export default function NewWorkOrderPage() {
                   <Input
                     id="zip_code"
                     value={zipCode}
-                    onChange={(e) => setZipCode(e.target.value)}
+                    onChange={(e) => {
+                      setZipCode(e.target.value);
+                      clearError("zipCode");
+                    }}
                     placeholder="Enter ZIP Code"
                     className={errors.zipCode ? "border-red-500 focus-visible:ring-red-500" : ""}
                   />
@@ -377,7 +413,10 @@ export default function NewWorkOrderPage() {
                 <Input
                   id="country"
                   value={country}
-                  onChange={(e) => setCountry(e.target.value)}
+                  onChange={(e) => {
+                    setCountry(e.target.value);
+                    clearError("country");
+                  }}
                   placeholder="Enter Country"
                   className={errors.country ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />

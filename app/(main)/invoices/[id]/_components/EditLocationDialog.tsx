@@ -64,7 +64,7 @@ export function EditLocationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] p-0 overflow-visible border-none shadow-2xl rounded-2xl bg-white">
+      <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-visible border-none shadow-2xl rounded-2xl bg-white">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white rounded-t-2xl">
           <div>
             <DialogTitle className="text-xl font-bold text-slate-900">Edit Location</DialogTitle>

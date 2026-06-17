@@ -16,7 +16,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useDashboard } from "./dashboard-context";
-import { Loader2, Plus } from "lucide-react";
 import { PeriodFilter } from "./_components/period-filter";
 
 export function DashboardHeader() {

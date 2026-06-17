@@ -21,9 +21,9 @@ interface ConfirmationDialogProps {
   isLoading?: boolean;
 }
 
-export function ConfirmationDialog({ 
-  isOpen, 
-  onClose, 
+export function ConfirmationDialog({
+  isOpen,
+  onClose,
   onConfirm,
   title,
   description,
@@ -34,7 +34,7 @@ export function ConfirmationDialog({
 }: ConfirmationDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white">
+      <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDanger ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>

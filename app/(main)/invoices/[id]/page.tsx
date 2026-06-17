@@ -19,7 +19,8 @@ import {
   assignGuardsAction,
   unassignGuardAction,
   cancelInvoiceServiceAction,
-  updateInvoiceDetailsAction
+  updateInvoiceDetailsAction,
+  updateShiftDetailsAction
 } from "@/actions/dashboard.actions";
 import { InvoiceData } from "@/types/dashboard.types";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ import { EditLocationDialog } from "./_components/EditLocationDialog";
 import { CancelServiceDialog } from "./_components/CancelServiceDialog";
 import { ConfirmationDialog } from "./_components/ConfirmationDialog";
 import { AvailableGuardsModule } from "./_components/AvailableGuardsModule";
+import { EditShiftDialog } from "./_components/EditShiftDialog";
 import { ShippingAddress } from "@/types/dashboard.types";
 import { fetchAvailableGuardsAction } from "@/actions/dashboard.actions";
 
@@ -79,6 +81,10 @@ export default function InvoiceDetailsPage() {
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, shiftId: string }>({ isOpen: false, shiftId: "" });
+  const [duplicateConfirm, setDuplicateConfirm] = useState<{ isOpen: boolean, shiftId: string }>({ isOpen: false, shiftId: "" });
+  const [isEditShiftOpen, setIsEditShiftOpen] = useState(false);
+  const [editingShift, setEditingShift] = useState<any | null>(null);
+  const [isSavingShift, setIsSavingShift] = useState(false);
   const [unassignConfirm, setUnassignConfirm] = useState<{ isOpen: boolean, shiftOfferId: string }>({ isOpen: false, shiftOfferId: "" });
   const [invoiceTimezone, setInvoiceTimezone] = useState<string>('America/Los_Angeles');
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
@@ -349,6 +355,97 @@ export default function InvoiceDetailsPage() {
       toast.error(res.error || "Failed to delete shift");
     }
     setIsShiftsLoading(false);
+  };
+
+  const handleDuplicateShift = (shiftId: string) => setDuplicateConfirm({ isOpen: true, shiftId });
+
+  const handleConfirmDuplicate = async () => {
+    if (!duplicateConfirm.shiftId) return;
+    setIsShiftsLoading(true);
+
+    const originalShift = shifts.find(s => s.shift_id === duplicateConfirm.shiftId);
+    if (!originalShift) {
+      toast.error("Original shift details not found");
+      setIsShiftsLoading(false);
+      return;
+    }
+
+    const start = DateTime.fromISO(originalShift.start_time);
+    const end = DateTime.fromISO(originalShift.end_time);
+    let total_hr = end.diff(start, 'hours').hours;
+    if (isNaN(total_hr) || total_hr <= 0) {
+      total_hr = 0;
+    }
+
+    const payload = {
+      invoice_id: id,
+      service_id: originalShift.service_id || originalShift.security_service_id,
+      schedule: [
+        {
+          start_date: originalShift.start_time,
+          end_date: originalShift.end_time,
+          total_hr: parseFloat(total_hr.toFixed(2))
+        }
+      ]
+    };
+
+    console.log("[handleConfirmDuplicate] Duplicating shift via createShiftAction:", payload);
+    const res = await createShiftAction(payload);
+    if (res.success) {
+      toast.success("Shift duplicated successfully");
+      loadShifts(isAssignGuardOpen ? "assign_guard" : "schedule");
+      setDuplicateConfirm({ isOpen: false, shiftId: "" });
+    } else {
+      toast.error(res.error || "Failed to duplicate shift");
+    }
+    setIsShiftsLoading(false);
+  };
+
+  const handleEditShift = (shiftId: string) => {
+    const shift = shifts.find(s => s.shift_id === shiftId);
+    if (shift) {
+      setEditingShift(shift);
+      setIsEditShiftOpen(true);
+    } else {
+      toast.error("Shift details not found");
+    }
+  };
+
+  const handleUpdateShift = async (data: {
+    shift_id: string;
+    service_id: string;
+    start_time: string;
+    end_time: string;
+  }) => {
+    setIsSavingShift(true);
+
+    const originalShift = shifts.find(s => s.shift_id === data.shift_id);
+    const originalServiceId = originalShift?.service_id || originalShift?.security_service_id;
+    const isServiceChanged = originalShift && originalServiceId !== data.service_id;
+
+    const payload: any = {
+      shift_id: data.shift_id,
+      shift_time: {
+        start_time: data.start_time,
+        end_time: data.end_time
+      }
+    };
+
+    if (isServiceChanged) {
+      payload.security_service_id = data.service_id;
+    }
+    
+    console.log("[handleUpdateShift] Updating shift details with payload:", payload);
+    const res = await updateShiftDetailsAction(payload);
+    if (res.success) {
+      toast.success("Shift updated successfully");
+      setIsEditShiftOpen(false);
+      setEditingShift(null);
+      loadShifts(isAssignGuardOpen ? "assign_guard" : "schedule");
+    } else {
+      toast.error(res.error || "Failed to update shift");
+    }
+    setIsSavingShift(false);
   };
 
   const calculateHours = (startTime: string, endTime: string) => {
@@ -698,6 +795,8 @@ export default function InvoiceDetailsPage() {
           }}
           onCancelAdd={() => setIsAddingShift(false)}
           onDelete={handleDeleteShift}
+          onDuplicate={handleDuplicateShift}
+          onEdit={handleEditShift}
           onBack={() => setIsScheduleOpen(false)}
           services={services}
           addShiftData={addShiftData}
@@ -795,6 +894,17 @@ export default function InvoiceDetailsPage() {
       />
 
       <ConfirmationDialog
+        isOpen={duplicateConfirm.isOpen}
+        onClose={() => setDuplicateConfirm({ isOpen: false, shiftId: "" })}
+        onConfirm={handleConfirmDuplicate}
+        title="Duplicate Shift?"
+        description="Are you sure you want to duplicate this shift schedule?"
+        confirmText="Yes, duplicate it"
+        isDanger={false}
+        isLoading={isShiftsLoading}
+      />
+
+      <ConfirmationDialog
         isOpen={unassignConfirm.isOpen}
         onClose={() => setUnassignConfirm({ isOpen: false, shiftOfferId: "" })}
         onConfirm={handleConfirmUnassign}
@@ -804,6 +914,21 @@ export default function InvoiceDetailsPage() {
         isDanger={true}
         isLoading={isShiftsLoading}
       />
+
+      {editingShift && (
+        <EditShiftDialog
+          isOpen={isEditShiftOpen}
+          onClose={() => {
+            setIsEditShiftOpen(false);
+            setEditingShift(null);
+          }}
+          onUpdate={handleUpdateShift}
+          initialShift={editingShift}
+          services={services}
+          isSaving={isSavingShift}
+          timezone={invoiceTimezone}
+        />
+      )}
     </div>
   );
 }
