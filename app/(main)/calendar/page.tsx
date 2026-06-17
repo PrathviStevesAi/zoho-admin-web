@@ -63,20 +63,7 @@ export default function CalendarPage() {
       console.log("[Calendar Page] fetchCalendarShiftsAction response:", res);
       if (res.success && res.data) {
         const events = res.data.map((shift) => {
-          let bgColor = "#9ca3af";
-          if (shift.status === "shift_planned") bgColor = "#f59e0b";
-          else if (shift.status === "shift_accepted") bgColor = "#3b82f6";
-          else if (
-            shift.status === "shift_arrival" ||
-            shift.status === "shift_pre_check_in" ||
-            shift.status === "shift_in_progress" ||
-            shift.status === "shift_in_break"
-          ) {
-            bgColor = "#10b981";
-          }
-          else if (shift.status === "shift_finished") bgColor = "#8b5cf6";
-          else if (shift.status === "shift_approved") bgColor = "#065f46";
-
+          let bgColor = shift.color || "#9ca3af";
           return {
             id: shift.shift_id,
             title: `${shift.customer_name} [${shift.invoice_no}] - ${shift.service_address}`,
@@ -146,27 +133,31 @@ export default function CalendarPage() {
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-3 px-4 bg-white rounded-lg shadow-sm border border-slate-100 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-[#9ca3af]"></div>
-            <span className="text-[13px] font-semibold text-slate-600">- Shift Created - No guard assigned</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-[#f59e0b]"></div>
-            <span className="text-[13px] font-semibold text-slate-600">- Shift Planned - Awaiting Guard Acceptance</span>
+            <span className="text-[13px] font-semibold text-slate-600">- Shift Created - No Guard Assigned</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-[#3b82f6]"></div>
+            <span className="text-[13px] font-semibold text-slate-600">- Shift Planned - Awaiting Guard Acceptance</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-[#f59e0b]"></div>
             <span className="text-[13px] font-semibold text-slate-600">- Shift Accepted - Waiting to Start</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-[#10b981]"></div>
+            <div className="w-5 h-5 rounded bg-[#228b22]"></div>
             <span className="text-[13px] font-semibold text-slate-600">- Shift In Progress</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-[#8b5cf6]"></div>
+            <div className="w-5 h-5 rounded bg-[#023020]"></div>
             <span className="text-[13px] font-semibold text-slate-600">- Shift Finished</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-[#065f46]"></div>
+            <div className="w-5 h-5 rounded bg-[#023020]"></div>
             <span className="text-[13px] font-semibold text-slate-600">- Shift Completed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-[#ef4444]"></div>
+            <span className="text-[13px] font-semibold text-slate-600">- Shifts with Issues</span>
           </div>
         </div>
       )}
