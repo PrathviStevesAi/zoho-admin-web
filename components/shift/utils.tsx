@@ -4,7 +4,8 @@ import { DateTime } from "luxon";
 export const toUTCISO = (localDateTimeStr: string, timezone?: string) => {
   if (!localDateTimeStr) return null;
   try {
-    const dt = DateTime.fromISO(localDateTimeStr, { zone: timezone || 'local' });
+    const isoString = localDateTimeStr.replace(' ', 'T');
+    const dt = DateTime.fromISO(isoString, { zone: timezone || 'local' });
     if (!dt.isValid) return null;
     return dt.toUTC().toISO();
   } catch {
@@ -15,7 +16,8 @@ export const toUTCISO = (localDateTimeStr: string, timezone?: string) => {
 export const toLocalDateTimeString = (isoStr: string) => {
   if (!isoStr) return "";
   try {
-    const dt = DateTime.fromISO(isoStr, { setZone: true });
+    const isoString = isoStr.replace(' ', 'T');
+    const dt = DateTime.fromISO(isoString, { setZone: true });
     if (!dt.isValid) return "";
     return dt.toFormat("yyyy-MM-dd'T'HH:mm");
   } catch {
@@ -182,7 +184,9 @@ export const formatStatus = (status: string) => {
 export const formatDateTime = (dateStr: string) => {
   if (!dateStr) return 'N/A';
   try {
-    const dt = DateTime.fromISO(dateStr, { setZone: true });
+    // Replace space with T to make it a valid ISO string if it's a PostgreSQL timestamp
+    const isoString = dateStr.replace(' ', 'T');
+    const dt = DateTime.fromISO(isoString, { setZone: true });
     if (!dt.isValid) return 'N/A';
     return dt.toFormat('dd/MM/yyyy, HH:mm');
   } catch {
