@@ -49,9 +49,22 @@ export async function apiFetch<T>(
         } catch {
           errorData = { message: errorText || `API Request Failed with status ${response.status}` };
         }
-        const detailMessage = typeof errorData.detail === "string"
-          ? errorData.detail
-          : (errorData.detail?.error || errorData.detail?.message || errorData.message || `API Request Failed with status ${response.status}`);
+        let detailMessage = "";
+        if (typeof errorData.detail === "string") {
+          try {
+            const repairedStr = errorData.detail
+              .replace(/'/g, '"')
+              .replace(/\bFalse\b/g, "false")
+              .replace(/\bTrue\b/g, "true")
+              .replace(/\bNone\b/g, "null");
+            const parsedDetail = JSON.parse(repairedStr);
+            detailMessage = parsedDetail.error || parsedDetail.message || errorData.detail;
+          } catch (e) {
+            detailMessage = errorData.detail;
+          }
+        } else {
+          detailMessage = errorData.detail?.error || errorData.detail?.message || errorData.message || `API Request Failed with status ${response.status}`;
+        }
         throw new Error(detailMessage);
       }
       const successText = await response.text();
