@@ -149,10 +149,6 @@ export default function CalendarPage() {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-[#023020]"></div>
-            <span className="text-[13px] font-semibold text-slate-600">- Shift Finished</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-[#023020]"></div>
             <span className="text-[13px] font-semibold text-slate-600">- Shift Completed</span>
           </div>
           <div className="flex items-center gap-2">
