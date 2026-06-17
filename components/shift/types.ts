@@ -28,6 +28,7 @@ export interface ExecutionTime {
 
 export interface ShiftActions {
   is_reassigned?: boolean;
+  is_new_assigned?: boolean;
   is_manual_start_shift?: boolean;
   is_config_settings?: boolean;
   is_cancel_service?: boolean;

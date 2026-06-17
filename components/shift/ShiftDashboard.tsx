@@ -37,6 +37,7 @@ import { ShiftProgressStepper } from "./ShiftProgressStepper";
 import { ShiftMapCard } from "./ShiftMapCard";
 import { ShiftSettingsCard } from "./ShiftSettingsCard";
 import { ShiftTabsModule } from "./ShiftTabsModule";
+import { NewAssignGuardPanel } from "./NewAssignGuardPanel";
 import { EditShiftLocationDialog } from "./dialogs/EditShiftLocationDialog";
 import { ManualStartShiftDialog } from "./dialogs/ManualStartShiftDialog";
 
@@ -75,6 +76,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   // Dialog & Visibility Flags
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isNewAssignOpen, setIsNewAssignOpen] = useState(false);
   const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
   const [isManualStartOpen, setIsManualStartOpen] = useState(false);
@@ -511,6 +513,48 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsSelectGuardOpen(true);
   };
 
+  const handleNewAssignGuard = () => {
+    if (!shift) return;
+    const paymentStatus = shift.payment_status?.toLowerCase();
+    if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
+      toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", {
+        duration: 5000,
+      });
+      return;
+    }
+    setIsNewAssignOpen(true);
+    setIsSettingsOpen(false);
+  };
+
+  const handleNewAssignSelect = async (guard: any, rates: { per_hour_rate: number; per_shift_rate: number; travel_fee: number }) => {
+    const targetGuardId = guard.id || guard.guard_id;
+    console.log("[ShiftDashboard] New Assign Guard ID:", targetGuardId, "Rates:", rates);
+    if (!shift) return;
+    const invoiceId = shift.invoice_id;
+    if (!invoiceId) {
+      toast.error("Invoice ID not found for this shift.");
+      return;
+    }
+    setIsAssigningGuard(targetGuardId);
+    const actionPayload: any = {
+      invoice_id: invoiceId,
+      guard_id: targetGuardId,
+      shift_id: shiftId,
+    };
+    if (rates.per_hour_rate) actionPayload.per_hour_rate = rates.per_hour_rate;
+    if (rates.per_shift_rate) actionPayload.per_shift_rate = rates.per_shift_rate;
+    if (rates.travel_fee) actionPayload.travel_fee = rates.travel_fee;
+    const res = await assignGuardToShiftAction(actionPayload);
+    if (res.success) {
+      toast.success("Guard assigned successfully");
+      setIsNewAssignOpen(false);
+      loadShiftDetails();
+    } else {
+      toast.error(res.error || "Failed to assign guard");
+    }
+    setIsAssigningGuard(null);
+  };
+
   const showSettingBtn = shift
     ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_arrival", "shift_pre_check_in"].includes(
       shift.status?.toLowerCase()
@@ -552,17 +596,26 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         shiftId={shiftId}
         notificationId={notificationId}
         isSettingsOpen={isSettingsOpen}
-        setIsSettingsOpen={setIsSettingsOpen}
+        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) setIsNewAssignOpen(false); }}
+        isNewAssignOpen={isNewAssignOpen}
+        onCloseNewAssign={() => setIsNewAssignOpen(false)}
         isStartingShift={isStartingShift}
         onManualStart={() => setIsManualStartOpen(true)}
         onAssignGuard={handleAssignGuard}
+        onNewAssignGuard={handleNewAssignGuard}
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
         onStartVideoCall={() => startCall(shiftId)}
         isLoading={isLoading}
       />
 
-      {isSettingsOpen ? (
+      {isNewAssignOpen ? (
+        <NewAssignGuardPanel
+          onSelect={handleNewAssignSelect}
+          onClose={() => setIsNewAssignOpen(false)}
+          assigningGuardId={isAssigningGuard}
+        />
+      ) : isSettingsOpen ? (
         <ShiftSettingsCard
           isOpen={isSettingsOpen}
           initialSettings={settingsFormState}

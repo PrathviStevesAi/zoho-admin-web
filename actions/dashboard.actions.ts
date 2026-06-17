@@ -541,26 +541,36 @@ export async function assignGuardToShiftAction(payload: {
   invoice_id: string;
   guard_id: string;
   shift_id: string;
+  per_hour_rate?: number;
+  per_shift_rate?: number;
+  travel_fee?: number;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
+    const body: any = {
+      invoice_id: payload.invoice_id,
+      assignments: [
+        {
+          guard_id: payload.guard_id,
+          shift_ids: [payload.shift_id],
+        },
+      ],
+    };
+    if (payload.per_hour_rate) {
+      body.per_hour_rate = payload.per_hour_rate;
+      body.assignments[0].per_hour_rate = payload.per_hour_rate;
+    }
+    if (payload.per_shift_rate) {
+      body.per_shift_rate = payload.per_shift_rate;
+      body.assignments[0].per_shift_rate = payload.per_shift_rate;
+    }
+    if (payload.travel_fee) {
+      body.assignments[0].travel_fee = payload.travel_fee;
+    }
     const res = await apiFetch<{ success: boolean; message?: string }>(
       `/api/v1/shift/assign-guard`,
       {
         method: "POST",
-        body: JSON.stringify({
-          invoice_id: payload.invoice_id,
-          per_hour_rate: 0,
-          per_shift_rate: 0,
-          assignments: [
-            {
-              guard_id: payload.guard_id,
-              shift_ids: [payload.shift_id],
-              per_hour_rate: 0,
-              per_shift_rate: 0,
-              travel_fee: 0
-            },
-          ],
-        }),
+        body: JSON.stringify(body),
       }
     );
     return { success: true, message: res.message };

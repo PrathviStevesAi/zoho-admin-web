@@ -10,9 +10,12 @@ interface ShiftHeaderProps {
   notificationId?: string | null;
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
+  isNewAssignOpen: boolean;
+  onCloseNewAssign: () => void;
   isStartingShift: boolean;
   onManualStart: () => void;
   onAssignGuard: () => void;
+  onNewAssignGuard: () => void;
   onCancelService: () => void;
   showSettingBtn: boolean;
   onStartVideoCall: () => void;
@@ -25,9 +28,12 @@ export function ShiftHeader({
   notificationId,
   isSettingsOpen,
   setIsSettingsOpen,
+  isNewAssignOpen,
+  onCloseNewAssign,
   isStartingShift,
   onManualStart,
   onAssignGuard,
+  onNewAssignGuard,
   onCancelService,
   onStartVideoCall,
   isLoading,
@@ -47,11 +53,12 @@ export function ShiftHeader({
               onClick={(e) => {
                 e.preventDefault();
                 setIsSettingsOpen(false);
+                onCloseNewAssign();
               }}
               className={cn(
                 "transition-colors font-medium",
-                isSettingsOpen
-                  ? "text-slate-500 hover:text-[#0064cb]"
+                (isSettingsOpen || isNewAssignOpen)
+                  ? "text-slate-500 hover:text-[#0064cb] cursor-pointer"
                   : "text-[#0064cb] font-bold cursor-default pointer-events-none"
               )}
             >
@@ -61,6 +68,12 @@ export function ShiftHeader({
               <>
                 <ChevronRight className="w-3.5 h-3.5" />
                 <span className="text-[#0064cb] font-bold">Setting</span>
+              </>
+            )}
+            {isNewAssignOpen && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="text-[#0064cb] font-bold">New Assign Guard</span>
               </>
             )}
           </div>
@@ -133,6 +146,14 @@ export function ShiftHeader({
                 onClick: onAssignGuard,
               });
             }
+            if (act.is_new_assigned) {
+              buttons.push({
+                label: "Assign New Guard",
+                icon: UserPlus,
+                color: "blue" as const,
+                onClick: onNewAssignGuard,
+              });
+            }
             if (act.is_manual_start_shift) {
               buttons.push({
                 label: "Manual Start Shift",
@@ -194,6 +215,7 @@ export function ShiftHeader({
                     : "border-[#0064cb] text-[#0064cb] group-hover:bg-blue-50"),
                   action.color === "orange" && "border-orange-500 text-orange-500 group-hover:bg-orange-50",
                   action.color === "indigo" && "border-indigo-500 text-indigo-500 group-hover:bg-indigo-50",
+                  action.color === "teal" && "border-teal-500 text-teal-500 group-hover:bg-teal-50",
                   action.color === "slate" && "border-slate-400 text-slate-800 group-hover:bg-slate-50",
                   action.color === "red" && "border-red-400 text-red-500 group-hover:bg-red-50"
                 )}
