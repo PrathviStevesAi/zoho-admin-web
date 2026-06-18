@@ -33,7 +33,7 @@ export interface ShiftActions {
   is_config_settings?: boolean;
   is_cancel_service?: boolean;
   is_edit_schedule?: boolean;
-  is_vc_active?: boolean;
+  is_vc_start?: boolean;
   is_location_edit?: boolean;
   is_shift_details_edit?: boolean;
   is_schedule_for_edit?: boolean;

@@ -173,7 +173,7 @@ export function ShiftHeader({
                 onClick: () => setIsSettingsOpen(!isSettingsOpen),
               });
             }
-            if (act.is_vc_active) {
+            if (act.is_vc_start) {
               buttons.push({
                 label: "Video Call",
                 icon: Video,
