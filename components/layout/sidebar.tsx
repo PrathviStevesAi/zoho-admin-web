@@ -37,7 +37,7 @@ const routes = [
   { label: "Profile", icon: User, href: "/profile" },
 ];
 
-export function Sidebar() {
+export function Sidebar({ userRole }: { userRole?: string }) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -92,7 +92,13 @@ export function Sidebar() {
         <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto">
           {routes.map((route) => {
             const hasSubmenus = "submenus" in route && Array.isArray(route.submenus);
-            const submenus = hasSubmenus ? (route as any).submenus : [];
+            let submenus = hasSubmenus ? (route as any).submenus : [];
+            
+            // Hide "Members" submenu if user is a "member"
+            if (userRole === "member" && route.label === "Users Directory") {
+               submenus = submenus.filter((sub: any) => sub.label !== "Members");
+            }
+
             const isParentActive = pathname === route.href || submenus.some((sub: any) => pathname === sub.href);
 
             const mainItem = hasSubmenus ? (

@@ -1,6 +1,6 @@
 "use server";
 
-import { signIn, auth } from "@/lib/auth";
+import { signIn, auth, signOut } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
 export async function loginAction(formData: { email: string; password: string }) {
@@ -25,6 +25,9 @@ export async function loginAction(formData: { email: string; password: string })
     }
 }
 
+export async function logoutAction() {
+    await signOut({ redirectTo: "/admin-login" });
+}
 export async function registerUserAction(userData: any) {
     try {
         const session = await auth();
