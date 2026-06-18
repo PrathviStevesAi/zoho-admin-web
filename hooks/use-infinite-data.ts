@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition, useCallback } from "react";
+import { useState, useEffect, useTransition, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import useDebounceValue from "@/hooks/use-debounce";
 import { FetchResponse, Pagination } from "@/types/dashboard.types";
@@ -37,8 +37,18 @@ export function useInfiniteSearch<T>(
   const [isPending, startTransition] = useTransition();
   const debouncedValue = useDebounceValue(searchTerm, debounceMs);
 
+  const prevSearchTerm = useRef(debouncedValue);
+
   // Search Logic
   useEffect(() => {
+    // Only fetch if the search term actually changed. 
+    // This skips the initial mount (allowing true parallel server loading)
+    // and ignores changes to date_from/date_to (which are handled by the server component).
+    if (prevSearchTerm.current === debouncedValue) {
+      return;
+    }
+    prevSearchTerm.current = debouncedValue;
+
     startTransition(async () => {
       const res = await fetchAction(1, debouncedValue, date_from, date_to);
       if (res.success && res.data && res.pagination) {
