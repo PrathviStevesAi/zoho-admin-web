@@ -53,7 +53,7 @@ interface ShiftDashboardProps {
 
 export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps) {
   const router = useRouter();
-  const { startCall } = useVideoCall();
+  const { startCall, joinCall } = useVideoCall();
 
   // Core Data State
   const [shift, setShift] = useState<Shift | null>(null);
@@ -138,6 +138,18 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     loadShiftDetails();
     loadReportsDetails();
   }, [loadShiftDetails, loadReportsDetails]);
+
+  useEffect(() => {
+    const handleCallEnded = (e: any) => {
+      if (e.detail?.shiftId === shiftId) {
+        console.log("[ShiftDashboard] Call ended, refreshing shift details...");
+        loadShiftDetails();
+      }
+    };
+    
+    window.addEventListener("videoCallEnded", handleCallEnded);
+    return () => window.removeEventListener("videoCallEnded", handleCallEnded);
+  }, [shiftId, loadShiftDetails]);
 
   // Dynamic geocoding/websocket tracking hook
   useEffect(() => {
@@ -588,6 +600,27 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
         onStartVideoCall={() => startCall(shiftId)}
+        onJoinVideoCall={async () => {
+          let callId = shift?.call_id || shift?.action?.call_id;
+          
+          if (!callId) {
+            // Try fetching from active calls API if not provided in shift details
+            const { activeVideoCallsAction } = await import("@/actions/vc.actions");
+            const res = await activeVideoCallsAction();
+            if (res.success && res.data) {
+              const activeCall = res.data.find((c: any) => c.shift_id === shiftId);
+              if (activeCall) {
+                callId = activeCall.call_id || activeCall.id || activeCall._id;
+              }
+            }
+          }
+
+          if (callId) {
+            joinCall(callId);
+          } else {
+            toast.error("Call session not found for this shift.");
+          }
+        }}
         isLoading={isLoading}
       />
 

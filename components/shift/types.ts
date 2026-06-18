@@ -41,6 +41,8 @@ export interface ShiftActions {
   is_hourly_rate_edit?: boolean;
   is_flat_rate_edit?: boolean;
   is_travel_fee_edit?: boolean;
+  is_join_vc_call?: boolean;
+  call_id?: string;
 }
 
 export interface AssignedGuard {
@@ -76,6 +78,7 @@ export interface Shift {
   per_shift_rate?: number | null;
   travel_fee?: number | null;
   security_service_id?: string | null;
+  call_id?: string | null;
 }
 
 export interface ShiftHistoryEvent {

@@ -15,7 +15,6 @@ import {
   joinVideoCallAction,
   activeVideoCallsAction,
   inviteMemberAction,
-  leaveVideoCallAction,
   endVideoCallAction
 } from "@/actions/vc.actions";
 import { fetchMembersAction } from "@/actions/auth.actions";
@@ -26,7 +25,6 @@ interface VideoCallContextType {
   startCall: (shiftId: string) => Promise<void>;
   joinCall: (callId: string) => Promise<void>;
   declineIncomingCall: () => void;
-  leaveCall: () => Promise<void>;
   endCall: () => Promise<void>;
   inviteMember: (memberId: string) => Promise<void>;
   isMinimized: boolean;
@@ -129,6 +127,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         if (res.success && res.data && res.data.length > 0) {
           const call = res.data[0];
           console.log("[VideoCall] Active call detected on mount:", call);
+          setActiveCall(call);
+          setIsMinimized(true);
         }
       } catch (err) {
         console.error("[VideoCall] Failed to fetch active calls on mount:", err);
@@ -168,7 +168,15 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
               }
               this.root.unmount = () => { };
             }
-            return originalDestroy.apply(this);
+            try {
+              return originalDestroy.apply(this);
+            } catch (err: any) {
+              if (err?.message?.includes("createSpan") || err?.stack?.includes("createSpan")) {
+                console.warn("[VideoCall] Caught expected Zego createSpan error on destroy.");
+              } else {
+                throw err;
+              }
+            }
           };
           (ZegoUIKitPrebuilt.prototype as any).__patchedDestroy = true;
         }
@@ -179,7 +187,13 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         const appID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID || 727438037);
         const serverSecret =
           process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || "dd1d31a37620b0d4a6cc9c237a7cd370";
-        const roomID = activeCall.call_id;
+        const roomID = String(activeCall.call_id || activeCall.room_id || activeCall.id || activeCall._id || "");
+        if (!roomID) {
+          console.error("[VideoCall] ERROR: roomID is empty! activeCall object:", JSON.stringify(activeCall));
+          toast.error("Failed to join video call: Missing room ID.");
+          setActiveCall(null);
+          return;
+        }
         const userID =
           activeCall.user_id ||
           session?.user?.id ||
@@ -216,6 +230,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           scenario: {
             mode: ZegoUIKitPrebuilt.GroupCall,
           },
+          autoHideFooter: false,
           showPreJoinView: false,
           turnOnCameraWhenJoining: false,
           turnOnMicrophoneWhenJoining: false,
@@ -223,8 +238,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           showUserList: true,
           showLayoutButton: true,
           onLeaveRoom: () => {
-            console.log("[VideoCall] Left Zego room via built-in button");
-            handleCleanupState();
+            console.log("[VideoCall] Left Zego room via built-in button - Ending call for everyone");
+            endCall();
           },
         });
       } catch (err) {
@@ -296,6 +311,17 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   };
 
   const joinCall = async (callId: string) => {
+    if (activeCall) {
+      const activeCallId = activeCall.call_id || activeCall.id || activeCall._id || activeCall.room_id;
+      if (activeCallId === callId) {
+        toast.info("You are already connected to this call");
+        setIsMinimized(false);
+      } else {
+        toast.warning("You are already in a different active call");
+      }
+      return;
+    }
+
     setIsActionPending(true);
     const toastId = toast.loading("Connecting to call...");
     try {
@@ -320,47 +346,30 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     toast.info("Call invitation dismissed");
   };
 
-  const leaveCall = async () => {
-    if (!activeCall) return;
-
-    setIsActionPending(true);
-    const toastId = toast.loading("Leaving call...");
-    try {
-      const res = await leaveVideoCallAction(activeCall.call_id);
-      if (res.success) {
-        toast.success(res.message || "You left the call", { id: toastId });
-        if (zegoInstanceRef.current) {
-          try {
-            zegoInstanceRef.current.destroy();
-          } catch { }
-        }
-        handleCleanupState();
-      } else {
-        toast.error(res.error || "Failed to leave call", { id: toastId });
-      }
-    } catch (err) {
-      console.error("[VideoCall] Error leaving call:", err);
-      toast.error("An unexpected error occurred", { id: toastId });
-    } finally {
-      setIsActionPending(false);
-    }
-  };
 
   const endCall = async () => {
     if (!activeCall) return;
 
+    const callIdToUse = activeCall.call_id || activeCall.id || activeCall._id || activeCall.room_id;
+    if (!callIdToUse) {
+      toast.error("Cannot end call: Missing call ID");
+      handleCleanupState();
+      return;
+    }
+
     setIsActionPending(true);
     const toastId = toast.loading("Ending call for everyone...");
     try {
-      const res = await endVideoCallAction(activeCall.call_id);
+      const res = await endVideoCallAction(callIdToUse);
       if (res.success) {
         toast.success(res.message || "Call ended successfully", { id: toastId });
-        if (zegoInstanceRef.current) {
-          try {
-            zegoInstanceRef.current.destroy();
-          } catch { }
+        
+        // Notify other components (like ShiftDashboard) to refresh data
+        if (typeof window !== "undefined" && activeCall?.shift_id) {
+          window.dispatchEvent(
+            new CustomEvent("videoCallEnded", { detail: { shiftId: activeCall.shift_id } })
+          );
         }
-        handleCleanupState();
       } else {
         toast.error(res.error || "Failed to end call", { id: toastId });
       }
@@ -369,6 +378,12 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       toast.error("An unexpected error occurred", { id: toastId });
     } finally {
       setIsActionPending(false);
+      if (zegoInstanceRef.current) {
+        try {
+          zegoInstanceRef.current.destroy();
+        } catch { }
+      }
+      handleCleanupState();
     }
   };
 
@@ -397,7 +412,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         startCall,
         joinCall,
         declineIncomingCall,
-        leaveCall,
         endCall,
         inviteMember,
         isMinimized,
@@ -415,7 +429,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
               ? "bottom-4 right-4 w-72 h-14"
               : isFullscreen
                 ? "inset-4"
-                : "bottom-4 right-4 w-[90vw] sm:w-[500px] md:w-[720px] h-[600px]"
+                : "bottom-4 right-4 w-[90vw] sm:w-[500px] md:w-[720px] h-[600px] max-h-[calc(100dvh-2rem)]"
           )}
         >
           <div className="h-14 px-4 bg-slate-950 flex items-center justify-between border-b border-slate-800 select-none shrink-0">
@@ -426,10 +440,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
                   Live Call
                 </span>
               </div>
-              <span className="text-slate-700 text-xs font-bold hidden sm:inline">|</span>
-              <span className="text-slate-700 text-xs font-medium">
-                Shift ID: #{activeCall.shift_id.slice(0, 8)}...
-              </span>
             </div>
 
             <div className="flex items-center gap-1">
@@ -466,7 +476,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
           <div
             className={cn(
-              "w-full flex-1 relative bg-slate-950",
+              "w-full flex-1 relative bg-slate-950 min-h-0 overflow-hidden",
               isMinimized ? "hidden" : "block"
             )}
           >
@@ -481,17 +491,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
             <div ref={zegoContainerRef} className="w-full h-full text-white" />
           </div>
 
-          {!isMinimized && (
-            <div className="h-14 bg-slate-950 border-t border-slate-800 px-4 flex items-center justify-end gap-3 shrink-0">
-              <button
-                onClick={endCall}
-                disabled={isActionPending}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 h-9 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-md shadow-red-900/10 disabled:opacity-50"
-              >
-                End Call
-              </button>
-            </div>
-          )}
         </div>
       )}
     </VideoCallContext.Provider>

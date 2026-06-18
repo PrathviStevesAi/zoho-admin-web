@@ -79,23 +79,6 @@ export async function inviteMemberAction(callId: string, memberId: string): Prom
   }
 }
 
-export async function leaveVideoCallAction(callId: string): Promise<{
-  success: boolean;
-  message?: string;
-  error?: string;
-}> {
-  try {
-    const res = await apiFetch<any>(`/api/v1/vc/leave`, {
-      method: "POST",
-      body: JSON.stringify({ call_id: callId }),
-    });
-    return { success: true, message: res.message || "Left call successfully" };
-  } catch (error: any) {
-    const message = error.message || "Failed to leave call";
-    return { success: false, error: message };
-  }
-}
-
 export async function endVideoCallAction(callId: string): Promise<{
   success: boolean;
   message?: string;

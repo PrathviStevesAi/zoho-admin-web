@@ -20,6 +20,7 @@ interface ShiftHeaderProps {
   onCancelService: () => void;
   showSettingBtn: boolean;
   onStartVideoCall: () => void;
+  onJoinVideoCall: () => void;
   isLoading?: boolean;
 }
 
@@ -38,6 +39,7 @@ export function ShiftHeader({
   onNewAssignGuard,
   onCancelService,
   onStartVideoCall,
+  onJoinVideoCall,
   isLoading,
 }: ShiftHeaderProps) {
   return (
@@ -179,6 +181,14 @@ export function ShiftHeader({
                 icon: Video,
                 color: "orange" as const,
                 onClick: onStartVideoCall,
+              });
+            }
+            if (act.is_join_vc_call) {
+              buttons.push({
+                label: "Join Call",
+                icon: Video,
+                color: "emerald" as const,
+                onClick: onJoinVideoCall,
               });
             }
             if (act.is_cancel_service) {
