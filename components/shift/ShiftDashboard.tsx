@@ -176,7 +176,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         const wsUrl = `${wsProtocol}://${wsHost}/api/v1/tracking/ws/admin/shift/${shift.shift_id}`;
 
         console.log("[WebSocket] Connecting to:", wsUrl);
-        const ws = new WebSocket(wsUrl);
+        let ws: WebSocket;
+        try {
+          ws = new WebSocket(wsUrl);
+        } catch (err) {
+          console.error("[WebSocket] Security or initialization error (likely Mixed Content blocked by browser):", err);
+          // If WS fails synchronously, just exit the effect gracefully without crashing the page.
+          return;
+        }
 
         ws.onopen = () => {
           console.log("[WebSocket] Connection established successfully!");
