@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+    trustHost: true,
     providers: [
         CredentialsProvider({
             name: "Credentials",
@@ -18,12 +19,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         email: credentials.email,
                         password: credentials.password,
                     }),
-                    headers: { 
+                    headers: {
                         "Content-Type": "application/json",
                         "ngrok-skip-browser-warning": "true"
                     },
                 });
-                
+
                 const text = await res.text();
                 let result: any = null;
                 try {
@@ -88,7 +89,7 @@ async function refreshAccessToken(token: any) {
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/refresh`, {
             method: "POST",
-            headers: { 
+            headers: {
                 "Content-Type": "application/json",
                 "ngrok-skip-browser-warning": "true"
             },
