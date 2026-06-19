@@ -5,16 +5,31 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const { nextUrl } = req;
 
+  const isRootPage = nextUrl.pathname === "/";
   const isAuthPage = nextUrl.pathname.startsWith("/admin-login");
   const isProtectedRoute = !isAuthPage;
   const hasError = req.auth?.error === "RefreshAccessTokenError";
 
-  if (hasError || (!isLoggedIn && isProtectedRoute)) {
+  // Force logout on token error
+  if (hasError && isProtectedRoute) {
     return NextResponse.redirect(new URL("/admin-login", nextUrl));
   }
 
+  // Root page redirect
+  if (isRootPage) {
+    return NextResponse.redirect(
+      new URL(isLoggedIn ? "/dashboard" : "/admin-login", nextUrl)
+    );
+  }
+
+  // Redirect logged-in users away from login page
   if (isAuthPage && isLoggedIn) {
     return NextResponse.redirect(new URL("/dashboard", nextUrl));
+  }
+
+  // Redirect unauthenticated users to login
+  if (!isLoggedIn && isProtectedRoute) {
+    return NextResponse.redirect(new URL("/admin-login", nextUrl));
   }
 });
 
