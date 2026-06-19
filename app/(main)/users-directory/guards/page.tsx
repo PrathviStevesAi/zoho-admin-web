@@ -287,7 +287,7 @@ export default function GuardDirectoryPage() {
                       placeholder="First name"
                       required
                       value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value.replace(/\d/g, "") })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
                   </div>
@@ -297,7 +297,7 @@ export default function GuardDirectoryPage() {
                       placeholder="Last name"
                       required
                       value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value.replace(/\d/g, "") })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
                   </div>
@@ -404,9 +404,9 @@ export default function GuardDirectoryPage() {
                           ...prev,
                           address: formattedAddress,
                           streetAddress: address.street,
-                          city: address.city,
-                          state: address.state,
-                          country: address.country,
+                          city: (address.city || "").replace(/\d/g, ""),
+                          state: (address.state || "").replace(/\d/g, ""),
+                          country: (address.country || "").replace(/\d/g, ""),
                           zipCode: address.zip
                         }));
                       }}
@@ -422,7 +422,7 @@ export default function GuardDirectoryPage() {
                       placeholder="City"
                       value={formData.city}
                       required
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value.replace(/\d/g, "") })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
                   </div>
@@ -432,7 +432,7 @@ export default function GuardDirectoryPage() {
                       placeholder="State"
                       value={formData.state}
                       required
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value.replace(/\d/g, "") })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
                   </div>
@@ -454,7 +454,7 @@ export default function GuardDirectoryPage() {
                       placeholder="Country"
                       value={formData.country}
                       required
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value.replace(/\d/g, "") })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
                   </div>

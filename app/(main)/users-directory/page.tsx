@@ -188,7 +188,7 @@ export default function MemberDirectoryPage() {
                     <Input
                       placeholder="Enter first name"
                       value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value.replace(/\d/g, "") })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
                     />
                   </div>
@@ -197,7 +197,7 @@ export default function MemberDirectoryPage() {
                     <Input
                       placeholder="Enter last name"
                       value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value.replace(/\d/g, "") })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
                     />
                   </div>
