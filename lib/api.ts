@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export async function apiFetch<T>(
   endpoint: string,
@@ -22,8 +23,8 @@ export async function apiFetch<T>(
       }
 
       if (session?.error === "RefreshAccessTokenError") {
-        console.warn(`[apiFetch] Refresh token expired for ${endpoint}.`);
-        throw new Error("Session expired. Please log in again.");
+        console.warn(`[apiFetch] Refresh token expired for ${endpoint}. Redirecting to login.`);
+        redirect("/admin-login");
       }
 
       const response = await fetch(
@@ -41,11 +42,16 @@ export async function apiFetch<T>(
       );
 
       if (!response.ok) {
-        if (response.status === 401 && i < retries - 1) {
-          const delay = (i + 1) * 1000 + Math.random() * 500;
-          console.warn(`[apiFetch] 401 Unauthorized for ${endpoint}. Retrying (Attempt ${i + 2}/${retries}) in ${Math.round(delay)}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
+        if (response.status === 401) {
+          if (i < retries - 1) {
+            const delay = (i + 1) * 1000 + Math.random() * 500;
+            console.warn(`[apiFetch] 401 Unauthorized for ${endpoint}. Retrying (Attempt ${i + 2}/${retries}) in ${Math.round(delay)}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          } else {
+            console.warn(`[apiFetch] 401 Unauthorized persisted after ${retries} attempts for ${endpoint}. Redirecting to login.`);
+            redirect("/admin-login");
+          }
         }
 
         const errorText = await response.text().catch(() => "");

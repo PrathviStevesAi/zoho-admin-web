@@ -83,9 +83,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 });
 
 
+const refreshPromises = new Map<string, Promise<any>>();
 
 async function refreshAccessToken(token: any) {
-    try {
+    const key = token.refreshToken;
+
+    if (key && refreshPromises.has(key)) {
+        try {
+            const newTokens = await refreshPromises.get(key);
+            return {
+                ...token,
+                accessToken: newTokens.accessToken,
+                expiresAt: newTokens.expiresAt,
+                refreshToken: newTokens.refreshToken,
+            };
+        } catch (err) {
+            return { ...token, error: "RefreshAccessTokenError" };
+        }
+    }
+
+    const promise = (async () => {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/refresh`, {
             method: "POST",
             headers: {
@@ -110,12 +127,27 @@ async function refreshAccessToken(token: any) {
         const newRefreshToken = refreshedTokens.data?.refresh_token || refreshedTokens.refresh_token || token.refreshToken;
 
         return {
-            ...token,
             accessToken: newAccessToken,
             expiresAt: Math.floor(Date.now() / 1000) + 3600,
             refreshToken: newRefreshToken,
         };
+    })();
+
+    if (key) {
+        refreshPromises.set(key, promise);
+    }
+
+    try {
+        const newTokens = await promise;
+        if (key) setTimeout(() => refreshPromises.delete(key), 10000);
+        return {
+            ...token,
+            accessToken: newTokens.accessToken,
+            expiresAt: newTokens.expiresAt,
+            refreshToken: newTokens.refreshToken,
+        };
     } catch (error) {
+        if (key) setTimeout(() => refreshPromises.delete(key), 10000);
         return { ...token, error: "RefreshAccessTokenError" };
     }
 }
