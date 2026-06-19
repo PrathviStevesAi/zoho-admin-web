@@ -5,11 +5,9 @@ export async function proxy(req: NextRequest) {
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
-    // ← Try both cookie names
     cookieName: "__Secure-authjs.session-token",
   });
 
-  // Fallback: also check without __Secure prefix
   const tokenFallback = token ?? await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,

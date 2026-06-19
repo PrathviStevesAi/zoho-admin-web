@@ -103,29 +103,17 @@ export default function LoginPage() {
         });
     };
 
-    // const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    //     e.preventDefault();
-
-    //     startTransition(async () => {
-    //         const result = await loginAction({ email, password });
-    //         if (result.success) {
-    //             toast.success("Login Successful");
-    //             window.location.href = "/dashboard";
-    //         } else {
-    //             toast.error(result.error || "Invalid Credentials");
-    //         }
-    //     });
-    // };
-
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
         startTransition(async () => {
             const result = await loginAction({ email, password });
-            // If result exists, it means login failed
-            if (result && !result.success) {
+            if (result.success) {
+                toast.success("Login Successful");
+                window.location.href = "/dashboard";
+            } else {
                 toast.error(result.error || "Invalid Credentials");
             }
-            // On success, NextAuth handles redirect automatically
         });
     };
 

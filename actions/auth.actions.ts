@@ -3,35 +3,14 @@
 import { signIn, auth, signOut } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
-// export async function loginAction(formData: { email: string; password: string }) {
-//     try {
-//         await signIn("credentials", {
-//             email: formData.email,
-//             password: formData.password,
-//             redirect: false,
-//         });
-//         return { success: true };
-//     } catch (error) {
-//         if (error instanceof AuthError) {
-//             switch (error.type) {
-//                 case "CredentialsSignin":
-//                     return { success: false, error: "Invalid email or password." };
-//                 default:
-//                     return { success: false, error: "Something went wrong." };
-//             }
-//         }
-
-//         return { success: false, error: "An unexpected error occurred." };
-//     }
-// }
-
 export async function loginAction(formData: { email: string; password: string }) {
     try {
         await signIn("credentials", {
             email: formData.email,
             password: formData.password,
-            redirectTo: "/dashboard",  // ← let NextAuth handle redirect
+            redirect: false,
         });
+        return { success: true };
     } catch (error) {
         if (error instanceof AuthError) {
             switch (error.type) {
@@ -41,8 +20,8 @@ export async function loginAction(formData: { email: string; password: string })
                     return { success: false, error: "Something went wrong." };
             }
         }
-        // NextAuth throws a redirect error on success - this is normal!
-        throw error;
+
+        return { success: false, error: "An unexpected error occurred." };
     }
 }
 
