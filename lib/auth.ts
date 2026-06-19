@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+    trustHost: true,
     providers: [
         CredentialsProvider({
             name: "Credentials",
@@ -36,7 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         let result: any = null;
                         try {
                             result = JSON.parse(text);
-                        } catch {}
+                        } catch { }
 
                         const errorMsg = result?.detail?.error || result?.message || result?.error || "Invalid email or password.";
                         throw new Error(errorMsg);
@@ -174,3 +175,5 @@ async function refreshAccessToken(token: any) {
         return { ...token, error: "RefreshAccessTokenError" };
     }
 }
+
+export const runtime = "nodejs";
