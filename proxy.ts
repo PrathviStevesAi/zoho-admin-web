@@ -1,41 +1,23 @@
 import { auth } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
-export const proxy = auth((req) => {
+export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const { nextUrl } = req;
 
-  const isRootPage = nextUrl.pathname === "/";
   const isAuthPage = nextUrl.pathname.startsWith("/admin-login");
   const isProtectedRoute = !isAuthPage;
   const hasError = req.auth?.error === "RefreshAccessTokenError";
 
-  if (hasError) {
-    if (isProtectedRoute) {
-      return Response.redirect(new URL("/admin-login", nextUrl));
-    }
-    return;
-  }
-
-  if (isRootPage) {
-    if (isLoggedIn) {
-      return Response.redirect(new URL("/dashboard", nextUrl));
-    } else {
-      return Response.redirect(new URL("/admin-login", nextUrl));
-    }
+  if (hasError || (!isLoggedIn && isProtectedRoute)) {
+    return NextResponse.redirect(new URL("/admin-login", nextUrl));
   }
 
   if (isAuthPage && isLoggedIn) {
-    return Response.redirect(new URL("/dashboard", nextUrl));
-  }
-
-  if (!isLoggedIn && isProtectedRoute) {
-    return Response.redirect(new URL("/admin-login", nextUrl));
+    return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }
 });
-
-export default proxy;
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|images|firebase-messaging-sw.js|favicon.ico).*)"],
 };
-
