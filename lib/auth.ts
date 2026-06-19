@@ -175,5 +175,3 @@ async function refreshAccessToken(token: any) {
         return { ...token, error: "RefreshAccessTokenError" };
     }
 }
-
-export const runtime = "nodejs";
