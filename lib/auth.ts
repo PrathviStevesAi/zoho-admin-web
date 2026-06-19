@@ -12,37 +12,60 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) return null;
 
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/login`, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        email: credentials.email,
-                        password: credentials.password,
-                    }),
-                    headers: {
-                        "Content-Type": "application/json",
-                        "ngrok-skip-browser-warning": "true"
-                    },
-                });
-
-                const text = await res.text();
-                let result: any = null;
                 try {
-                    result = JSON.parse(text);
-                } catch (err) {
-                    console.error("Auth login JSON parse error. Response starts with:", text.substring(0, 200));
-                    return null;
-                }
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/login`, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            email: credentials.email,
+                            password: credentials.password,
+                        }),
+                        headers: {
+                            "Content-Type": "application/json",
+                            "ngrok-skip-browser-warning": "true"
+                        },
+                    });
 
-                if (res.ok && result && result.data) {
-                    return {
-                        id: result.data.user_id,
-                        accessToken: result.access_token,
-                        refreshToken: result.refresh_token,
-                        role: result.data.role || result.role,
-                        email: credentials.email as string,
-                    };
+                    const text = await res.text();
+
+                    if (!res.ok) {
+                        const trimmedText = text.trim().toLowerCase();
+                        if (trimmedText.startsWith("<!doctype") || trimmedText.startsWith("<html") || res.status >= 500) {
+                            throw new Error("Service is currently unreachable. Please check your connection or try again later.");
+                        }
+
+                        let result: any = null;
+                        try {
+                            result = JSON.parse(text);
+                        } catch {}
+
+                        const errorMsg = result?.detail?.error || result?.message || result?.error || "Invalid email or password.";
+                        throw new Error(errorMsg);
+                    }
+
+                    let result: any = null;
+                    try {
+                        result = JSON.parse(text);
+                    } catch (err) {
+                        console.error("Auth login JSON parse error. Response starts with:", text.substring(0, 200));
+                        throw new Error("Service is currently unreachable. Please check your connection or try again later.");
+                    }
+
+                    if (result && result.data) {
+                        return {
+                            id: result.data.user_id,
+                            accessToken: result.access_token,
+                            refreshToken: result.refresh_token,
+                            role: result.data.role || result.role,
+                            email: credentials.email as string,
+                        };
+                    }
+                    return null;
+                } catch (error: any) {
+                    if (error.message?.includes("fetch failed") || error.code === "ECONNRESET" || error.cause?.code === "ECONNRESET") {
+                        throw new Error("Service is currently unreachable. Please check your connection or try again later.");
+                    }
+                    throw error;
                 }
-                return null;
             },
         }),
     ],

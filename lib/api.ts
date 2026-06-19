@@ -59,7 +59,11 @@ export async function apiFetch<T>(
         try {
           errorData = JSON.parse(errorText);
         } catch {
-          errorData = { message: errorText || `API Request Failed with status ${response.status}` };
+          if (errorText.trim().toLowerCase().startsWith("<!doctype") || errorText.trim().toLowerCase().startsWith("<html")) {
+            errorData = { message: `Service is currently unreachable (Status ${response.status}). Please check your connection or try again later.` };
+          } else {
+            errorData = { message: errorText || `API Request Failed with status ${response.status}` };
+          }
         }
         let detailMessage = "";
         if (typeof errorData.detail === "string") {

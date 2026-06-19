@@ -13,6 +13,10 @@ export async function loginAction(formData: { email: string; password: string })
         return { success: true };
     } catch (error) {
         if (error instanceof AuthError) {
+            const causeMessage = (error as any).cause?.err?.message;
+            if (causeMessage) {
+                return { success: false, error: causeMessage };
+            }
             switch (error.type) {
                 case "CredentialsSignin":
                     return { success: false, error: "Invalid email or password." };

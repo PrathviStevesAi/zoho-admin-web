@@ -158,7 +158,10 @@ export default function LoginPage() {
                                                     placeholder="Enter your email"
                                                     required
                                                     value={email}
-                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    onChange={(e) => setEmail(e.target.value.replace(/\s/g, ""))}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === " ") e.preventDefault();
+                                                    }}
                                                     disabled={isPending}
                                                     className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
                                                 />
@@ -173,7 +176,10 @@ export default function LoginPage() {
                                                         placeholder="Enter your password"
                                                         required
                                                         value={password}
-                                                        onChange={(e) => setPassword(e.target.value)}
+                                                        onChange={(e) => setPassword(e.target.value.replace(/\s/g, ""))}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === " ") e.preventDefault();
+                                                        }}
                                                         disabled={isPending}
                                                         className="h-12 pr-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
                                                     />
@@ -257,7 +263,10 @@ export default function LoginPage() {
                                                 type="email"
                                                 placeholder="Enter your email"
                                                 value={forgotEmail}
-                                                onChange={(e) => setForgotEmail(e.target.value)}
+                                                onChange={(e) => setForgotEmail(e.target.value.replace(/\s/g, ""))}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === " ") e.preventDefault();
+                                                }}
                                                 disabled={isPending || forgotStep > 1}
                                                 className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
                                             />
@@ -279,7 +288,10 @@ export default function LoginPage() {
                                                     <Input
                                                         placeholder="Enter your OTP"
                                                         value={otp}
-                                                        onChange={(e) => setOtp(e.target.value)}
+                                                        onChange={(e) => setOtp(e.target.value.replace(/\s/g, ""))}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === " ") e.preventDefault();
+                                                        }}
                                                         disabled={isPending || forgotStep > 2 || (timer === 0 && !canResend)}
                                                         className={cn(
                                                             "h-12 flex-1 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-center text-md",
@@ -325,7 +337,10 @@ export default function LoginPage() {
                                                             type={showNewPassword ? "text" : "password"}
                                                             placeholder="Enter new password"
                                                             value={newPassword}
-                                                            onChange={(e) => setNewPassword(e.target.value)}
+                                                            onChange={(e) => setNewPassword(e.target.value.replace(/\s/g, ""))}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === " ") e.preventDefault();
+                                                            }}
                                                             disabled={isPending}
                                                             className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all pr-12"
                                                         />
@@ -346,7 +361,10 @@ export default function LoginPage() {
                                                             type={showConfirmPassword ? "text" : "password"}
                                                             placeholder="Enter confirm password"
                                                             value={confirmPassword}
-                                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                                            onChange={(e) => setConfirmPassword(e.target.value.replace(/\s/g, ""))}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === " ") e.preventDefault();
+                                                            }}
                                                             disabled={isPending}
                                                             className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all pr-12"
                                                         />
