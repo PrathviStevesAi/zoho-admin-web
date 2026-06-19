@@ -5,18 +5,24 @@ export async function proxy(req: NextRequest) {
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
-    cookieName: process.env.NODE_ENV === "production"
-      ? "__Secure-authjs.session-token"
-      : "authjs.session-token",
+    // ← Try both cookie names
+    cookieName: "__Secure-authjs.session-token",
   });
 
-  const isLoggedIn = !!token;
+  // Fallback: also check without __Secure prefix
+  const tokenFallback = token ?? await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    cookieName: "authjs.session-token",
+  });
+
+  const isLoggedIn = !!tokenFallback;
   const { nextUrl } = req;
 
   const isRootPage = nextUrl.pathname === "/";
   const isAuthPage = nextUrl.pathname.startsWith("/admin-login");
   const isProtectedRoute = !isAuthPage;
-  const hasError = token?.error === "RefreshAccessTokenError";
+  const hasError = tokenFallback?.error === "RefreshAccessTokenError";
 
   if (hasError && isProtectedRoute) {
     return NextResponse.redirect(new URL("/admin-login", nextUrl));
