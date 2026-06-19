@@ -241,23 +241,28 @@ export function ShiftDetailsCard({
   };
 
   const renderEditIcon = (field: Exclude<EditingField, null>, isAllowed: boolean, isDisabled?: boolean, disabledTooltip?: string) => {
-    if (!isAllowed) return null;
+    const isEffectivelyDisabled = !isAllowed || isDisabled;
+    const tooltipText = !isAllowed 
+      ? "Once a shift is execute, its details cannot be updated." 
+      : (isDisabled ? disabledTooltip : `Edit ${field.replace("_", " ")}`);
+
     return (
-      <Button
-        variant="outline"
-        size="icon"
-        disabled={isDisabled}
-        onClick={() => !isDisabled && setEditingField(field)}
-        className={cn(
-          "h-7 w-7 rounded-lg shrink-0 transition-all ml-2",
-          isDisabled
-            ? "text-slate-300 bg-slate-50 border-slate-200 cursor-not-allowed opacity-60"
-            : "text-slate-400 hover:text-[#0064cb] bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer shadow-sm"
-        )}
-        title={isDisabled ? disabledTooltip : `Edit ${field.replace("_", " ")}`}
-      >
-        <Edit2 className="w-3.5 h-3.5" />
-      </Button>
+      <div title={tooltipText} className={cn("inline-block ml-2", isEffectivelyDisabled && "cursor-not-allowed")}>
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={isEffectivelyDisabled}
+          onClick={() => !isEffectivelyDisabled && setEditingField(field)}
+          className={cn(
+            "h-7 w-7 rounded-lg shrink-0 transition-all",
+            isEffectivelyDisabled
+              ? "text-slate-400 bg-slate-50 border-slate-200 pointer-events-none"
+              : "text-slate-400 hover:text-[#0064cb] bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer shadow-sm"
+          )}
+        >
+          <Edit2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
     );
   };
 

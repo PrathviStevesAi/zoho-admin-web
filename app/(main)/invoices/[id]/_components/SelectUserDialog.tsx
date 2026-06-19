@@ -41,9 +41,9 @@ interface SelectUserDialogProps {
 export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, assigningGuardId }: SelectUserDialogProps) {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userFilters, setUserFilters] = useState({
-    country: "",
-    state: "",
-    city: "",
+    country: "All Country",
+    state: "All State",
+    city: "All City",
     status: "all",
     service: "All"
   });
@@ -62,24 +62,18 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
   useEffect(() => {
     if (isOpen) {
       const loadLocations = async () => {
-        const res = await fetchLocationAction();
+        const res = await fetchLocationAction(userFilters.country, userFilters.state);
         if (res.success && res.data) {
           setLocations({
             countries: ["All Country", ...res.data.countries],
             states: ["All State", ...res.data.states],
             cities: ["All City", ...res.data.cities]
           });
-          setUserFilters(prev => ({
-            ...prev,
-            country: "All Country",
-            state: "All State",
-            city: "All City"
-          }));
         }
       };
       loadLocations();
     }
-  }, [isOpen]);
+  }, [isOpen, userFilters.country, userFilters.state]);
 
   useEffect(() => {
     if (isOpen) {

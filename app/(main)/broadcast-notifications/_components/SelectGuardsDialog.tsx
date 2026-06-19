@@ -86,7 +86,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
   useEffect(() => {
     if (isOpen) {
       const loadLocations = async () => {
-        const res = await fetchLocationAction();
+        const res = await fetchLocationAction(userFilters.country, userFilters.state);
         if (res.success && res.data) {
           setLocations({
             countries: ["All Country", ...res.data.countries],
@@ -97,7 +97,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
       };
       loadLocations();
     }
-  }, [isOpen]);
+  }, [isOpen, userFilters.country, userFilters.state]);
 
   useEffect(() => {
     if (isOpen) {

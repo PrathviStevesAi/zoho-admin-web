@@ -205,43 +205,71 @@ export function ShiftModule({
                             <TableCell className="py-4 px-6 text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 {/* Edit Action */}
-                                {(shift.actions ? shift.actions.is_shift_edit : false) && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => onEdit(shift.shift_id)}
-                                    className="h-8 w-8 text-[#0064cb] hover:text-[#0052ae] hover:bg-blue-50 rounded-lg transition-all cursor-pointer"
-                                    title="Edit Shift"
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
-                                )}
+                                {/* Edit Action */}
+                                {(() => {
+                                  const isAllowed = shift.actions ? shift.actions.is_shift_edit : false;
+                                  return (
+                                    <div title={!isAllowed ? "Once a shift is execute, its details cannot be updated." : "Edit Shift"} className={!isAllowed ? "cursor-not-allowed" : ""}>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={!isAllowed}
+                                        onClick={() => isAllowed && onEdit(shift.shift_id)}
+                                        className={`h-8 w-8 rounded-lg transition-all ${
+                                          !isAllowed
+                                            ? "text-slate-400 pointer-events-none"
+                                            : "text-[#0064cb] hover:text-[#0052ae] hover:bg-blue-50 cursor-pointer"
+                                        }`}
+                                      >
+                                        <Pencil className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  );
+                                })()}
 
                                 {/* Duplicate/Copy Action */}
-                                {(shift.actions ? shift.actions.is_shift_duplicate : false) && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => onDuplicate(shift.shift_id)}
-                                    className="h-8 w-8 text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all cursor-pointer"
-                                    title="Duplicate Shift"
-                                  >
-                                    <Copy className="w-4 h-4" />
-                                  </Button>
-                                )}
+                                {(() => {
+                                  const isAllowed = shift.actions ? shift.actions.is_shift_duplicate : false;
+                                  return (
+                                    <div title={!isAllowed ? "Once a shift is execute,shift cannot be copied." : "Duplicate Shift"} className={!isAllowed ? "cursor-not-allowed" : ""}>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={!isAllowed}
+                                        onClick={() => isAllowed && onDuplicate(shift.shift_id)}
+                                        className={`h-8 w-8 rounded-lg transition-all ${
+                                          !isAllowed
+                                            ? "text-slate-400 pointer-events-none"
+                                            : "text-slate-600 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                                        }`}
+                                      >
+                                        <Copy className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  );
+                                })()}
 
                                 {/* Delete Action */}
-                                {(shift.actions ? shift.actions.is_shift_delete : true) && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => onDelete(shift.shift_id)}
-                                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
-                                    title="Delete Shift"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                )}
+                                {(() => {
+                                  const isAllowed = shift.actions ? shift.actions.is_shift_delete : true;
+                                  return (
+                                    <div title={!isAllowed ? "Once a shift is execute, it cannot be deleted." : "Delete Shift"} className={!isAllowed ? "cursor-not-allowed" : ""}>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={!isAllowed}
+                                        onClick={() => isAllowed && onDelete(shift.shift_id)}
+                                        className={`h-8 w-8 rounded-lg transition-all ${
+                                          !isAllowed
+                                            ? "text-slate-400 pointer-events-none"
+                                            : "text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                                        }`}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </TableCell>
                           </TableRow>

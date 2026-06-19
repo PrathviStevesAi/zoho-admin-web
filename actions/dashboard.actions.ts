@@ -449,11 +449,16 @@ export async function createShiftAction(payload: {
     return { success: false, error: message };
   }
 }
-export async function fetchLocationAction(): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
+export async function fetchLocationAction(country?: string, state?: string): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
   try {
-    const data = await apiFetch<{ success: boolean; data: { countries: string[], states: string[], cities: string[] } }>(
-      `/api/v1/guards/location`
-    );
+    let url = `/api/v1/guards/location`;
+    const params = new URLSearchParams();
+    if (country && country !== "All Country") params.append("country", country);
+    if (state && state !== "All State") params.append("state", state);
+    const qs = params.toString();
+    if (qs) url += `?${qs}`;
+
+    const data = await apiFetch<{ success: boolean; data: { countries: string[], states: string[], cities: string[] } }>(url);
     return { success: true, data: data.data };
   } catch (error: any) {
     const message = error.message || "Something went wrong";

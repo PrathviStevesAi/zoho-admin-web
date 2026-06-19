@@ -68,26 +68,20 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
   const debouncedSearchQuery = useDebounceValue(searchQuery, 500);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Load locations on mount
+  // Load locations on mount and when country/state filters change
   useEffect(() => {
     const loadLocations = async () => {
-      const res = await fetchLocationAction();
+      const res = await fetchLocationAction(filters.country, filters.state);
       if (res.success && res.data) {
         setLocations({
           countries: ["All Country", ...res.data.countries],
           states: ["All State", ...res.data.states],
           cities: ["All City", ...res.data.cities]
         });
-        setFilters(prev => ({
-          ...prev,
-          country: "All Country",
-          state: "All State",
-          city: "All City"
-        }));
       }
     };
     loadLocations();
-  }, []);
+  }, [filters.country, filters.state]);
 
   // Load guards when search/filters change
   useEffect(() => {

@@ -606,7 +606,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onNewAssignGuard={handleNewAssignGuard}
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
-        onStartVideoCall={() => startCall(shiftId)}
+        onStartVideoCall={() => startCall(shiftId, shift?.shift_no)}
         onJoinVideoCall={async () => {
           let callId = shift?.call_id || shift?.action?.call_id;
           
@@ -623,7 +623,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           }
 
           if (callId) {
-            joinCall(callId);
+            joinCall(callId, shift?.shift_no);
           } else {
             toast.error("Call session not found for this shift.");
           }

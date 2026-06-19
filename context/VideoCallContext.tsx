@@ -18,12 +18,13 @@ import {
   endVideoCallAction
 } from "@/actions/vc.actions";
 import { fetchMembersAction } from "@/actions/auth.actions";
+import { fetchShiftDetailsAction } from "@/actions/dashboard.actions";
 
 interface VideoCallContextType {
   activeCall: any | null;
   incomingCall: any | null;
-  startCall: (shiftId: string) => Promise<void>;
-  joinCall: (callId: string) => Promise<void>;
+  startCall: (shiftId: string, shiftNo?: string) => Promise<void>;
+  joinCall: (callId: string, shiftNo?: string) => Promise<void>;
   declineIncomingCall: () => void;
   endCall: () => Promise<void>;
   inviteMember: (memberId: string) => Promise<void>;
@@ -125,8 +126,20 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       try {
         const res = await activeVideoCallsAction();
         if (res.success && res.data && res.data.length > 0) {
-          const call = res.data[0];
+          let call = res.data[0];
           console.log("[VideoCall] Active call detected on mount:", call);
+
+          if (!call.shift_no && call.shift_id) {
+            try {
+              const shiftRes = await fetchShiftDetailsAction(call.shift_id);
+              if (shiftRes.success && shiftRes.data) {
+                call.shift_no = shiftRes.data.shift_no;
+              }
+            } catch (e) {
+              console.error("[VideoCall] Failed to fetch shift details for active call:", e);
+            }
+          }
+
           setActiveCall(call);
           setIsMinimized(true);
         }
@@ -237,6 +250,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           showScreenSharingButton: true,
           showUserList: true,
           showLayoutButton: true,
+          showTextChat: false,
           onLeaveRoom: () => {
             console.log("[VideoCall] Left Zego room via built-in button - Ending call for everyone");
             endCall();
@@ -266,7 +280,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     zegoInstanceRef.current = null;
   };
 
-  const startCall = async (shiftId: string) => {
+  const startCall = async (shiftId: string, shiftNo?: string) => {
     if (activeCall) {
       toast.warning("You are already in an active call");
       return;
@@ -289,7 +303,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           const joinRes = await joinVideoCallAction(res.data.call_id);
           if (joinRes.success && joinRes.data) {
             toast.success("Call room created and joined successfully", { id: toastId });
-            setActiveCall({ ...joinRes.data, shift_id: shiftId });
+            setActiveCall({ ...joinRes.data, shift_id: shiftId, shift_no: shiftNo });
           } else {
             toast.error(joinRes.error || "Failed to fetch Zego token via join endpoint", {
               id: toastId,
@@ -297,7 +311,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           toast.success("Call room created successfully", { id: toastId });
-          setActiveCall({ ...res.data, shift_id: shiftId });
+          setActiveCall({ ...res.data, shift_id: shiftId, shift_no: shiftNo });
         }
       } else {
         toast.error(res.error || "Failed to start call", { id: toastId });
@@ -310,7 +324,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const joinCall = async (callId: string) => {
+  const joinCall = async (callId: string, shiftNo?: string) => {
     if (activeCall) {
       const activeCallId = activeCall.call_id || activeCall.id || activeCall._id || activeCall.room_id;
       if (activeCallId === callId) {
@@ -328,7 +342,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       const res = await joinVideoCallAction(callId);
       if (res.success && res.data) {
         toast.success("Connected!", { id: toastId });
-        setActiveCall({ ...res.data, shift_id: incomingCall?.shift_id || "" });
+        setActiveCall({ ...res.data, shift_id: incomingCall?.shift_id || "", shift_no: shiftNo || incomingCall?.shift_no || "" });
         setIncomingCall(null);
       } else {
         toast.error(res.error || "Failed to join call", { id: toastId });
@@ -436,8 +450,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-3">
               <div className="relative flex items-center justify-center">
                 <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse mr-1" />
-                <span className="text-white text-xs font-bold uppercase tracking-wider">
-                  Live Call
+                <span className="text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                  Live Call {activeCall?.shift_no && <span className="text-[#e2e8f0] opacity-90">#SH-{activeCall.shift_no}</span>}
                 </span>
               </div>
             </div>
