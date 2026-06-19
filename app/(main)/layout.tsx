@@ -2,9 +2,8 @@ import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
 import NotificationProvider from "@/components/NotificationProvider";
 import { auth } from "@/lib/auth";
-import { logoutAction } from "@/actions/auth.actions";
-import { Button } from "@/components/ui/button";
 import { ShieldAlert } from "lucide-react";
+import { LogoutButton } from "@/components/layout/LogoutButton";
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -19,11 +18,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         <p className="text-slate-600 mb-8 max-w-md">
           You do not have permission to view the Admin Dashboard. This portal is restricted to admin only.
         </p>
-        <form action={logoutAction}>
-          <Button className="cursor-pointer" type="submit" variant="destructive" size="lg">
-            Logout
-          </Button>
-        </form>
+        <LogoutButton />
       </div>
     );
   }
