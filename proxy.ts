@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
@@ -17,8 +17,6 @@ export async function middleware(req: NextRequest) {
   const isAuthPage = nextUrl.pathname.startsWith("/admin-login");
   const isProtectedRoute = !isAuthPage;
   const hasError = token?.error === "RefreshAccessTokenError";
-
-  console.log("🔍 Middleware:", { path: nextUrl.pathname, isLoggedIn, role: token?.role });
 
   if (hasError && isProtectedRoute) {
     return NextResponse.redirect(new URL("/admin-login", nextUrl));
