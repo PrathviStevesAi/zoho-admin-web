@@ -4,13 +4,13 @@ import { getToken } from "next-auth/jwt";
 export async function proxy(req: NextRequest) {
   const token = await getToken({
     req,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: "test-secret-123456789",
     cookieName: "__Secure-authjs.session-token",
   });
 
   const tokenFallback = token ?? await getToken({
     req,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: "test-secret-123456789",
     cookieName: "authjs.session-token",
   });
 
