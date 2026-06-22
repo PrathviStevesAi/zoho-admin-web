@@ -107,8 +107,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         signIn: "/admin-login",
     },
     // local & production
-    secret: process.env.AUTH_SECRET,
+    // secret: process.env.AUTH_SECRET,
     // secret: "test-secret-123456789",
+    secret:
+        process.env.AUTH_SECRET ||
+        process.env.NEXTAUTH_SECRET,
 });
 
 

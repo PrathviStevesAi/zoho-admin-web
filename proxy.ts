@@ -1,19 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-console.log("MIDDLEWARE AUTH_SECRET:", !!process.env.AUTH_SECRET);
-console.log("MIDDLEWARE NEXTAUTH_SECRET:", !!process.env.NEXTAUTH_SECRET);
+console.log("proxy AUTH_SECRET:", !!process.env.AUTH_SECRET);
+console.log("proxy NEXTAUTH_SECRET:", !!process.env.NEXTAUTH_SECRET);
 
 export async function proxy(req: NextRequest) {
+
+  const secret =
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET;
+
   const token = await getToken({
     req,
-    secret: process.env.AUTH_SECRET,
+    secret,
     cookieName: "__Secure-authjs.session-token",
   });
 
   const tokenFallback = token ?? await getToken({
     req,
-    secret: process.env.AUTH_SECRET,
+    secret,
     cookieName: "authjs.session-token",
   });
 
