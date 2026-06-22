@@ -106,7 +106,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     pages: {
         signIn: "/admin-login",
     },
-    // local & production
+    // local & production for both ( vercel also )
     // secret: process.env.AUTH_SECRET,
     // secret: "test-secret-123456789",
     secret:
@@ -114,6 +114,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         process.env.NEXTAUTH_SECRET,
 });
 
+console.log("AUTH_SECRET raw:", process.env.AUTH_SECRET);
+console.log("NEXTAUTH_SECRET raw:", process.env.NEXTAUTH_SECRET);
 
 const refreshPromises = new Map<string, Promise<any>>();
 
