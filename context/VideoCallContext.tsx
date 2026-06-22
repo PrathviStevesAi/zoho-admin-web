@@ -95,9 +95,10 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
       if (
         argStr.includes("createSpan") ||
-        argStr.includes("Cannot read properties of null (reading 'createSpan')")
+        argStr.includes("Cannot read properties of null (reading 'createSpan')") ||
+        argStr.includes("installations/app-offline")
       ) {
-        console.warn("[VideoCall] Suppressed Zego SDK unmount console.error:", ...args);
+        console.warn("[VideoCall] Suppressed known unmount/offline console.error:", ...args);
         return;
       }
       originalConsoleError.apply(console, args);
