@@ -103,6 +103,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     pages: {
         signIn: "/admin-login",
     },
+    // local & production
     secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
 });
 
