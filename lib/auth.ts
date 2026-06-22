@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 console.log("AUTH_SECRET exists:", !!process.env.AUTH_SECRET);
-console.log("NEXTAUTH_SECRET exists:", !!process.env.NEXTAUTH_SECRET);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     trustHost: true,
