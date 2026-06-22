@@ -1,6 +1,10 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+console.log("AUTH_URL:", process.env.AUTH_URL);
+console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL);
+console.log("AUTH_TRUST_HOST:", process.env.AUTH_TRUST_HOST);
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
     trustHost: true,
     providers: [
