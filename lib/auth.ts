@@ -1,9 +1,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-console.log("AUTH_URL:", process.env.AUTH_URL);
-console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL);
-console.log("AUTH_TRUST_HOST:", process.env.AUTH_TRUST_HOST);
+console.log("AUTH_SECRET exists:", !!process.env.AUTH_SECRET);
+console.log("NEXTAUTH_SECRET exists:", !!process.env.NEXTAUTH_SECRET);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     trustHost: true,
@@ -108,7 +107,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         signIn: "/admin-login",
     },
     // local & production
-    secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+    secret: process.env.AUTH_SECRET,
 });
 
 
