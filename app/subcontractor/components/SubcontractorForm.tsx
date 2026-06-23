@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Country, State, City } from "country-state-city";
 import { toast } from "sonner";
-import { ChevronDown, Phone, CheckCircle2 } from "lucide-react";
+import { ChevronDown, Phone, CheckCircle2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUpload } from "@/components/ui/file-upload";
 import Image from "next/image";
-import { verifySubcontractorApplicationAction } from "@/actions/subcontractor.actions";
+import { verifySubcontractorApplicationAction, submitSubcontractorApplicationAction } from "@/actions/subcontractor.actions";
 
 const ALLOWED_COUNTRIES = ["US", "CA", "AR", "BO", "BR", "CL", "CO", "EC", "GY", "PY", "PE", "SR", "UY", "VE"];
 
@@ -130,6 +130,12 @@ export default function SubcontractorForm() {
       securityLicenseOptional: false,
       phoneCode: "+1",
       privacyAccepted: false,
+      resume: "",
+      headshot_image: "",
+      security_guard_license: "",
+      driver_license: "",
+      firewatch_certificate: "",
+      verificationVideo: "",
     },
   });
 
@@ -141,6 +147,10 @@ export default function SubcontractorForm() {
 
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+
+  const hasVerificationError =
+    (errors.email?.type === "manual") ||
+    (errors.phone?.type === "manual");
 
   useEffect(() => {
     if (!guardEmail) {
@@ -206,9 +216,54 @@ export default function SubcontractorForm() {
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
-      console.log("Submitting form data:", data);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const payload = {
+        email: data.email,
+        phone_number: `${data.phoneCode}${data.phone}`,
+        license_number: data.license_number,
+        license_expiration_date: data.expiration_date,
+        resume_url: typeof data.resume === "string" ? data.resume : "",
+        headshot_image_url: typeof data.headshot_image === "string" ? data.headshot_image : "",
+        security_guard_license_url: typeof data.security_guard_license === "string" ? data.security_guard_license : "",
+        driver_license_url: typeof data.driver_license === "string" ? data.driver_license : "",
+        firewatch_certificate_url: typeof data.firewatch_certificate === "string" ? data.firewatch_certificate : "",
+        verification_video_url: typeof data.verificationVideo === "string" ? data.verificationVideo : "",
+        first_name: data.firstName,
+        last_name: data.lastName,
+        street_address: data.address,
+        country: data.country,
+        state: data.state,
+        city: data.city,
+        zip_code: data.zipCode,
+        referral: data.howHeard,
+        on_call: data.onCallAcknowledge === "YES, I ACKNOWLEDGE THE POSITION IS STRICTLY ON CALL.",
+        smartphone: data.hasSmartphone === "YES",
+        job_alerts: data.canRespondAlerts === "YES",
+        license: data.hasSecurityLicense === "YES",
+        background: data.canPassBackgroundCheck === "YES",
+        transport: data.hasReliableTransport === "YES",
+        unarmed: data.unarmed === "YES",
+        armed: data.armed === "YES",
+        english_language: data.english_language === "YES",
+        gender: data.gender,
+        ethnicity: data.race,
+        veteran_status: data.veteranStatus,
+        disability_status: data.disabilityStatus,
+      };
+
+      console.log("Submitting payload:", payload);
+      const res = await submitSubcontractorApplicationAction(payload);
+      console.log("Submit API response:", res);
+      
+      if (!res.success) {
+        toast.error(res.error || "Failed to submit application");
+        return;
+      }
+
       toast.success("Application submitted successfully!");
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (error) {
       toast.error("An error occurred while submitting the form.");
     } finally {
@@ -236,11 +291,11 @@ export default function SubcontractorForm() {
         {/* Email */}
         <div className="space-y-1">
           <Label htmlFor="email" className="text-red-500 font-medium">Email*</Label>
-          <CustomInput 
-            id="email" 
-            type="email" 
-            placeholder="Enter your email" 
-            {...register("email")} 
+          <CustomInput
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            {...register("email")}
           />
           {errors.email ? (
             <p className="text-xs text-red-500">{errors.email.message}</p>
@@ -287,8 +342,8 @@ export default function SubcontractorForm() {
 
             {/* Backdrop/Overlay */}
             {isPhoneDropdownOpen && (
-              <div 
-                className="fixed inset-0 z-40 cursor-default" 
+              <div
+                className="fixed inset-0 z-40 cursor-default"
                 onClick={() => setIsPhoneDropdownOpen(false)}
               />
             )}
@@ -305,9 +360,8 @@ export default function SubcontractorForm() {
                       setValue("phoneCode", country.dialCode);
                       setIsPhoneDropdownOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer ${
-                      selectedPhoneCountry.code === country.code ? "bg-accent text-accent-foreground font-semibold" : "text-popover-foreground"
-                    }`}
+                    className={`w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer ${selectedPhoneCountry.code === country.code ? "bg-accent text-accent-foreground font-semibold" : "text-popover-foreground"
+                      }`}
                   >
                     <img
                       src={`https://flagcdn.com/w20/${country.code}.png`}
@@ -328,13 +382,14 @@ export default function SubcontractorForm() {
           ) : null}
         </div>
 
+        <fieldset disabled={hasVerificationError || isSubmitting} className={`space-y-6 ${hasVerificationError || isSubmitting ? "opacity-50 pointer-events-none transition-opacity" : ""}`}>
         {/* Resume Upload */}
         <div className="border border-slate-200 rounded-lg p-4 bg-white">
           <div className="mb-3">
             <h3 className="font-semibold text-slate-800">Upload Your Resume / CV <span className="text-red-500">*</span></h3>
             <p className="text-xs text-slate-500 mt-1">Documents must be in one of the following formats: <strong>DOC, DOCX, PDF</strong> and less than <strong>2MB</strong>.</p>
           </div>
-          <div className="w-full max-w-[350px]">
+          <div className="w-full max-w-[220px]">
             <FileUpload
               label=""
               accept=".doc,.docx,.pdf"
@@ -357,7 +412,7 @@ export default function SubcontractorForm() {
           </div>
           <div className="space-y-1">
             <Label htmlFor="expiration_date" className="text-slate-700">Expiration Date<span className="text-red-500">*</span></Label>
-            <CustomInput id="expiration_date" type="date" {...register("expiration_date")} />
+            <CustomInput id="expiration_date" type="date" min={new Date().toISOString().split('T')[0]} {...register("expiration_date")} />
             {errors.expiration_date && <p className="text-xs text-red-500">{errors.expiration_date.message}</p>}
           </div>
         </div>
@@ -500,7 +555,7 @@ export default function SubcontractorForm() {
             </div>
             <div className="space-y-1">
               <Label className="text-slate-700 font-medium">Street Address<span className="text-red-500">*</span></Label>
-              <CustomInput {...register("address")} />
+              <CustomInput placeholder="Enter street address" {...register("address")} />
               {errors.address && <p className="text-xs text-red-500">{errors.address.message}</p>}
             </div>
             <div className="space-y-1">
@@ -568,7 +623,7 @@ export default function SubcontractorForm() {
             </div>
             <div className="space-y-1">
               <Label className="text-slate-700 font-medium">Zip Code<span className="text-red-500">*</span></Label>
-              <CustomInput {...register("zipCode")} />
+              <CustomInput placeholder="Enter zip code" {...register("zipCode")} />
             </div>
           </CardContent>
         </Card>
@@ -1136,14 +1191,22 @@ export default function SubcontractorForm() {
           </DialogContent>
         </Dialog>
 
-        <div className="flex justify-center space-x-4 pt-6 pb-8">
-          <Button type="submit" disabled={isSubmitting} className="px-8 bg-blue-600 hover:bg-blue-700 text-white rounded">
-            {isSubmitting ? "Submitting..." : "Submit"}
-          </Button>
-          <Button type="button" variant="outline" className="px-8 bg-slate-500 hover:bg-slate-600 text-white border-0 rounded" onClick={() => window.location.reload()}>
-            Cancel
-          </Button>
-        </div>
+          <div className="flex justify-center space-x-4 pt-6 pb-8">
+            <Button type="submit" disabled={isSubmitting || hasVerificationError} className="px-8 bg-blue-600 hover:bg-blue-700 text-white rounded">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit"
+              )}
+            </Button>
+            <Button type="button" variant="outline" className="px-8 bg-slate-500 hover:bg-slate-600 text-white border-0 rounded" onClick={() => window.location.reload()}>
+              Cancel
+            </Button>
+          </div>
+        </fieldset>
       </form>
     </div>
   );

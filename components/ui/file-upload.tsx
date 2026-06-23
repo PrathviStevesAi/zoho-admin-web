@@ -87,8 +87,8 @@ export function FileUpload({
           xhr.onload = () => {
              setIsUploading(false);
              if (xhr.status >= 200 && xhr.status < 300) {
-                setSelectedFile(file);
-                onFileSelect(file);
+                 setSelectedFile(file);
+                 onFileSelect(res.data.file_path);
              } else {
                 toast.error("Failed to upload file to storage.");
                 if (inputRef.current) inputRef.current.value = "";
