@@ -363,7 +363,7 @@ export async function fetchShiftDetailsAction(
       : `/api/v1/shift/${shiftId}`;
     const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
     console.log("fetchShiftDetailsAction: Requesting URL:", fullUrl);
-    
+
     const data = await apiFetch<{ success: boolean; data: any }>(endpoint);
     console.log("fetchShiftDetailsAction: Response data:", data);
 
@@ -451,7 +451,7 @@ export async function createShiftAction(payload: {
 }
 export async function fetchLocationAction(country?: string, state?: string): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
   try {
-    let url = `/api/v1/guards/location`;
+    let url = `/api/v1/guard/location`;
     const params = new URLSearchParams();
     if (country && country !== "All Country") params.append("country", country);
     if (state && state !== "All State") params.append("state", state);
@@ -506,7 +506,7 @@ export async function fetchGuardsAction(params: {
 
   try {
     const data = await apiFetch<BaseApiResponse<any>>(
-      `/api/v1/guards/list?${query.toString()}`
+      `/api/v1/guard/list?${query.toString()}`
     );
     return { success: true, data: data.data, pagination: data.pagination };
   } catch (error: any) {

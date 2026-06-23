@@ -75,7 +75,7 @@ export async function registerGuardAction(guardData: any) {
         const token = session?.accessToken;
 
         console.log("Sending guard registration data:", guardData);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/guards/register`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/guard/register`, {
             method: "POST",
             body: JSON.stringify(guardData),
             headers: {
