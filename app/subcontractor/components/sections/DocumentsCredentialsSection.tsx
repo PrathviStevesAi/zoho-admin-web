@@ -18,9 +18,6 @@ export function DocumentsCredentialsSection() {
 
   return (
     <>
-      {/* Resume Upload (This was historically placed above License Expiration but makes sense here too. We will keep it exactly where it was by wrapping it in a parent layout, or exporting it separately. I'll export ResumeUpload block and Documents Credentials block). */}
-      {/* Wait, the implementation plan specifies DocumentsCredentialsSection contains ALL FileUpload instances. I'll include the Resume upload block here, and let the parent organize it. */}
-      
       <div className="border border-slate-200 rounded-lg p-4 bg-white">
         <div className="mb-3">
           <h3 className="font-semibold text-slate-800">Upload Your Resume / CV <span className="text-red-500">*</span></h3>

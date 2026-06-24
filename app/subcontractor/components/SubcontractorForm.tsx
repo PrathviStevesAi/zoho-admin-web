@@ -171,7 +171,6 @@ export default function SubcontractorForm() {
 
   return (
     <div className="w-full">
-      {/* Logo Area */}
       <div className="mb-8">
         <Image
           src="/images/website-logo.png"
@@ -191,7 +190,7 @@ export default function SubcontractorForm() {
           <EmailAndPhoneSection />
 
           <fieldset disabled={hasVerificationError || isSubmitting} className={`space-y-6 ${hasVerificationError || isSubmitting ? "opacity-50 pointer-events-none transition-opacity" : ""}`}>
-            
+
             <LicenseExpirationSection />
             <DocumentsCredentialsSection />
             <ContactInformationSection />
