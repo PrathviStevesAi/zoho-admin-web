@@ -246,6 +246,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           },
           autoHideFooter: false,
           showPreJoinView: false,
+          showLeavingView: false,
           turnOnCameraWhenJoining: false,
           turnOnMicrophoneWhenJoining: false,
           showScreenSharingButton: true,
@@ -500,6 +501,14 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
                 <Loader2 className="w-8 h-8 text-[#0064cb] animate-spin" />
                 <span className="text-slate-700 font-medium text-xs">
                   Connecting to secure server...
+                </span>
+              </div>
+            )}
+            {isActionPending && activeCall && (
+              <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center space-y-4 z-50">
+                <Loader2 className="w-10 h-10 text-[#0064cb] animate-spin" />
+                <span className="text-white font-medium text-lg">
+                  Call is Ending...
                 </span>
               </div>
             )}
