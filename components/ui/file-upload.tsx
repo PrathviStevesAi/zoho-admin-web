@@ -5,6 +5,7 @@ import { UploadCloud, CheckCircle2, X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateUploadUrlAction } from "@/actions/subcontractor.actions";
 import { toast } from "sonner";
+import imageCompression from 'browser-image-compression';
 
 interface FileUploadProps {
   onFileSelect: (file: File | null) => void;
@@ -49,58 +50,75 @@ export function FileUpload({
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+      let file = e.target.files[0];
       if (validateFile(file)) {
         if (uploadType) {
           if (!guardEmail) {
-             toast.error("Please enter your Email address first before uploading documents.");
-             if (inputRef.current) inputRef.current.value = "";
-             return;
+            toast.error("Please enter your Email address first before uploading documents.");
+            if (inputRef.current) inputRef.current.value = "";
+            return;
           }
-          
+
           setIsUploading(true);
           setUploadProgress(0);
-          
+
+          if (file.type.startsWith("image/")) {
+            const options = {
+              maxSizeMB: 1.5,
+              maxWidthOrHeight: 1920,
+              useWebWorker: true,
+            };
+            try {
+              file = await imageCompression(file, options);
+            } catch (error) {
+              console.error("Error compressing image", error);
+              toast.error("Failed to compress image");
+              setIsUploading(false);
+              if (inputRef.current) inputRef.current.value = "";
+              return;
+            }
+          }
+
           const res = await generateUploadUrlAction(file.name, uploadType, guardEmail);
-          
+
           if (!res.success) {
             toast.error(res.error || "Failed to generate upload URL");
             setIsUploading(false);
             if (inputRef.current) inputRef.current.value = "";
             return;
           }
-          
+
           const signedUrl = res.data.signed_url;
-          
+
           const xhr = new XMLHttpRequest();
           xhr.open("PUT", signedUrl, true);
           // Only send Content-Type if Supabase signed URLs require it, usually they don't or it relies on what was signed. We will add it.
           xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-          
+
           xhr.upload.onprogress = (event) => {
-             if (event.lengthComputable) {
-                const percentComplete = Math.round((event.loaded / event.total) * 100);
-                setUploadProgress(percentComplete);
-             }
+            if (event.lengthComputable) {
+              const percentComplete = Math.round((event.loaded / event.total) * 100);
+              setUploadProgress(percentComplete);
+            }
           };
-          
+
           xhr.onload = () => {
-             setIsUploading(false);
-             if (xhr.status >= 200 && xhr.status < 300) {
-                 setSelectedFile(file);
-                 onFileSelect(res.data.file_path);
-             } else {
-                toast.error("Failed to upload file to storage.");
-                if (inputRef.current) inputRef.current.value = "";
-             }
+            setIsUploading(false);
+            if (xhr.status >= 200 && xhr.status < 300) {
+              setSelectedFile(file);
+              onFileSelect(res.data.file_path);
+            } else {
+              toast.error("Failed to upload file to storage.");
+              if (inputRef.current) inputRef.current.value = "";
+            }
           };
-          
+
           xhr.onerror = () => {
-             setIsUploading(false);
-             toast.error("An error occurred during file upload.");
-             if (inputRef.current) inputRef.current.value = "";
+            setIsUploading(false);
+            toast.error("An error occurred during file upload.");
+            if (inputRef.current) inputRef.current.value = "";
           };
-          
+
           xhr.send(file);
         } else {
           setSelectedFile(file);
@@ -123,7 +141,7 @@ export function FileUpload({
       <div className="w-full">
         {label && <label className="block text-sm font-semibold text-slate-800 mb-1">{label}</label>}
         {helperText && <p className="text-xs text-slate-500 mb-3">{helperText}</p>}
-        
+
         <input
           ref={inputRef}
           type="file"
@@ -131,7 +149,7 @@ export function FileUpload({
           accept={accept}
           onChange={handleChange}
         />
-        
+
         {!selectedFile ? (
           <>
             <Button
@@ -147,7 +165,7 @@ export function FileUpload({
             {isUploading && (
               <div className="mt-2 w-full flex items-center gap-2">
                 <div className="flex-1 bg-green-100 rounded-full h-1.5 overflow-hidden">
-                  <div 
+                  <div
                     className="bg-green-500 h-1.5 transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
@@ -188,7 +206,7 @@ export function FileUpload({
           accept={accept}
           onChange={handleChange}
         />
-        
+
         {!selectedFile ? (
           <>
             <Button
@@ -204,7 +222,7 @@ export function FileUpload({
             {isUploading && (
               <div className="mt-2 w-full flex items-center gap-2">
                 <div className="flex-1 bg-green-100 rounded-full h-1.5 overflow-hidden">
-                  <div 
+                  <div
                     className="bg-green-500 h-1.5 transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />

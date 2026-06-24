@@ -50,13 +50,13 @@ export async function generateUploadUrlAction(fileName: string, type: string, gu
   try {
     const apiKey = "trk_live_7f9c2a4d8b1e5f6a9c3d2e7f8a1b4c6d";
     const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/subcontractor/application/generate-upload-url`);
-    url.searchParams.append("x_api_key", apiKey);
 
     const res = await fetch(url.toString(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "ngrok-skip-browser-warning": "true",
+        "x-api-key": apiKey,
       },
       body: JSON.stringify({
         file_name: fileName,
