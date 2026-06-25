@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["localhost:3000", "*.amplifyapp.com", "*.amplify.app"],
+    },
+  },
   env: {
     AUTH_SECRET: process.env.AUTH_SECRET,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
