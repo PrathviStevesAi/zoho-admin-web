@@ -253,8 +253,21 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           showUserList: true,
           showLayoutButton: true,
           showTextChat: false,
+          // On returning to home screen after call ends
+          onReturnToHomeScreenClicked: () => {
+            console.log("[VideoCall] onReturnToHomeScreenClicked triggered");
+            endCall();
+          },
+          // On user pressing leave / hangup button (leaving mid-call)
           onLeaveRoom: () => {
-            console.log("[VideoCall] Left Zego room via built-in button - Ending call for everyone");
+            console.log("[VideoCall] onLeaveRoom (HangUp) triggered - Ending call");
+            endCall();
+          },
+          // On another user leaving the call or getting disconnected
+          onUserLeave: (users) => {
+            console.log("[VideoCall] onUserLeave triggered - Another user left", users);
+            // End the call for yourself if the other person leaves (Useful for 1-on-1 calls)
+            // If this is a group call and you want to stay when 1 person leaves, remove the line below.
             endCall();
           },
         });

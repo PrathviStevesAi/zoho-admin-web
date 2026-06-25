@@ -4,9 +4,13 @@ import { NextResponse } from "next/server";
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
+        const payload = {
+            ...body,
+            device_type: "web"
+        };
         const response = await apiFetch(`/api/v1/notification/fcm-token`, {
             method: "PUT",
-            body: JSON.stringify(body),
+            body: JSON.stringify(payload),
         });
         return NextResponse.json(response);
     } catch (error: any) {
