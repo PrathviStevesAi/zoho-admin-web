@@ -19,6 +19,7 @@ interface FileUploadProps {
   isOptional?: boolean;
   uploadType?: string;
   guardEmail?: string;
+  slotRight?: React.ReactNode;
 }
 
 export function FileUpload({
@@ -33,6 +34,7 @@ export function FileUpload({
   isOptional = false,
   uploadType,
   guardEmail,
+  slotRight,
 }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -198,57 +200,61 @@ export function FileUpload({
 
   if (variant === "red-button") {
     return (
-      <div className="w-full">
-        <input
-          ref={inputRef}
-          type="file"
-          className="hidden"
-          accept={accept}
-          onChange={handleChange}
-        />
+      <div className="w-full flex flex-col md:flex-row md:items-center gap-3">
+        <div className="w-full md:w-[350px] shrink-0">
+          <input
+            ref={inputRef}
+            type="file"
+            className="hidden"
+            accept={accept}
+            onChange={handleChange}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className={`w-full justify-start text-slate-700 bg-white hover:bg-slate-50 font-normal py-6 rounded-md shadow-sm ${error ? 'border-red-500' : 'border-slate-200'}`}
+            onClick={() => inputRef.current?.click()}
+            disabled={isUploading}
+          >
+            <Upload className="h-5 w-5 mr-3 text-slate-800 shrink-0" />
+            <span dangerouslySetInnerHTML={{ __html: buttonText }} className="truncate" />
+          </Button>
+          {isUploading && (
+            <div className="mt-2 w-full flex items-center gap-2">
+              <div className="flex-1 bg-green-100 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="bg-green-500 h-1.5 transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <span className="text-xs font-medium text-green-700">{uploadProgress}%</span>
+            </div>
+          )}
+          {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
+        </div>
 
-        {!selectedFile ? (
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              className={`w-full justify-start text-slate-700 bg-white hover:bg-slate-50 font-normal py-6 rounded-md shadow-sm ${error ? 'border-red-500' : 'border-slate-200'}`}
-              onClick={() => inputRef.current?.click()}
-              disabled={isUploading}
-            >
-              <Upload className="h-5 w-5 mr-3 text-slate-800" />
-              <span dangerouslySetInnerHTML={{ __html: buttonText }} />
-            </Button>
-            {isUploading && (
-              <div className="mt-2 w-full flex items-center gap-2">
-                <div className="flex-1 bg-green-100 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="bg-green-500 h-1.5 transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-                <span className="text-xs font-medium text-green-700">{uploadProgress}%</span>
+        {(selectedFile || slotRight) && (
+          <div className="flex flex-col gap-1 justify-center">
+            {selectedFile && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-green-600 flex items-center">
+                  <CheckCircle2 className="h-4 w-4 mr-1 shrink-0" />
+                  <span className="truncate max-w-[200px] xl:max-w-[300px]">{selectedFile.name}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={removeFile}
+                  className="text-slate-400 hover:text-red-500 shrink-0 flex items-center justify-center p-1"
+                >
+                  <X className="cursor-pointer h-4 w-4" />
+                </button>
               </div>
             )}
-          </>
-        ) : (
-          <div className="flex items-center justify-between p-3 border border-green-200 bg-green-50 rounded-md">
-            <span className="text-sm font-medium text-green-700 truncate flex items-center">
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              {selectedFile.name}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={removeFile}
-              className="h-8 px-2 text-slate-500 hover:text-red-500 hover:bg-white"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {slotRight && (
+              <div>{slotRight}</div>
+            )}
           </div>
         )}
-        {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
       </div>
     );
   }

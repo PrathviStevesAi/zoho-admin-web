@@ -246,7 +246,10 @@ export default function MemberDirectoryPage() {
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter password"
                       value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value.replace(/\s/g, "") })}
+                      onKeyDown={(e) => {
+                        if (e.key === " ") e.preventDefault();
+                      }}
                       className="h-12 pl-11 pr-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
                     />
                     <button

@@ -44,7 +44,7 @@ export function DocumentsCredentialsSection() {
           </p>
 
           <div className="space-y-3">
-            <div className="w-full md:w-[350px]">
+            <div className="w-full">
               <FileUpload
                 label=""
                 helperText=""
@@ -58,33 +58,33 @@ export function DocumentsCredentialsSection() {
               />
             </div>
 
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="w-full md:w-[350px] shrink-0">
-                <FileUpload
-                  label=""
-                  helperText=""
-                  accept=".jpg,.jpeg,image/jpeg"
-                  maxSizeMB={5}
-                  onFileSelect={(file) => setValue("security_guard_license", file)}
-                  variant="red-button"
-                  buttonText={`Upload Security Guard License${!isSecurityLicenseOptional ? "<span class='text-red-500'>*</span>" : ""}`}
-                  uploadType="security-guard-license-image"
-                  guardEmail={guardEmail}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Controller
-                  control={control}
-                  name="securityLicenseOptional"
-                  render={({ field }) => (
-                    <Checkbox id="securityLicenseOptional" checked={field.value as boolean} onCheckedChange={field.onChange} />
-                  )}
-                />
-                <Label htmlFor="securityLicenseOptional" className="text-xs font-normal text-slate-600">Note: Mark if Security Guard License is not required in your state</Label>
-              </div>
+            <div className="w-full">
+              <FileUpload
+                label=""
+                helperText=""
+                accept=".jpg,.jpeg,image/jpeg"
+                maxSizeMB={5}
+                onFileSelect={(file) => setValue("security_guard_license", file)}
+                variant="red-button"
+                buttonText={`Upload Security Guard License${!isSecurityLicenseOptional ? "<span class='text-red-500'>*</span>" : ""}`}
+                uploadType="security-guard-license-image"
+                guardEmail={guardEmail}
+                slotRight={
+                  <div className="flex items-center space-x-2">
+                    <Controller
+                      control={control}
+                      name="securityLicenseOptional"
+                      render={({ field }) => (
+                        <Checkbox id="securityLicenseOptional" checked={field.value as boolean} onCheckedChange={field.onChange} />
+                      )}
+                    />
+                    <Label htmlFor="securityLicenseOptional" className="text-xs font-normal text-slate-600">Note: Mark if Security Guard License is not required in your state</Label>
+                  </div>
+                }
+              />
             </div>
 
-            <div className="w-full md:w-[350px]">
+            <div className="w-full">
               <FileUpload
                 label=""
                 helperText=""
@@ -98,7 +98,7 @@ export function DocumentsCredentialsSection() {
               />
             </div>
 
-            <div className="w-full md:w-[350px]">
+            <div className="w-full">
               <FileUpload
                 label=""
                 helperText=""
@@ -113,7 +113,7 @@ export function DocumentsCredentialsSection() {
               />
             </div>
 
-            <div className="w-full md:w-[350px]">
+            <div className="w-full">
               <FileUpload
                 label=""
                 helperText=""
