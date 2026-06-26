@@ -585,6 +585,25 @@ export async function assignGuardToShiftAction(payload: {
   }
 }
 
+export async function reassignGuardToShiftAction(payload: {
+  shift_id: string;
+  guard_id: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/reassign-guard`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    return { success: true, message: res.message };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
 export async function unassignGuardAction(shift_offer_id: string): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const res = await apiFetch<{ success: boolean; message?: string }>(

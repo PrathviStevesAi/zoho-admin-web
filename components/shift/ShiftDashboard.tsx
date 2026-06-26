@@ -21,6 +21,7 @@ import {
   cancelShiftServiceAction,
   manualStartShiftAction,
   assignGuardToShiftAction,
+  reassignGuardToShiftAction,
   fetchGuardTrackingAction
 } from "@/actions/dashboard.actions";
 import { generateUploadUrlAction } from "@/actions/profile.actions";
@@ -536,21 +537,36 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       return;
     }
     setIsAssigningGuard(targetGuardId);
-    const actionPayload: any = {
-      invoice_id: invoiceId,
-      guard_id: targetGuardId,
-      shift_id: shiftId,
-    };
-    if (rates.per_hour_rate) actionPayload.per_hour_rate = rates.per_hour_rate;
-    if (rates.per_shift_rate) actionPayload.per_shift_rate = rates.per_shift_rate;
-    if (rates.travel_fee) actionPayload.travel_fee = rates.travel_fee;
-    const res = await assignGuardToShiftAction(actionPayload);
-    if (res.success) {
-      toast.success("Guard assigned successfully");
-      setIsNewAssignOpen(false);
-      loadShiftDetails();
+
+    if (isReassign) {
+      const res = await reassignGuardToShiftAction({
+        shift_id: shiftId,
+        guard_id: targetGuardId,
+      });
+      if (res.success) {
+        toast.success(res.message || "Shift reassigned successfully");
+        setIsNewAssignOpen(false);
+        loadShiftDetails();
+      } else {
+        toast.error(res.error || "Failed to reassign guard");
+      }
     } else {
-      toast.error(res.error || "Failed to assign guard");
+      const actionPayload: any = {
+        invoice_id: invoiceId,
+        guard_id: targetGuardId,
+        shift_id: shiftId,
+      };
+      if (rates.per_hour_rate) actionPayload.per_hour_rate = rates.per_hour_rate;
+      if (rates.per_shift_rate) actionPayload.per_shift_rate = rates.per_shift_rate;
+      if (rates.travel_fee) actionPayload.travel_fee = rates.travel_fee;
+      const res = await assignGuardToShiftAction(actionPayload);
+      if (res.success) {
+        toast.success("Guard assigned successfully");
+        setIsNewAssignOpen(false);
+        loadShiftDetails();
+      } else {
+        toast.error(res.error || "Failed to assign guard");
+      }
     }
     setIsAssigningGuard(null);
   };
