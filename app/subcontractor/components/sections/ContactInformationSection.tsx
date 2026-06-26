@@ -50,12 +50,26 @@ export function ContactInformationSection() {
       <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="space-y-1">
           <Label className="text-slate-700 font-medium">First Name<span className="text-red-500">*</span></Label>
-          <CustomInput placeholder="Enter first name" {...register("firstName")} />
+          <CustomInput 
+            placeholder="Enter first name" 
+            {...register("firstName", {
+              onChange: (e) => {
+                e.target.value = e.target.value.replace(/[^a-zA-Z\s\-']/g, '');
+              }
+            })} 
+          />
           {errors.firstName && <p className="text-xs text-red-500">{errors.firstName.message}</p>}
         </div>
         <div className="space-y-1">
           <Label className="text-slate-700 font-medium">Last Name<span className="text-red-500">*</span></Label>
-          <CustomInput placeholder="Enter last name" {...register("lastName")} />
+          <CustomInput 
+            placeholder="Enter last name" 
+            {...register("lastName", {
+              onChange: (e) => {
+                e.target.value = e.target.value.replace(/[^a-zA-Z\s\-']/g, '');
+              }
+            })} 
+          />
           {errors.lastName && <p className="text-xs text-red-500">{errors.lastName.message}</p>}
         </div>
         <div className="space-y-1">
@@ -145,7 +159,11 @@ export function ContactInformationSection() {
         </div>
         <div className="space-y-1">
           <Label className="text-slate-700 font-medium">Zip Code<span className="text-red-500">*</span></Label>
-          <CustomInput type="number" placeholder="Enter zip code" {...register("zipCode", { valueAsNumber: true })} />
+          <CustomInput 
+            placeholder="Enter zip code" 
+            maxLength={10} 
+            {...register("zipCode")} 
+          />
           {errors.zipCode && <p className="text-xs text-red-500">{errors.zipCode.message}</p>}
         </div>
       </CardContent>

@@ -23,7 +23,7 @@ import { VoluntarySelfIdSection } from "./sections/VoluntarySelfIdSection";
 const formSchema = z.object({
   email: z.string().email("Invalid email address").max(255),
   resume: z.any().optional(),
-  license_number: z.string().min(3, "License number is required").max(50),
+  license_number: z.string().min(3, "License number is required").max(15, "License number cannot exceed 15 characters").regex(/^[A-Za-z0-9]+$/, "License number must be alphanumeric").toUpperCase(),
   expiration_date: z.string().min(1, "Expiration date is required"),
 
   headshot_image: z.any().optional(),
@@ -33,13 +33,13 @@ const formSchema = z.object({
   firewatch_certificate: z.any().optional(),
   verificationVideo: z.any().optional(),
 
-  firstName: z.string().min(2, "First name is required").max(100),
-  lastName: z.string().min(2, "Last name is required").max(100),
+  firstName: z.string().min(2, "First name is required").max(100).regex(/^[a-zA-Z\s\-']+$/, "First name can only contain alphabets"),
+  lastName: z.string().min(2, "Last name is required").max(100).regex(/^[a-zA-Z\s\-']+$/, "Last name can only contain alphabets"),
   address: z.string().min(1, "Address is required").max(255),
   country: z.string().min(1, "Country is required"),
   state: z.string().min(1, "State is required"),
   city: z.string().min(1, "City is required"),
-  zipCode: z.number({ message: "Zip Code is required" }).int("Zip Code must be an integer").min(1, "Zip Code is required"),
+  zipCode: z.string().min(1, "Zip Code is required").max(10, "Zip Code cannot exceed 10 characters"),
   phoneCode: z.string().min(1, "Code required"),
   phone: z.string().min(10, "Phone number required"),
 

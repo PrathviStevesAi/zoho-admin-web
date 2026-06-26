@@ -26,7 +26,7 @@ export function DocumentsCredentialsSection() {
         <div className="w-full max-w-[220px]">
           <FileUpload
             label=""
-            accept=".doc,.docx,.pdf"
+            accept=".doc,.docx,.pdf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             maxSizeMB={5}
             onFileSelect={(file) => setValue("resume", file)}
             variant="button"
@@ -40,7 +40,7 @@ export function DocumentsCredentialsSection() {
       <Card className="shadow-none border-slate-200">
         <CardContent className="p-6 space-y-4">
           <p className="text-sm font-medium text-slate-800 mb-4">
-            Documents & Credentials: (Please upload each of the documents / images (JPG, JPEG formats only, max 5MB) requested below if you have the certifications. Failing to do so may delay or deny processing of your application)
+            Documents & Credentials: (Please upload each of the documents / images & videos, max 5MB) requested below if you have the certifications. Failing to do so may delay or deny processing of your application)
           </p>
 
           <div className="space-y-3">
@@ -48,7 +48,7 @@ export function DocumentsCredentialsSection() {
               <FileUpload
                 label=""
                 helperText=""
-                accept=".jpg,.jpeg,image/jpeg"
+                accept="image/*"
                 maxSizeMB={5}
                 onFileSelect={(file) => setValue("headshot_image", file)}
                 variant="red-button"
@@ -62,7 +62,7 @@ export function DocumentsCredentialsSection() {
               <FileUpload
                 label=""
                 helperText=""
-                accept=".jpg,.jpeg,image/jpeg"
+                accept="image/*"
                 maxSizeMB={5}
                 onFileSelect={(file) => setValue("security_guard_license", file)}
                 variant="red-button"
@@ -88,7 +88,7 @@ export function DocumentsCredentialsSection() {
               <FileUpload
                 label=""
                 helperText=""
-                accept=".jpg,.jpeg,image/jpeg"
+                accept="image/*"
                 maxSizeMB={5}
                 onFileSelect={(file) => setValue("driver_license", file)}
                 variant="red-button"
@@ -102,7 +102,7 @@ export function DocumentsCredentialsSection() {
               <FileUpload
                 label=""
                 helperText=""
-                accept=".jpg,.jpeg,image/jpeg"
+                accept="image/*"
                 maxSizeMB={5}
                 onFileSelect={(file) => setValue("firewatch_certificate", file)}
                 variant="red-button"
@@ -117,7 +117,7 @@ export function DocumentsCredentialsSection() {
               <FileUpload
                 label=""
                 helperText=""
-                accept=".mp4,.mov"
+                accept="video/*"
                 maxSizeMB={20}
                 onFileSelect={(file) => setValue("verificationVideo", file)}
                 variant="red-button"
@@ -144,7 +144,7 @@ export function DocumentsCredentialsSection() {
                   <li>Say how many years of security experience you have</li>
                   <li>Show your security license on camera and mention the license type</li>
                   <li>Make sure the video is front-facing (camera directly facing you)</li>
-                  <li>Upload the video in one of the allowed formats: MP4 or MOV</li>
+                  <li>Upload the video in any standard video format</li>
                   <li>The video should be less than 20MB</li>
                 </ul>
                 <div className="bg-green-50 p-3 rounded text-green-800 text-xs border border-green-100">
