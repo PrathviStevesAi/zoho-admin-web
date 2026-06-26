@@ -856,7 +856,6 @@ export async function globalSearchAction(
   }
 }
 
-
 export async function createManualInvoiceAction(payload: {
   customer_name: string;
   customer_email: string;

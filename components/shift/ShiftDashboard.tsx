@@ -147,7 +147,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         loadShiftDetails();
       }
     };
-    
+
     window.addEventListener("videoCallEnded", handleCallEnded);
     return () => window.removeEventListener("videoCallEnded", handleCallEnded);
   }, [shiftId, loadShiftDetails]);
@@ -182,7 +182,6 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           ws = new WebSocket(wsUrl);
         } catch (err) {
           console.error("[WebSocket] Security or initialization error (likely Mixed Content blocked by browser):", err);
-          // If WS fails synchronously, just exit the effect gracefully without crashing the page.
           return;
         }
 
@@ -254,7 +253,6 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     }
   }, [shift]);
 
-  // Center map using Nominatim or exact location
   useEffect(() => {
     if (shift) {
       if (shift.shipping_location?.latitude !== undefined && shift.shipping_location?.longitude !== undefined) {
@@ -288,7 +286,6 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     }
   }, [shift]);
 
-  // --- FORM ACTIONS ---
 
   const handleSaveDetails = async (payload: any) => {
     setIsSavingDetails(true);
@@ -339,8 +336,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
     const initialCheckpointCreateInterval =
       shift?.checkpoint_create_interval !== undefined &&
-      shift?.checkpoint_create_interval !== null &&
-      [15, 30, 60].includes(Number(shift.checkpoint_create_interval))
+        shift?.checkpoint_create_interval !== null &&
+        [15, 30, 60].includes(Number(shift.checkpoint_create_interval))
         ? String(shift.checkpoint_create_interval)
         : "0";
     const initialGuardBreakMaxDuration =
@@ -446,8 +443,6 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       setIsCancellingService(false);
     }
   };
-
-
 
   const handleCommentSubmit = async (text: string, type: "internal" | "external", file: File | null) => {
     try {
@@ -586,8 +581,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const settingsFormState = {
     checkpoint_create_interval:
       shift?.checkpoint_create_interval !== undefined &&
-      shift?.checkpoint_create_interval !== null &&
-      [15, 30, 60].includes(Number(shift.checkpoint_create_interval))
+        shift?.checkpoint_create_interval !== null &&
+        [15, 30, 60].includes(Number(shift.checkpoint_create_interval))
         ? String(shift.checkpoint_create_interval)
         : "0",
     guard_break_max_duration:
@@ -622,10 +617,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onNewAssignGuard={handleNewAssignGuard}
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
-        onStartVideoCall={() => startCall(shiftId, shift?.shift_no)}
+        onStartVideoCall={() => {
+          const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || "https://clanking-bagginess-flammable.ngrok-free.dev"}/api/v1/vc/start`;
+          console.log(`[Video Call] Exact API URL: ${apiUrl}`);
+          startCall(shiftId, shift?.shift_no);
+        }}
         onJoinVideoCall={async () => {
           let callId = shift?.call_id || shift?.action?.call_id;
-          
+
           if (!callId) {
             // Try fetching from active calls API if not provided in shift details
             const { activeVideoCallsAction } = await import("@/actions/vc.actions");

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { UploadCloud, CheckCircle2, X, Upload } from "lucide-react";
+import { CheckCircle2, X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateUploadUrlAction } from "@/actions/subcontractor.actions";
 import { toast } from "sonner";

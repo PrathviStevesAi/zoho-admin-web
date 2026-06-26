@@ -306,28 +306,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await startVideoCallAction(shiftId);
       if (res.success && res.data) {
-        const isTokenMock =
-          !res.data.token ||
-          res.data.token === "zego_token" ||
-          !res.data.token.startsWith("04");
-
-        if (isTokenMock) {
-          console.log(
-            "[VideoCall] Mock token received from start — auto-joining to fetch real token..."
-          );
-          const joinRes = await joinVideoCallAction(res.data.call_id);
-          if (joinRes.success && joinRes.data) {
-            toast.success("Call room created and joined successfully", { id: toastId });
-            setActiveCall({ ...joinRes.data, shift_id: shiftId, shift_no: shiftNo });
-          } else {
-            toast.error(joinRes.error || "Failed to fetch Zego token via join endpoint", {
-              id: toastId,
-            });
-          }
-        } else {
-          toast.success("Call room created successfully", { id: toastId });
-          setActiveCall({ ...res.data, shift_id: shiftId, shift_no: shiftNo });
-        }
+        toast.success("Call room created successfully", { id: toastId });
+        setActiveCall({ ...res.data, shift_id: shiftId, shift_no: shiftNo });
       } else {
         toast.error(res.error || "Failed to start call", { id: toastId });
       }
