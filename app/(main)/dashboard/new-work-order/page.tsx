@@ -347,8 +347,8 @@ export default function NewWorkOrderPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-2 sm:col-span-1 md:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="city" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                     City
                   </Label>
@@ -385,16 +385,37 @@ export default function NewWorkOrderPage() {
                     <p className="text-xs text-red-500 font-semibold">{errors.state}</p>
                   )}
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="country" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Country
+                  </Label>
+                  <Input
+                    id="country"
+                    value={country}
+                    onChange={(e) => {
+                      setCountry(e.target.value);
+                      clearError("country");
+                    }}
+                    placeholder="Enter Country"
+                    className={errors.country ? "border-red-500 focus-visible:ring-red-500" : ""}
+                  />
+                  {errors.country && (
+                    <p className="text-xs text-red-500 font-semibold">{errors.country}</p>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="zip_code" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                     ZIP Code
                   </Label>
                   <Input
                     id="zip_code"
+                    maxLength={10}
                     value={zipCode}
                     onChange={(e) => {
-                      setZipCode(e.target.value);
+                      setZipCode(e.target.value.slice(0, 10));
                       clearError("zipCode");
                     }}
                     placeholder="Enter ZIP Code"
@@ -404,25 +425,6 @@ export default function NewWorkOrderPage() {
                     <p className="text-xs text-red-500 font-semibold">{errors.zipCode}</p>
                   )}
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="country" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Country
-                </Label>
-                <Input
-                  id="country"
-                  value={country}
-                  onChange={(e) => {
-                    setCountry(e.target.value);
-                    clearError("country");
-                  }}
-                  placeholder="Enter Country"
-                  className={errors.country ? "border-red-500 focus-visible:ring-red-500" : ""}
-                />
-                {errors.country && (
-                  <p className="text-xs text-red-500 font-semibold">{errors.country}</p>
-                )}
               </div>
             </div>
 
