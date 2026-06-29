@@ -87,7 +87,7 @@ export async function endVideoCallAction(callId: string): Promise<{
   try {
     const res = await apiFetch<any>(`/api/v1/vc/end`, {
       method: "POST",
-      body: JSON.stringify({ call_id: callId }),
+      body: JSON.stringify({ call_id: callId, type: "end_call" }),
     });
     return { success: true, message: res.message || "Ended call successfully" };
   } catch (error: any) {

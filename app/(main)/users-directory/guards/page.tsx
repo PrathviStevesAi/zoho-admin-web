@@ -40,7 +40,8 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { GooglePlacesAutocomplete } from "@/components/ui/GooglePlacesAutocomplete";
+import { Country, State, City } from "country-state-city";
+import { US_STATE_CITY_DATA } from "@/app/subcontractor/components/StaticData";
 import Swal from "sweetalert2";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,23 @@ const countries = [
   { name: "Uruguay", code: "uy", dialCode: "+598" },
   { name: "Venezuela", code: "ve", dialCode: "+58" }
 ];
+
+const ALLOWED_COUNTRIES: Record<string, string> = {
+  US: "United States",
+  CA: "Canada",
+  AR: "Argentina",
+  BO: "Bolivia",
+  BR: "Brazil",
+  CL: "Chile",
+  CO: "Colombia",
+  EC: "Ecuador",
+  GY: "Guyana",
+  PY: "Paraguay",
+  PE: "Peru",
+  SR: "Suriname",
+  UY: "Uruguay",
+  VE: "Venezuela",
+};
 
 export default function GuardDirectoryPage() {
   const [guards, setGuards] = useState<any[]>([]);
@@ -92,6 +110,39 @@ export default function GuardDirectoryPage() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
+
+  const [addressStates, setAddressStates] = useState<any[]>([]);
+  const [addressCities, setAddressCities] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (formData.country === "US") {
+      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
+        isoCode: data.short_code,
+        name: name,
+      }));
+      setAddressStates(usStates);
+    } else if (formData.country) {
+      setAddressStates(State.getStatesOfCountry(formData.country));
+    } else {
+      setAddressStates([]);
+    }
+  }, [formData.country]);
+
+  useEffect(() => {
+    if (formData.country === "US" && formData.state) {
+      const stateData = Object.values(US_STATE_CITY_DATA).find(s => s.short_code === formData.state);
+      if (stateData) {
+        const usCities = stateData.cities.map(city => ({ name: city }));
+        setAddressCities(usCities);
+      } else {
+        setAddressCities([]);
+      }
+    } else if (formData.country && formData.state) {
+      setAddressCities(City.getCitiesOfState(formData.country, formData.state));
+    } else {
+      setAddressCities([]);
+    }
+  }, [formData.state, formData.country]);
 
   // Debounced search query implementation
   useEffect(() => {
@@ -393,23 +444,11 @@ export default function GuardDirectoryPage() {
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Street Address</label>
                   <div className="relative">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700 z-10 pointer-events-none" />
-                    <GooglePlacesAutocomplete
+                    <Input
                       placeholder="Enter street address"
                       value={formData.streetAddress}
                       required
-                      onChange={(val) => setFormData({ ...formData, streetAddress: val, address: val })}
-                      onAddressSelect={(address) => {
-                        const formattedAddress = `${address.street}${address.city ? ', ' + address.city : ''}${address.state ? ', ' + address.state : ''}${address.country ? ', ' + address.country : ''}`;
-                        setFormData(prev => ({
-                          ...prev,
-                          address: formattedAddress,
-                          streetAddress: address.street,
-                          city: (address.city || "").replace(/\d/g, ""),
-                          state: (address.state || "").replace(/\d/g, ""),
-                          country: (address.country || "").replace(/\d/g, ""),
-                          zipCode: address.zip
-                        }));
-                      }}
+                      onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value, address: e.target.value })}
                       className="h-12 pl-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
                   </div>
@@ -417,44 +456,71 @@ export default function GuardDirectoryPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">City</label>
-                    <Input
-                      placeholder="City"
-                      value={formData.city}
-                      required
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value.replace(/\d/g, "") })}
-                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
-                    />
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
+                    <Select 
+                      onValueChange={(val) => setFormData({ ...formData, country: val, state: "", city: "" })} 
+                      value={formData.country}
+                    >
+                      <SelectTrigger className="!h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium">
+                        <SelectValue placeholder="Select Country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(ALLOWED_COUNTRIES).map(([code, name]) => (
+                          <SelectItem key={code} value={code}>
+                            {name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">State</label>
-                    <Input
-                      placeholder="State"
+                    <Select 
+                      onValueChange={(val) => setFormData({ ...formData, state: val, city: "" })} 
                       value={formData.state}
-                      required
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value.replace(/\d/g, "") })}
-                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
-                    />
+                      disabled={!formData.country}
+                    >
+                      <SelectTrigger className="!h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium">
+                        <SelectValue placeholder="Select State" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {addressStates.map((s) => (
+                          <SelectItem key={s.isoCode} value={s.isoCode}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">City</label>
+                    <Select 
+                      onValueChange={(val) => setFormData({ ...formData, city: val })} 
+                      value={formData.city}
+                      disabled={!formData.state}
+                    >
+                      <SelectTrigger className="!h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium">
+                        <SelectValue placeholder="Select City" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {addressCities.map((c) => (
+                          <SelectItem key={c.name} value={c.name}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
                     <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">ZIP Code</label>
                     <Input
                       placeholder="ZIP Code"
+                      maxLength={10}
                       value={formData.zipCode}
-                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
-                    <Input
-                      placeholder="Country"
-                      value={formData.country}
-                      required
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value.replace(/\d/g, "") })}
+                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value.slice(0, 10) })}
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium"
                     />
                   </div>

@@ -4,11 +4,11 @@ import { useEffect } from "react";
 import { generateToken, onMessageListener } from "@/lib/firebase";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { fetchNotificationByIdAction } from "@/actions/notification.actions";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function NotificationProvider() {
     const router = useRouter();
+    const pathname = usePathname();
     const { status } = useSession();
 
     useEffect(() => {
@@ -56,11 +56,18 @@ export default function NotificationProvider() {
                 if (typeof window !== "undefined") {
                     const callId = payload?.data?.call_id || payload?.call_id;
                     const shiftId = payload?.data?.shift_id || payload?.shift_id;
-                    window.dispatchEvent(new CustomEvent("incoming-vc-call", { 
-                        detail: { type: "incoming_vc_call", call_id: callId, shift_id: shiftId } 
+                    window.dispatchEvent(new CustomEvent("incoming-vc-call", {
+                        detail: { type: "incoming_vc_call", call_id: callId, shift_id: shiftId }
                     }));
                 }
                 return;
+            }
+
+            if (type === "decline_vc_call") {
+                console.log("[NotificationProvider] Intercepted decline_vc_call foreground notification");
+                if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("decline-vc-call"));
+                }
             }
 
             const title = payload?.notification?.title || payload?.data?.title || "New Notification";
@@ -172,6 +179,31 @@ export default function NotificationProvider() {
             if (unsubscribe) unsubscribe();
         };
     }, [router, status]);
+
+    useEffect(() => {
+        if (status === "authenticated" && pathname === "/dashboard") {
+            console.log("[NotificationProvider] Navigated to /dashboard. Syncing FCM...");
+            const handleToken = async () => {
+                const token = await generateToken();
+                if (token) {
+                    try {
+                        const res = await fetch("/api/fcm-token", {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ fcm_token: token }),
+                        });
+                        if (res.ok) {
+                            localStorage.setItem("last_fcm_token", token);
+                            console.log("[NotificationProvider] FCM Token synced to server successfully on /dashboard.");
+                        }
+                    } catch (err) {
+                        console.error("[NotificationProvider] Error syncing FCM token on /dashboard:", err);
+                    }
+                }
+            };
+            handleToken();
+        }
+    }, [pathname, status]);
 
     return null;
 }

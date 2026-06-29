@@ -154,6 +154,22 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const handleDeclineCall = () => {
+      console.log("[VideoCall] Call declined, cleaning up state...");
+      if (zegoInstanceRef.current) {
+        try {
+          zegoInstanceRef.current.destroy();
+        } catch {}
+      }
+      handleCleanupState();
+    };
+
+    window.addEventListener("decline-vc-call", handleDeclineCall);
+
+    return () => {
+      window.removeEventListener("decline-vc-call", handleDeclineCall);
+    };
   }, []);
 
   useEffect(() => {
