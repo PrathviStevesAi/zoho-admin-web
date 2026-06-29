@@ -21,7 +21,7 @@ import { PrivacyPolicySection } from "./sections/PrivacyPolicySection";
 import { VoluntarySelfIdSection } from "./sections/VoluntarySelfIdSection";
 
 const formSchema = z.object({
-  email: z.string().email("Invalid email address").max(255),
+  email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Invalid email address").max(255),
   resume: z.any().optional(),
   license_number: z.string().min(3, "License number is required").max(15, "License number cannot exceed 15 characters").regex(/^[A-Za-z0-9]+$/, "License number must be alphanumeric").toUpperCase(),
   expiration_date: z.string().min(1, "Expiration date is required"),
@@ -116,7 +116,7 @@ export default function SubcontractorForm() {
     try {
       const payload = {
         email: data.email,
-        phone_number: `${data.phoneCode}${data.phone}`,
+        phone_number: `${data.phoneCode} ${data.phone}`,
         license_number: data.license_number,
         license_expiration_date: data.expiration_date,
         resume_url: typeof data.resume === "string" ? data.resume : "",

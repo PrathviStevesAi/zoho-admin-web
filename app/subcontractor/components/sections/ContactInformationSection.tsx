@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomInput } from "../CustomInput";
 import { FormValues } from "../SubcontractorForm";
+import { US_STATE_CITY_DATA } from "../StaticData";
 
 const ALLOWED_COUNTRIES = ["US", "CA", "AR", "BO", "BR", "CL", "CO", "EC", "GY", "PY", "PE", "SR", "UY", "VE"];
 
@@ -27,7 +28,13 @@ export function ContactInformationSection() {
   }, []);
 
   useEffect(() => {
-    if (selectedCountry) {
+    if (selectedCountry === "US") {
+      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
+        isoCode: data.short_code,
+        name: name,
+      }));
+      setStates(usStates);
+    } else if (selectedCountry) {
       setStates(State.getStatesOfCountry(selectedCountry));
     } else {
       setStates([]);
@@ -35,7 +42,15 @@ export function ContactInformationSection() {
   }, [selectedCountry]);
 
   useEffect(() => {
-    if (selectedCountry && selectedState) {
+    if (selectedCountry === "US" && selectedState) {
+      const stateData = Object.values(US_STATE_CITY_DATA).find(s => s.short_code === selectedState);
+      if (stateData) {
+        const usCities = stateData.cities.map(city => ({ name: city }));
+        setCities(usCities);
+      } else {
+        setCities([]);
+      }
+    } else if (selectedCountry && selectedState) {
       setCities(City.getCitiesOfState(selectedCountry, selectedState));
     } else {
       setCities([]);

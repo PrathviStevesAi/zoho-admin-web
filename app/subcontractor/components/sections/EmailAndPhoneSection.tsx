@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { ChevronDown, Phone, CheckCircle2 } from "lucide-react";
+import { ChevronDown, Phone, CheckCircle2, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { CustomInput } from "../CustomInput";
 import { verifySubcontractorApplicationAction } from "@/actions/subcontractor.actions";
@@ -32,9 +32,12 @@ export function EmailAndPhoneSection() {
   const [isPhoneDropdownOpen, setIsPhoneDropdownOpen] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isEmailVerifying, setIsEmailVerifying] = useState(false);
+  const [isPhoneVerifying, setIsPhoneVerifying] = useState(false);
 
   const guardEmail = watch("email");
   const phoneValue = watch("phone");
+  const phoneCodeValue = watch("phoneCode");
 
   useEffect(() => {
     if (!guardEmail) {
@@ -42,7 +45,8 @@ export function EmailAndPhoneSection() {
       return;
     }
     const timeoutId = setTimeout(async () => {
-      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guardEmail)) {
+      if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(guardEmail)) {
+        setIsEmailVerifying(true);
         const res = await verifySubcontractorApplicationAction(guardEmail, "");
         if (!res.success) {
           setError("email", { type: "manual", message: res.error || "Email already exists" });
@@ -51,6 +55,7 @@ export function EmailAndPhoneSection() {
           clearErrors("email");
           setIsEmailVerified(true);
         }
+        setIsEmailVerifying(false);
       }
     }, 800);
     return () => clearTimeout(timeoutId);
@@ -63,7 +68,8 @@ export function EmailAndPhoneSection() {
     }
     const timeoutId = setTimeout(async () => {
       if (phoneValue.length >= 10) {
-        const res = await verifySubcontractorApplicationAction("", phoneValue);
+        setIsPhoneVerifying(true);
+        const res = await verifySubcontractorApplicationAction("", `${phoneCodeValue} ${phoneValue}`);
         if (!res.success) {
           setError("phone", { type: "manual", message: res.error || "Phone already exists" });
           setIsPhoneVerified(false);
@@ -71,6 +77,7 @@ export function EmailAndPhoneSection() {
           clearErrors("phone");
           setIsPhoneVerified(true);
         }
+        setIsPhoneVerifying(false);
       }
     }, 800);
     return () => clearTimeout(timeoutId);
@@ -80,12 +87,20 @@ export function EmailAndPhoneSection() {
     <>
       <div className="space-y-1">
         <Label htmlFor="email" className="text-red-500 font-medium">Email*</Label>
-        <CustomInput
-          id="email"
-          type="email"
-          placeholder="Enter your email"
-          {...register("email")}
-        />
+        <div className="relative">
+          <CustomInput
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            {...register("email")}
+            className={isEmailVerifying ? "pr-10" : ""}
+          />
+          {isEmailVerifying && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <Loader2 className="h-4 w-4 animate-spin text-black" />
+            </div>
+          )}
+        </div>
         {errors.email ? (
           <p className="text-xs text-red-500">{errors.email.message}</p>
         ) : isEmailVerified ? (
@@ -122,8 +137,13 @@ export function EmailAndPhoneSection() {
                   setIsPhoneVerified(false);
                 }
               })}
-              className="w-full h-full bg-transparent outline-none border-none pl-9 pr-3 text-slate-900 dark:text-slate-100 font-medium placeholder:text-muted-foreground placeholder:font-normal text-sm"
+              className={`w-full h-full bg-transparent outline-none border-none pl-9 ${isPhoneVerifying ? "pr-10" : "pr-3"} text-slate-900 dark:text-slate-100 font-medium placeholder:text-muted-foreground placeholder:font-normal text-sm`}
             />
+            {isPhoneVerifying && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin text-black" />
+              </div>
+            )}
           </div>
 
           {isPhoneDropdownOpen && (
