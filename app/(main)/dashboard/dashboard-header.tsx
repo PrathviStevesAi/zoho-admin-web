@@ -7,13 +7,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useDashboard } from "./dashboard-context";
 import { PeriodFilter } from "./_components/period-filter";
@@ -55,32 +48,6 @@ export function DashboardHeader() {
 
             {/* FILTERS SECTION */}
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6 w-full md:w-auto">
-                {/* CREATE DROPDOWN */}
-                <div className="flex flex-col gap-1 w-full sm:w-auto">
-                    <span className="text-[14px] font-semibold text-slate-600 tracking-tight ml-1 h-[21px] block sm:block select-none" aria-hidden="true">&nbsp;</span>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                className="cursor-pointer !h-[42px] w-full sm:w-[130px] bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                            >
-                                Create
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            align="start"
-                            className="rounded-sm border-border bg-card shadow-lg p-1 animate-in fade-in-0 zoom-in-95 min-w-[140px]"
-                        >
-                            <div className="p-1">
-                                <DropdownMenuItem
-                                    className="h-8 px-3 rounded-sm text-xs font-medium cursor-pointer focus:bg-primary focus:text-primary-foreground transition-colors flex items-center whitespace-nowrap"
-                                    onClick={() => router.push("/dashboard/new-work-order")}
-                                >
-                                    New Work Order
-                                </DropdownMenuItem>
-                            </div>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
 
                 <PeriodFilter />
 

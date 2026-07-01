@@ -449,10 +449,11 @@ export async function createShiftAction(payload: {
     return { success: false, error: message };
   }
 }
-export async function fetchLocationAction(country?: string, state?: string): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
+export async function fetchLocationAction(country?: string, state?: string, status?: string): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
   try {
     let url = `/api/v1/guard/location`;
     const params = new URLSearchParams();
+    if (status) params.append("status", status);
     if (country && country !== "All Country") params.append("country", country);
     if (state && state !== "All State") params.append("state", state);
     const qs = params.toString();

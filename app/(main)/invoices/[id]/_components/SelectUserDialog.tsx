@@ -62,7 +62,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
   useEffect(() => {
     if (isOpen) {
       const loadLocations = async () => {
-        const res = await fetchLocationAction(userFilters.country, userFilters.state);
+        const res = await fetchLocationAction(userFilters.country, userFilters.state, "approved");
         if (res.success && res.data) {
           setLocations({
             countries: ["All Country", ...res.data.countries],

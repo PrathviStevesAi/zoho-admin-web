@@ -71,7 +71,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
   // Load locations on mount and when country/state filters change
   useEffect(() => {
     const loadLocations = async () => {
-      const res = await fetchLocationAction(filters.country, filters.state);
+      const res = await fetchLocationAction(filters.country, filters.state, "approved");
       if (res.success && res.data) {
         setLocations({
           countries: ["All Country", ...res.data.countries],
