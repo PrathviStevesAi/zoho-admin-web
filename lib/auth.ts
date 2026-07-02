@@ -1,5 +1,13 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+
+class CustomAuthError extends CredentialsSignin {
+    code: string;
+    constructor(msg: string) {
+        super();
+        this.code = msg;
+    }
+}
 
 // for the testing
 // console.log("AUTH_SECRET exists:", !!process.env.AUTH_SECRET);
@@ -34,7 +42,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     if (!res.ok) {
                         const trimmedText = text.trim().toLowerCase();
                         if (trimmedText.startsWith("<!doctype") || trimmedText.startsWith("<html") || res.status >= 500) {
-                            throw new Error("Service is currently unreachable. Please check your connection or try again later.");
+                            throw new CustomAuthError("Service is currently unreachable. Please check your connection or try again later.");
                         }
 
                         let result: any = null;
@@ -43,7 +51,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         } catch { }
 
                         const errorMsg = result?.detail?.error || result?.message || result?.error || "Invalid email or password.";
-                        throw new Error(errorMsg);
+                        throw new CustomAuthError(errorMsg);
                     }
 
                     let result: any = null;
@@ -51,7 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         result = JSON.parse(text);
                     } catch (err) {
                         console.error("Auth login JSON parse error. Response starts with:", text.substring(0, 200));
-                        throw new Error("Service is currently unreachable. Please check your connection or try again later.");
+                        throw new CustomAuthError("Service is currently unreachable. Please check your connection or try again later.");
                     }
 
                     if (result && result.data) {

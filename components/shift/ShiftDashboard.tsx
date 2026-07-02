@@ -54,7 +54,7 @@ interface ShiftDashboardProps {
 
 export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps) {
   const router = useRouter();
-  const { startCall, joinCall } = useVideoCall();
+  const { startCall } = useVideoCall();
 
   // Core Data State
   const [shift, setShift] = useState<Shift | null>(null);
@@ -618,30 +618,20 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
         onStartVideoCall={() => {
-          const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || "https://clanking-bagginess-flammable.ngrok-free.dev"}/api/v1/vc/start`;
-          console.log(`[Video Call] Exact API URL: ${apiUrl}`);
-          startCall(shiftId, shift?.shift_no);
+          const guardId = typeof shift?.assigned_guard === 'object' 
+            ? shift?.assigned_guard?.id || shift?.assigned_guard?.guard_id 
+            : shift?.assigned_guard;
+            
+          if (!guardId) {
+            toast.error("No guard assigned to this shift yet.");
+            return;
+          }
+          startCall(guardId as string, shiftId);
         }}
         onJoinVideoCall={async () => {
-          let callId = shift?.call_id || shift?.action?.call_id;
-
-          if (!callId) {
-            // Try fetching from active calls API if not provided in shift details
-            const { activeVideoCallsAction } = await import("@/actions/vc.actions");
-            const res = await activeVideoCallsAction();
-            if (res.success && res.data) {
-              const activeCall = res.data.find((c: any) => c.shift_id === shiftId);
-              if (activeCall) {
-                callId = activeCall.call_id || activeCall.id || activeCall._id;
-              }
-            }
-          }
-
-          if (callId) {
-            joinCall(callId, shift?.shift_no);
-          } else {
-            toast.error("Call session not found for this shift.");
-          }
+          // Join functionality is now handled automatically by ZIM call invitation listener
+          // If the admin clicks this, we can optionally restart the call
+          toast.info("Incoming/Outgoing calls are now managed automatically.");
         }}
         isLoading={isLoading}
       />

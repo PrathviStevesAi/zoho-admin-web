@@ -175,7 +175,7 @@ export function ShiftHeader({
                 onClick: () => setIsSettingsOpen(!isSettingsOpen),
               });
             }
-            if (act.is_vc_start) {
+            if (act.is_vc_start || act.is_join_vc_call) {
               buttons.push({
                 label: "Video Call",
                 icon: Video,
@@ -183,14 +183,7 @@ export function ShiftHeader({
                 onClick: onStartVideoCall,
               });
             }
-            if (act.is_join_vc_call) {
-              buttons.push({
-                label: "Join Call",
-                icon: Video,
-                color: "emerald" as const,
-                onClick: onJoinVideoCall,
-              });
-            }
+
             if (act.is_cancel_service) {
               buttons.push({
                 label: "Cancel Service",

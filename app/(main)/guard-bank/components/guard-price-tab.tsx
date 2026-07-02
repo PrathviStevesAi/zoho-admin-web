@@ -16,6 +16,7 @@ interface GuardPriceTabProps {
   handleSubmitPrices: () => void;
   loading: boolean;
   mounted: boolean;
+  hasChanges: boolean;
 }
 
 export function GuardPriceTab({
@@ -26,7 +27,8 @@ export function GuardPriceTab({
   submittingPrices,
   handleSubmitPrices,
   loading,
-  mounted
+  mounted,
+  hasChanges
 }: GuardPriceTabProps) {
 
   const renderSelect = (
@@ -72,7 +74,7 @@ export function GuardPriceTab({
         </div>
         <Button 
           onClick={handleSubmitPrices}
-          disabled={submittingPrices}
+          disabled={submittingPrices || !hasChanges || loading}
           className="w-full sm:w-auto bg-[#0064cb] hover:bg-[#0064cb]/90 text-white px-8 h-10 flex items-center justify-center gap-2"
         >
           {submittingPrices && <Loader2 className="w-4 h-4 animate-spin" />}

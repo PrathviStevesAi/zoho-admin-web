@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { loginAction, sendOtpAction, verifyOtpAction, resetPasswordAction } from "@/actions/auth.actions";
+import { sendOtpAction, verifyOtpAction, resetPasswordAction, preCheckLoginAction } from "@/actions/auth.actions";
+import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -103,18 +104,33 @@ export default function LoginPage() {
         });
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        const toastId = toast.loading("Logging in...");
 
-        startTransition(async () => {
-            const result = await loginAction({ email, password });
-            if (result.success) {
-                toast.success("Login Successful");
-                window.location.href = "/dashboard";
-            } else {
-                toast.error(result.error || "Invalid Credentials");
-            }
+        // 1. Manually check the credentials first to get the EXACT backend error message if it fails
+        const preCheck = await preCheckLoginAction({ email, password });
+        
+        if (!preCheck.success) {
+            toast.error(preCheck.error, { id: toastId });
+            return;
+        }
+
+        // 2. If backend succeeds, use client-side signIn to set the session cookies without triggering Server Action bugs
+        const result = await signIn("credentials", {
+            email,
+            password,
+            redirect: false,
         });
+
+        if (result?.error) {
+            toast.error("Invalid Credentials", { id: toastId });
+        } else if (result?.ok) {
+            toast.success("Login Successful", { id: toastId });
+            window.location.href = "/dashboard";
+        } else {
+            toast.error("Something went wrong. Please try again.", { id: toastId });
+        }
     };
 
     return (

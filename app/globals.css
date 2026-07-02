@@ -101,7 +101,7 @@
   /* 🧩 UI */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0 0 0);
-  
+
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0 0 0);
 
@@ -230,13 +230,13 @@
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
   }
-  
-  [data-slot="card-header"].flex-row > .flex.items-center.gap-4.shrink-0 {
+
+  [data-slot="card-header"].flex-row>.flex.items-center.gap-4.shrink-0 {
     width: 100% !important;
     justify-content: flex-end !important;
   }
 
-  [data-slot="card-header"].flex-row > .flex.items-center.gap-4.shrink-0 > .relative.w-\[240px\] {
+  [data-slot="card-header"].flex-row>.flex.items-center.gap-4.shrink-0>.relative.w-\[240px\] {
     width: 100% !important;
   }
 }

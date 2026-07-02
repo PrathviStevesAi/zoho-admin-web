@@ -493,6 +493,17 @@ export default function GuardDetailPage() {
     return decodeURIComponent(last).substring(0, 30) + (last.length > 30 ? "..." : "");
   };
 
+  const getStatusBreadcrumb = () => {
+    if (!guard) return "";
+    switch (guard.status) {
+      case "record_touched": return "Record Touched";
+      case "approved": return "Approved";
+      case "disqualified": return "Disqualified";
+      case "pending": return "Home";
+      default: return "Home";
+    }
+  };
+
   return (
     <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
       {/* Breadcrumbs & Header */}
@@ -501,6 +512,8 @@ export default function GuardDetailPage() {
           <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <Link href="/guard-bank" className="hover:text-[#0064cb] transition-colors">Guard Bank</Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <Link href="/guard-bank" className="hover:text-[#0064cb] transition-colors">{getStatusBreadcrumb()}</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-slate-600 font-medium">Guard Details</span>
         </div>

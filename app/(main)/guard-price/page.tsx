@@ -18,6 +18,9 @@ export default function GuardPricePage() {
 
   const [loading, setLoading] = useState(false);
   const [pricesData, setPricesData] = useState<Record<string, Record<string, Record<string, number>>>>({});
+  const [initialPricesData, setInitialPricesData] = useState<Record<string, Record<string, Record<string, number>>>>({});
+  
+  const hasChanges = JSON.stringify(initialPricesData) !== JSON.stringify(pricesData);
   const [selectedTerritory, setSelectedTerritory] = useState("all");
   const [submittingPrices, setSubmittingPrices] = useState(false);
 
@@ -39,6 +42,7 @@ export default function GuardPricePage() {
         const data = await res.json();
         if (data.success) {
           setPricesData(data.data || {});
+          setInitialPricesData(data.data || {});
         }
       } catch (error) {
         console.error("Failed to fetch prices:", error);
@@ -69,6 +73,7 @@ export default function GuardPricePage() {
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success("Guard prices updated successfully!");
+        setInitialPricesData(pricesData);
       } else {
         toast.error(data.message || "Failed to update guard prices.");
       }
@@ -107,6 +112,7 @@ export default function GuardPricePage() {
             handleSubmitPrices={handleSubmitPrices}
             loading={loading}
             mounted={mounted}
+            hasChanges={hasChanges}
           />
         </div>
       </div>

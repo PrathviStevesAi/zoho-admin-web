@@ -3,6 +3,32 @@
 import { signIn, auth, signOut } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
+export async function preCheckLoginAction(formData: { email: string; password: string }) {
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/login`, {
+            method: "POST",
+            body: JSON.stringify(formData),
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true"
+            },
+        });
+
+        const text = await res.text();
+
+        if (!res.ok) {
+            let result: any = null;
+            try { result = JSON.parse(text); } catch {}
+            const errorMsg = result?.detail?.error || result?.message || result?.error || "Invalid email or password.";
+            return { success: false, error: errorMsg };
+        }
+
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: "Service is currently unreachable. Please try again later." };
+    }
+}
+
 export async function loginAction(formData: { email: string; password: string }) {
     try {
         await signIn("credentials", {

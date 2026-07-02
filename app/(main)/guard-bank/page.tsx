@@ -39,6 +39,8 @@ export default function GuardBankPage() {
   }, []);
 
   const [activeTab, setActiveTab] = useState("home");
+
+
   const [guardsData, setGuardsData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -101,6 +103,7 @@ export default function GuardBankPage() {
         }
 
         const res = await fetch(url, {
+          cache: "no-store",
           headers: {
             "ngrok-skip-browser-warning": "true",
             "Content-Type": "application/json",
@@ -146,8 +149,12 @@ export default function GuardBankPage() {
       if (debouncedSearch) {
         url += `&search=${encodeURIComponent(debouncedSearch)}`;
       }
+      
+      // Bust any intermediate caches
+      url += `&_t=${Date.now()}`;
 
       const res = await fetch(url, {
+        cache: "no-store",
         headers: {
           "ngrok-skip-browser-warning": "true",
           "Content-Type": "application/json",
@@ -200,7 +207,15 @@ export default function GuardBankPage() {
       if (res.ok) {
         toast.success("Guard application deleted successfully");
         setDeleteConfirm({ isOpen: false, guardId: "" });
-        fetchGuards();
+        
+        // Optimistically remove from state instantly for a snappy UI
+        setGuardsData(prev => prev.filter(guard => guard.id !== id));
+        setTotalCount(prev => Math.max(0, prev - 1));
+        
+        // Delay the refetch slightly to ensure the backend database has fully committed the deletion
+        setTimeout(() => {
+          fetchGuards();
+        }, 800);
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(data.detail || "Failed to delete guard application");
