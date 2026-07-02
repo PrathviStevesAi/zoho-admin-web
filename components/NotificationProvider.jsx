@@ -14,7 +14,7 @@ export default function NotificationProvider() {
     useEffect(() => {
         console.log("[NotificationProvider] Status change:", status);
 
-        if (typeof window !== "undefined") {
+        if (typeof window !== "undefined" && "Notification" in window) {
             console.log("[NotificationProvider] Current Permission:", Notification.permission);
         }
 

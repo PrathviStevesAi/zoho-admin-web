@@ -134,12 +134,29 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
     }
   }, [healthData, handleRefresh]);
 
-  const handleCopyError = () => {
+  const handleCopyError = async () => {
     if (!activeError) return;
-    navigator.clipboard.writeText(activeError.errorText);
-    setCopied(true);
-    toast.success("Error logs copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(activeError.errorText);
+      } else {
+        // Fallback for browsers without clipboard API
+        const textArea = document.createElement("textarea");
+        textArea.value = activeError.errorText;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      toast.success("Error logs copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy to clipboard:", err);
+      toast.error("Failed to copy to clipboard");
+    }
   };
 
   if (!healthData) {
