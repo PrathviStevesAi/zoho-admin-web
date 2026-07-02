@@ -10,7 +10,6 @@ import {
   Activity,
   CheckCircle,
   XCircle,
-  DollarSign,
   ChevronRight,
   ChevronLeft,
   ArrowLeft,
@@ -23,7 +22,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GuardFilters } from "./components/guard-filters";
 import { GuardsTable } from "./components/guards-table";
 import { GuardCard } from "./components/guard-card";
-import { GuardPriceTab } from "./components/guard-price-tab";
 import { ConfirmationDialog } from "./components/confirmation-dialog";
 
 const tabs = [
@@ -31,7 +29,6 @@ const tabs = [
   { id: "record-touch", label: "Record Touch", icon: Activity },
   { id: "approved", label: "Approved", icon: CheckCircle },
   { id: "disqualified", label: "Disqualified", icon: XCircle },
-  { id: "guard-price", label: "Guard Price", icon: DollarSign },
 ];
 
 export default function GuardBankPage() {
@@ -61,75 +58,13 @@ export default function GuardBankPage() {
     states: [],
     cities: []
   });
-  const [pricesData, setPricesData] = useState<Record<string, Record<string, Record<string, number>>>>({});
-  const [selectedTerritory, setSelectedTerritory] = useState("all");
-  const [submittingPrices, setSubmittingPrices] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
     guardId: string;
   }>({ isOpen: false, guardId: "" });
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    if (activeTab !== "guard-price") return;
 
-    const fetchPrices = async () => {
-      setLoading(true);
-      try {
-        const session = await getSession() as any;
-        const token = session?.accessToken;
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-
-        const res = await fetch(`${baseUrl}/api/v1/guard/price`, {
-          headers: {
-            "ngrok-skip-browser-warning": "true",
-            "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` })
-          }
-        });
-        const data = await res.json();
-        if (data.success) {
-          setPricesData(data.data || {});
-        }
-      } catch (error) {
-        console.error("Failed to fetch prices:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPrices();
-  }, [activeTab]);
-
-  const handleSubmitPrices = async () => {
-    setSubmittingPrices(true);
-    try {
-      const session = await getSession() as any;
-      const token = session?.accessToken;
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-
-      const res = await fetch(`${baseUrl}/api/v1/guard/price`, {
-        method: "PUT",
-        headers: {
-          "ngrok-skip-browser-warning": "true",
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` })
-        },
-        body: JSON.stringify({ data: pricesData })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success("Guard prices updated successfully!");
-      } else {
-        toast.error(data.message || "Failed to update guard prices.");
-      }
-    } catch (error: any) {
-      console.error("Failed to submit prices:", error);
-      toast.error(error.message || "An error occurred while saving prices.");
-    } finally {
-      setSubmittingPrices(false);
-    }
-  };
 
   useEffect(() => {
     setSelectedCountry("all");
@@ -391,7 +326,7 @@ export default function GuardBankPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-xl border-none overflow-hidden">
-        <div className="flex overflow-x-auto p-5 border-b border-slate-100 bg-slate-50/50 space-x-2 no-scrollbar">
+        <div className="flex justify-center overflow-x-auto p-5 border-b border-slate-100 bg-slate-50/50 space-x-2 no-scrollbar">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -625,18 +560,7 @@ export default function GuardBankPage() {
             </div>
           )}
 
-          {activeTab === "guard-price" && (
-            <GuardPriceTab
-              pricesData={pricesData}
-              setPricesData={setPricesData}
-              selectedTerritory={selectedTerritory}
-              setSelectedTerritory={setSelectedTerritory}
-              submittingPrices={submittingPrices}
-              handleSubmitPrices={handleSubmitPrices}
-              loading={loading}
-              mounted={mounted}
-            />
-          )}
+
         </div>
       </div>
 

@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 // for the testing
-console.log("AUTH_SECRET exists:", !!process.env.AUTH_SECRET);
+// console.log("AUTH_SECRET exists:", !!process.env.AUTH_SECRET);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     trustHost: true,
@@ -114,8 +114,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         process.env.NEXTAUTH_SECRET,
 });
 
-console.log("AUTH_SECRET raw:", process.env.AUTH_SECRET);
-console.log("NEXTAUTH_SECRET raw:", process.env.NEXTAUTH_SECRET);
+// console.log("AUTH_SECRET raw:", process.env.AUTH_SECRET);
+// console.log("NEXTAUTH_SECRET raw:", process.env.NEXTAUTH_SECRET);
 
 const refreshPromises = new Map<string, Promise<any>>();
 

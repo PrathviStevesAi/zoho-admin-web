@@ -30,6 +30,7 @@ import { ConfirmationDialog } from "../components/confirmation-dialog";
 import { Plus } from "lucide-react";
 import { BadgeCreateDialog } from "../components/badge-create-dialog";
 import { BadgeViewDialog } from "../components/badge-view-dialog";
+import { ImagePreview } from "../components/image-preview";
 
 export default function GuardDetailPage() {
   const router = useRouter();
@@ -521,14 +522,25 @@ export default function GuardDetailPage() {
               {`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "Guard Application"}
             </h2>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setDeleteConfirmOpen(true)}
-            className="text-red-500 hover:text-red-600 hover:bg-red-50 h-9 w-9 rounded-lg cursor-pointer"
-          >
-            <Trash2 className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-4">
+            {guard.action?.is_open_crm && (
+              <Button
+                size="sm"
+                onClick={() => window.open(`https://crm.zoho.com/crm/org677245190/tab/Vendors/${guard.vendor_id}`, "_blank")}
+                className="bg-[#0064cb] hover:bg-[#0064cb]/90 text-white text-xs px-4 h-8 rounded-md min-w-[110px] cursor-pointer"
+              >
+                Open CRM
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDeleteConfirmOpen(true)}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 h-9 w-9 rounded-lg cursor-pointer"
+            >
+              <Trash2 className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* 1. Personal Details */}
@@ -697,21 +709,7 @@ export default function GuardDetailPage() {
             <div className="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 flex flex-col items-center justify-center space-y-3">
               <span className="text-xs text-slate-600 font-bold block text-center">Driver License</span>
               {guard.driver_license_url ? (
-                <div className="relative group w-full aspect-video rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
-                  <img
-                    src={guard.driver_license_url}
-                    alt="Driver License"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <a
-                    href={guard.driver_license_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity font-semibold gap-1 text-sm rounded-xl"
-                  >
-                    <Eye className="w-4 h-4" /> View Full
-                  </a>
-                </div>
+                <ImagePreview url={guard.driver_license_url} alt="Driver License" />
               ) : (
                 <div className="w-full aspect-video rounded-xl border border-dashed border-slate-350 bg-slate-100 flex items-center justify-center text-slate-400 font-medium text-sm">
                   Not Provided
@@ -721,21 +719,7 @@ export default function GuardDetailPage() {
             <div className="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 flex flex-col items-center justify-center space-y-3">
               <span className="text-xs text-slate-600 font-bold block text-center">Security Guard License</span>
               {guard.security_guard_license_url ? (
-                <div className="relative group w-full aspect-video rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
-                  <img
-                    src={guard.security_guard_license_url}
-                    alt="Security Guard License"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <a
-                    href={guard.security_guard_license_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity font-semibold gap-1 text-sm rounded-xl"
-                  >
-                    <Eye className="w-4 h-4" /> View Full
-                  </a>
-                </div>
+                <ImagePreview url={guard.security_guard_license_url} alt="Security Guard License" />
               ) : (
                 <div className="w-full aspect-video rounded-xl border border-dashed border-slate-350 bg-slate-100 flex items-center justify-center text-slate-400 font-medium text-sm">
                   Not Provided
@@ -745,21 +729,7 @@ export default function GuardDetailPage() {
             <div className="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 flex flex-col items-center justify-center space-y-3">
               <span className="text-xs text-slate-600 font-bold block text-center">Headshot Image</span>
               {guard.headshot_image_url ? (
-                <div className="relative group w-full aspect-video rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
-                  <img
-                    src={guard.headshot_image_url}
-                    alt="Headshot Image"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <a
-                    href={guard.headshot_image_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity font-semibold gap-1 text-sm rounded-xl"
-                  >
-                    <Eye className="w-4 h-4" /> View Full
-                  </a>
-                </div>
+                <ImagePreview url={guard.headshot_image_url} alt="Headshot Image" />
               ) : (
                 <div className="w-full aspect-video rounded-xl border border-dashed border-slate-350 bg-slate-100 flex items-center justify-center text-slate-400 font-medium text-sm">
                   Not Provided
@@ -945,13 +915,13 @@ export default function GuardDetailPage() {
         isDeleting={isDeletingBadge}
       />
 
-      {(guard.action?.is_approved || guard.action?.is_disqualified || guard.action?.is_open_crm) && (
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-sm mx-auto pt-0">
+      {(guard.action?.is_approved || guard.action?.is_disqualified) && (
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mx-auto pt-0">
           {guard.action?.is_approved && (
             <Button
               onClick={() => handleUpdateStatus("approved")}
               disabled={isUpdatingStatus !== null}
-              className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-100 cursor-pointer transition-all hover:scale-[1.01] active:scale-95 border-none"
+              className="w-[180px] max-w-[200px] h-12 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-100 cursor-pointer transition-all hover:scale-[1.01] active:scale-95 border-none"
             >
               {isUpdatingStatus === "approved" ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -966,7 +936,7 @@ export default function GuardDetailPage() {
             <Button
               onClick={() => handleUpdateStatus("disqualified")}
               disabled={isUpdatingStatus !== null}
-              className="w-full h-12 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-100 cursor-pointer transition-all hover:scale-[1.01] active:scale-95 border-none"
+              className="w-[160px] h-12 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-100 cursor-pointer transition-all hover:scale-[1.01] active:scale-95 border-none"
             >
               {isUpdatingStatus === "disqualified" ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -974,17 +944,6 @@ export default function GuardDetailPage() {
                 <XCircle className="w-5 h-5" />
               )}
               Decline
-            </Button>
-          )}
-
-          {guard.action?.is_open_crm && (
-            <Button
-              onClick={() => {
-                toast.info("Opening CRM...");
-              }}
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-100 cursor-pointer transition-all hover:scale-[1.01] active:scale-95 border-none"
-            >
-              Open CRM
             </Button>
           )}
         </div>

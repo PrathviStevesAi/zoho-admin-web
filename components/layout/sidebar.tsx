@@ -15,6 +15,7 @@ import {
   Shield,
   ClipboardList,
   LayoutDashboard,
+  DollarSign,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ const navGroups: NavGroup[] = [
     groupLabel: "Guard Management",
     items: [
       { label: "Guard Bank", icon: Shield, href: "/guard-bank" },
+      { label: "Guard Price", icon: DollarSign, href: "/guard-price" },
     ],
   },
   {
@@ -129,7 +131,7 @@ export function Sidebar({ userRole }: { userRole?: string }) {
             <div key={group.groupLabel}>
               {/* Section label — hidden when collapsed */}
               {!isCollapsed && (
-                <p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground select-none">
+                <p className="px-2 mb-1 text-[13px] font-bold uppercase tracking-widest text-black select-none">
                   {group.groupLabel}
                 </p>
               )}
@@ -173,7 +175,7 @@ export function Sidebar({ userRole }: { userRole?: string }) {
                       <Icon className="size-5 shrink-0" />
                       {!isCollapsed && (
                         <>
-                          <span className="ml-3 text-[14px] font-semibold whitespace-nowrap flex-1">
+                          <span className="ml-3 text-[12px] font-medium whitespace-nowrap flex-1">
                             {route.label}
                           </span>
                           <ChevronDown
@@ -198,7 +200,7 @@ export function Sidebar({ userRole }: { userRole?: string }) {
                     >
                       <Icon className="size-5 shrink-0" />
                       {!isCollapsed && (
-                        <span className="ml-3 text-[14px] font-semibold whitespace-nowrap">
+                        <span className="ml-3 text-[12px] font-medium whitespace-nowrap">
                           {route.label}
                         </span>
                       )}
