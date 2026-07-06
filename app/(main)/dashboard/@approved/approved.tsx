@@ -1,16 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Pagination, Record } from "@/types/dashboard.types";
-import { Loader2, Search } from "lucide-react";
-
+import { Search } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/table/data-table";
 import { ExportButton } from "@/components/table/export-button";
 import { invoiceSkeletonColumns } from "@/features/invoice/invoice.skeleton";
 import { useInfiniteSearch } from "@/hooks/use-infinite-data";
-import { fetchApprovedShiftAction } from "@/actions/dashboard.actions";
+import { clientFetchApprovedShiftAction } from "@/lib/client-actions";
 import { GenericRowSkeleton } from "@/components/skeletons/generic-row-skeleton";
 import { precheckTableColumns } from "@/features/invoice/precheck.table";
 import { useDashboard } from "../dashboard-context";
@@ -18,7 +18,7 @@ import { Pagination as PaginationComponent } from "@/components/table/pagination
 
 export default function Approved({ initialData, pagination }: { initialData: Record[]; pagination: Pagination }) {
   const searchParams = useSearchParams();
-  const { isPending: isDashboardPending } = useDashboard();
+  const { isPending: isDashboardPending, setIsFetching } = useDashboard();
   const dateFrom = searchParams.get("date_from") || "";
   const dateTo = searchParams.get("date_to") || "";
 
@@ -35,11 +35,15 @@ export default function Approved({ initialData, pagination }: { initialData: Rec
   } = useInfiniteSearch<Record>(
     initialData,
     pagination,
-    fetchApprovedShiftAction,
+    clientFetchApprovedShiftAction,
     500,
     dateFrom,
     dateTo
   );
+
+  useEffect(() => {
+    if (setIsFetching) setIsFetching(isPending);
+  }, [isPending, setIsFetching]);
 
   return (
     <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col gap-2">

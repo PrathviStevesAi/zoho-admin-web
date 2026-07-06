@@ -11,6 +11,21 @@ export default function NotificationProvider() {
     const pathname = usePathname();
     const { status } = useSession();
 
+    // Suppress Next.js dev overlay for ZegoCloud offline errors
+    useEffect(() => {
+        if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+            const originalError = console.error;
+            console.error = (...args) => {
+                if (typeof args[0] === "string" && args[0].includes("[ZIMManager]")) {
+                    // Downgrade to console.warn to avoid Next.js dev overlay
+                    console.warn("Suppressed ZIMManager error:", ...args);
+                    return;
+                }
+                originalError(...args);
+            };
+        }
+    }, []);
+
     useEffect(() => {
         console.log("[NotificationProvider] Status change:", status);
 

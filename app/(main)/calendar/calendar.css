@@ -212,44 +212,48 @@
   text-decoration: none !important;
 }
 
-/* Hide vertical scrollbar specifically in Month View scroller to prevent scrollbar gutters */
 .fc-view-dayGridMonth .fc-scroller,
 .fc-dayGridMonth-view .fc-scroller {
   overflow: hidden !important;
 }
 
-/* 📱 Responsive Mobile Overrides */
 @media (max-width: 640px) {
   .fc .fc-col-header-cell-cushion {
     padding: 8px 4px !important;
     font-size: 11px !important;
   }
+
   .fc .fc-daygrid-day-number {
     padding: 4px !important;
     font-size: 11px !important;
   }
+
   .fc .fc-daygrid-dot-event {
     padding: 2px 4px !important;
     font-size: 10px !important;
     margin-bottom: 2px !important;
   }
+
   .fc-direction-ltr .fc-daygrid-event.fc-event-end,
   .fc-direction-ltr .fc-daygrid-event.fc-event-start {
     padding: 2px 4px !important;
     font-size: 9px !important;
     margin-bottom: 2px !important;
   }
+
   .fc .fc-day-today .fc-daygrid-day-number {
     min-width: 20px !important;
     height: 20px !important;
     margin: 2px !important;
     font-size: 11px !important;
   }
+
   .fc .fc-list-event-title,
   .fc .fc-list-event-time {
     padding: 8px 6px !important;
     font-size: 11px !important;
   }
+
   .fc-theme-standard .fc-list-day-cushion {
     padding: 8px 12px !important;
     font-size: 12px !important;

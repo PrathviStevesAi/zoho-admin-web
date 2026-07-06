@@ -49,6 +49,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Guard Bank", icon: Shield, href: "/guard-bank" },
       { label: "Guard Price", icon: DollarSign, href: "/guard-price" },
+      { label: "Member Activity", icon: Activity, href: "/member-activity" },
     ],
   },
   {
@@ -60,6 +61,7 @@ const navGroups: NavGroup[] = [
         submenus: [
           { label: "Guard", href: "/users-directory/guards" },
           { label: "Member", href: "/users-directory" },
+          { label: "Customer", href: "/users-directory/customers" },
         ],
       },
     ],

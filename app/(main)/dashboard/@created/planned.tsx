@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import { useSearchParams } from "next/navigation";
 import { InvoiceData, Pagination } from "@/types/dashboard.types";
@@ -12,7 +12,7 @@ import { DataTable } from "@/components/table/data-table";
 import { ExportButton } from "@/components/table/export-button";
 import { invoiceSkeletonColumns } from "@/features/invoice/invoice.skeleton";
 import { useInfiniteSearch } from "@/hooks/use-infinite-data";
-import { fetchInvoicesAction } from "@/actions/dashboard.actions";
+import { clientFetchInvoicesAction } from "@/lib/client-actions";
 import { GenericRowSkeleton } from "@/components/skeletons/generic-row-skeleton";
 import { invoiceTableColumns } from "@/features/invoice/invoice.table";
 import { useDashboard } from "../dashboard-context";
@@ -20,12 +20,12 @@ import { Pagination as PaginationComponent } from "@/components/table/pagination
 
 export default function InProgressInvoice({ initialData, pagination }: { initialData: InvoiceData[]; pagination: Pagination }) {
   const searchParams = useSearchParams();
-  const { isPending: isDashboardPending } = useDashboard();
+  const { isPending: isDashboardPending, setIsFetching } = useDashboard();
   const dateFrom = searchParams.get("date_from") || "";
   const dateTo = searchParams.get("date_to") || "";
 
   const fetchAction = useCallback((page: number, search?: string, from?: string, to?: string) => 
-    fetchInvoicesAction(page, search, from, to, "in_progress"), []);
+    clientFetchInvoicesAction(page, search, from, to, "in_progress"), []);
 
   const {
     displayedData,
@@ -45,6 +45,11 @@ export default function InProgressInvoice({ initialData, pagination }: { initial
     dateFrom,
     dateTo
   );
+
+
+  useEffect(() => {
+    if (setIsFetching) setIsFetching(isPending);
+  }, [isPending, setIsFetching]);
 
   return (
     <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col gap-2">

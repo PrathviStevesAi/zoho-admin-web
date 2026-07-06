@@ -1,6 +1,7 @@
 "use client";
 
-import { Banknote, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Banknote, Loader2, Edit2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,6 +31,7 @@ export function GuardPriceTab({
   mounted,
   hasChanges
 }: GuardPriceTabProps) {
+  const [isEditing, setIsEditing] = useState(false);
 
   const renderSelect = (
     value: string,
@@ -72,14 +74,37 @@ export function GuardPriceTab({
         <div className="w-full sm:max-w-md">
           {renderSelect(selectedTerritory, setSelectedTerritory, "Select Territory", Object.keys(pricesData), "All Territories", "bg-white")}
         </div>
-        <Button 
-          onClick={handleSubmitPrices}
-          disabled={submittingPrices || !hasChanges || loading}
-          className="w-full sm:w-auto bg-[#0064cb] hover:bg-[#0064cb]/90 text-white px-8 h-10 flex items-center justify-center gap-2"
-        >
-          {submittingPrices && <Loader2 className="w-4 h-4 animate-spin" />}
-          Submit
-        </Button>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {!isEditing ? (
+            <Button
+              onClick={() => setIsEditing(true)}
+              variant="outline"
+              className="w-full sm:w-auto text-[#0064cb] border-[#0064cb]/20 hover:bg-[#0064cb]/5 px-8 h-10"
+            >
+              Edit
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setIsEditing(false)}
+              variant="ghost"
+              className="w-full sm:w-auto text-slate-500 hover:text-slate-700 px-8 h-10"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              handleSubmitPrices();
+              setIsEditing(false);
+            }}
+            disabled={submittingPrices || !hasChanges || loading || !isEditing}
+            className="w-full sm:w-auto bg-[#0064cb] hover:bg-[#0064cb]/90 text-white px-8 h-10 flex items-center justify-center gap-2"
+          >
+            {submittingPrices && <Loader2 className="w-4 h-4 animate-spin" />}
+            Save
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -132,6 +157,7 @@ export function GuardPriceTab({
                                 <Input
                                   type="number"
                                   value={statePrices[serviceName]}
+                                  disabled={!isEditing}
                                   onChange={(e) => {
                                     const newVal = parseFloat(e.target.value) || 0;
                                     setPricesData(prev => ({

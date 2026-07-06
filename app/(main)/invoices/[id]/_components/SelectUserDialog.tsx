@@ -1,8 +1,12 @@
 "use client";
 
+import {
+  clientFetchGuardsAction
+} from "@/lib/client-actions";
+
 import { useState, useEffect } from "react";
 import { X, Search, XCircle } from "lucide-react";
-import { fetchLocationAction, fetchGuardsAction } from "@/actions/dashboard.actions";
+import { fetchLocationAction, } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -85,7 +89,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
         if (userFilters.service === "unarmed") unarmed = "true";
         if (userFilters.service === "both") { armed = "true"; unarmed = "true"; }
 
-        const res = await fetchGuardsAction({
+        const res = await clientFetchGuardsAction({
           page: currentPage,
           search: debouncedSearchQuery,
           status: userFilters.status === "all" ? "" : userFilters.status,

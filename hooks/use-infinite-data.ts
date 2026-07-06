@@ -24,13 +24,15 @@ export function useInfiniteSearch<T>(
   const [total, setTotal] = useState(pagination.total);
   const [limit, setLimit] = useState(pagination.limit);
 
-  // Sync state when initial props change (e.g. on filter change)
+  // Sync state when initial props change (only if they actually have data)
   useEffect(() => {
-    setData(initialData);
-    setPage(pagination.page);
-    setTotalPages(pagination.total_pages);
-    setTotal(pagination.total);
-    setLimit(pagination.limit);
+    if (initialData && initialData.length > 0) {
+      setData(initialData);
+      setPage(pagination.page);
+      setTotalPages(pagination.total_pages);
+      setTotal(pagination.total);
+      setLimit(pagination.limit);
+    }
   }, [initialData, pagination]);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,16 +40,31 @@ export function useInfiniteSearch<T>(
   const debouncedValue = useDebounceValue(searchTerm, debounceMs);
 
   const prevSearchTerm = useRef(debouncedValue);
+  const prevDateFrom = useRef(date_from);
+  const prevDateTo = useRef(date_to);
+
+  const hasFetchedInitial = useRef(false);
 
   // Search Logic
   useEffect(() => {
-    // Only fetch if the search term actually changed. 
-    // This skips the initial mount (allowing true parallel server loading)
-    // and ignores changes to date_from/date_to (which are handled by the server component).
-    if (prevSearchTerm.current === debouncedValue) {
+    // If we're relying on client-side fetch from the start (initialData is empty)
+    // and we haven't fetched yet, we should fetch. Otherwise, wait for search term change.
+    const isInitialEmpty = initialData.length === 0 && page === 1;
+    const shouldFetchInitial = isInitialEmpty && !hasFetchedInitial.current;
+
+    const hasFiltersChanged = 
+      prevSearchTerm.current !== debouncedValue || 
+      prevDateFrom.current !== date_from || 
+      prevDateTo.current !== date_to;
+
+    if (!hasFiltersChanged && !shouldFetchInitial) {
       return;
     }
+
     prevSearchTerm.current = debouncedValue;
+    prevDateFrom.current = date_from;
+    prevDateTo.current = date_to;
+    if (shouldFetchInitial) hasFetchedInitial.current = true;
 
     startTransition(async () => {
       const res = await fetchAction(1, debouncedValue, date_from, date_to);
@@ -61,7 +78,7 @@ export function useInfiniteSearch<T>(
         toast.error(res.error || "Failed to fetch search results");
       }
     });
-  }, [debouncedValue, fetchAction, date_from, date_to]);
+  }, [debouncedValue, fetchAction, date_from, date_to, initialData.length, page]);
 
   // Go to page
   const goToPage = useCallback(async (p: number) => {

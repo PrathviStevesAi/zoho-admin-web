@@ -110,7 +110,7 @@ export default function LoginPage() {
 
         // 1. Manually check the credentials first to get the EXACT backend error message if it fails
         const preCheck = await preCheckLoginAction({ email, password });
-        
+
         if (!preCheck.success) {
             toast.error(preCheck.error, { id: toastId });
             return;
@@ -272,7 +272,6 @@ export default function LoginPage() {
                                     </CardHeader>
 
                                     <CardContent className="space-y-6 pt-0">
-                                        {/* STEP 1: EMAIL */}
                                         <div className="space-y-2">
                                             <Label className="text-slate-700 font-bold ml-1">Email Address</Label>
                                             <Input
@@ -288,7 +287,6 @@ export default function LoginPage() {
                                             />
                                         </div>
 
-                                        {/* STEP 2: OTP (Inline) */}
                                         {forgotStep >= 2 && (
                                             <div className="space-y-2 animate-in fade-in slide-in-from-top duration-500">
                                                 <div className="flex items-center justify-between ml-1">
@@ -343,7 +341,6 @@ export default function LoginPage() {
                                             </div>
                                         )}
 
-                                        {/* STEP 3: RESET PASSWORDS */}
                                         {forgotStep === 3 && (
                                             <div className="space-y-4 animate-in fade-in slide-in-from-top duration-500">
                                                 <div className="space-y-2">

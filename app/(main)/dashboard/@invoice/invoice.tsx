@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import { InvoiceData, Pagination } from "@/types/dashboard.types";
-import { fetchInvoicesAction } from "@/actions/dashboard.actions";
+import { clientFetchInvoicesAction } from "@/lib/client-actions";
 import { Loader2, Search } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -20,12 +20,12 @@ import { Pagination as PaginationComponent } from "@/components/table/pagination
 
 export default function Invoice({ initialData, pagination }: { initialData: InvoiceData[]; pagination: Pagination }) {
   const searchParams = useSearchParams();
-  const { isPending: isDashboardPending } = useDashboard();
+  const { isPending: isDashboardPending, setIsFetching } = useDashboard();
   const dateFrom = searchParams.get("date_from") || "";
   const dateTo = searchParams.get("date_to") || "";
 
   const fetchAction = useCallback((page: number, search?: string, from?: string, to?: string) => 
-    fetchInvoicesAction(page, search, from, to, "new_project"), []);
+    clientFetchInvoicesAction(page, search, from, to, "new_project"), []);
 
   const {
     displayedData,
@@ -45,6 +45,11 @@ export default function Invoice({ initialData, pagination }: { initialData: Invo
     dateFrom,
     dateTo
   );
+
+
+  useEffect(() => {
+    if (setIsFetching) setIsFetching(isPending);
+  }, [isPending, setIsFetching]);
 
   return (
     <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col gap-2">

@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  clientFetchGuardsAction
+} from "@/lib/client-actions";
+
 import { useState, useEffect } from "react";
 import {
   Shield,
@@ -32,7 +36,6 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { registerUserAction, registerGuardAction, deleteMemberAction } from "@/actions/auth.actions";
-import { fetchGuardsAction } from "@/actions/dashboard.actions";
 import {
   Select,
   SelectContent,
@@ -155,7 +158,7 @@ export default function GuardDirectoryPage() {
 
   const loadGuards = async (page: number = 1) => {
     setIsLoading(true);
-    const res = await fetchGuardsAction({
+    const res = await clientFetchGuardsAction({
       page,
       search: searchQuery
     });

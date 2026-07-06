@@ -51,7 +51,6 @@ export default function BroadcastNotificationsPage() {
 
   return (
     <div className="p-0 sm:p-2 md:p-2 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
-      {/* HEADER SECTION */}
       <div className="space-y-1.5 pl-1 sm:pl-2">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-montserrat mb-0">
           Broadcast Notifications
@@ -61,13 +60,8 @@ export default function BroadcastNotificationsPage() {
         </p>
       </div>
 
-      {/* MAIN CONTAINER CARD */}
       <div className="bg-white border border-slate-200/90 rounded-lg shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
-
-        {/* Content Section */}
         <div className="p-6 md:p-8 space-y-8">
-
-          {/* 1. Notification Message Field */}
           <div className="space-y-2.5">
             <label
               htmlFor="notification-message"
@@ -94,16 +88,11 @@ export default function BroadcastNotificationsPage() {
             </div>
           </div>
 
-          {/* 2. Recipient Selection */}
           <div className="space-y-4">
             <label className="text-[14px] font-semibold text-slate-900 tracking-wide block">
               Recipient Selection
             </label>
-
-            {/* Options Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              {/* Option: Send to All Guards */}
               <div
                 onClick={() => setRecipientType("all")}
                 className={`flex justify-between items-start p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer ${recipientType === "all"
@@ -121,7 +110,6 @@ export default function BroadcastNotificationsPage() {
                   </p>
                 </div>
 
-                {/* Radio circle */}
                 <div className="pt-0.5">
                   <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${recipientType === "all" ? "border-[#0064cb]" : "border-slate-300"
                     }`}>
@@ -132,7 +120,6 @@ export default function BroadcastNotificationsPage() {
                 </div>
               </div>
 
-              {/* Option: Filter Guards */}
               <div
                 onClick={() => {
                   setRecipientType("filter");
@@ -170,7 +157,6 @@ export default function BroadcastNotificationsPage() {
                   )}
                 </div>
 
-                {/* Radio circle */}
                 <div className="pt-0.5">
                   <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${recipientType === "filter" ? "border-[#0064cb]" : "border-slate-300"
                     }`}>
@@ -183,10 +169,8 @@ export default function BroadcastNotificationsPage() {
 
             </div>
           </div>
-
         </div>
 
-        {/* 3. Action Buttons Section (Bottom grey banner) */}
         <div className="bg-slate-50/70 border-t border-slate-100 p-5 flex items-center justify-end gap-3.5">
           <Button
             type="button"
@@ -210,7 +194,6 @@ export default function BroadcastNotificationsPage() {
 
       </div>
 
-      {/* Select Guards Dialog Component */}
       {isSelectGuardsDialogOpen && (
         <SelectGuardsDialog
           isOpen={isSelectGuardsDialogOpen}

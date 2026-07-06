@@ -858,6 +858,7 @@ export async function globalSearchAction(
 }
 
 export async function createManualInvoiceAction(payload: {
+  customer_id?: string;
   customer_name: string;
   customer_email: string;
   invoice_no: string;
@@ -889,3 +890,14 @@ export async function createManualInvoiceAction(payload: {
   }
 }
 
+export async function verifyInvoiceNumberAction(invoice_no: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const result = await apiFetch<any>(`/api/v1/invoice/${invoice_no}/verify`, {
+      method: "GET",
+    });
+    return { success: true };
+  } catch (error: any) {
+    const message = error.message || "Invoice number already exists or is invalid.";
+    return { success: false, error: message };
+  }
+}

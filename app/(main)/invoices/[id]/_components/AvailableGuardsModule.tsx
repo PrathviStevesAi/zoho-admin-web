@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  clientFetchGuardsAction
+} from "@/lib/client-actions";
+
 import { useState, useEffect } from "react";
 import { Loader2, Check, ChevronRight, Search, XCircle, UserCheck, CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { findAvailableGuardsAction, fetchGuardsAction } from "@/actions/dashboard.actions";
+import { findAvailableGuardsAction, } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 
 interface AvailableGuardsModuleProps {
@@ -87,7 +91,7 @@ export function AvailableGuardsModule({
       guardFilters.status !== "all" ||
       guardFilters.service !== "All";
 
-    const res = await fetchGuardsAction({
+    const res = await clientFetchGuardsAction({
       page: isFiltered ? undefined : currentPage,
       search: debouncedSearchQuery,
       status: guardFilters.status === "all" ? "" : guardFilters.status,

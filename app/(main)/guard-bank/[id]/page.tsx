@@ -108,7 +108,7 @@ export default function GuardDetailPage() {
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         toast.success(`Application ${newStatus === "approved" ? "Approved" : "Declined"} successfully`);
-        router.push("/guard-bank");
+        router.push(`/guard-bank?tab=${getTabParam()}`);
       } else {
         toast.error(getErrorMessage(data, `Failed to update status to ${newStatus}`));
       }
@@ -140,7 +140,7 @@ export default function GuardDetailPage() {
       if (res.ok) {
         toast.success("Guard application deleted successfully");
         setDeleteConfirmOpen(false);
-        router.push("/guard-bank");
+        router.push(`/guard-bank?tab=${getTabParam()}`);
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(getErrorMessage(data, "Failed to delete guard application"));
@@ -504,6 +504,16 @@ export default function GuardDetailPage() {
     }
   };
 
+  const getTabParam = () => {
+    if (!guard) return "home";
+    switch (guard.status) {
+      case "record_touched": return "record-touch";
+      case "approved": return "approved";
+      case "disqualified": return "disqualified";
+      default: return "home";
+    }
+  };
+
   return (
     <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
       {/* Breadcrumbs & Header */}
@@ -513,12 +523,12 @@ export default function GuardDetailPage() {
           <ChevronRight className="w-3.5 h-3.5" />
           <Link href="/guard-bank" className="hover:text-[#0064cb] transition-colors">Guard Bank</Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <Link href="/guard-bank" className="hover:text-[#0064cb] transition-colors">{getStatusBreadcrumb()}</Link>
+          <Link href={`/guard-bank?tab=${getTabParam()}`} className="hover:text-[#0064cb] transition-colors">{getStatusBreadcrumb()}</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-slate-600 font-medium">Guard Details</span>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/guard-bank" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
+          <Link href={`/guard-bank?tab=${getTabParam()}`} className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <h1 className="text-2xl font-bold text-slate-900">Guard Details</h1>
@@ -700,11 +710,11 @@ export default function GuardDetailPage() {
               <p className="text-sm font-bold text-slate-800">{guard.referral || "N/A"}</p>
             </div>
             <div className="space-y-1 p-3">
-              <span className="text-xs text-slate-500 font-semibold block">License Number</span>
+              <span className="text-xs text-slate-500 font-semibold block">Driving License no.</span>
               <p className="text-sm font-bold text-slate-800">{guard.license_number || "N/A"}</p>
             </div>
             <div className="space-y-1 p-3">
-              <span className="text-xs text-slate-500 font-semibold block">Expiration Date</span>
+              <span className="text-xs text-slate-500 font-semibold block">License Expire Date</span>
               <p className="text-sm font-bold text-slate-800">
                 {guard.license_expiration_date ? new Date(guard.license_expiration_date).toLocaleDateString() : "N/A"}
               </p>

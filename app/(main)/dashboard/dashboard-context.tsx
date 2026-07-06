@@ -7,6 +7,8 @@ interface DashboardContextType {
     startTransition: React.TransitionStartFunction;
     loadingMessage: string;
     setLoadingMessage: (msg: string) => void;
+    isFetching: boolean;
+    setIsFetching: (fetching: boolean) => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -14,9 +16,10 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const [isPending, startTransition] = useTransition();
     const [loadingMessage, setLoadingMessage] = useState("Updating Dashboard...");
+    const [isFetching, setIsFetching] = useState(false);
 
     return (
-        <DashboardContext.Provider value={{ isPending, startTransition, loadingMessage, setLoadingMessage }}>
+        <DashboardContext.Provider value={{ isPending, startTransition, loadingMessage, setLoadingMessage, isFetching, setIsFetching }}>
             {children}
         </DashboardContext.Provider>
     );

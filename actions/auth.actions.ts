@@ -130,6 +130,41 @@ export async function registerGuardAction(guardData: any) {
     }
 }
 
+export async function registerCustomerAction(customerData: any) {
+    try {
+        const session = await auth();
+        const token = session?.accessToken;
+
+        console.log("Sending customer registration data:", customerData);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/customer/register`, {
+            method: "POST",
+            body: JSON.stringify(customerData),
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        console.log("Customer Registration API Response Status:", response.status);
+        const result = await response.json();
+
+        if (response.ok) {
+            return { success: true, data: result };
+        } else {
+            console.error("Customer Registration API Failure Body:", result);
+            const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.error || result.message || result.msg || "Customer registration failed";
+            return {
+                success: false,
+                error: errorMsg
+            };
+        }
+    } catch (error) {
+        console.error("Customer Registration Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
 export async function sendOtpAction(email: string) {
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/forgot-password/send-otp`, {

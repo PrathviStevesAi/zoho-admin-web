@@ -1,8 +1,8 @@
 "use client";
 
 import { getSession } from "next-auth/react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import useDebounceValue from "@/hooks/use-debounce";
 import {
@@ -31,14 +31,23 @@ const tabs = [
   { id: "disqualified", label: "Disqualified", icon: XCircle },
 ];
 
-export default function GuardBankPage() {
+function GuardBankContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeTab, setActiveTab] = useState(tabParam || "home");
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
 
   const [guardsData, setGuardsData] = useState<any[]>([]);
@@ -74,6 +83,11 @@ export default function GuardBankPage() {
     setSelectedCity("all");
     setSearch("");
     setCurrentPage(1);
+    if (activeTab === "home") {
+      setPageSize(10);
+    } else {
+      setPageSize(20);
+    }
   }, [activeTab]);
 
   useEffect(() => {
@@ -590,5 +604,17 @@ export default function GuardBankPage() {
         isLoading={isDeleting}
       />
     </div>
+  );
+}
+
+export default function GuardBankPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-4 md:p-6 max-w-[1500px] mx-auto space-y-8 animate-in fade-in duration-500">
+        <Skeleton className="h-[600px] w-full rounded-2xl" />
+      </div>
+    }>
+      <GuardBankContent />
+    </Suspense>
   );
 }

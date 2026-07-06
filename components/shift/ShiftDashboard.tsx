@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  clientFetchShiftDetailsAction,
+  clientFetchCommentsAction,
+  clientFetchGuardTrackingAction
+} from "@/lib/client-actions";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, FileText, Download } from "lucide-react";
@@ -14,16 +20,13 @@ import {
 
 // Actions
 import {
-  fetchShiftDetailsAction,
-  fetchCommentsAction,
   addCommentAction,
   updateShiftDetailsAction,
   cancelShiftServiceAction,
   manualStartShiftAction,
   assignGuardToShiftAction,
   reassignGuardToShiftAction,
-  fetchGuardTrackingAction
-} from "@/actions/dashboard.actions";
+  } from "@/actions/dashboard.actions";
 import { generateUploadUrlAction } from "@/actions/profile.actions";
 import { fetchShiftReportsAction } from "@/actions/notification.actions";
 
@@ -98,7 +101,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const loadShiftDetails = useCallback(async () => {
     if (!shiftId) return;
     setIsLoading(true);
-    const res = await fetchShiftDetailsAction(shiftId, notificationId || undefined);
+    const res = await clientFetchShiftDetailsAction(shiftId, notificationId || undefined);
     if (res.success) {
       setShift(res.data);
       setError(null);
@@ -125,7 +128,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     if (!shiftId) return;
     setIsCommentsLoading(true);
     setCommentsError(null);
-    const res = await fetchCommentsAction(shiftId);
+    const res = await clientFetchCommentsAction(shiftId);
     if (res.success && res.data) {
       setComments(res.data);
     } else {
@@ -162,7 +165,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
       if (guardId) {
         // 1. Fetch initial tracking history
-        fetchGuardTrackingAction(guardId, shift.shift_id).then((res) => {
+        clientFetchGuardTrackingAction(guardId, shift.shift_id).then((res) => {
           if (res.success && res.data && res.data.path) {
             const mappedPath = res.data.path.map((p: any) => [p.latitude, p.longitude]);
             setTrackingPath(mappedPath);

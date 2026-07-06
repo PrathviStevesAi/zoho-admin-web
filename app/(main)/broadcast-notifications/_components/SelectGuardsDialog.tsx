@@ -1,9 +1,12 @@
 "use client";
 
+import {
+  clientFetchGuardsAction
+} from "@/lib/client-actions";
 import { useState, useEffect } from "react";
 import { Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { fetchGuardsAction, fetchLocationAction } from "@/actions/dashboard.actions";
+import { fetchLocationAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { Pagination } from "@/types/dashboard.types";
@@ -70,7 +73,6 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
   const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-
   // Local selection state (only apply to parent state when confirmed)
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
 
@@ -86,7 +88,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
   useEffect(() => {
     if (isOpen) {
       const loadLocations = async () => {
-        const res = await fetchLocationAction(userFilters.country, userFilters.state);
+        const res = await fetchLocationAction(userFilters.country, userFilters.state, "approved");
         if (res.success && res.data) {
           setLocations({
             countries: ["All Country", ...res.data.countries],
@@ -109,7 +111,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
         if (userFilters.service === "unarmed") unarmed = "true";
         if (userFilters.service === "both") { armed = "true"; unarmed = "true"; }
 
-        const res = await fetchGuardsAction({
+        const res = await clientFetchGuardsAction({
           page: isFilterActive ? null : currentPage,
           search: debouncedSearchQuery,
           status: userFilters.status === "all" ? "" : userFilters.status,
@@ -142,9 +144,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
         </div>
 
         <div className="p-4 space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50/10">
-          {/* Filters Area */}
           <div className="space-y-2 shrink-0">
-            {/* Row 1: Search & Miles & Mobile Toggle */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
               <div className="space-y-1 md:col-span-12">
                 <Label className="text-[12px] font-semibold text-slate-700">Search</Label>
@@ -184,7 +184,6 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
               </div>
             </div>
 
-            {/* Row 2: Select Filters */}
             <div className={cn(
               "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5 md:grid",
               showMobileFilters ? "grid" : "hidden"
@@ -292,7 +291,6 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
             </div>
           </div>
 
-          {/* Table Area */}
           <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col flex-1 min-h-0 bg-white shadow-sm">
             <Table className="border-collapse min-w-[1200px]">
               <TableHeader className="bg-white sticky top-0 z-20">
@@ -392,7 +390,6 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
               </TableBody>
             </Table>
 
-            {/* Pagination Controls */}
             {!isFilterActive && pagination && pagination.total_pages > 1 && (
               <div className="p-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/30 shrink-0">
                 <span className="text-xs text-slate-700 font-medium">

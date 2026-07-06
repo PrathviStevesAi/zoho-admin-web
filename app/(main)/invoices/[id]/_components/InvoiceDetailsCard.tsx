@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Edit2, Loader2, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,20 +15,24 @@ interface InvoiceDetailsCardProps {
   isSaving: boolean;
   formData: { title: string; description: string; shift_description: string };
   setFormData: (data: any) => void;
-  onSave: () => void;
+  onSave: () => Promise<void> | void;
   onEditLocation: () => void;
 }
 
 export function InvoiceDetailsCard({
   invoice,
-  isEditOpen,
-  setIsEditOpen,
   isSaving,
   formData,
   setFormData,
   onSave,
   onEditLocation
 }: InvoiceDetailsCardProps) {
+  const [activeEditField, setActiveEditField] = useState<'title' | 'description' | 'shift_description' | null>(null);
+
+  const handleSaveField = async () => {
+    await onSave();
+    setActiveEditField(null);
+  };
   const formatAddress = (addr: any) => {
     if (!addr) return "N/A";
     if (typeof addr === 'string') return addr;
@@ -53,7 +58,8 @@ export function InvoiceDetailsCard({
                 <Button
                   variant="outline"
                   onClick={onEditLocation}
-                  className="h-8 rounded-lg font-bold text-[10px] text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 transition-all active:scale-95 flex gap-1.5 cursor-pointer px-3"
+                  disabled={invoice.actions?.is_location_edit === false}
+                  className="h-8 rounded-lg font-bold text-[10px] text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 transition-all active:scale-95 flex gap-1.5 cursor-pointer px-3 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Edit2 className="w-3 h-3" />
                   Edit Location
@@ -76,53 +82,42 @@ export function InvoiceDetailsCard({
 
         <div className="border-t border-slate-100 divide-y divide-slate-100">
           <div className="flex flex-col md:grid md:grid-cols-4 p-4 gap-2 md:gap-0 items-start md:items-center">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Customer Name:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Company Name:</span>
+            </div>
             <div className="w-full md:col-span-3 flex items-center justify-between gap-4">
               <div className="flex-1">
-                {isEditOpen ? (
-                  <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, title: e.target.value }))}
-                    className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg px-3 text-sm font-medium transition-all"
-                  />
+                {activeEditField === 'title' ? (
+                  <div className="space-y-3">
+                    <Input
+                      value={formData.title}
+                      disabled={invoice.actions?.is_customer_name_edit === false || isSaving}
+                      onChange={(e) => setFormData((prev: any) => ({ ...prev, title: e.target.value }))}
+                      className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg px-3 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setActiveEditField(null)} disabled={isSaving} className="h-8 text-xs">Cancel</Button>
+                      <Button size="sm" onClick={handleSaveField} disabled={isSaving} className="h-8 text-xs bg-[#0064cb] hover:bg-[#0052ae] text-white">
+                        {isSaving && <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />}
+                        Save
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
-                  <span className="text-sm text-slate-800 font-medium">
+                  <span className="text-sm font-medium text-[#0064cb]">
                     {invoice.customer_name}
                   </span>
                 )}
               </div>
-
-              <div className="flex items-center gap-2">
-                {!invoice.status?.toLowerCase().includes('cancelled') && (
-                  isEditOpen ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsEditOpen(false)}
-                        className="px-3 h-8 rounded-lg font-bold border-slate-200 text-[10px] text-slate-800 hover:bg-slate-50 transition-all cursor-pointer"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={onSave}
-                        disabled={isSaving}
-                        className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-3 h-8 rounded-lg font-bold text-[10px] shadow-md shadow-blue-100 transition-all active:scale-95 flex gap-1.5 cursor-pointer"
-                      >
-                        {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditOpen(true)}
-                      className="h-8 rounded-lg font-bold text-[10px] text-[#0064cb] border-[#0064cb]/20 hover:bg-blue-50 transition-all active:scale-95 flex gap-1.5 cursor-pointer px-3"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                      Edit Details
-                    </Button>
-                  )
-                )}
-              </div>
+              {activeEditField !== 'title' && !invoice.status?.toLowerCase().includes('cancelled') && (
+                <button
+                  disabled={invoice.actions?.is_customer_name_edit === false}
+                  onClick={() => setActiveEditField('title')}
+                  className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -136,19 +131,40 @@ export function InvoiceDetailsCard({
                 </div>
               </div>
             </div>
-            <div className="w-full md:col-span-3">
-              {isEditOpen ? (
-                <textarea
-                  rows={10}
-                  placeholder="Enter invoice description..."
-                  value={formData.description}
-                  onChange={(e) => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[220px] resize-y"
-                />
-              ) : (
-                <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
-                  {invoice.invoice_description || invoice.description || "No invoice description provided."}
-                </div>
+            <div className="w-full md:col-span-3 flex items-start justify-between gap-4">
+              <div className="flex-1">
+                {activeEditField === 'description' ? (
+                  <div className="space-y-3">
+                    <textarea
+                      rows={10}
+                      placeholder="Enter invoice description..."
+                      value={formData.description}
+                      disabled={invoice.actions?.is_invoice_details_edit === false || isSaving}
+                      onChange={(e) => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[220px] resize-y disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setActiveEditField(null)} disabled={isSaving} className="h-8 text-xs">Cancel</Button>
+                      <Button size="sm" onClick={handleSaveField} disabled={isSaving} className="h-8 text-xs bg-[#0064cb] hover:bg-[#0052ae] text-white">
+                        {isSaving && <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />}
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                    {invoice.invoice_description || invoice.description || "No invoice description provided."}
+                  </div>
+                )}
+              </div>
+              {activeEditField !== 'description' && !invoice.status?.toLowerCase().includes('cancelled') && (
+                <button
+                  disabled={invoice.actions?.is_invoice_details_edit === false}
+                  onClick={() => setActiveEditField('description')}
+                  className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                </button>
               )}
             </div>
           </div>
@@ -163,19 +179,40 @@ export function InvoiceDetailsCard({
                 </div>
               </div>
             </div>
-            <div className="w-full md:col-span-3">
-              {isEditOpen ? (
-                <textarea
-                  rows={10}
-                  placeholder="Enter shift description..."
-                  value={formData.shift_description}
-                  onChange={(e) => setFormData((prev: any) => ({ ...prev, shift_description: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[220px] resize-y"
-                />
-              ) : (
-                <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
-                  {invoice.shift_description || "No shift detail provided."}
-                </div>
+            <div className="w-full md:col-span-3 flex items-start justify-between gap-4">
+              <div className="flex-1">
+                {activeEditField === 'shift_description' ? (
+                  <div className="space-y-3">
+                    <textarea
+                      rows={10}
+                      placeholder="Enter shift description..."
+                      value={formData.shift_description}
+                      disabled={invoice.actions?.is_shift_details_edit === false || isSaving}
+                      onChange={(e) => setFormData((prev: any) => ({ ...prev, shift_description: e.target.value }))}
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[220px] resize-y disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setActiveEditField(null)} disabled={isSaving} className="h-8 text-xs">Cancel</Button>
+                      <Button size="sm" onClick={handleSaveField} disabled={isSaving} className="h-8 text-xs bg-[#0064cb] hover:bg-[#0052ae] text-white">
+                        {isSaving && <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />}
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                    {invoice.shift_description || "No shift detail provided."}
+                  </div>
+                )}
+              </div>
+              {activeEditField !== 'shift_description' && !invoice.status?.toLowerCase().includes('cancelled') && (
+                <button
+                  disabled={invoice.actions?.is_shift_details_edit === false}
+                  onClick={() => setActiveEditField('shift_description')}
+                  className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                </button>
               )}
             </div>
           </div>

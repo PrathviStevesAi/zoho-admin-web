@@ -1,8 +1,12 @@
 "use client";
 
+import {
+  clientFetchGuardsAction
+} from "@/lib/client-actions";
+
 import { useState, useEffect } from "react";
 import { Search, XCircle, DollarSign, Loader2 } from "lucide-react";
-import { fetchLocationAction, fetchGuardsAction } from "@/actions/dashboard.actions";
+import { fetchLocationAction, } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -93,7 +97,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
       if (filters.service === "unarmed") unarmed = "true";
       if (filters.service === "both") { armed = "true"; unarmed = "true"; }
 
-      const res = await fetchGuardsAction({
+      const res = await clientFetchGuardsAction({
         page: currentPage,
         search: debouncedSearchQuery,
         status: filters.status === "all" ? "" : filters.status,

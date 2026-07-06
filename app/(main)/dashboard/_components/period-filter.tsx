@@ -8,9 +8,9 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import { DateTime } from "luxon";
-import { Calendar as CalendarIcon, X, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useDashboard } from "../dashboard-context";
@@ -54,7 +54,7 @@ export function PeriodFilter() {
                 setIsCustom(false);
             } else if (value === "custom") {
                 setIsCustom(true);
-                return; // Don't push yet, let user pick dates
+                return;
             }
 
             router.push(`${pathname}?${params.toString()}`);

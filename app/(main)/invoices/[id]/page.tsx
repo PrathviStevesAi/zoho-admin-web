@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  clientFetchInvoiceDetailsAction,
+  clientFetchInvoiceShiftsAction,
+  clientFetchSecurityServicesAction,
+  clientFetchAvailableGuardsAction
+} from "@/lib/client-actions";
+
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
@@ -10,11 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import {
-  fetchInvoiceDetailsAction,
   updateInvoicePaymentStatusAction,
-  fetchInvoiceShiftsAction,
   deleteShiftAction,
-  fetchSecurityServicesAction,
   createShiftAction,
   assignGuardsAction,
   unassignGuardAction,
@@ -38,8 +42,6 @@ import { ConfirmationDialog } from "./_components/ConfirmationDialog";
 import { AvailableGuardsModule } from "./_components/AvailableGuardsModule";
 import { EditShiftDialog } from "./_components/EditShiftDialog";
 import { ShippingAddress } from "@/types/dashboard.types";
-import { fetchAvailableGuardsAction } from "@/actions/dashboard.actions";
-
 const formatDateKey = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -122,7 +124,7 @@ export default function InvoiceDetailsPage() {
   useEffect(() => {
     async function loadInvoice() {
       setLoading(true);
-      const res = await fetchInvoiceDetailsAction(id);
+      const res = await clientFetchInvoiceDetailsAction(id);
       if (res.success) {
         setInvoice(res.data);
         setInvoiceTimezone(res.data.timezone || 'America/Los_Angeles');
@@ -158,7 +160,7 @@ export default function InvoiceDetailsPage() {
   }, [id]);
 
   const loadServices = async () => {
-    const result = await fetchSecurityServicesAction();
+    const result = await clientFetchSecurityServicesAction();
     const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || ""}/api/v1/security-service`;
     console.log("Select Service Drop Down Data:", result.data);
     console.log("Select Service API URL:", apiUrl);
@@ -169,7 +171,7 @@ export default function InvoiceDetailsPage() {
 
   const loadShifts = async (view: string = "schedule") => {
     setIsShiftsLoading(true);
-    const res = await fetchInvoiceShiftsAction(id, view);
+    const res = await clientFetchInvoiceShiftsAction(id, view);
     console.log("Shift Schedule table data response:", res);
     if (res.success && res.data) {
       setShifts(res.data);
@@ -181,7 +183,7 @@ export default function InvoiceDetailsPage() {
 
   const loadAvailableGuards = async () => {
     setIsAvailableGuardsLoading(true);
-    const res = await fetchAvailableGuardsAction(id);
+    const res = await clientFetchAvailableGuardsAction(id);
     if (res.success && res.data) {
       setAvailableGuards(res.data);
       setTotalAvailableGuards(res.total_guards || 0);
@@ -201,7 +203,7 @@ export default function InvoiceDetailsPage() {
     });
     if (res.success) {
       toast.success("Location updated successfully");
-      const refreshed = await fetchInvoiceDetailsAction(id);
+      const refreshed = await clientFetchInvoiceDetailsAction(id);
       if (refreshed.success) setInvoice(refreshed.data);
       setIsEditLocationOpen(false);
     } else {
@@ -220,7 +222,7 @@ export default function InvoiceDetailsPage() {
     });
     if (res.success) {
       toast.success("Details updated successfully");
-      const refreshed = await fetchInvoiceDetailsAction(id);
+      const refreshed = await clientFetchInvoiceDetailsAction(id);
       if (refreshed.success) {
         setInvoice(refreshed.data);
         setIsEditOpen(false);
@@ -255,7 +257,7 @@ export default function InvoiceDetailsPage() {
       if (res && res.success) {
         toast.success("Service cancelled successfully");
         setIsCancelServiceOpen(false);
-        fetchInvoiceDetailsAction(id).then(refreshed => {
+        clientFetchInvoiceDetailsAction(id).then((refreshed: any) => {
           if (refreshed.success) {
             setInvoice(refreshed.data);
           } else {
@@ -270,7 +272,7 @@ export default function InvoiceDetailsPage() {
       if (error.message?.includes("timed out")) {
         toast.info("Request took longer than expected. Refreshing data...");
         setIsCancelServiceOpen(false);
-        fetchInvoiceDetailsAction(id).then(refreshed => {
+        clientFetchInvoiceDetailsAction(id).then((refreshed: any) => {
           if (refreshed.success) setInvoice(refreshed.data);
           else window.location.reload();
         });
@@ -333,7 +335,7 @@ export default function InvoiceDetailsPage() {
     if (res.success) {
       toast.success("Payment status updated successfully");
       setIsPaymentOpen(false);
-      const refreshed = await fetchInvoiceDetailsAction(id);
+      const refreshed = await clientFetchInvoiceDetailsAction(id);
       if (refreshed.success) setInvoice(refreshed.data);
     } else {
       toast.error(res.error || "Failed to update payment status");

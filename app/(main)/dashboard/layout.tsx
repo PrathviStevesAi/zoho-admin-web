@@ -20,6 +20,7 @@ export default function DashboardLayout({
     abandon,
     approved,
     notapproved,
+    completeinvoice,
 }: {
     children: React.ReactNode;
     invoice: React.ReactNode;
@@ -34,6 +35,7 @@ export default function DashboardLayout({
     abandon: React.ReactNode;
     approved: React.ReactNode;
     notapproved: React.ReactNode;
+    completeinvoice: React.ReactNode;
 }) {
     const pathname = usePathname();
     const isDashboardRoot = pathname === "/dashboard";
@@ -42,12 +44,10 @@ export default function DashboardLayout({
         <DashboardProvider>
             {isDashboardRoot && (
                 <div className="min-h-screen">
-                    {/* Header Section */}
                     <Suspense fallback={<div className="h-20 animate-pulse bg-muted rounded-sm mb-10" />}>
                         <DashboardHeader />
                     </Suspense>
 
-                    {/* View Switcher Section */}
                     <Suspense fallback={<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-pulse">
                         {Array.from({ length: 4 }).map((_, i) => (
                             <div key={i} className="h-[510px] bg-muted rounded-sm" />
@@ -66,12 +66,12 @@ export default function DashboardLayout({
                             abandon={abandon}
                             approved={approved}
                             notapproved={notapproved}
+                            completeinvoice={completeinvoice}
                         />
                     </Suspense>
                 </div>
             )}
 
-            {/* This renders the children (page.tsx) if needed */}
             <div>{children}</div>
         </DashboardProvider>
     )

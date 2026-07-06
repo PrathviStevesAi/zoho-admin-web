@@ -5,7 +5,6 @@ import { useDashboard } from "./dashboard-context";
 import { Loader2 } from "lucide-react";
 import { DispatchSummary } from "./_components/dispatch-summary";
 
-
 interface DashboardViewProps {
     invoice: React.ReactNode;
     precheck: React.ReactNode;
@@ -19,6 +18,7 @@ interface DashboardViewProps {
     abandon: React.ReactNode;
     approved: React.ReactNode;
     notapproved: React.ReactNode;
+    completeinvoice: React.ReactNode;
 }
 
 export function DashboardView({
@@ -34,19 +34,22 @@ export function DashboardView({
     abandon,
     approved,
     notapproved,
+    completeinvoice,
 }: DashboardViewProps) {
     const searchParams = useSearchParams();
     const pathname = usePathname();
-    const { isPending, loadingMessage } = useDashboard();
+    const { isPending, isFetching, loadingMessage } = useDashboard();
     const currentView = searchParams.get("view") || "guard-management";
 
     // Only show the dashboard tables grid on the main dashboard page
     if (pathname !== "/dashboard") return null;
 
+    const showOverlay = isPending || isFetching;
+
     return (
         <div className="relative">
             {/* Loading Overlay */}
-            {isPending && (
+            {showOverlay && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/40 transition-all animate-in fade-in-0">
                     <div className="flex flex-col items-center gap-3 bg-card p-6 rounded-xl shadow-xl border border-border">
                         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -60,7 +63,7 @@ export function DashboardView({
             {/* Dispatch View Summary Cards */}
             {currentView !== "guard-management" && <DispatchSummary />}
 
-            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 transition-all duration-300 ${isPending ? 'opacity-40 blur-[2px] pointer-events-none' : ''}`}>
+            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 transition-all duration-300 ${showOverlay ? 'opacity-40 blur-[2px] pointer-events-none' : ''}`}>
 
                 {currentView === "guard-management" ? (
                     <>
@@ -76,8 +79,9 @@ export function DashboardView({
                     <>
                         <div key="refused">{refused}</div>
                         <div key="accepted">{accepted}</div>
-                        <div key="approved">{approved}</div>
-                        <div key="notapproved">{notapproved}</div>
+                        {/* <div key="approved">{approved}</div> */}
+                        {/* <div key="notapproved">{notapproved}</div> */}
+                        <div key="completeinvoice">{completeinvoice}</div>
                     </>
                 )}
             </div>
