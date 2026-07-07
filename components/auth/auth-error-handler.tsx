@@ -14,7 +14,9 @@ export function AuthErrorHandler() {
                 signOut({ redirect: false });
             } else {
                 // If we are on dashboard or any other route, redirect to login
-                signOut({ callbackUrl: `${window.location.origin}/admin-login` });
+                signOut({ redirect: false }).then(() => {
+                    window.location.href = "/admin-login";
+                });
             }
         }
     }, [session, pathname]);

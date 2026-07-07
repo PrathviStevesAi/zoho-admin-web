@@ -445,20 +445,16 @@ function UserNav({ session, dynamicProfile }: { session: any, dynamicProfile: an
               <span className="font-medium">My Profile</span>
             </DropdownMenuItem>
           </Link>
-
-          {/* <DropdownMenuItem className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer focus:bg-primary/5 focus:text-primary transition-colors">
-            <div className="flex items-center justify-center size-8 rounded-lg bg-muted group-focus:bg-primary/10">
-              <Settings className="size-4" />
-            </div>
-            <span className="font-medium">Settings</span>
-          </DropdownMenuItem> */}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator className="bg-muted/50 mx-1 mt-1" />
 
         <DropdownMenuItem
           className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer mt-1 text-red-600 focus:bg-red-50 focus:text-red-700 transition-colors"
-          onClick={() => signOut({ callbackUrl: `${window.location.origin}/admin-login` })}
+          onClick={async () => {
+            await signOut({ redirect: false });
+            window.location.href = "/admin-login";
+          }}
         >
           <div className="flex items-center justify-center size-8 rounded-lg bg-red-50">
             <LogOut className="size-4 text-red-600" />
