@@ -1,8 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { startVideoCallAction, endVideoCallAction } from "@/actions/vc.actions";
 
 interface VideoCallContextType {
   startCall: (guardId: string, shiftId?: string, type?: number) => Promise<void>;
@@ -25,6 +26,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
 
   const [zpInstance, setZpInstance] = useState<any>(null);
+  const activeShiftIdRef = useRef<string | null>(null);
 
   const rawUserId = session?.user?.id || "";
   const USER_ID = toZimUserId(rawUserId);
@@ -53,12 +55,31 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         // Let ZegoUIKitPrebuilt handle the ZIM login and Call Invitation UI automatically!
         zp.addPlugins({ ZIM });
 
+        const handleCallEnd = () => {
+          if (activeShiftIdRef.current) {
+            endVideoCallAction(activeShiftIdRef.current)
+              .then((res) => {
+                if (res.success) {
+                  toast.success(res.message || "Call ended successfully.");
+                } else {
+                  toast.error(res.error || "Failed to record call end.");
+                }
+              })
+              .catch(console.error);
+            activeShiftIdRef.current = null;
+          }
+        };
+
         zp.setCallInvitationConfig({
           enableNotifyWhenAppRunningInBackgroundOrQuit: true,
           ringtoneConfig: {
             incomingCallUrl: '',
             outgoingCallUrl: ''
           },
+          onCallInvitationEnded: handleCallEnd,
+          onOutgoingCallDeclined: handleCallEnd,
+          onOutgoingCallTimeout: handleCallEnd,
+          onOutgoingCallRejected: handleCallEnd,
         });
 
         setZpInstance(zp);
@@ -81,6 +102,23 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     if (!guardId) {
       toast.error("No guard selected to call.");
       return;
+    }
+
+    if (shiftId) {
+      const toastId = toast.loading("Initializing call...");
+      try {
+        const apiRes = await startVideoCallAction(shiftId);
+        toast.dismiss(toastId);
+        if (!apiRes.success) {
+          toast.error(`Failed to initialize call: ${apiRes.error}`);
+          return;
+        }
+        activeShiftIdRef.current = shiftId;
+      } catch (err: any) {
+        toast.dismiss(toastId);
+        toast.error(`Error connecting to call service: ${err.message}`);
+        return;
+      }
     }
 
     try {
@@ -123,6 +161,18 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
   const endCall = async () => {
     // End call UI is handled natively by ZegoUIKitPrebuilt
+    if (activeShiftIdRef.current) {
+      endVideoCallAction(activeShiftIdRef.current)
+        .then((res) => {
+          if (res.success) {
+            toast.success(res.message || "Call ended successfully.");
+          } else {
+            toast.error(res.error || "Failed to record call end.");
+          }
+        })
+        .catch(console.error);
+      activeShiftIdRef.current = null;
+    }
   };
 
   return (
