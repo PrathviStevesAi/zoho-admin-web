@@ -104,6 +104,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    let roomID = "";
     if (shiftId) {
       const toastId = toast.loading("Initializing call...");
       try {
@@ -114,6 +115,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         activeShiftIdRef.current = shiftId;
+        roomID = apiRes.data?.room_id || "";
       } catch (err: any) {
         toast.dismiss(toastId);
         toast.error(`Error connecting to call service: ${err.message}`);
@@ -124,16 +126,28 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     try {
       const zimGuardId = toZimUserId(guardId);
 
-      const res = await zpInstance.sendCallInvitation({
+      // Zego UIKit Prebuilt automatically constructs the extendedData object.
+      // We must pass our custom parameters via the customData field.
+      const customDataPayload = JSON.stringify({ shift_id: shiftId || "" });
+
+      const invitationConfig = {
         callees: [{ userID: zimGuardId, userName: "Guard" }],
         callType: type === 1 ? 1 : 0, // 1 is Video, 0 is Voice in ZegoUIKitPrebuilt
         timeout: 60,
+        data: customDataPayload,
         notificationConfig: {
           resourcesID: "zego_call", // Must exactly match the Resource ID in Zego Console
           title: type === 1 ? "Incoming Video Call" : "Incoming Voice Call",
           message: "Admin is calling",
         }
-      });
+      };
+
+      console.log("🚀 [Zego Web] Sending Call Invitation:");
+      console.log("-> target guardId:", zimGuardId);
+      console.log("-> customData (containing shift_id):", customDataPayload);
+      console.log("-> full config:", invitationConfig);
+
+      const res = await zpInstance.sendCallInvitation(invitationConfig);
 
       console.log(`Call invitation sent to ${zimGuardId}`, res);
 
