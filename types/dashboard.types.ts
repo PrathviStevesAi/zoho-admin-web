@@ -33,6 +33,7 @@ export type InvoiceData = {
   service_address?: string;
   timezone?: string | null;
   history?: InvoiceHistory[];
+  type?: string | null;
   actions?: {
     is_update_payment?: boolean;
     is_schedule_shift?: boolean;

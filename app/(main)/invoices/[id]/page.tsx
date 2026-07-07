@@ -771,6 +771,7 @@ export default function InvoiceDetailsPage() {
         currentView={getCurrentViewName()}
         status={invoice.status}
         actions={invoice.actions}
+        type={invoice.type}
       />
 
       {isPaymentOpen ? (

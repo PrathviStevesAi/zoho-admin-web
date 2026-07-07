@@ -34,6 +34,7 @@ interface InvoiceHeaderProps {
     is_open_crm?: boolean;
     is_cancel_service?: boolean;
   };
+  type?: string | null;
 }
 
 export function InvoiceHeader({
@@ -50,7 +51,8 @@ export function InvoiceHeader({
   onCancelService,
   currentView,
   status,
-  actions
+  actions,
+  type
 }: InvoiceHeaderProps) {
   const formatAddress = (addr: any) => {
     if (!addr) return "N/A";
@@ -121,7 +123,7 @@ export function InvoiceHeader({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-start lg:items-center justify-between gap-6">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2 text-slate-700 text-[13px] mb-1">
             <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Dashboard</Link>
@@ -176,6 +178,14 @@ export function InvoiceHeader({
             </div>
           </div>
         </div>
+        
+        {type && (
+          <div className="shrink-0 pt-1 md:pt-4 lg:pt-0">
+            <div className="px-5 py-2 md:py-2.5 bg-[#0064cb] hover:bg-[#0052ae] cursor-default text-white text-sm font-semibold rounded-lg shadow-md shadow-blue-500/20 capitalize tracking-wide flex items-center justify-center transition-colors">
+              {type.replace(/_/g, " ")}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 py-4">
