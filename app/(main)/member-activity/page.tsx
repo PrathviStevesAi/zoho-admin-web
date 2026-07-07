@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { ChevronRight, ArrowLeft, Eye, UserCheck, UserX, ChevronLeft, CalendarClock } from "lucide-react";
+import { ChevronRight, ArrowLeft, Eye, UserCheck, UserX, ChevronLeft, CalendarClock, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,7 +84,7 @@ export default function MemberActivityPage() {
       } else if (currentFilters.memberEmail && currentFilters.memberEmail !== "all") {
         queryParams.append("user_email", currentFilters.memberEmail);
       }
-      if (currentFilters.status) {
+      if (currentFilters.status && currentFilters.status !== "all") {
         queryParams.append("status", currentFilters.status);
       }
       if (dateParams.start_date) {
@@ -132,14 +133,18 @@ export default function MemberActivityPage() {
     }
   };
 
+  const [hasSearched, setHasSearched] = useState(false);
+
   useEffect(() => {
     if (mounted && status !== "loading") {
+      // Fetch initial data to populate summary cards
       fetchActivities(1);
       setCurrentPage(1);
     }
   }, [mounted, status, token]);
 
   const handleSearch = () => {
+    setHasSearched(true);
     setCurrentPage(1);
     fetchActivities(1);
   };
@@ -155,7 +160,10 @@ export default function MemberActivityPage() {
     };
     setFilters(defaultFilters);
     setCurrentPage(1);
-    fetchActivities(1, defaultFilters);
+    setHasSearched(false);
+    setActivities([]);
+    setSummary({ record_touched: 0, approved: 0, disqualified: 0 });
+    setTotalCount(0);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -290,44 +298,62 @@ export default function MemberActivityPage() {
         mounted={mounted}
       />
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col min-h-[500px]">
-        <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
-          <CalendarClock className="w-5 h-5 text-[#0064cb]" />
-          <h2 className="text-lg font-bold text-slate-800 tracking-tight">Activity Log</h2>
-        </div>
+      {hasSearched && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col min-h-[500px]">
+          <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="w-5 h-5 text-[#0064cb]" />
+              <h2 className="text-lg font-bold text-slate-800 tracking-tight">Activity Log</h2>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {loading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-                <div className="flex gap-4">
-                  <Skeleton className="w-14 h-14 rounded-full shrink-0" />
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-5 w-32" />
-                    <Skeleton className="h-4 w-48" />
-                    <Skeleton className="h-4 w-40" />
-                    <Skeleton className="h-10 w-full mt-2" />
+            {(activities.length > 0 || filters.searchEmail) && (
+              <div className="relative w-64 animate-in fade-in zoom-in duration-300">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="text"
+                  placeholder="Search by email..."
+                  value={filters.searchEmail}
+                  onChange={(e) => setFilters(prev => ({ ...prev, searchEmail: e.target.value }))}
+                  className="pl-9 bg-slate-50 border-slate-200 focus-visible:ring-[#0064cb]/20 h-10"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+                  <div className="flex gap-4">
+                    <Skeleton className="w-14 h-14 rounded-full shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-10 w-full mt-2" />
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : activities.length === 0 ? (
+              <div className="col-span-full py-16 flex flex-col items-center justify-center text-slate-400">
+                <CalendarClock className="w-12 h-12 mb-4 text-slate-300" />
+                <p className="text-lg font-medium text-slate-500">No activities found</p>
+                <p className="text-sm">Try adjusting your filters to see more results.</p>
               </div>
-            ))
-          ) : activities.length === 0 ? (
-            <div className="col-span-full py-16 flex flex-col items-center justify-center text-slate-400">
-              <CalendarClock className="w-12 h-12 mb-4 text-slate-300" />
-              <p className="text-lg font-medium text-slate-500">No activities found</p>
-              <p className="text-sm">Try adjusting your filters to see more results.</p>
-            </div>
-          ) : (
-            activities.map((activity) => (
-              <ActivityCard key={activity.id} activity={activity} />
-            ))
-          )}
-        </div>
+            ) : (
+              activities.map((activity) => (
+                <ActivityCard key={activity.id} activity={activity} />
+              ))
+            )}
+          </div>
 
-        <div className="mt-auto">
-          {renderPagination()}
+          <div className="mt-auto">
+            {renderPagination()}
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   );

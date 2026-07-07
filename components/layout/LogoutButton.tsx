@@ -6,7 +6,7 @@ import { signOut } from "next-auth/react";
 export function LogoutButton() {
     const handleLogout = async () => {
         await signOut({
-            callbackUrl: "/admin-login",
+            callbackUrl: `${window.location.origin}/admin-login`,
             redirect: true
         });
     };

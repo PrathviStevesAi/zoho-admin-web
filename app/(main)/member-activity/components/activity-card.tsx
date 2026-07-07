@@ -1,6 +1,7 @@
 "use client";
 
 import { User, Building2, MapPin, Mail, Phone, Eye, UserCheck, UserX, CalendarClock } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface ActivityCardProps {
   activity: {
@@ -20,6 +21,15 @@ interface ActivityCardProps {
 }
 
 export function ActivityCard({ activity }: ActivityCardProps) {
+  const router = useRouter();
+
+  const handleCardClick = () => {
+    // Attempt to route to guard-bank using the activity id (which usually matches the guard/user id in this context)
+    // If the API returns a specific guard_id, we can fall back to it if added to the type later.
+    const targetId = (activity as any).guard_id || (activity as any).user_id || activity.id;
+    router.push(`/guard-bank/${targetId}`);
+  };
+
   const getStatusBadge = () => {
     switch (activity.status) {
       case "record_touched":
@@ -52,20 +62,11 @@ export function ActivityCard({ activity }: ActivityCardProps) {
     }
   };
 
-  const formatDate = (dateString?: string | null) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   return (
-    <div className="relative bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all group hover:border-slate-300">
+    <div 
+      onClick={handleCardClick}
+      className="relative bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all group cursor-pointer hover:border-slate-300"
+    >
       <div className="flex gap-4">
         <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200 text-slate-400 overflow-hidden shadow-inner">
           <User className="w-6 h-6" />
@@ -111,21 +112,6 @@ export function ActivityCard({ activity }: ActivityCardProps) {
               </div>
             )}
 
-            <div className="flex flex-col gap-1.5 mt-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
-                <span>Action By:</span>
-                <span className="text-slate-800 font-bold truncate max-w-[150px]" title={activity.performed_by || "System"}>
-                  {activity.performed_by || "System"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
-                <span>Action Date:</span>
-                <span className="text-slate-700 flex items-center gap-1">
-                  <CalendarClock className="w-3 h-3" />
-                  {formatDate(activity.performed_on || activity.created_at)}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

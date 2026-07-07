@@ -16,6 +16,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   DollarSign,
+  History,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -49,7 +50,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Guard Bank", icon: Shield, href: "/guard-bank" },
       { label: "Guard Price", icon: DollarSign, href: "/guard-price" },
-      { label: "Member Activity", icon: Activity, href: "/member-activity" },
+      { label: "Member Activity", icon: History, href: "/member-activity" },
     ],
   },
   {

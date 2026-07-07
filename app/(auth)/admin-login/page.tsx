@@ -104,15 +104,18 @@ export default function LoginPage() {
         });
     };
 
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const toastId = toast.loading("Logging in...");
+        setIsLoggingIn(true);
 
         // 1. Manually check the credentials first to get the EXACT backend error message if it fails
         const preCheck = await preCheckLoginAction({ email, password });
 
         if (!preCheck.success) {
-            toast.error(preCheck.error, { id: toastId });
+            toast.error(preCheck.error);
+            setIsLoggingIn(false);
             return;
         }
 
@@ -124,12 +127,14 @@ export default function LoginPage() {
         });
 
         if (result?.error) {
-            toast.error("Invalid Credentials", { id: toastId });
+            toast.error("Invalid Credentials");
+            setIsLoggingIn(false);
         } else if (result?.ok) {
-            toast.success("Login Successful", { id: toastId });
+            toast.success("Login Successful");
             window.location.href = "/dashboard";
         } else {
-            toast.error("Something went wrong. Please try again.", { id: toastId });
+            toast.error("Something went wrong. Please try again.");
+            setIsLoggingIn(false);
         }
     };
 
@@ -178,7 +183,7 @@ export default function LoginPage() {
                                                     onKeyDown={(e) => {
                                                         if (e.key === " ") e.preventDefault();
                                                     }}
-                                                    disabled={isPending}
+                                                    disabled={isPending || isLoggingIn}
                                                     className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
                                                 />
                                             </div>
@@ -196,14 +201,14 @@ export default function LoginPage() {
                                                         onKeyDown={(e) => {
                                                             if (e.key === " ") e.preventDefault();
                                                         }}
-                                                        disabled={isPending}
+                                                        disabled={isPending || isLoggingIn}
                                                         className="h-12 pr-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
                                                     />
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowPassword(!showPassword)}
                                                         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 hover:text-slate-600 transition-colors"
-                                                        disabled={isPending}
+                                                        disabled={isPending || isLoggingIn}
                                                     >
                                                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                                     </button>
@@ -215,9 +220,9 @@ export default function LoginPage() {
                                             <Button
                                                 className="w-full h-12 bg-[#0064cb] hover:bg-[#0052ae] text-white text-base font-bold rounded-xl shadow-lg shadow-blue-100 transition-all active:scale-[0.98] cursor-pointer"
                                                 type="submit"
-                                                disabled={isPending}
+                                                disabled={isPending || isLoggingIn}
                                             >
-                                                {isPending ? (
+                                                {isPending || isLoggingIn ? (
                                                     <div className="flex items-center gap-2">
                                                         <Loader2 className="h-5 w-5 animate-spin" />
                                                         <span>Sign In...</span>

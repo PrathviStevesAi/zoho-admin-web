@@ -73,21 +73,7 @@ export function ActivityFilters({ filters, setFilters, onSearch, onReset, loadin
 
   return (
     <div className="space-y-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-slate-700">Search Email</label>
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="text"
-              placeholder="Search by email..."
-              value={filters.searchEmail}
-              onChange={(e) => setFilters(prev => ({ ...prev, searchEmail: e.target.value }))}
-              className="pl-9 bg-slate-50 border-slate-200 focus-visible:ring-[#0064cb]/20 h-10"
-              onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-            />
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
 
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-slate-700">Member Name</label>
