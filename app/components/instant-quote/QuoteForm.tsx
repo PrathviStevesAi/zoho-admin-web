@@ -3,12 +3,24 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 import { Country, State, City as CityLib } from "country-state-city";
 import { securityTypes } from "./Datas";
 import { submitQuoteAction } from "@/actions/quote.actions";
 import Loader from "../Loader";
-import { US_STATE_CITY_DATA } from "@/app/subcontractor/components/StaticData";
+
+const CUSTOM_STATES = [
+  "Alabama", "Alaska", "Arizona", "Arkansas", "Central California",
+  "Colorado", "Connecticut", "Delaware", "Florida", "Georgia",
+  "Hawaii", "Idaho", "Illinois", "Indiana", "Kansas",
+  "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts",
+  "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana",
+  "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico",
+  "New York", "North Carolina", "North Dakota", "Northern California", "Ohio",
+  "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina",
+  "South Dakota", "Southern California", "Tennessee", "Texas", "Utah",
+  "Vermont", "Virginia", "Washington", "Washington DC", "West Virginia",
+  "Wisconsin", "Wyoming"
+];
 
 export type DailySchedule = {
   dateStr: string;
@@ -17,6 +29,8 @@ export type DailySchedule = {
   startTime: string;
   endTime: string;
   hoursStr: string;
+  isStartOfWeek?: boolean;
+  sameAsPrevWeek?: boolean;
 };
 
 export default function QuoteForm() {
@@ -49,7 +63,7 @@ export default function QuoteForm() {
     City: "",
     State: "",
     Zip_Code: "",
-    Country: "",
+    Country: "United States",
     Service_Loc_Business: "",
     Service_Street: "",
     Service_City: "",
@@ -84,9 +98,11 @@ export default function QuoteForm() {
           const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
           const displayDate = `${daysOfWeek[currentDate.getDay()]}, ${months[currentDate.getMonth()]} ${currentDate.getDate()}`;
 
+          const isStartOfWeek = newSchedules.length > 0 && currentDate.getDay() === 1;
+
           const existing = formData.perDaySchedules.find((s: DailySchedule) => s.dateStr === dateStr);
           if (existing) {
-            newSchedules.push(existing);
+            newSchedules.push({ ...existing, isStartOfWeek });
           } else {
             newSchedules.push({
               dateStr,
@@ -94,7 +110,9 @@ export default function QuoteForm() {
               active: true,
               startTime: "",
               endTime: "",
-              hoursStr: ""
+              hoursStr: "",
+              isStartOfWeek,
+              sameAsPrevWeek: false
             });
           }
 
@@ -117,12 +135,9 @@ export default function QuoteForm() {
     setCountries(allCountries);
     const us = allCountries.find((c) => c.name === "United States");
     if (us) {
-      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
-        isoCode: data.short_code,
-        name: name,
-      }));
-      setStates(usStates);
-      setServiceStates(usStates);
+      const formattedStates = CUSTOM_STATES.map((name) => ({ name, isoCode: name }));
+      setStates(formattedStates);
+      setServiceStates(formattedStates);
 
       setFormData((prev) => ({
         ...prev,
@@ -134,13 +149,11 @@ export default function QuoteForm() {
 
   useEffect(() => {
     const now = new Date();
-
     // YYYY-MM-DD
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const dd = String(now.getDate()).padStart(2, '0');
     setMinDate(`${yyyy}-${mm}-${dd}`);
-
     // YYYY-MM-DDThh:mm
     const hh = String(now.getHours()).padStart(2, '0');
     const min = String(now.getMinutes()).padStart(2, '0');
@@ -149,27 +162,10 @@ export default function QuoteForm() {
 
   const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>, isService = false) => {
     const stateName = e.target.value;
-    const countryName = isService ? formData.Service_Country : formData.Country;
-    const countryObj = countries.find((c) => c.name === countryName);
-    const statesList = isService ? serviceStates : states;
-    const stateObj = statesList.find((s) => s.name === stateName);
-
-    if (countryObj && stateObj) {
-      let citiesList;
-      if (countryObj.isoCode === "US") {
-        const stateData = Object.values(US_STATE_CITY_DATA).find(s => s.short_code === stateObj.isoCode);
-        citiesList = stateData ? stateData.cities.map(city => ({ name: city })) : [];
-      } else {
-        citiesList = CityLib.getCitiesOfState(countryObj.isoCode, stateObj.isoCode);
-      }
-
-      if (isService) {
-        setServiceCities(citiesList);
-        setFormData((prev) => ({ ...prev, Service_State: stateName, Service_City: "" }));
-      } else {
-        setCities(citiesList);
-        setFormData((prev) => ({ ...prev, State: stateName, City: "" }));
-      }
+    if (isService) {
+      setFormData((prev) => ({ ...prev, Service_State: stateName, Service_City: "" }));
+    } else {
+      setFormData((prev) => ({ ...prev, State: stateName, City: "" }));
     }
   };
 
@@ -204,15 +200,12 @@ export default function QuoteForm() {
   const formatPhoneNumber = (value: string) => {
     const digits = value.replace(/\D/g, "");
     if (digits.length === 0) return "";
-
     // If it starts with 1, we can consider the 1 as the country code
     let startIndex = digits.startsWith("1") ? 1 : 0;
     const countryCode = "+1";
-
     const part1 = digits.substring(startIndex, startIndex + 3);
     const part2 = digits.substring(startIndex + 3, startIndex + 6);
     const part3 = digits.substring(startIndex + 6, startIndex + 10);
-
     let formatted = countryCode;
     if (part1) formatted += `-${part1}`;
     if (part2) formatted += `-${part2}`;
@@ -247,30 +240,91 @@ export default function QuoteForm() {
     }
   };
 
+  const handleSameAsPrevWeekChange = (index: number, checked: boolean) => {
+    setFormData((prev) => {
+      const newSchedules = [...prev.perDaySchedules];
+      newSchedules[index] = { ...newSchedules[index], sameAsPrevWeek: checked };
+
+      if (checked) {
+        for (let i = 0; i < 7; i++) {
+          const currentIndex = index + i;
+          if (currentIndex < newSchedules.length) {
+            const currentDate = new Date(newSchedules[currentIndex].dateStr);
+            currentDate.setDate(currentDate.getDate() - 7);
+
+            const prevyyyy = currentDate.getFullYear();
+            const prevmm = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const prevdd = String(currentDate.getDate()).padStart(2, '0');
+            const prevDateStr = `${prevyyyy}-${prevmm}-${prevdd}`;
+
+            const prevSchedule = newSchedules.find(s => s.dateStr === prevDateStr);
+
+            if (prevSchedule) {
+              newSchedules[currentIndex] = {
+                ...newSchedules[currentIndex],
+                active: prevSchedule.active,
+                startTime: prevSchedule.startTime,
+                endTime: prevSchedule.endTime,
+                hoursStr: prevSchedule.hoursStr,
+              };
+            }
+          }
+        }
+      }
+      return { ...prev, perDaySchedules: newSchedules };
+    });
+  };
+
   const handleScheduleChange = (index: number, field: string, value: any) => {
     setFormData(prev => {
       const newSchedules = [...prev.perDaySchedules];
       const schedule = { ...newSchedules[index], [field]: value };
 
-      if (field === 'startTime' || field === 'endTime') {
-        const st = schedule.startTime || "00:00";
-        const et = schedule.endTime || "00:00";
+      const parseHoursToMs = (hStr: string) => {
+        let h = 0, m = 0;
+        if (hStr.includes(':')) {
+          const parts = hStr.split(':');
+          h = parseFloat(parts[0]) || 0;
+          m = parseFloat(parts[1]) || 0;
+        } else {
+          const val = parseFloat(hStr) || 0;
+          h = Math.floor(val);
+          m = Math.round((val - h) * 60);
+        }
+        return (h * 60 + m) * 60000;
+      };
+
+      if (field === 'endTime') {
         if (schedule.startTime && schedule.endTime) {
-          const [sh, sm] = st.split(':').map(Number);
-          const [eh, em] = et.split(':').map(Number);
+          const [sh, sm] = schedule.startTime.split(':').map(Number);
+          const [eh, em] = schedule.endTime.split(':').map(Number);
           let startMs = (sh * 60 + sm) * 60000;
           let endMs = (eh * 60 + em) * 60000;
-
-          if (endMs < startMs) {
-            endMs += 24 * 60 * 60000;
-          }
-
+          if (endMs < startMs) endMs += 24 * 60 * 60000;
           const diffMs = endMs - startMs;
           const hours = Math.floor(diffMs / (1000 * 60 * 60));
           const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
           schedule.hoursStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-        } else {
-          schedule.hoursStr = "";
+        }
+      } else if (field === 'startTime' || field === 'hoursStr') {
+        if (schedule.startTime && schedule.hoursStr) {
+          const [sh, sm] = schedule.startTime.split(':').map(Number);
+          let startMs = (sh * 60 + sm) * 60000;
+          let durationMs = parseHoursToMs(schedule.hoursStr);
+          let endMs = startMs + durationMs;
+          const endHours = Math.floor((endMs / (1000 * 60 * 60)) % 24);
+          const endMinutes = Math.floor((endMs % (1000 * 60 * 60)) / 60000);
+          schedule.endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+        } else if (field === 'startTime' && schedule.startTime && schedule.endTime) {
+          const [sh, sm] = schedule.startTime.split(':').map(Number);
+          const [eh, em] = schedule.endTime.split(':').map(Number);
+          let startMs = (sh * 60 + sm) * 60000;
+          let endMs = (eh * 60 + em) * 60000;
+          if (endMs < startMs) endMs += 24 * 60 * 60000;
+          const diffMs = endMs - startMs;
+          const hours = Math.floor(diffMs / (1000 * 60 * 60));
+          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          schedule.hoursStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         }
       }
 
@@ -374,7 +428,6 @@ export default function QuoteForm() {
     if (!formData.State) errors.State = "State is required";
     if (!formData.City) errors.City = "City is required";
     if (!formData.Zip_Code) errors.Zip_Code = "Zip Code is required";
-
     if (!formData.Service_Loc_Business) errors.Service_Loc_Business = "Location / Business Name is required";
     if (!formData.Service_Street) errors.Service_Street = "Street Address is required";
     if (!formData.Service_State) errors.Service_State = "State is required";
@@ -387,11 +440,8 @@ export default function QuoteForm() {
 
   const performSubmit = async () => {
     setLoading(true);
-
-    // Format mobile
     const rawMobile = formData.Mobile.replace(/^\+1-/, "").replace(/-/g, "");
     const finalMobile = `+1${rawMobile}`;
-
     let totalDays = 0;
     let totalHours = 0;
     let daysArray: any[] = [];
@@ -492,6 +542,8 @@ export default function QuoteForm() {
     if (res.success) {
       toast.success("Quote submitted successfully!");
       setFormData(initialFormData);
+      setSameAsBilling(false);
+      setFormErrors({});
     } else {
       toast.error(res.error || "Failed to submit quote.");
     }
@@ -526,8 +578,6 @@ export default function QuoteForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8" noValidate>
-
-        {/* Basic Details Section */}
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 space-y-6">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 border-b pb-2">Basic Information</h3>
 
@@ -586,8 +636,6 @@ export default function QuoteForm() {
             </div>
           </div>
         </div>
-
-        {/* Schedule Section */}
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 space-y-6">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 border-b pb-2">Guard Needed For?</h3>
 
@@ -649,21 +697,38 @@ export default function QuoteForm() {
                 </thead>
                 <tbody>
                   {formData.perDaySchedules.map((schedule: DailySchedule, index: number) => (
-                    <tr key={schedule.dateStr} className="border-b dark:border-slate-700 border-slate-100 border-dashed">
-                      <td className="py-3 px-2 flex items-center gap-3">
-                        <input type="checkbox" checked={schedule.active} onChange={(e) => handleScheduleChange(index, 'active', e.target.checked)} className="w-4 h-4 text-primary rounded border-slate-300" />
-                        <span className="font-medium whitespace-nowrap">{schedule.displayDate}</span>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <input type="text" value={schedule.hoursStr} onChange={(e) => handleScheduleChange(index, 'hoursStr', e.target.value)} disabled={!schedule.active} placeholder="e.g., 8:00" className="w-32 mx-auto text-center bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
-                      </td>
-                      <td className="py-3 px-2">
-                        <input type="time" value={schedule.startTime} onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)} disabled={!schedule.active} className="w-full bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
-                      </td>
-                      <td className="py-3 px-2">
-                        <input type="time" value={schedule.endTime} onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)} disabled={!schedule.active} className="w-full bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
-                      </td>
-                    </tr>
+                    <React.Fragment key={schedule.dateStr}>
+                      {schedule.isStartOfWeek && (
+                        <tr>
+                          <td colSpan={4} className="py-2 px-2 pt-4">
+                            <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700 w-max">
+                              <input
+                                type="checkbox"
+                                checked={!!schedule.sameAsPrevWeek}
+                                onChange={(e) => handleSameAsPrevWeekChange(index, e.target.checked)}
+                                className="w-4 h-4 text-primary rounded border-slate-300"
+                              />
+                              Same time as previous week
+                            </label>
+                          </td>
+                        </tr>
+                      )}
+                      <tr className="border-b dark:border-slate-700 border-slate-100 border-dashed">
+                        <td className="py-3 px-2 flex items-center gap-3">
+                          <input type="checkbox" checked={schedule.active} onChange={(e) => handleScheduleChange(index, 'active', e.target.checked)} className="w-4 h-4 text-primary rounded border-slate-300" />
+                          <span className="font-medium whitespace-nowrap">{schedule.displayDate}</span>
+                        </td>
+                        <td className="py-3 px-2 text-center">
+                          <input type="text" value={schedule.hoursStr} onChange={(e) => handleScheduleChange(index, 'hoursStr', e.target.value)} disabled={!schedule.active} placeholder="e.g., 8:00" className="w-32 mx-auto text-center bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
+                        </td>
+                        <td className="py-3 px-2">
+                          <input type="time" value={schedule.startTime} onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)} disabled={!schedule.active} className="w-full bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
+                        </td>
+                        <td className="py-3 px-2">
+                          <input type="time" value={schedule.endTime} onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)} disabled={!schedule.active} className="w-full bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
+                        </td>
+                      </tr>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -676,8 +741,6 @@ export default function QuoteForm() {
             </div>
           )}
         </div>
-
-        {/* Billing Location Section */}
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 space-y-6">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 border-b pb-2">Billing Location</h3>
 
@@ -722,8 +785,6 @@ export default function QuoteForm() {
             </div>
           </div>
         </div>
-
-        {/* Service Location Section */}
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 space-y-6">
           <div className="flex justify-between items-center border-b pb-2">
             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Service Location</h3>
