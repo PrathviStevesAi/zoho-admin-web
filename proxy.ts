@@ -28,19 +28,15 @@ export async function proxy(req: NextRequest) {
 
   const isRootPage = nextUrl.pathname === "/";
   const isAuthPage = nextUrl.pathname.startsWith("/admin-login");
-  const isProtectedRoute = !isAuthPage;
+  const isProtectedRoute = !isAuthPage && !isRootPage; // <-- Made root page public!
   const hasError = tokenFallback?.error === "RefreshAccessTokenError";
 
   if (hasError && isProtectedRoute) {
     return NextResponse.redirect(new URL("/admin-login", nextUrl));
   }
 
-  if (isRootPage) {
-    return NextResponse.redirect(
-      new URL(isLoggedIn ? "/dashboard" : "/admin-login", nextUrl)
-    );
-  }
-
+  // Removed the isRootPage redirect so public users can see the Quote Form at /
+  
   if (isAuthPage && isLoggedIn) {
     return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }

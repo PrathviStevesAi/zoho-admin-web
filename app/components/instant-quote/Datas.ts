@@ -1,11 +1,12 @@
 export const securityTypes = [
   { value: "", label: "Select Security Type" },
-  { value: "Unarmed Guard", label: "Unarmed Guard" },
-  { value: "Armed Guard", label: "Armed Guard" },
-  { value: "Fire Watch", label: "Fire Watch" },
-  { value: "Event Security", label: "Event Security" },
-  { value: "Mobile Patrol", label: "Mobile Patrol" },
-  { value: "Executive Protection", label: "Executive Protection" },
+  { value: "Unarmed Security", label: "Unarmed Security" },
+  { value: "Armed Security", label: "Armed Security" },
+  { value: "Fire Watch Guard", label: "Fire Watch Guard" },
+  { value: "Body Guard Unarmed", label: "Body Guard Unarmed" },
+  { value: "Body Guard Armed", label: "Body Guard Armed" },
+  { value: "Body Guard with Suit", label: "Body Guard with Suit" },
+  { value: "Employee Termination", label: "Employee Termination" },
 ];
 
 export const StateList = [

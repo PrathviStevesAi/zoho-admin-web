@@ -17,10 +17,22 @@ export async function submitQuoteAction(payload: any) {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
+      console.log("Zoho API Error:", errorData);
+      
       let errorMessage = "Submission failed";
-      if (typeof errorData.detail === "string") errorMessage = errorData.detail;
-      else if (errorData.message) errorMessage = errorData.message;
-      return { success: false, error: errorMessage };
+      if (typeof errorData.detail === "string") {
+        errorMessage = errorData.detail;
+      } else if (errorData.detail && typeof errorData.detail === "object" && typeof errorData.detail.error === "string") {
+        errorMessage = errorData.detail.error;
+      } else if (typeof errorData.error === "string") {
+        errorMessage = errorData.error;
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      } else {
+        errorMessage = `Submission failed: ${JSON.stringify(errorData)}`;
+      }
+      
+      return { success: false, error: errorMessage, rawError: errorData };
     }
 
     const data = await res.json();
