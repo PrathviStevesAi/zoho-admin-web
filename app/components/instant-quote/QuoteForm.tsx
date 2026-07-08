@@ -7,6 +7,8 @@ import { Loader2 } from "lucide-react";
 import { Country, State, City as CityLib } from "country-state-city";
 import { securityTypes } from "./Datas";
 import { submitQuoteAction } from "@/actions/quote.actions";
+import Loader from "../Loader";
+import { US_STATE_CITY_DATA } from "@/app/subcontractor/components/StaticData";
 
 export type DailySchedule = {
   dateStr: string;
@@ -21,13 +23,13 @@ export default function QuoteForm() {
   const [loading, setLoading] = useState(false);
   const [sameAsBilling, setSameAsBilling] = useState(false);
   const [formErrors, setFormErrors] = useState<any>({});
-
-  // Location states
   const [countries, setCountries] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
   const [serviceStates, setServiceStates] = useState<any[]>([]);
   const [serviceCities, setServiceCities] = useState<any[]>([]);
+  const [minDate, setMinDate] = useState("");
+  const [minDateTime, setMinDateTime] = useState("");
 
   const initialFormData = {
     Company_Name: "",
@@ -115,9 +117,12 @@ export default function QuoteForm() {
     setCountries(allCountries);
     const us = allCountries.find((c) => c.name === "United States");
     if (us) {
-      const statesList = State.getStatesOfCountry(us.isoCode);
-      setStates(statesList);
-      setServiceStates(statesList);
+      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
+        isoCode: data.short_code,
+        name: name,
+      }));
+      setStates(usStates);
+      setServiceStates(usStates);
 
       setFormData((prev) => ({
         ...prev,
@@ -127,22 +132,20 @@ export default function QuoteForm() {
     }
   }, []);
 
-  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>, isService = false) => {
-    const countryName = e.target.value;
-    const countryObj = countries.find((c) => c.name === countryName);
-    if (countryObj) {
-      const statesList = State.getStatesOfCountry(countryObj.isoCode);
-      if (isService) {
-        setServiceStates(statesList);
-        setServiceCities([]);
-        setFormData((prev) => ({ ...prev, Service_Country: countryName, Service_State: "", Service_City: "" }));
-      } else {
-        setStates(statesList);
-        setCities([]);
-        setFormData((prev) => ({ ...prev, Country: countryName, State: "", City: "" }));
-      }
-    }
-  };
+  useEffect(() => {
+    const now = new Date();
+
+    // YYYY-MM-DD
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    setMinDate(`${yyyy}-${mm}-${dd}`);
+
+    // YYYY-MM-DDThh:mm
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    setMinDateTime(`${yyyy}-${mm}-${dd}T${hh}:${min}`);
+  }, []);
 
   const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>, isService = false) => {
     const stateName = e.target.value;
@@ -152,7 +155,14 @@ export default function QuoteForm() {
     const stateObj = statesList.find((s) => s.name === stateName);
 
     if (countryObj && stateObj) {
-      const citiesList = CityLib.getCitiesOfState(countryObj.isoCode, stateObj.isoCode);
+      let citiesList;
+      if (countryObj.isoCode === "US") {
+        const stateData = Object.values(US_STATE_CITY_DATA).find(s => s.short_code === stateObj.isoCode);
+        citiesList = stateData ? stateData.cities.map(city => ({ name: city })) : [];
+      } else {
+        citiesList = CityLib.getCitiesOfState(countryObj.isoCode, stateObj.isoCode);
+      }
+
       if (isService) {
         setServiceCities(citiesList);
         setFormData((prev) => ({ ...prev, Service_State: stateName, Service_City: "" }));
@@ -497,7 +507,8 @@ export default function QuoteForm() {
   };
 
   return (
-    <div className="w-full bg-white rounded-xl shadow-lg border border-slate-100 p-6 md:p-8">
+    <div className="w-full bg-white rounded-xl shadow-lg border border-slate-100 p-6 md:p-8 relative">
+      {loading && <Loader />}
       <div className="mb-8">
         <div className="flex justify-start mb-4">
           <Image
@@ -605,9 +616,9 @@ export default function QuoteForm() {
                   {formData["is_24/7"] ? "Start Date & Time" : "Start Date"} <span className="text-red-500">*</span>
                 </label>
                 {formData["is_24/7"] ? (
-                  <input type="datetime-local" name="Start_Date" value={formData.Start_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.Start_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+                  <input type="datetime-local" min={minDateTime} name="Start_Date" value={formData.Start_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.Start_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
                 ) : (
-                  <input type="date" name="Start_Date" value={formData.Start_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.Start_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+                  <input type="date" min={minDate} name="Start_Date" value={formData.Start_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.Start_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
                 )}
                 {formErrors.Start_Date && <span className="text-xs text-red-500 mt-1 block">{formErrors.Start_Date}</span>}
               </div>
@@ -616,9 +627,9 @@ export default function QuoteForm() {
                   {formData["is_24/7"] ? "End Date & Time" : "End Date"} <span className="text-red-500">*</span>
                 </label>
                 {formData["is_24/7"] ? (
-                  <input type="datetime-local" name="End_Date" value={formData.End_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.End_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+                  <input type="datetime-local" min={minDateTime} name="End_Date" value={formData.End_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.End_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
                 ) : (
-                  <input type="date" name="End_Date" value={formData.End_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.End_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+                  <input type="date" min={minDate} name="End_Date" value={formData.End_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.End_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
                 )}
                 {formErrors.End_Date && <span className="text-xs text-red-500 mt-1 block">{formErrors.End_Date}</span>}
               </div>
@@ -765,8 +776,7 @@ export default function QuoteForm() {
         </div>
 
         <div className="flex justify-center">
-          <button type="submit" disabled={loading} className="cursor-pointer px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-md transition-colors flex items-center gap-2 text-lg">
-            {loading && <Loader2 className="h-5 w-5 animate-spin" />}
+          <button type="submit" disabled={loading} className="cursor-pointer px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-md shadow-md transition-colors flex items-center gap-2 text-lg">
             {loading ? "Submitting..." : "Submit Quote"}
           </button>
         </div>
