@@ -57,6 +57,7 @@ export interface Shift {
   shift_id: string;
   shift_no: string;
   customer_name?: string;
+  customer_id?: string;
   invoice_id?: string;
   invoice_no?: string;
   invoice_description?: string;

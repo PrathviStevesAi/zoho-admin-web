@@ -92,7 +92,13 @@ export function ShiftHeader({
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 flex flex-wrap items-center gap-x-2 gap-y-1 cursor-default">
                 {shift ? (
                   <>
-                    <span className="hover:text-[#0064cb] transition-colors">{shift.customer_name}</span>
+                    {shift.customer_id ? (
+                      <Link href={`/users-directory/customers/${shift.customer_id}`} className="hover:text-[#0064cb] hover:underline transition-colors text-[#0064cb]">
+                        {shift.customer_name}
+                      </Link>
+                    ) : (
+                      <span className="hover:text-[#0064cb] transition-colors">{shift.customer_name}</span>
+                    )}
                     {shift.invoice_id ? (
                       <Link
                         href={`/invoices/${shift.invoice_id}`}

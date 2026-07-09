@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InvoiceData } from "@/types/dashboard.types";
 import { formatStatus, cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface InvoiceDetailsCardProps {
   invoice: InvoiceData;
@@ -103,8 +104,12 @@ export function InvoiceDetailsCard({
                       </Button>
                     </div>
                   </div>
+                ) : invoice.customer_id ? (
+                  <Link href={`/users-directory/customers/${invoice.customer_id}`} className="text-sm font-medium text-[#0064cb] hover:underline">
+                    {invoice.customer_name}
+                  </Link>
                 ) : (
-                  <span className="text-sm font-medium text-[#0064cb]">
+                  <span className="text-sm font-medium text-slate-800">
                     {invoice.customer_name}
                   </span>
                 )}

@@ -18,6 +18,7 @@ export type InvoiceData = {
   id: string;
   invoice_no: string;
   customer_name: string;
+  customer_id?: string | null;
   status: string;
   created_at: string;
   zoho_invoice_id?: string;

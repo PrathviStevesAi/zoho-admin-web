@@ -470,8 +470,20 @@ export default function InvoiceDetailsPage() {
         endTime: ""
       };
       const updated = { ...current, [field]: value };
-      if (field === 'startTime' || field === 'endTime') {
-        updated.hours = calculateHours(updated.startTime, updated.endTime);
+      if (field === 'startTime') {
+        const hoursNum = parseFloat(updated.hours);
+        if (!isNaN(hoursNum) && updated.hours !== "") {
+          const start = DateTime.fromISO(updated.startTime, { zone: invoiceTimezone });
+          if (start.isValid) {
+            updated.endTime = start.plus({ hours: hoursNum }).toISO({ includeOffset: false }).slice(0, 16);
+          }
+        } else if (updated.startTime && updated.endTime) {
+          updated.hours = calculateHours(updated.startTime, updated.endTime);
+        }
+      } else if (field === 'endTime') {
+        if (updated.startTime && updated.endTime) {
+          updated.hours = calculateHours(updated.startTime, updated.endTime);
+        }
       } else if (field === 'hours') {
         if (value === "") {
           updated.endTime = "";

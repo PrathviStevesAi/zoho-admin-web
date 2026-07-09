@@ -82,10 +82,10 @@ export function ActivityFilters({ filters, setFilters, onSearch, onReset, loadin
             onValueChange={(val) => setFilters(prev => ({ ...prev, memberEmail: val }))}
           >
             <SelectTrigger className="bg-slate-50 border-slate-200 focus:ring-[#0064cb]/20 h-10">
-              <SelectValue placeholder="All Members" />
+              <SelectValue placeholder="Select Member" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Members</SelectItem>
+              <SelectItem value="all">Select Member</SelectItem>
               {loadingMembers ? (
                 <div className="p-2 text-sm text-slate-500">Loading...</div>
               ) : (
@@ -106,10 +106,10 @@ export function ActivityFilters({ filters, setFilters, onSearch, onReset, loadin
             onValueChange={(val) => setFilters(prev => ({ ...prev, status: val }))}
           >
             <SelectTrigger className="bg-slate-50 border-slate-200 focus:ring-[#0064cb]/20 h-10">
-              <SelectValue placeholder="All" />
+              <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">Select status</SelectItem>
               <SelectItem value="record_touched">Record Touched</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="disqualified">Disqualified</SelectItem>
@@ -124,10 +124,10 @@ export function ActivityFilters({ filters, setFilters, onSearch, onReset, loadin
             onValueChange={(val) => setFilters(prev => ({ ...prev, dateFilter: val }))}
           >
             <SelectTrigger className="bg-slate-50 border-slate-200 focus:ring-[#0064cb]/20 h-10">
-              <SelectValue placeholder="Select date range" />
+              <SelectValue placeholder="Select date" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all_time">All Time</SelectItem>
+              <SelectItem value="all_time">Select date</SelectItem>
               <SelectItem value="today">Today</SelectItem>
               <SelectItem value="yesterday">Yesterday</SelectItem>
               <SelectItem value="last_7_days">Last 7 days</SelectItem>

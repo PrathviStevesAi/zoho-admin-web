@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Edit2, Loader2, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -318,7 +319,15 @@ export function ShiftDetailsCard({
         <div className="border-t border-slate-100 divide-y divide-slate-100">
           <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">CUSTOMER NAME:</span>
-            <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">{shift.customer_name}</div>
+            <div className="w-full md:col-span-3 text-sm font-medium">
+              {shift.customer_id ? (
+                <Link href={`/users-directory/customers/${shift.customer_id}`} className="text-[#0064cb] hover:underline">
+                  {shift.customer_name}
+                </Link>
+              ) : (
+                <span className="text-slate-800">{shift.customer_name}</span>
+              )}
+            </div>
           </div>
 
           {shift.invoice_no && (
@@ -367,14 +376,20 @@ export function ShiftDetailsCard({
 
           <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">ASSIGNED GUARD:</span>
-            <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">
-              {shift.assigned_guard ? (
-                typeof shift.assigned_guard === 'object'
-                  ? `${shift.assigned_guard.first_name} ${shift.assigned_guard.last_name}`
-                  : shift.assigned_guard
-              ) : (
-                <span className="text-slate-700">No guard assigned</span>
-              )}
+            <div className="w-full md:col-span-3 text-sm font-medium">
+              {(() => {
+                if (!shift.assigned_guard) {
+                  return <span className="text-slate-700">No guard assigned</span>;
+                }
+                const guard = shift.assigned_guard;
+                const isObject = typeof guard === 'object' && guard !== null;
+                const guardId = isObject ? ((guard as any).guard_id || (guard as any).id) : null;
+                const guardName = isObject 
+                  ? (`${(guard as any).first_name || ""} ${(guard as any).last_name || ""}`.trim() || (guard as any).name || "Unknown Guard")
+                  : (guard as string);
+
+                return <span className="text-slate-800">{guardName}</span>;
+              })()}
             </div>
           </div>
 

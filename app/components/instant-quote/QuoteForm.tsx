@@ -7,6 +7,7 @@ import { Country, State, City as CityLib } from "country-state-city";
 import { securityTypes } from "./Datas";
 import { submitQuoteAction } from "@/actions/quote.actions";
 import Loader from "../Loader";
+import Autocomplete from "react-google-autocomplete";
 
 const CUSTOM_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "Central California",
@@ -31,6 +32,16 @@ export type DailySchedule = {
   hoursStr: string;
   isStartOfWeek?: boolean;
   sameAsPrevWeek?: boolean;
+};
+
+const cityAutocompleteOptions = {
+  types: ["(cities)"],
+  componentRestrictions: { country: "us" },
+};
+
+const addressAutocompleteOptions = {
+  types: ["address"],
+  componentRestrictions: { country: "us" },
 };
 
 export default function QuoteForm() {
@@ -165,7 +176,14 @@ export default function QuoteForm() {
     if (isService) {
       setFormData((prev) => ({ ...prev, Service_State: stateName, Service_City: "" }));
     } else {
-      setFormData((prev) => ({ ...prev, State: stateName, City: "" }));
+      setFormData((prev) => {
+        const updated = { ...prev, State: stateName, City: "" };
+        if (sameAsBilling) {
+          updated.Service_State = stateName;
+          updated.Service_City = "";
+        }
+        return updated;
+      });
     }
   };
 
@@ -226,10 +244,18 @@ export default function QuoteForm() {
       finalValue = formatPhoneNumber(value as string);
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: finalValue,
-    }));
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: finalValue };
+      if (sameAsBilling) {
+        if (name === "Location_Business_Name") updated.Service_Loc_Business = finalValue as string;
+        if (name === "Country") updated.Service_Country = finalValue as string;
+        if (name === "Street") updated.Service_Street = finalValue as string;
+        if (name === "City") updated.Service_City = finalValue as string;
+        if (name === "State") updated.Service_State = finalValue as string;
+        if (name === "Zip_Code") updated.Service_Zip_Code = finalValue as string;
+      }
+      return updated;
+    });
 
     if (formErrors[name]) {
       setFormErrors((prev: any) => {
@@ -423,12 +449,12 @@ export default function QuoteForm() {
       if (!formData.End_Date) errors.End_Date = "End Date is required";
     }
 
-    if (!formData.Location_Business_Name) errors.Location_Business_Name = "Location / Business Name is required";
+    if (!formData.Location_Business_Name) errors.Location_Business_Name = "Business Name is required";
     if (!formData.Street) errors.Street = "Street Address is required";
     if (!formData.State) errors.State = "State is required";
     if (!formData.City) errors.City = "City is required";
     if (!formData.Zip_Code) errors.Zip_Code = "Zip Code is required";
-    if (!formData.Service_Loc_Business) errors.Service_Loc_Business = "Location / Business Name is required";
+    if (!formData.Service_Loc_Business) errors.Service_Loc_Business = "Business Name is required";
     if (!formData.Service_Street) errors.Service_Street = "Street Address is required";
     if (!formData.Service_State) errors.Service_State = "State is required";
     if (!formData.Service_City) errors.Service_City = "City is required";
@@ -744,44 +770,90 @@ export default function QuoteForm() {
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 space-y-6">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 border-b pb-2">Billing Location</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="col-span-1 md:col-span-2">
-              <label className="block text-sm font-medium mb-1">Location / Business Name <span className="text-red-500">*</span></label>
-              <input type="text" name="Location_Business_Name" value={formData.Location_Business_Name} onChange={handleInputChange} placeholder="Enter Location / Business Name" className={`flex h-10 w-full rounded-md border ${formErrors.Location_Business_Name ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
-              {formErrors.Location_Business_Name && <span className="text-xs text-red-500 mt-1 block">{formErrors.Location_Business_Name}</span>}
-            </div>
-            <div className="col-span-1 md:col-span-2">
-              <label className="block text-sm font-medium mb-1">Street Address <span className="text-red-500">*</span></label>
-              <input type="text" name="Street" value={formData.Street} onChange={handleInputChange} placeholder="Enter Street Address" className={`flex h-10 w-full rounded-md border ${formErrors.Street ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
-              {formErrors.Street && <span className="text-xs text-red-500 mt-1 block">{formErrors.Street}</span>}
+          <div className="flex flex-col gap-6">
+            {/* Row 1 */}
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">Business Name <span className="text-red-500">*</span></label>
+                <input type="text" name="Location_Business_Name" value={formData.Location_Business_Name} onChange={handleInputChange} placeholder="Enter Business Name" className={`flex h-10 w-full rounded-md border ${formErrors.Location_Business_Name ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+                {formErrors.Location_Business_Name && <span className="text-xs text-red-500 mt-1 block">{formErrors.Location_Business_Name}</span>}
+              </div>
+
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">Country <span className="text-red-500">*</span></label>
+                <input type="text" name="Country" value={formData.Country} readOnly className="flex h-10 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus:outline-none" />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Country <span className="text-red-500">*</span></label>
-              <input type="text" name="Country" value={formData.Country} readOnly className="flex h-10 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus:outline-none" />
+            {/* Row 2 */}
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">State <span className="text-red-500">*</span></label>
+                <select value={formData.State} onChange={(e) => handleStateChange(e, false)} className={`flex h-10 w-full rounded-md border ${formErrors.State ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white`} disabled={!formData.Country}>
+                  <option value="">Select State</option>
+                  {states.map((s) => (
+                    <option key={s.isoCode} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+                {formErrors.State && <span className="text-xs text-red-500 mt-1 block">{formErrors.State}</span>}
+              </div>
+
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">City <span className="text-red-500">*</span></label>
+                <Autocomplete
+                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                  options={cityAutocompleteOptions}
+                  onPlaceSelected={(place) => {
+                    if (place) {
+                      const cityName = place.name || (place.formatted_address ? place.formatted_address.split(',')[0] : '');
+                      if (cityName) {
+                        handleInputChange({ target: { name: "City", value: cityName } } as any);
+                      }
+                    }
+                  }}
+                  name="City"
+                  value={formData.City}
+                  onChange={handleInputChange}
+                  placeholder="Enter City"
+                  className={`flex h-10 w-full rounded-md border ${formErrors.City ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`}
+                />
+                {formErrors.City && <span className="text-xs text-red-500 mt-1 block">{formErrors.City}</span>}
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">State <span className="text-red-500">*</span></label>
-              <select value={formData.State} onChange={(e) => handleStateChange(e, false)} className={`flex h-10 w-full rounded-md border ${formErrors.State ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white`} disabled={!formData.Country}>
-                <option value="">Select State</option>
-                {states.map((s) => (
-                  <option key={s.isoCode} value={s.name}>{s.name}</option>
-                ))}
-              </select>
-              {formErrors.State && <span className="text-xs text-red-500 mt-1 block">{formErrors.State}</span>}
-            </div>
+            {/* Row 3 */}
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="w-full md:w-[70%]">
+                <label className="block text-sm font-medium mb-1">Street Address <span className="text-red-500">*</span></label>
+                <Autocomplete
+                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                  options={addressAutocompleteOptions}
+                  onPlaceSelected={(place) => {
+                    if (place) {
+                      const address = place.name || (place.formatted_address ? place.formatted_address.split(',')[0] : '');
+                      if (address) {
+                        handleInputChange({ target: { name: "Street", value: address } } as any);
+                      }
+                      const zipCode = place.address_components?.find((c: any) => c.types.includes("postal_code"))?.long_name;
+                      if (zipCode && !formData.Zip_Code) {
+                        handleInputChange({ target: { name: "Zip_Code", value: zipCode } } as any);
+                      }
+                    }
+                  }}
+                  name="Street"
+                  value={formData.Street}
+                  onChange={handleInputChange}
+                  placeholder="Enter Street Address"
+                  className={`flex h-10 w-full rounded-md border ${formErrors.Street ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`}
+                />
+                {formErrors.Street && <span className="text-xs text-red-500 mt-1 block">{formErrors.Street}</span>}
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">City <span className="text-red-500">*</span></label>
-              <input type="text" name="City" value={formData.City} onChange={handleInputChange} placeholder="Enter City" className={`flex h-10 w-full rounded-md border ${formErrors.City ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
-              {formErrors.City && <span className="text-xs text-red-500 mt-1 block">{formErrors.City}</span>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Zip Code <span className="text-red-500">*</span></label>
-              <input type="text" name="Zip_Code" maxLength={10} value={formData.Zip_Code} onChange={handleInputChange} placeholder="Enter Zip Code" className={`flex h-10 w-full rounded-md border ${formErrors.Zip_Code ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
-              {formErrors.Zip_Code && <span className="text-xs text-red-500 mt-1 block">{formErrors.Zip_Code}</span>}
+              <div className="w-full md:w-[30%]">
+                <label className="block text-sm font-medium mb-1">Zip Code <span className="text-red-500">*</span></label>
+                <input type="text" name="Zip_Code" maxLength={10} value={formData.Zip_Code} onChange={handleInputChange} placeholder="Enter Zip Code" className={`flex h-10 w-full rounded-md border ${formErrors.Zip_Code ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+                {formErrors.Zip_Code && <span className="text-xs text-red-500 mt-1 block">{formErrors.Zip_Code}</span>}
+              </div>
             </div>
           </div>
         </div>
@@ -794,44 +866,92 @@ export default function QuoteForm() {
             </label>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="col-span-1 md:col-span-2">
-              <label className="block text-sm font-medium mb-1">Location / Business Name <span className="text-red-500">*</span></label>
-              <input type="text" name="Service_Loc_Business" value={formData.Service_Loc_Business} onChange={handleInputChange} disabled={sameAsBilling} placeholder="Enter Location / Business Name" className={`flex h-10 w-full rounded-md border ${formErrors.Service_Loc_Business ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50`} />
-              {formErrors.Service_Loc_Business && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_Loc_Business}</span>}
-            </div>
-            <div className="col-span-1 md:col-span-2">
-              <label className="block text-sm font-medium mb-1">Street Address <span className="text-red-500">*</span></label>
-              <input type="text" name="Service_Street" value={formData.Service_Street} onChange={handleInputChange} disabled={sameAsBilling} placeholder="Enter Street Address" className={`flex h-10 w-full rounded-md border ${formErrors.Service_Street ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50`} />
-              {formErrors.Service_Street && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_Street}</span>}
+          <div className="flex flex-col gap-6">
+            {/* Row 1 */}
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">Business Name <span className="text-red-500">*</span></label>
+                <input type="text" name="Service_Loc_Business" value={formData.Service_Loc_Business} onChange={handleInputChange} disabled={sameAsBilling} placeholder="Enter Business Name" className={`flex h-10 w-full rounded-md border ${formErrors.Service_Loc_Business ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50`} />
+                {formErrors.Service_Loc_Business && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_Loc_Business}</span>}
+              </div>
+
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">Country <span className="text-red-500">*</span></label>
+                <input type="text" name="Service_Country" value={formData.Service_Country} readOnly disabled={sameAsBilling} className="flex h-10 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus:outline-none disabled:opacity-50" />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Country <span className="text-red-500">*</span></label>
-              <input type="text" name="Service_Country" value={formData.Service_Country} readOnly disabled={sameAsBilling} className="flex h-10 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus:outline-none disabled:opacity-50" />
+            {/* Row 2 */}
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">State <span className="text-red-500">*</span></label>
+                <select value={formData.Service_State} onChange={(e) => handleStateChange(e, true)} disabled={sameAsBilling || !formData.Service_Country} className={`flex h-10 w-full rounded-md border ${formErrors.Service_State ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white disabled:opacity-50`}>
+                  <option value="">Select State</option>
+                  {serviceStates.map((s) => (
+                    <option key={s.isoCode} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+                {formErrors.Service_State && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_State}</span>}
+              </div>
+
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">City <span className="text-red-500">*</span></label>
+                <Autocomplete
+                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                  options={cityAutocompleteOptions}
+                  onPlaceSelected={(place) => {
+                    if (place) {
+                      const cityName = place.name || (place.formatted_address ? place.formatted_address.split(',')[0] : '');
+                      if (cityName) {
+                        handleInputChange({ target: { name: "Service_City", value: cityName } } as any);
+                      }
+                    }
+                  }}
+                  name="Service_City"
+                  value={formData.Service_City}
+                  onChange={handleInputChange}
+                  disabled={sameAsBilling}
+                  placeholder="Enter City"
+                  className={`flex h-10 w-full rounded-md border ${formErrors.Service_City ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50`}
+                />
+                {formErrors.Service_City && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_City}</span>}
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">State <span className="text-red-500">*</span></label>
-              <select value={formData.Service_State} onChange={(e) => handleStateChange(e, true)} disabled={sameAsBilling || !formData.Service_Country} className={`flex h-10 w-full rounded-md border ${formErrors.Service_State ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white disabled:opacity-50`}>
-                <option value="">Select State</option>
-                {serviceStates.map((s) => (
-                  <option key={s.isoCode} value={s.name}>{s.name}</option>
-                ))}
-              </select>
-              {formErrors.Service_State && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_State}</span>}
-            </div>
+            {/* Row 3 */}
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="w-full md:w-[70%]">
+                <label className="block text-sm font-medium mb-1">Street Address <span className="text-red-500">*</span></label>
+                <Autocomplete
+                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                  options={addressAutocompleteOptions}
+                  onPlaceSelected={(place) => {
+                    if (place) {
+                      const address = place.name || (place.formatted_address ? place.formatted_address.split(',')[0] : '');
+                      if (address) {
+                        handleInputChange({ target: { name: "Service_Street", value: address } } as any);
+                      }
+                      const zipCode = place.address_components?.find((c: any) => c.types.includes("postal_code"))?.long_name;
+                      if (zipCode && !formData.Service_Zip_Code) {
+                        handleInputChange({ target: { name: "Service_Zip_Code", value: zipCode } } as any);
+                      }
+                    }
+                  }}
+                  name="Service_Street"
+                  value={formData.Service_Street}
+                  onChange={handleInputChange}
+                  disabled={sameAsBilling}
+                  placeholder="Enter Street Address"
+                  className={`flex h-10 w-full rounded-md border ${formErrors.Service_Street ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50`}
+                />
+                {formErrors.Service_Street && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_Street}</span>}
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">City <span className="text-red-500">*</span></label>
-              <input type="text" name="Service_City" value={formData.Service_City} onChange={handleInputChange} placeholder="Enter City" disabled={sameAsBilling} className={`flex h-10 w-full rounded-md border ${formErrors.Service_City ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50`} />
-              {formErrors.Service_City && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_City}</span>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Zip Code <span className="text-red-500">*</span></label>
-              <input type="text" name="Service_Zip_Code" maxLength={10} value={formData.Service_Zip_Code} onChange={handleInputChange} placeholder="Enter Zip Code" disabled={sameAsBilling} className={`flex h-10 w-full rounded-md border ${formErrors.Service_Zip_Code ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50`} />
-              {formErrors.Service_Zip_Code && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_Zip_Code}</span>}
+              <div className="w-full md:w-[30%]">
+                <label className="block text-sm font-medium mb-1">Zip Code <span className="text-red-500">*</span></label>
+                <input type="text" name="Service_Zip_Code" maxLength={10} value={formData.Service_Zip_Code} onChange={handleInputChange} placeholder="Enter Zip Code" disabled={sameAsBilling} className={`flex h-10 w-full rounded-md border ${formErrors.Service_Zip_Code ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50`} />
+                {formErrors.Service_Zip_Code && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_Zip_Code}</span>}
+              </div>
             </div>
           </div>
         </div>

@@ -41,15 +41,9 @@ export function ShiftProgressStepper({ shift }: ShiftProgressStepperProps) {
   const statusSteps = STATUS_STEPS_MAP[currentStatus] || [currentStatus];
 
   const steps = statusSteps.map((statusName, idx) => {
-    let status: "completed" | "current" | "upcoming" = "upcoming";
-    if (idx === statusSteps.length - 1) {
-      status = "current";
-    } else if (idx < statusSteps.length - 1) {
-      status = "completed";
-    }
     return {
       label: STATUS_LABELS[statusName] || statusName,
-      status,
+      status: "completed" as "completed" | "current" | "upcoming",
     };
   });
 

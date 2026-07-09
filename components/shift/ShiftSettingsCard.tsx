@@ -46,7 +46,7 @@ export function ShiftSettingsCard({
         geofence_radius: initialSettings.geofence_radius || "150",
       });
     }
-  }, [isOpen, initialSettings]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

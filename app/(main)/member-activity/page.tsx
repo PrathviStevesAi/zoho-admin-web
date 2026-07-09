@@ -20,6 +20,7 @@ export default function MemberActivityPage() {
   }, []);
 
   const [loading, setLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [activities, setActivities] = useState<any[]>([]);
   const [summary, setSummary] = useState({
     record_touched: 0,
@@ -67,17 +68,18 @@ export default function MemberActivityPage() {
     }
   };
 
-  const fetchActivities = async (page = 1, currentFilters = filters) => {
+  const fetchActivities = async (page: number | null = 1, currentFilters = filters) => {
     setLoading(true);
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
       const dateParams = getDateParams(currentFilters);
 
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: pageSize.toString(),
-      });
+      const queryParams = new URLSearchParams();
+      if (page) {
+        queryParams.append("page", page.toString());
+        queryParams.append("limit", pageSize.toString());
+      }
 
       if (currentFilters.searchEmail) {
         queryParams.append("user_email", currentFilters.searchEmail);
@@ -137,16 +139,18 @@ export default function MemberActivityPage() {
 
   useEffect(() => {
     if (mounted && status !== "loading") {
-      // Fetch initial data to populate summary cards
-      fetchActivities(1);
+      // Fetch initial data to populate summary cards without pagination params
+      fetchActivities(null);
       setCurrentPage(1);
     }
   }, [mounted, status, token]);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setHasSearched(true);
+    setIsSearching(true);
     setCurrentPage(1);
-    fetchActivities(1);
+    await fetchActivities(1);
+    setIsSearching(false);
   };
 
   const handleReset = () => {
@@ -161,9 +165,7 @@ export default function MemberActivityPage() {
     setFilters(defaultFilters);
     setCurrentPage(1);
     setHasSearched(false);
-    setActivities([]);
-    setSummary({ record_touched: 0, approved: 0, disqualified: 0 });
-    setTotalCount(0);
+    fetchActivities(null, defaultFilters);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -294,7 +296,7 @@ export default function MemberActivityPage() {
         setFilters={setFilters}
         onSearch={handleSearch}
         onReset={handleReset}
-        loading={loading}
+        loading={isSearching}
         mounted={mounted}
       />
 

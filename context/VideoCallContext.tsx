@@ -153,6 +153,10 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
       if (res.errorInvitees && res.errorInvitees.length > 0) {
         toast.error(`Guard is offline or unavailable.`);
+        if (shiftId) {
+          endVideoCallAction(shiftId).catch(console.error);
+          activeShiftIdRef.current = null;
+        }
       }
     } catch (err: any) {
       console.warn("Failed to send call invitation (expected if offline)", err);
@@ -170,6 +174,11 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       }
 
       toast.error(`Failed to call guard: ${errorMsg}`);
+      
+      if (shiftId) {
+        endVideoCallAction(shiftId).catch(console.error);
+        activeShiftIdRef.current = null;
+      }
     }
   };
 

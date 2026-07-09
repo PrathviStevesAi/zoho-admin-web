@@ -178,10 +178,11 @@ export function InvoiceHeader({
             </div>
           </div>
         </div>
-        
+
         {type && (
-          <div className="shrink-0 pt-1 md:pt-4 lg:pt-0">
-            <div className="px-5 py-2 md:py-2.5 bg-[#0064cb] hover:bg-[#0052ae] cursor-default text-white text-sm font-semibold rounded-lg shadow-md shadow-blue-500/20 capitalize tracking-wide flex items-center justify-center transition-colors">
+          <div className="shrink-0 pt-1 md:pt-4 lg:pt-0 flex items-center gap-2">
+            <span className="text-slate-800 text-sm font-bold tracking-tight">Source :</span>
+            <div className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 cursor-default text-white text-[13px] font-semibold rounded-lg shadow-sm shadow-orange-500/20 capitalize tracking-wide flex items-center justify-center transition-colors">
               {type.replace(/_/g, " ")}
             </div>
           </div>
@@ -199,7 +200,7 @@ export function InvoiceHeader({
                 <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Update<br />payment status</span>
               </div>
             )}
-    
+
             {actions?.is_schedule_shift && (
               <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenSchedule}>
                 <div className="w-12 h-12 rounded-full border-2 border-[#0064cb] flex items-center justify-center text-[#0064cb] group-hover:bg-blue-50 transition-colors shadow-sm">
@@ -208,7 +209,7 @@ export function InvoiceHeader({
                 <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Schedule<br />Shift</span>
               </div>
             )}
-    
+
             {actions?.is_find_guards && (
               <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenAvailableGuards}>
                 <div className="w-12 h-12 rounded-full border-2 border-orange-500 flex items-center justify-center text-orange-500 group-hover:bg-orange-50 transition-colors shadow-sm">
@@ -217,7 +218,7 @@ export function InvoiceHeader({
                 <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Find Available<br />Guard</span>
               </div>
             )}
-    
+
             {actions?.is_assigned_guards && (
               <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenAssignGuard}>
                 <div className="w-12 h-12 rounded-full border-2 border-indigo-500 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-50 transition-colors shadow-sm">
@@ -226,7 +227,7 @@ export function InvoiceHeader({
                 <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Assign<br />Guard</span>
               </div>
             )}
-    
+
             {actions?.is_open_crm && (
               <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={handleOpenCRM}>
                 <div className="w-12 h-12 rounded-full border-2 border-slate-400 flex items-center justify-center text-slate-800 group-hover:bg-slate-50 transition-colors shadow-sm">
@@ -235,7 +236,7 @@ export function InvoiceHeader({
                 <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Open in<br />CRM</span>
               </div>
             )}
-    
+
             {actions?.is_cancel_service && (
               <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onCancelService}>
                 <div className="w-12 h-12 rounded-full border-2 border-red-400 flex items-center justify-center text-red-500 group-hover:bg-red-50 transition-colors shadow-sm">

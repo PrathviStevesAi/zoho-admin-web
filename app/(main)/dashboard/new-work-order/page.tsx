@@ -73,6 +73,20 @@ export default function NewWorkOrderPage() {
     setCustomerName(customer.company_name || `${customer.first_name} ${customer.last_name}`);
     setCustomerEmail(customer.email || "");
     setSelectedCustomerId(customer.id);
+    
+    if (customer.service_address) {
+      setStreetAddress(customer.service_address.street || customer.service_address.address || "");
+      setCity(customer.service_address.city || "");
+      setState(customer.service_address.state || "");
+      setZipCode(customer.service_address.zip || "");
+      setCountry(customer.service_address.country || "");
+      clearError("streetAddress");
+      clearError("city");
+      clearError("state");
+      clearError("zipCode");
+      clearError("country");
+    }
+    
     setIsCustomerDialogOpen(false);
     clearError("customerName");
     clearError("customerEmail");
