@@ -711,53 +711,61 @@ export default function QuoteForm() {
           )}
 
           {formData.is_per_day && formData.perDaySchedules && formData.perDaySchedules.length > 0 && (
-            <div className="mt-6 overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-slate-700 font-semibold border-b dark:border-slate-700">
-                  <tr>
-                    <th className="py-3 px-2">Date</th>
-                    <th className="py-3 px-2 text-center">Hours per Day</th>
-                    <th className="py-3 px-2 text-center">Start Time</th>
-                    <th className="py-3 px-2 text-center">End Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {formData.perDaySchedules.map((schedule: DailySchedule, index: number) => (
-                    <React.Fragment key={schedule.dateStr}>
-                      {schedule.isStartOfWeek && (
-                        <tr>
-                          <td colSpan={4} className="py-2 px-2 pt-4">
-                            <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700 w-max">
-                              <input
-                                type="checkbox"
-                                checked={!!schedule.sameAsPrevWeek}
-                                onChange={(e) => handleSameAsPrevWeekChange(index, e.target.checked)}
-                                className="w-4 h-4 text-primary rounded border-slate-300"
-                              />
-                              Same time as previous week
-                            </label>
-                          </td>
-                        </tr>
-                      )}
-                      <tr className="border-b dark:border-slate-700 border-slate-100 border-dashed">
-                        <td className="py-3 px-2 flex items-center gap-3">
+            <div className="mt-6 text-sm">
+              {/* Desktop Header */}
+              <div className="hidden md:grid md:grid-cols-4 gap-4 text-xs text-slate-700 font-semibold border-b dark:border-slate-700 py-3 px-2">
+                <div>Date</div>
+                <div className="text-center">Hours per Day</div>
+                <div className="text-center">Start Time</div>
+                <div className="text-center">End Time</div>
+              </div>
+
+              {/* Mobile Header */}
+              <div className="grid grid-cols-2 md:hidden gap-4 text-xs text-slate-700 font-semibold border-b dark:border-slate-700 py-3 px-2">
+                <div>Date</div>
+                <div className="text-center">Hours per Day</div>
+              </div>
+
+              <div className="flex flex-col">
+                {formData.perDaySchedules.map((schedule: DailySchedule, index: number) => (
+                  <React.Fragment key={schedule.dateStr}>
+                    {schedule.isStartOfWeek && (
+                      <div className="py-2 px-2 pt-4">
+                        <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700 w-max">
+                          <input
+                            type="checkbox"
+                            checked={!!schedule.sameAsPrevWeek}
+                            onChange={(e) => handleSameAsPrevWeekChange(index, e.target.checked)}
+                            className="w-4 h-4 text-primary rounded border-slate-300"
+                          />
+                          Same time as previous week
+                        </label>
+                      </div>
+                    )}
+                    <div className="border-b dark:border-slate-700 border-slate-100 border-dashed py-3 px-2 flex flex-col md:grid md:grid-cols-4 gap-4 md:items-center">
+                      <div className="grid grid-cols-2 md:contents gap-4 items-center">
+                        <div className="flex items-center gap-3">
                           <input type="checkbox" checked={schedule.active} onChange={(e) => handleScheduleChange(index, 'active', e.target.checked)} className="w-4 h-4 text-primary rounded border-slate-300" />
                           <span className="font-medium whitespace-nowrap">{schedule.displayDate}</span>
-                        </td>
-                        <td className="py-3 px-2 text-center">
+                        </div>
+                        <div className="text-center md:flex md:justify-center">
                           <input type="text" value={schedule.hoursStr} onChange={(e) => handleScheduleChange(index, 'hoursStr', e.target.value)} disabled={!schedule.active} placeholder="e.g., 8:00" className="w-32 mx-auto text-center bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
-                        </td>
-                        <td className="py-3 px-2">
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 md:contents gap-4 mt-2 md:mt-0">
+                        <div className="flex flex-col md:block">
+                          <span className="text-[11px] text-slate-500 font-semibold md:hidden mb-1 ml-1">Start Time</span>
                           <input type="time" value={schedule.startTime} onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)} disabled={!schedule.active} className="w-full bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
-                        </td>
-                        <td className="py-3 px-2">
+                        </div>
+                        <div className="flex flex-col md:block">
+                          <span className="text-[11px] text-slate-500 font-semibold md:hidden mb-1 ml-1">End Time</span>
                           <input type="time" value={schedule.endTime} onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)} disabled={!schedule.active} className="w-full bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
-                        </td>
-                      </tr>
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
           )}
 
