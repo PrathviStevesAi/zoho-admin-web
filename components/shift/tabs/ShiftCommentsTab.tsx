@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { UserPlus, Paperclip, Loader2, Send, XCircle, Lock } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -177,7 +178,14 @@ export function ShiftCommentsTab({
                   ref={fileInputRef}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) setAttachedFile(file);
+                    if (file) {
+                      if (file.size > 50 * 1024 * 1024) {
+                        toast.error("File size must be less than 50MB");
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                        return;
+                      }
+                      setAttachedFile(file);
+                    }
                   }}
                   className="hidden"
                 />
