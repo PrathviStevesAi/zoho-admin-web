@@ -44,26 +44,12 @@ export function DashboardView({
     // Only show the dashboard tables grid on the main dashboard page
     if (pathname !== "/dashboard") return null;
 
-    const showOverlay = isPending || isFetching;
-
     return (
         <div className="relative">
-            {/* Loading Overlay */}
-            {showOverlay && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/40 transition-all animate-in fade-in-0">
-                    <div className="flex flex-col items-center gap-3 bg-card p-6 rounded-xl shadow-xl border border-border">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                        <p className="text-sm font-semibold text-foreground animate-pulse">
-                            {loadingMessage}
-                        </p>
-                    </div>
-                </div>
-            )}
-
             {/* Dispatch View Summary Cards */}
             {currentView !== "guard-management" && <DispatchSummary />}
 
-            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 transition-all duration-300 ${showOverlay ? 'opacity-40 blur-[2px] pointer-events-none' : ''}`}>
+            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 transition-all duration-300`}>
 
                 {currentView === "guard-management" ? (
                     <>
