@@ -379,15 +379,24 @@ export function ShiftDetailsCard({
             <div className="w-full md:col-span-3 text-sm font-medium">
               {(() => {
                 if (!shift.assigned_guard) {
-                  return <span className="text-slate-700">No guard assigned</span>;
+                  return <span className="text-slate-800">No guard assigned</span>;
                 }
                 const guard = shift.assigned_guard;
                 const isObject = typeof guard === 'object' && guard !== null;
                 const guardId = isObject ? ((guard as any).guard_id || (guard as any).id) : null;
+                const applicationId = isObject ? (guard as any).application_id : null;
                 const guardName = isObject 
                   ? (`${(guard as any).first_name || ""} ${(guard as any).last_name || ""}`.trim() || (guard as any).name || "Unknown Guard")
                   : (guard as string);
 
+                if (guardId) {
+                  const redirectId = applicationId || guardId;
+                  return (
+                    <Link href={`/guard-bank/${redirectId}`} className="text-[#0064cb] hover:underline">
+                      {guardName}
+                    </Link>
+                  );
+                }
                 return <span className="text-slate-800">{guardName}</span>;
               })()}
             </div>

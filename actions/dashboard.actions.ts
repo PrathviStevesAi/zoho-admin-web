@@ -901,3 +901,24 @@ export async function verifyInvoiceNumberAction(invoice_no: string): Promise<{ s
     return { success: false, error: message };
   }
 }
+
+export async function fetchDispatchViewShiftsAction(
+  type?: string,
+  page: number = 1,
+  search: string = "",
+): Promise<FetchResponse<any>> {
+  const query = new URLSearchParams();
+  if (type) query.append("type", type);
+  query.append("page", page.toString());
+  if (search) query.append("search", search);
+
+  try {
+    const data = await apiFetch<BaseApiResponse<any>>(
+      `/api/v1/shift/dispatch-view?${query.toString()}`
+    );
+    return { success: true, data: data.data, pagination: data.pagination };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}

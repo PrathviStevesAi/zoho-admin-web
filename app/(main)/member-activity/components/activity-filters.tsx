@@ -71,6 +71,12 @@ export function ActivityFilters({ filters, setFilters, onSearch, onReset, loadin
     );
   }
 
+  const hasActiveFilters = 
+    filters.memberEmail !== "all" || 
+    filters.status !== "all" || 
+    filters.dateFilter !== "all_time" ||
+    filters.searchEmail !== "";
+
   return (
     <div className="space-y-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -162,7 +168,7 @@ export function ActivityFilters({ filters, setFilters, onSearch, onReset, loadin
         <div className="flex items-end h-full gap-2">
           <Button 
             onClick={onReset} 
-            disabled={loading}
+            disabled={loading || !hasActiveFilters}
             variant="outline"
             className="flex-1 h-10 shadow-sm border-slate-200 text-slate-600 hover:text-slate-800"
           >
@@ -170,7 +176,7 @@ export function ActivityFilters({ filters, setFilters, onSearch, onReset, loadin
           </Button>
           <Button 
             onClick={onSearch} 
-            disabled={loading}
+            disabled={loading || !hasActiveFilters}
             className="flex-1 bg-[#0064cb] hover:bg-[#0052a3] text-white h-10 shadow-sm"
           >
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
