@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { clientFetchCustomerByIdAction, updateCustomerAction } from "@/lib/client-actions";
 import { toast } from "sonner";
-import { 
-  ArrowLeft, Edit, Save, X, Loader2, Building, User, Mail, Phone, MapPin 
+import {
+  ArrowLeft, Edit, Save, X, Loader2, Building, User, Mail, Phone, MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +49,9 @@ export default function CustomerViewPage() {
   const loadCustomer = async () => {
     setIsLoading(true);
     const res = await clientFetchCustomerByIdAction(customerId);
-    if (res.success && res.data) {
+    if (!res.success) {
+      toast.error(res.error || "Failed to load customer details");
+    } else if (res.data) {
       const data = res.data;
       setCustomerData(data);
       setFormData({
@@ -69,8 +71,6 @@ export default function CustomerViewPage() {
         service_zip: data.service_address?.zip || "",
         service_country: data.service_address?.country || "",
       });
-    } else {
-      toast.error(res.error || "Failed to load customer details");
     }
     setIsLoading(false);
   };
@@ -85,7 +85,7 @@ export default function CustomerViewPage() {
     if (formData.phone_number !== customerData.phone_number) payload.phone_number = formData.phone_number;
 
     // Check billing address changes
-    const billingChanged = 
+    const billingChanged =
       formData.billing_street !== (customerData.billing_address?.street || "") ||
       formData.billing_city !== (customerData.billing_address?.city || "") ||
       formData.billing_state !== (customerData.billing_address?.state || "") ||
@@ -104,7 +104,7 @@ export default function CustomerViewPage() {
     }
 
     // Check service address changes
-    const serviceChanged = 
+    const serviceChanged =
       formData.service_street !== (customerData.service_address?.street || "") ||
       formData.service_city !== (customerData.service_address?.city || "") ||
       formData.service_state !== (customerData.service_address?.state || "") ||
@@ -239,16 +239,34 @@ export default function CustomerViewPage() {
     );
   }
 
+  const hasChanges = customerData ? (
+    formData.company_name !== (customerData.company_name || "") ||
+    formData.first_name !== (customerData.first_name || "") ||
+    formData.last_name !== (customerData.last_name || "") ||
+    formData.email !== (customerData.email || "") ||
+    formData.phone_number !== (customerData.phone_number || "") ||
+    formData.billing_street !== (customerData.billing_address?.street || "") ||
+    formData.billing_city !== (customerData.billing_address?.city || "") ||
+    formData.billing_state !== (customerData.billing_address?.state || "") ||
+    formData.billing_zip !== (customerData.billing_address?.zip || "") ||
+    formData.billing_country !== (customerData.billing_address?.country || "") ||
+    formData.service_street !== (customerData.service_address?.street || "") ||
+    formData.service_city !== (customerData.service_address?.city || "") ||
+    formData.service_state !== (customerData.service_address?.state || "") ||
+    formData.service_zip !== (customerData.service_address?.zip || "") ||
+    formData.service_country !== (customerData.service_address?.country || "")
+  ) : false;
+
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={() => router.push("/users-directory/customers")}
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-600"
+          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors text-slate-600"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="cursor-pointer w-5 h-5" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Customer Details</h1>
@@ -257,7 +275,7 @@ export default function CustomerViewPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
-        
+
         {/* Edit Toggle */}
         <div className="absolute top-4 right-4 z-10 flex gap-2">
           {isEditing ? (
@@ -265,7 +283,7 @@ export default function CustomerViewPage() {
               <Button variant="ghost" size="sm" onClick={handleCancel} className="text-slate-500 hover:text-slate-700">
                 <X className="w-4 h-4 mr-2" /> Cancel
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={isSaving} className="bg-[#0064cb] hover:bg-[#0052ae] text-white shadow-md">
+              <Button size="sm" onClick={handleSave} disabled={isSaving || !hasChanges} className="bg-[#0064cb] hover:bg-[#0052ae] text-white shadow-md">
                 {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                 Save Changes
               </Button>
@@ -283,15 +301,15 @@ export default function CustomerViewPage() {
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <User className="w-5 h-5 text-slate-400" /> General Information
             </h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-slate-600 uppercase">Company Name</Label>
                 <div className="relative">
                   <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input 
-                    value={formData.company_name} 
-                    onChange={e => setFormData({...formData, company_name: e.target.value})}
+                  <Input
+                    value={formData.company_name}
+                    onChange={e => setFormData({ ...formData, company_name: e.target.value })}
                     disabled={!isEditing}
                     className="pl-10 h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                   />
@@ -301,18 +319,18 @@ export default function CustomerViewPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-600 uppercase">First Name</Label>
-                  <Input 
-                    value={formData.first_name} 
-                    onChange={e => setFormData({...formData, first_name: e.target.value})}
+                  <Input
+                    value={formData.first_name}
+                    onChange={e => setFormData({ ...formData, first_name: e.target.value })}
                     disabled={!isEditing}
                     className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-600 uppercase">Last Name</Label>
-                  <Input 
-                    value={formData.last_name} 
-                    onChange={e => setFormData({...formData, last_name: e.target.value})}
+                  <Input
+                    value={formData.last_name}
+                    onChange={e => setFormData({ ...formData, last_name: e.target.value })}
                     disabled={!isEditing}
                     className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                   />
@@ -323,10 +341,10 @@ export default function CustomerViewPage() {
                 <Label className="text-xs font-bold text-slate-600 uppercase">Email Address</Label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input 
+                  <Input
                     type="email"
-                    value={formData.email} 
-                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
                     disabled={!isEditing}
                     className="pl-10 h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                   />
@@ -337,9 +355,9 @@ export default function CustomerViewPage() {
                 <Label className="text-xs font-bold text-slate-600 uppercase">Phone Number</Label>
                 <div className="relative">
                   <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input 
-                    value={formData.phone_number} 
-                    onChange={e => setFormData({...formData, phone_number: e.target.value})}
+                  <Input
+                    value={formData.phone_number}
+                    onChange={e => setFormData({ ...formData, phone_number: e.target.value })}
                     disabled={!isEditing}
                     className="pl-10 h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                   />
@@ -352,39 +370,39 @@ export default function CustomerViewPage() {
 
           {/* Addresses Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            
+
             {/* Billing Address */}
             <div className="space-y-6">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-slate-400" /> Billing Address
               </h2>
-              
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-600 uppercase">Street Address</Label>
-                  <Input 
-                    value={formData.billing_street} 
-                    onChange={e => setFormData({...formData, billing_street: e.target.value})}
+                  <Input
+                    value={formData.billing_street}
+                    onChange={e => setFormData({ ...formData, billing_street: e.target.value })}
                     disabled={!isEditing}
                     className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
-                    <Input 
-                      value={formData.billing_city} 
-                      onChange={e => setFormData({...formData, billing_city: e.target.value})}
+                    <Input
+                      value={formData.billing_city}
+                      onChange={e => setFormData({ ...formData, billing_city: e.target.value })}
                       disabled={!isEditing}
                       className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">State</Label>
-                    <Input 
-                      value={formData.billing_state} 
-                      onChange={e => setFormData({...formData, billing_state: e.target.value})}
+                    <Input
+                      value={formData.billing_state}
+                      onChange={e => setFormData({ ...formData, billing_state: e.target.value })}
                       disabled={!isEditing}
                       className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                     />
@@ -394,18 +412,18 @@ export default function CustomerViewPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Zip Code</Label>
-                    <Input 
-                      value={formData.billing_zip} 
-                      onChange={e => setFormData({...formData, billing_zip: e.target.value})}
+                    <Input
+                      value={formData.billing_zip}
+                      onChange={e => setFormData({ ...formData, billing_zip: e.target.value })}
                       disabled={!isEditing}
                       className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Country</Label>
-                    <Input 
-                      value={formData.billing_country} 
-                      onChange={e => setFormData({...formData, billing_country: e.target.value})}
+                    <Input
+                      value={formData.billing_country}
+                      onChange={e => setFormData({ ...formData, billing_country: e.target.value })}
                       disabled={!isEditing}
                       className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                     />
@@ -419,33 +437,33 @@ export default function CustomerViewPage() {
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-slate-400" /> Service Address
               </h2>
-              
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-600 uppercase">Street Address</Label>
-                  <Input 
-                    value={formData.service_street} 
-                    onChange={e => setFormData({...formData, service_street: e.target.value})}
+                  <Input
+                    value={formData.service_street}
+                    onChange={e => setFormData({ ...formData, service_street: e.target.value })}
                     disabled={!isEditing}
                     className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
-                    <Input 
-                      value={formData.service_city} 
-                      onChange={e => setFormData({...formData, service_city: e.target.value})}
+                    <Input
+                      value={formData.service_city}
+                      onChange={e => setFormData({ ...formData, service_city: e.target.value })}
                       disabled={!isEditing}
                       className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">State</Label>
-                    <Input 
-                      value={formData.service_state} 
-                      onChange={e => setFormData({...formData, service_state: e.target.value})}
+                    <Input
+                      value={formData.service_state}
+                      onChange={e => setFormData({ ...formData, service_state: e.target.value })}
                       disabled={!isEditing}
                       className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                     />
@@ -455,18 +473,18 @@ export default function CustomerViewPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Zip Code</Label>
-                    <Input 
-                      value={formData.service_zip} 
-                      onChange={e => setFormData({...formData, service_zip: e.target.value})}
+                    <Input
+                      value={formData.service_zip}
+                      onChange={e => setFormData({ ...formData, service_zip: e.target.value })}
                       disabled={!isEditing}
                       className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Country</Label>
-                    <Input 
-                      value={formData.service_country} 
-                      onChange={e => setFormData({...formData, service_country: e.target.value})}
+                    <Input
+                      value={formData.service_country}
+                      onChange={e => setFormData({ ...formData, service_country: e.target.value })}
                       disabled={!isEditing}
                       className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                     />
