@@ -150,7 +150,6 @@ export function ShiftCommentsTab({
           </Select>
         </div>
 
-        {/* Comment Box */}
         <div className="flex-1 min-w-0 relative w-full">
           <span className="absolute -top-2 left-4 px-1.5 bg-white text-[10px] font-bold text-slate-700 uppercase z-10">
             Comment
@@ -167,7 +166,7 @@ export function ShiftCommentsTab({
                   className="p-1 rounded-full hover:bg-slate-200 text-slate-700 hover:text-red-500 transition-colors border-none bg-transparent cursor-pointer"
                   title="Remove file"
                 >
-                  <XCircle className="w-3.5 h-3.5" />
+                  <XCircle className="cursor-pointer w-3.5 h-3.5" />
                 </button>
               </div>
             )}
