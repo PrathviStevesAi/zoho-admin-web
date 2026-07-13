@@ -45,9 +45,10 @@ export function EmailAndPhoneSection() {
       return;
     }
     const timeoutId = setTimeout(async () => {
-      if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(guardEmail)) {
+      const trimmedEmail = guardEmail.trim();
+      if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmedEmail)) {
         setIsEmailVerifying(true);
-        const res = await verifySubcontractorApplicationAction(guardEmail, "");
+        const res = await verifySubcontractorApplicationAction(trimmedEmail, "");
         if (!res.success) {
           setError("email", { type: "manual", message: res.error || "Email already exists" });
           setIsEmailVerified(false);

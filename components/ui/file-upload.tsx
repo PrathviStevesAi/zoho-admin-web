@@ -81,7 +81,8 @@ export function FileUpload({
             }
           }
 
-          const res = await generateUploadUrlAction(file.name, uploadType, guardEmail);
+          const trimmedGuardEmail = guardEmail.trim();
+          const res = await generateUploadUrlAction(file.name, uploadType, trimmedGuardEmail);
 
           if (!res.success) {
             toast.error(res.error || "Failed to generate upload URL");

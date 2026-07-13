@@ -27,7 +27,7 @@ export function LicenseExpirationSection() {
       </div>
       <div className="space-y-1">
         <Label htmlFor="expiration_date" className="text-slate-700">Expiration Date<span className="text-red-500">*</span></Label>
-        <CustomInput id="expiration_date" type="date" min={new Date().toISOString().split('T')[0]} {...register("expiration_date")} />
+        <CustomInput id="expiration_date" type="date" min={new Date().toISOString().split('T')[0]} suppressHydrationWarning {...register("expiration_date")} />
         {errors.expiration_date && <p className="text-xs text-red-500">{errors.expiration_date.message}</p>}
       </div>
     </div>

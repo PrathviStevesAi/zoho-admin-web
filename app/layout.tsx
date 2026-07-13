@@ -7,6 +7,8 @@ import { AuthErrorHandler } from "@/components/auth/auth-error-handler";
 import { Toaster } from "@/components/ui/sonner";
 import { VideoCallProvider } from "@/context/VideoCallContext";
 
+import Script from "next/script";
+
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
@@ -28,8 +30,11 @@ export default function RootLayout({
       className={`${montserrat.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        <script
+      <head suppressHydrationWarning />
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <Script
+          id="hydration-hack"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               if (typeof window !== 'undefined') {
@@ -53,8 +58,6 @@ export default function RootLayout({
             `,
           }}
         />
-      </head>
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
           <VideoCallProvider>
             <AuthErrorHandler />

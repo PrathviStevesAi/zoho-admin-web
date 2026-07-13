@@ -17,68 +17,81 @@ import {
   Clock,
   X,
   Copy,
-  Check
+  Check,
+  Briefcase,
+  Key
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { fetchSystemHealthAction, SystemHealthResponse } from "@/actions/system-health.actions";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Loader2, ExternalLink } from "lucide-react";
+import { getTokenDataAction, generateTokenAction } from "@/actions/zoho.actions";
 
 interface ServiceLogsClientProps {
   initialData: SystemHealthResponse | null;
 }
 
-const SERVICES_META = [
-  {
-    key: "supabase_database",
+const SERVICE_INFO: Record<string, { name: string; description: string; icon: any }> = {
+  zoho: {
+    name: "Zoho",
+    description: "CRM Integration",
+    icon: Briefcase,
+  },
+  supabase_database: {
     name: "Supabase Database",
     description: "Database cluster",
     icon: Database,
   },
-  {
-    key: "supabase_storage",
+  supabase_storage: {
     name: "Supabase Storage",
     description: "Object storage",
     icon: Cloud,
   },
-  {
-    key: "redis",
+  redis: {
     name: "Redis",
     description: "Cache store",
     icon: Cpu,
   },
-  {
-    key: "redis-celery",
+  "redis-celery": {
     name: "Redis Celery",
     description: "Task queue",
     icon: ListTodo,
   },
-  {
-    key: "firebase",
+  firebase: {
     name: "Firebase",
     description: "Auth & Messaging",
     icon: Flame,
   },
-  {
-    key: "smtp",
+  smtp: {
     name: "SMTP",
     description: "Email relay",
     icon: Mail,
   },
-  {
-    key: "google_maps",
+  google_maps: {
     name: "Google Maps",
     description: "Location APIs",
     icon: Map,
   },
-  {
-    key: "zegocloud",
+  zegocloud: {
     name: "Zegocloud",
     description: "RTC & Video",
     icon: Video,
   },
-];
+};
+
+const ZOHO_SCOPES = `ZohoCRM.send_mail.all.CREATE,ZohoCRM.modules.ALL,ZohoCRM.Files.READ,ZohoCRM.files.CREATE,ZohoCRM.modules.leads.READ,ZohoCRM.modules.emails.READ,ZohoCRM.modules.leads.CREATE,ZohoCRM.notifications.All,ZohoCRM.settings.all,ZohoCRM.users.all,ZohoCRM.settings.ALL,ZohoCRM.users.ALL,ZohoCRM.org.ALL,ZohoCRM.bulk.ALL,ZohoCRM.modules.emails.ALL,ZohoCRM.settings.signals.ALL,ZohoCRM.signals.ALL, ZohoMeeting.meeting.CREATE,ZohoBooks.customerpayments.CREATE,ZohoCRM.modules.ALL,ZohoBooks.contacts.READ, ZohoBooks.fullaccess.all,ZohoCRM.modules.ALL,ZohoCRM.settings.ALL,ZohoCRM.users.ALL,ZohoCRM.org.ALL,ZohoCRM.bulk.ALL,ZohoBooks.contacts.CREATE,ZohoCRM.modules.ALL,ZohoBooks.estimates.READ,ZohoBooks.estimates.CREATE,ZohoCRM.modules.leads.CREATE,ZohoMail.messages.CREATE,ZohoCRM.send_mail.all.CREATE`;
 
 function ServiceLogsSkeleton() {
   return (
@@ -92,7 +105,7 @@ function ServiceLogsSkeleton() {
       </div>
       <div className="w-full h-[104px] bg-slate-200 rounded-xl"></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {Array.from({ length: 8 }).map((_, i) => (
+        {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className="w-full h-[112px] bg-slate-200 rounded-xl"></div>
         ))}
       </div>
@@ -104,10 +117,19 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
   const [healthData, setHealthData] = useState<SystemHealthResponse | null>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  
+
   // Modal State for inspecting failed service errors
   const [activeError, setActiveError] = useState<{ serviceName: string; errorText: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Zoho Token Generation State
+  const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
+  const [authCode, setAuthCode] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isFetchingTokenData, setIsFetchingTokenData] = useState(false);
 
   // Core manual refresh function
   const handleRefresh = useCallback(async (isInitial = false) => {
@@ -140,7 +162,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
       if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(activeError.errorText);
       } else {
-        // Fallback for browsers without clipboard API
         const textArea = document.createElement("textarea");
         textArea.value = activeError.errorText;
         textArea.style.position = "fixed";
@@ -156,6 +177,52 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
     } catch (err) {
       console.error("Failed to copy to clipboard:", err);
       toast.error("Failed to copy to clipboard");
+    }
+  };
+
+  const handleOpenTokenDialog = async () => {
+    setIsTokenDialogOpen(true);
+    setShowInstructions(false);
+    setIsFetchingTokenData(true);
+    try {
+      const res = await getTokenDataAction();
+      if (res.success && res.data) {
+        setClientId(res.data.client_id || "");
+        setClientSecret(res.data.client_secret || "");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsFetchingTokenData(false);
+    }
+  };
+
+  const handleGenerateTokenSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clientId || !clientSecret || !authCode) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const res = await generateTokenAction({
+        clientId,
+        clientSecret,
+        authorizationCode: authCode
+      });
+      if (res.success) {
+        toast.success(res.message || "Token generated successfully!");
+        setIsTokenDialogOpen(false);
+        setAuthCode("");
+        handleRefresh(false);
+      } else {
+        toast.error(res.error || "Failed to generate token");
+      }
+    } catch (err) {
+      toast.error("An error occurred");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -239,20 +306,25 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
 
       {/* SERVICES GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {SERVICES_META.map((meta) => {
-          const serviceData = healthData?.services?.[meta.key];
+        {Object.entries(healthData?.services || {}).map(([key, serviceData]) => {
           const status = serviceData?.status || "healthy";
           const errorMsg = serviceData?.error;
 
           const isHealthy = status === "healthy";
           const isFailed = status === "failed" || status === "unhealthy";
 
+          const meta = SERVICE_INFO[key] || {
+            name: key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+            description: "System Service",
+            icon: Activity
+          };
+
           return (
             <Card
-              key={meta.key}
+              key={key}
               className={cn(
-                "w-full border rounded-xl bg-white shadow-sm flex flex-col p-4 gap-4 justify-between transition-shadow hover:shadow-md",
-                isFailed ? "border-rose-200/90" : "border-slate-200/90"
+                "w-full border-2 rounded-xl bg-white shadow-sm flex flex-col p-4 gap-4 justify-between transition-shadow hover:shadow-md",
+                isFailed ? "border-rose-500/80" : "border-slate-200/90 border"
               )}
             >
               <div className="space-y-3">
@@ -282,18 +354,32 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
                 </div>
 
                 {/* Middle Row: Name & Description */}
-                <div className="space-y-0.5">
-                  <h4 className="text-[15px] font-bold text-slate-800 tracking-tight leading-snug">
-                    {meta.name}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
-                    {meta.description}
-                  </p>
+                <div className="flex flex-row items-center justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <h4 className="text-[15px] font-bold text-slate-800 tracking-tight leading-snug">
+                      {meta.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
+                      {meta.description}
+                    </p>
+                  </div>
+
+                  {key === "zoho" && isFailed && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenTokenDialog}
+                      className="h-8 px-3 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer rounded-lg border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:text-blue-800 transition-colors"
+                    >
+                      <Key className="h-3.5 w-3.5" />
+                      Generate Token
+                    </Button>
+                  )}
                 </div>
               </div>
 
               {/* Bottom Action: Show error when failing */}
-              {isFailed && (
+              {isFailed && key !== "zoho" && (
                 <div className="pt-2 border-t border-slate-100 mt-2">
                   <Button
                     variant="destructive"
@@ -315,6 +401,158 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
           );
         })}
       </div>
+
+      {/* ZOHO TOKEN MODALS */}
+      <Dialog
+        open={isTokenDialogOpen}
+        onOpenChange={(open) => {
+          setIsTokenDialogOpen(open);
+          if (!open) setShowInstructions(false);
+        }}
+      >
+        <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 bg-white">
+            <DialogTitle className="text-xl">Generate Zoho Token</DialogTitle>
+            <DialogDescription className="mt-1">
+              Provide your API credentials and the newly generated authorization code to authenticate with Zoho.
+            </DialogDescription>
+          </div>
+
+          {isFetchingTokenData ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-[#0064cb]" />
+              <p className="text-sm text-slate-500 font-medium">Fetching existing credentials...</p>
+            </div>
+          ) : (
+            <div className="p-6 bg-white overflow-y-auto max-h-[80vh]">
+              <form onSubmit={handleGenerateTokenSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="clientId">Client ID</Label>
+                  <Input
+                    id="clientId"
+                    placeholder="Enter Client ID"
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    required
+                    className="bg-slate-50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="clientSecret">Client Secret</Label>
+                  <Input
+                    id="clientSecret"
+                    placeholder="Enter Client Secret"
+                    value={clientSecret}
+                    onChange={(e) => setClientSecret(e.target.value)}
+                    required
+                    className="bg-slate-50"
+                  />
+                </div>
+
+                <div className="pt-1">
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => setShowInstructions(!showInstructions)}
+                    className="px-0 text-[#0064cb] font-semibold h-auto py-0 flex items-center gap-1.5"
+                  >
+                    Instructions to generate authorization code
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                {showInstructions && (
+                  <div className="bg-slate-50/80 p-5 rounded-xl border border-slate-100 mt-2 animate-in slide-in-from-top-2 fade-in duration-200">
+                    <div className="text-[13px] text-slate-700 space-y-3">
+                      <ol className="list-decimal list-outside ml-4 space-y-3">
+                        <li>
+                          Click the link below to open the Zoho API Console:
+                          <br />
+                          <a
+                            href={`https://api-console.zoho.com/client/${clientId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#0064cb] font-medium hover:underline break-all mt-1.5 inline-flex items-center gap-1 bg-blue-50 p-1.5 rounded-md border border-blue-100 w-full"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{`https://api-console.zoho.com/client/${clientId || "[YOUR_CLIENT_ID]"}`}</span>
+                          </a>
+                        </li>
+                        <li>Click on <strong>Self Client</strong>.</li>
+                        <li>
+                          In the Generate Code section, enter the following:
+                          <div className="mt-2 space-y-3 p-3 bg-white rounded-md border border-slate-200 text-xs shadow-sm">
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <strong>Scopes:</strong>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(ZOHO_SCOPES);
+                                    toast.success("Scopes copied to clipboard!");
+                                  }}
+                                  className="text-slate-400 hover:text-[#0064cb] transition-colors p-1 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-100 rounded flex items-center justify-center"
+                                  title="Copy to clipboard"
+                                >
+                                  <Copy className="cursor-pointer h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                              <div className="bg-slate-50 p-2.5 rounded-md border border-slate-100 max-h-28 overflow-y-auto">
+                                <pre className="text-[11px] font-mono whitespace-pre-wrap break-all text-slate-600 leading-snug">
+                                  {ZOHO_SCOPES}
+                                </pre>
+                              </div>
+                            </div>
+                            <div className="pt-1 space-y-1.5 border-t border-slate-100">
+                              <p><strong>Time Duration:</strong> 10 minutes</p>
+                              <p><strong>Scope Description:</strong> Provide any text description</p>
+                            </div>
+                          </div>
+                        </li>
+                        <li>Click <strong>Create</strong>.</li>
+                        <li>Copy the <strong>AUTHORIZATION CODE</strong> generated by Zoho.</li>
+                        <li>Paste the code into the input field below.</li>
+                        <li>Click <strong>Generate Token</strong> to complete authentication.</li>
+                      </ol>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2 pt-2">
+                  <Label htmlFor="authCode">Authorization Code</Label>
+                  <Input
+                    id="authCode"
+                    placeholder="Enter Authorization Code from Zoho"
+                    value={authCode}
+                    onChange={(e) => setAuthCode(e.target.value)}
+                    required
+                    className="bg-slate-50 border-[#0064cb]/30 focus-visible:ring-[#0064cb]"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsTokenDialogOpen(false)}
+                    disabled={isGenerating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isGenerating}
+                    className="bg-[#0064cb] hover:bg-[#0052ae] text-white"
+                  >
+                    {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isGenerating ? "Generating..." : "Generate Token"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ERROR MODAL OVERLAY */}
       {activeError && (
