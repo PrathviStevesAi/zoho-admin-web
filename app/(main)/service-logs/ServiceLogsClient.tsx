@@ -29,10 +29,8 @@ import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -117,12 +115,8 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
   const [healthData, setHealthData] = useState<SystemHealthResponse | null>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-
-  // Modal State for inspecting failed service errors
   const [activeError, setActiveError] = useState<{ serviceName: string; errorText: string } | null>(null);
   const [copied, setCopied] = useState(false);
-
-  // Zoho Token Generation State
   const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
   const [clientId, setClientId] = useState("");
@@ -131,7 +125,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFetchingTokenData, setIsFetchingTokenData] = useState(false);
 
-  // Core manual refresh function
   const handleRefresh = useCallback(async (isInitial = false) => {
     setIsLoading(true);
     try {
@@ -234,7 +227,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
 
   return (
     <div className="space-y-6">
-      {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-montserrat mb-0 flex items-center gap-2">
@@ -245,8 +237,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
             Monitor real-time status of core system services and third-party integrations.
           </p>
         </div>
-
-        {/* Action Controls */}
         <div className="flex items-center gap-3 self-start sm:self-center shrink-0">
           <Button
             onClick={() => handleRefresh(false)}
@@ -259,8 +249,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
           </Button>
         </div>
       </div>
-
-      {/* OVERALL HEALTH HERO CARD */}
       <Card
         className={cn(
           "w-full border-2 transition-all duration-300 shadow-sm",
@@ -304,7 +292,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
         </CardContent>
       </Card>
 
-      {/* SERVICES GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {Object.entries(healthData?.services || {}).map(([key, serviceData]) => {
           const status = serviceData?.status || "healthy";
@@ -328,13 +315,10 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
               )}
             >
               <div className="space-y-3">
-                {/* Top Row: Icon & Status Badge */}
                 <div className="flex items-center justify-between w-full">
                   <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600">
                     <meta.icon className="h-5 w-5" />
                   </div>
-
-                  {/* Status Badge */}
                   <div
                     className={cn(
                       "flex items-center gap-1.5 px-2.5 py-0.5 rounded border font-extrabold text-[10px] tracking-wider",
@@ -352,8 +336,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
                     {status.toUpperCase()}
                   </div>
                 </div>
-
-                {/* Middle Row: Name & Description */}
                 <div className="flex flex-row items-center justify-between gap-2">
                   <div className="space-y-0.5">
                     <h4 className="text-[15px] font-bold text-slate-800 tracking-tight leading-snug">
@@ -378,7 +360,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
                 </div>
               </div>
 
-              {/* Bottom Action: Show error when failing */}
               {isFailed && key !== "zoho" && (
                 <div className="pt-2 border-t border-slate-100 mt-2">
                   <Button
@@ -402,7 +383,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
         })}
       </div>
 
-      {/* ZOHO TOKEN MODALS */}
       <Dialog
         open={isTokenDialogOpen}
         onOpenChange={(open) => {
@@ -414,7 +394,7 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
           <div className="px-6 py-4 border-b border-slate-100 bg-white">
             <DialogTitle className="text-xl">Generate Zoho Token</DialogTitle>
             <DialogDescription className="mt-1">
-              Provide your API credentials and the newly generated authorization code to authenticate with Zoho.
+              Provide your API credentials and the authorization code to authenticate with Zoho.
             </DialogDescription>
           </div>
 
@@ -554,7 +534,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
         </DialogContent>
       </Dialog>
 
-      {/* ERROR MODAL OVERLAY */}
       {activeError && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs select-none animate-in fade-in duration-200"
@@ -564,7 +543,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
             className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-xl flex flex-col max-h-[80vh] overflow-hidden select-text animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2 text-rose-600">
                 <AlertTriangle className="h-5 w-5 stroke-[2]" />
@@ -580,7 +558,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-5 overflow-y-auto space-y-4 flex-1">
               <div className="rounded-lg bg-rose-50/50 border border-rose-100 p-3.5 flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
@@ -599,7 +576,6 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 border-t border-slate-100 bg-slate-50">
               <Button
                 variant="outline"

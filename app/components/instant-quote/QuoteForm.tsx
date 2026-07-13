@@ -34,11 +34,6 @@ export type DailySchedule = {
   sameAsPrevWeek?: boolean;
 };
 
-const cityAutocompleteOptions = {
-  types: ["(cities)"],
-  componentRestrictions: { country: "us" },
-};
-
 const addressAutocompleteOptions = {
   types: ["address"],
   componentRestrictions: { country: "us" },
@@ -159,13 +154,43 @@ export default function QuoteForm() {
   }, []);
 
   useEffect(() => {
+    if (formData.State) {
+      const usStates = State.getStatesOfCountry("US");
+      let stateCode = usStates.find((s) => s.name === formData.State)?.isoCode;
+      if (!stateCode && formData.State.includes("California")) stateCode = "CA";
+
+      if (stateCode) {
+        setCities(CityLib.getCitiesOfState("US", stateCode));
+      } else {
+        setCities([]);
+      }
+    } else {
+      setCities([]);
+    }
+  }, [formData.State]);
+
+  useEffect(() => {
+    if (formData.Service_State) {
+      const usStates = State.getStatesOfCountry("US");
+      let stateCode = usStates.find((s) => s.name === formData.Service_State)?.isoCode;
+      if (!stateCode && formData.Service_State.includes("California")) stateCode = "CA";
+
+      if (stateCode) {
+        setServiceCities(CityLib.getCitiesOfState("US", stateCode));
+      } else {
+        setServiceCities([]);
+      }
+    } else {
+      setServiceCities([]);
+    }
+  }, [formData.Service_State]);
+
+  useEffect(() => {
     const now = new Date();
-    // YYYY-MM-DD
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const dd = String(now.getDate()).padStart(2, '0');
     setMinDate(`${yyyy}-${mm}-${dd}`);
-    // YYYY-MM-DDThh:mm
     const hh = String(now.getHours()).padStart(2, '0');
     const min = String(now.getMinutes()).padStart(2, '0');
     setMinDateTime(`${yyyy}-${mm}-${dd}T${hh}:${min}`);
@@ -218,7 +243,6 @@ export default function QuoteForm() {
   const formatPhoneNumber = (value: string) => {
     const digits = value.replace(/\D/g, "");
     if (digits.length === 0) return "";
-    // If it starts with 1, we can consider the 1 as the country code
     let startIndex = digits.startsWith("1") ? 1 : 0;
     const countryCode = "+1";
     const part1 = digits.substring(startIndex, startIndex + 3);
@@ -422,23 +446,19 @@ export default function QuoteForm() {
     if (!formData.Company_Name) errors.Company_Name = "Company Name is required";
     if (!formData.First_Name) errors.First_Name = "First Name is required";
     if (!formData.Last_Name) errors.Last_Name = "Last Name is required";
-
     if (!formData.Email) {
       errors.Email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.Email)) {
       errors.Email = "Invalid email format";
     }
-
     if (!formData.Mobile) {
       errors.Mobile = "Mobile is required";
     } else if (formData.Mobile.length < 15) {
       errors.Mobile = "Invalid phone number";
     }
-
     if (!formData.Security_Type) errors.Security_Type = "Security Type is required";
     if (!formData.No_of_Guards || Number(formData.No_of_Guards) < 1) errors.No_of_Guards = "Number of guards is required";
     if (!formData.Job_Description) errors.Job_Description = "Job description is required";
-
     if (!formData["is_24/7"] && !formData.is_per_day) {
       errors.Availability = "Please select Guard Needed For";
     } else if (formData["is_24/7"]) {
@@ -448,7 +468,6 @@ export default function QuoteForm() {
       if (!formData.Start_Date) errors.Start_Date = "Start Date is required";
       if (!formData.End_Date) errors.End_Date = "End Date is required";
     }
-
     if (!formData.Location_Business_Name) errors.Location_Business_Name = "Business Name is required";
     if (!formData.Street) errors.Street = "Street Address is required";
     if (!formData.State) errors.State = "State is required";
@@ -459,7 +478,6 @@ export default function QuoteForm() {
     if (!formData.Service_State) errors.Service_State = "State is required";
     if (!formData.Service_City) errors.Service_City = "City is required";
     if (!formData.Service_Zip_Code) errors.Service_Zip_Code = "Zip Code is required";
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -514,7 +532,6 @@ export default function QuoteForm() {
         days: []
       };
     } else {
-      // Per Day
       const activeDays = formData.perDaySchedules ? formData.perDaySchedules.filter((s: DailySchedule) => s.active) : [];
       totalDays = activeDays.length;
 
@@ -712,18 +729,11 @@ export default function QuoteForm() {
 
           {formData.is_per_day && formData.perDaySchedules && formData.perDaySchedules.length > 0 && (
             <div className="mt-6 text-sm">
-              {/* Desktop Header */}
               <div className="hidden md:grid md:grid-cols-4 gap-4 text-xs text-slate-700 font-semibold border-b dark:border-slate-700 py-3 px-2">
                 <div>Date</div>
                 <div className="text-center">Hours per Day</div>
                 <div className="text-center">Start Time</div>
                 <div className="text-center">End Time</div>
-              </div>
-
-              {/* Mobile Header */}
-              <div className="grid grid-cols-2 md:hidden gap-4 text-xs text-slate-700 font-semibold border-b dark:border-slate-700 py-3 px-2">
-                <div>Date</div>
-                <div className="text-center">Hours per Day</div>
               </div>
 
               <div className="flex flex-col">
@@ -743,23 +753,24 @@ export default function QuoteForm() {
                       </div>
                     )}
                     <div className="border-b dark:border-slate-700 border-slate-100 border-dashed py-3 px-2 flex flex-col md:grid md:grid-cols-4 gap-4 md:items-center">
-                      <div className="grid grid-cols-2 md:contents gap-4 items-center">
+                      <div className="flex flex-col md:contents gap-4">
                         <div className="flex items-center gap-3">
                           <input type="checkbox" checked={schedule.active} onChange={(e) => handleScheduleChange(index, 'active', e.target.checked)} className="w-4 h-4 text-primary rounded border-slate-300" />
-                          <span className="font-medium whitespace-nowrap">{schedule.displayDate}</span>
+                          <span className="font-medium whitespace-nowrap text-sm">{schedule.displayDate}</span>
                         </div>
-                        <div className="text-center md:flex md:justify-center">
-                          <input type="text" value={schedule.hoursStr} onChange={(e) => handleScheduleChange(index, 'hoursStr', e.target.value)} disabled={!schedule.active} placeholder="e.g., 8:00" className="w-32 mx-auto text-center bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
+                        <div className="flex flex-col md:block md:text-center md:flex md:justify-center">
+                          <span className="text-[11px] text-slate-500 font-semibold md:hidden mb-1 ml-1">Hours Per Day</span>
+                          <input type="text" value={schedule.hoursStr} onChange={(e) => handleScheduleChange(index, 'hoursStr', e.target.value)} disabled={!schedule.active} placeholder="e.g., 8:00" className="w-full md:w-32 mx-auto text-left md:text-center bg-transparent border border-slate-300 rounded-md h-9 px-3 md:px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 md:contents gap-4 mt-2 md:mt-0">
+                      <div className="flex flex-col md:contents gap-4 mt-2 md:mt-0">
                         <div className="flex flex-col md:block">
                           <span className="text-[11px] text-slate-500 font-semibold md:hidden mb-1 ml-1">Start Time</span>
-                          <input type="time" value={schedule.startTime} onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)} disabled={!schedule.active} className="w-full bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
+                          <input type="time" value={schedule.startTime} onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)} disabled={!schedule.active} className="w-full bg-transparent border border-slate-300 rounded-md h-9 px-3 md:px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
                         </div>
                         <div className="flex flex-col md:block">
                           <span className="text-[11px] text-slate-500 font-semibold md:hidden mb-1 ml-1">End Time</span>
-                          <input type="time" value={schedule.endTime} onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)} disabled={!schedule.active} className="w-full bg-transparent border border-slate-300 rounded-md h-9 px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
+                          <input type="time" value={schedule.endTime} onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)} disabled={!schedule.active} className="w-full bg-transparent border border-slate-300 rounded-md h-9 px-3 md:px-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
                         </div>
                       </div>
                     </div>
@@ -779,7 +790,6 @@ export default function QuoteForm() {
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 border-b pb-2">Billing Location</h3>
 
           <div className="flex flex-col gap-6">
-            {/* Row 1 */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">Business Name <span className="text-red-500">*</span></label>
@@ -792,8 +802,6 @@ export default function QuoteForm() {
                 <input type="text" name="Country" value={formData.Country} readOnly className="flex h-10 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus:outline-none" />
               </div>
             </div>
-
-            {/* Row 2 */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">State <span className="text-red-500">*</span></label>
@@ -808,28 +816,21 @@ export default function QuoteForm() {
 
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">City <span className="text-red-500">*</span></label>
-                <Autocomplete
-                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-                  options={cityAutocompleteOptions}
-                  onPlaceSelected={(place) => {
-                    if (place) {
-                      const cityName = place.name || (place.formatted_address ? place.formatted_address.split(',')[0] : '');
-                      if (cityName) {
-                        handleInputChange({ target: { name: "City", value: cityName } } as any);
-                      }
-                    }
-                  }}
+                <select
                   name="City"
                   value={formData.City}
                   onChange={handleInputChange}
-                  placeholder="Enter City"
-                  className={`flex h-10 w-full rounded-md border ${formErrors.City ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`}
-                />
+                  className={`flex h-10 w-full rounded-md border ${formErrors.City ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white`}
+                  disabled={!formData.State || cities.length === 0}
+                >
+                  <option value="">{cities.length === 0 ? "Select State first" : "Select City"}</option>
+                  {cities.map((c, i) => (
+                    <option key={`${c.name}-${i}`} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
                 {formErrors.City && <span className="text-xs text-red-500 mt-1 block">{formErrors.City}</span>}
               </div>
             </div>
-
-            {/* Row 3 */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="w-full md:w-[70%]">
                 <label className="block text-sm font-medium mb-1">Street Address <span className="text-red-500">*</span></label>
@@ -856,7 +857,6 @@ export default function QuoteForm() {
                 />
                 {formErrors.Street && <span className="text-xs text-red-500 mt-1 block">{formErrors.Street}</span>}
               </div>
-
               <div className="w-full md:w-[30%]">
                 <label className="block text-sm font-medium mb-1">Zip Code <span className="text-red-500">*</span></label>
                 <input type="text" name="Zip_Code" maxLength={10} value={formData.Zip_Code} onChange={handleInputChange} placeholder="Enter Zip Code" className={`flex h-10 w-full rounded-md border ${formErrors.Zip_Code ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
@@ -873,9 +873,7 @@ export default function QuoteForm() {
               <span>Same as Billing Location</span>
             </label>
           </div>
-
           <div className="flex flex-col gap-6">
-            {/* Row 1 */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">Business Name <span className="text-red-500">*</span></label>
@@ -888,8 +886,6 @@ export default function QuoteForm() {
                 <input type="text" name="Service_Country" value={formData.Service_Country} readOnly disabled={sameAsBilling} className="flex h-10 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed focus:outline-none disabled:opacity-50" />
               </div>
             </div>
-
-            {/* Row 2 */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">State <span className="text-red-500">*</span></label>
@@ -904,29 +900,21 @@ export default function QuoteForm() {
 
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">City <span className="text-red-500">*</span></label>
-                <Autocomplete
-                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-                  options={cityAutocompleteOptions}
-                  onPlaceSelected={(place) => {
-                    if (place) {
-                      const cityName = place.name || (place.formatted_address ? place.formatted_address.split(',')[0] : '');
-                      if (cityName) {
-                        handleInputChange({ target: { name: "Service_City", value: cityName } } as any);
-                      }
-                    }
-                  }}
+                <select
                   name="Service_City"
                   value={formData.Service_City}
                   onChange={handleInputChange}
-                  disabled={sameAsBilling}
-                  placeholder="Enter City"
-                  className={`flex h-10 w-full rounded-md border ${formErrors.Service_City ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50`}
-                />
+                  className={`flex h-10 w-full rounded-md border ${formErrors.Service_City ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white disabled:opacity-50`}
+                  disabled={sameAsBilling || !formData.Service_State || serviceCities.length === 0}
+                >
+                  <option value="">{serviceCities.length === 0 ? "Select State first" : "Select City"}</option>
+                  {serviceCities.map((c, i) => (
+                    <option key={`${c.name}-${i}`} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
                 {formErrors.Service_City && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_City}</span>}
               </div>
             </div>
-
-            {/* Row 3 */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="w-full md:w-[70%]">
                 <label className="block text-sm font-medium mb-1">Street Address <span className="text-red-500">*</span></label>
@@ -963,7 +951,6 @@ export default function QuoteForm() {
             </div>
           </div>
         </div>
-
         <div className="flex justify-center">
           <button type="submit" disabled={loading} className="cursor-pointer px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-md shadow-md transition-colors flex items-center gap-2 text-lg">
             {loading ? "Submitting..." : "Submit Quote"}
