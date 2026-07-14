@@ -21,7 +21,6 @@ export default function Accepted({ initialData, pagination }: { initialData: Rec
   const { isPending: isDashboardPending, setIsFetching } = useDashboard();
   const dateFrom = searchParams.get("date_from") || "";
   const dateTo = searchParams.get("date_to") || "";
-
   const {
     displayedData,
     searchTerm,

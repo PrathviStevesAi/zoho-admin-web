@@ -33,7 +33,7 @@ export function BadgeCreateDialog({
   const [expiryDate, setExpiryDate] = useState("");
   const [hasHeadshot, setHasHeadshot] = useState(true);
   const [selectedHeadshotFile, setSelectedHeadshotFile] = useState<File | null>(null);
-  
+
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState("");
   const [formErrors, setFormErrors] = useState<{
@@ -44,7 +44,6 @@ export function BadgeCreateDialog({
     headshot?: string;
   }>({});
 
-  // Reset form states on open
   useEffect(() => {
     if (isOpen) {
       setBadgeName(defaultName);
@@ -113,7 +112,7 @@ export function BadgeCreateDialog({
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const errors: typeof formErrors = {};
     if (!badgeName.trim()) {
       errors.name = "Name is required";
@@ -175,15 +174,15 @@ export function BadgeCreateDialog({
           <DialogHeader className="border-b border-slate-100 pb-3 flex flex-row items-center justify-between">
             <DialogTitle className="text-lg font-bold text-slate-800">Upload FAST GUARD BADGE ID</DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleFormSubmit} className="space-y-5 pt-3">
             <div className="space-y-2">
               <label className={cn("text-xs font-bold block", formErrors.headshot ? "text-red-500" : "text-slate-700")}>Passport Image:</label>
               {hasHeadshot && (selectedHeadshotFile || defaultHeadshotUrl) ? (
                 <div className={cn("bg-slate-50 border rounded-lg p-4 flex items-start gap-4 transition-colors", formErrors.headshot ? "border-red-500" : "border-slate-200")}>
-                  <img 
-                    src={selectedHeadshotFile ? URL.createObjectURL(selectedHeadshotFile) : defaultHeadshotUrl} 
-                    alt="Passport Headshot" 
+                  <img
+                    src={selectedHeadshotFile ? URL.createObjectURL(selectedHeadshotFile) : defaultHeadshotUrl}
+                    alt="Passport Headshot"
                     className="w-20 h-24 rounded border border-slate-200 object-cover"
                   />
                   <div className="flex-1 space-y-3">
@@ -223,10 +222,10 @@ export function BadgeCreateDialog({
                   <span className="text-xs text-slate-500 font-medium">Headshot image not loaded</span>
                   <label className="h-8 text-xs font-semibold px-3 py-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-700 bg-white shadow-sm flex items-center justify-center cursor-pointer transition-all hover:scale-[1.01] active:scale-95">
                     Upload Headshot Image
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
@@ -249,11 +248,11 @@ export function BadgeCreateDialog({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className={cn("text-xs font-bold block", formErrors.name ? "text-red-500" : "text-slate-700")}>Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Enter name"
-                  value={badgeName} 
-                  onChange={(e) => handleNameChange(e.target.value)} 
+                  value={badgeName}
+                  onChange={(e) => handleNameChange(e.target.value)}
                   className={cn(
                     "w-full text-sm font-semibold p-2 border rounded focus:outline-none focus:ring-2 transition-all",
                     formErrors.name ? "border-red-500 focus:ring-red-500/20" : "border-slate-200 focus:ring-[#0064cb]/20"
@@ -263,14 +262,14 @@ export function BadgeCreateDialog({
                   <p className="text-[10px] font-bold text-red-500 mt-0.5">{formErrors.name}</p>
                 )}
               </div>
-              
+
               <div className="space-y-1">
                 <label className={cn("text-xs font-bold block", formErrors.badgeType ? "text-red-500" : "text-slate-700")}>Badge Type:</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Enter badge type"
-                  value={badgeType} 
-                  onChange={(e) => handleBadgeTypeChange(e.target.value)} 
+                  value={badgeType}
+                  onChange={(e) => handleBadgeTypeChange(e.target.value)}
                   className={cn(
                     "w-full text-sm font-semibold p-2 border rounded focus:outline-none focus:ring-2 transition-all",
                     formErrors.badgeType ? "border-red-500 focus:ring-red-500/20" : "border-slate-200 focus:ring-[#0064cb]/20"
@@ -283,10 +282,10 @@ export function BadgeCreateDialog({
 
               <div className="space-y-1">
                 <label className={cn("text-xs font-bold block", formErrors.issueDate ? "text-red-500" : "text-slate-700")}>Issue Date:</label>
-                <input 
-                  type="date" 
-                  value={issueDate} 
-                  onChange={(e) => handleIssueDateChange(e.target.value)} 
+                <input
+                  type="date"
+                  value={issueDate}
+                  onChange={(e) => handleIssueDateChange(e.target.value)}
                   className={cn(
                     "w-full text-sm font-semibold p-2 border rounded focus:outline-none focus:ring-2 transition-all",
                     formErrors.issueDate ? "border-red-500 focus:ring-red-500/20" : "border-slate-200 focus:ring-[#0064cb]/20"
@@ -299,10 +298,10 @@ export function BadgeCreateDialog({
 
               <div className="space-y-1">
                 <label className={cn("text-xs font-bold block", formErrors.expiryDate ? "text-red-500" : "text-slate-700")}>Expiry Date:</label>
-                <input 
-                  type="date" 
-                  value={expiryDate} 
-                  onChange={(e) => handleExpiryDateChange(e.target.value)} 
+                <input
+                  type="date"
+                  value={expiryDate}
+                  onChange={(e) => handleExpiryDateChange(e.target.value)}
                   className={cn(
                     "w-full text-sm font-semibold p-2 border rounded focus:outline-none focus:ring-2 transition-all",
                     formErrors.expiryDate ? "border-red-500 focus:ring-red-500/20" : "border-slate-200 focus:ring-[#0064cb]/20"
@@ -316,11 +315,11 @@ export function BadgeCreateDialog({
 
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700 block">Email:</label>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 placeholder="Enter email"
-                value={defaultEmail} 
-                disabled 
+                value={defaultEmail}
+                disabled
                 className="w-full text-sm font-semibold p-2 border border-slate-200 rounded bg-slate-50 text-slate-500 cursor-not-allowed"
               />
             </div>
@@ -346,7 +345,7 @@ export function BadgeCreateDialog({
         </DialogContent>
       </Dialog>
 
-      <ImageCropDialog 
+      <ImageCropDialog
         isOpen={isCropModalOpen}
         onClose={() => setIsCropModalOpen(false)}
         imageSrc={cropImageSrc}

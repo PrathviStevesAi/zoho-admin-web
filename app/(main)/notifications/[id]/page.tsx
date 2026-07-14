@@ -5,15 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import { fetchNotificationByIdAction, markNotificationAsReadAction } from "@/actions/notification.actions";
 import { Notification } from "@/types/notification.types";
 import { Button } from "@/components/ui/button";
-import { 
-  ChevronRight, 
-  ArrowLeft, 
-  Bell, 
-  Clock, 
-  Info, 
-  CheckCircle2, 
-  Trash2, 
-  Archive, 
+import {
+  ChevronRight,
+  ArrowLeft,
+  Bell,
+  Clock,
+  Info,
+  CheckCircle2,
+  Trash2,
+  Archive,
   ExternalLink,
   Edit2,
   MapPin
@@ -73,7 +73,6 @@ export default function NotificationDetailPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6">
-      {/* Breadcrumbs & Header */}
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
@@ -95,7 +94,6 @@ export default function NotificationDetailPage() {
           </div>
         </div>
 
-        {/* Action Icons - Static as requested */}
         <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 py-4">
           <div className="flex flex-col items-center gap-1.5 group cursor-pointer">
             <div className="w-12 h-12 rounded-full border-2 border-emerald-500 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-50 transition-colors shadow-sm">
@@ -150,7 +148,6 @@ export default function NotificationDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
-        {/* Main Content Card */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white">
             <CardContent className="p-0">
@@ -222,7 +219,6 @@ export default function NotificationDetailPage() {
           </Card>
         </div>
 
-        {/* Sidebar - History of changes style */}
         <div className="lg:col-span-4 space-y-6">
           <Card className="border-slate-200 shadow-sm overflow-hidden rounded-2xl bg-white sticky top-6">
             <CardContent className="p-6">

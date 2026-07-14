@@ -26,7 +26,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const getStatusBadge = (status: string) => {
   const normalized = status?.toLowerCase() || "shift_created";
-
   const statusStyles: Record<string, { label: string; className: string }> = {
     shift_created: {
       label: "Shift Created",
@@ -204,8 +203,6 @@ export function ShiftModule({
                             </TableCell>
                             <TableCell className="py-4 px-6 text-right">
                               <div className="flex items-center justify-end gap-1.5">
-                                {/* Edit Action */}
-                                {/* Edit Action */}
                                 {(() => {
                                   const isAllowed = shift.actions ? shift.actions.is_shift_edit : false;
                                   return (
@@ -215,11 +212,10 @@ export function ShiftModule({
                                         size="icon"
                                         disabled={!isAllowed}
                                         onClick={() => isAllowed && onEdit(shift.shift_id)}
-                                        className={`h-8 w-8 rounded-lg transition-all ${
-                                          !isAllowed
+                                        className={`h-8 w-8 rounded-lg transition-all ${!isAllowed
                                             ? "text-slate-400 pointer-events-none"
                                             : "text-[#0064cb] hover:text-[#0052ae] hover:bg-blue-50 cursor-pointer"
-                                        }`}
+                                          }`}
                                       >
                                         <Pencil className="w-4 h-4" />
                                       </Button>
@@ -227,7 +223,6 @@ export function ShiftModule({
                                   );
                                 })()}
 
-                                {/* Duplicate/Copy Action */}
                                 {(() => {
                                   const isAllowed = shift.actions ? shift.actions.is_shift_duplicate : false;
                                   return (
@@ -237,11 +232,10 @@ export function ShiftModule({
                                         size="icon"
                                         disabled={!isAllowed}
                                         onClick={() => isAllowed && onDuplicate(shift.shift_id)}
-                                        className={`h-8 w-8 rounded-lg transition-all ${
-                                          !isAllowed
+                                        className={`h-8 w-8 rounded-lg transition-all ${!isAllowed
                                             ? "text-slate-400 pointer-events-none"
                                             : "text-slate-600 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
-                                        }`}
+                                          }`}
                                       >
                                         <Copy className="w-4 h-4" />
                                       </Button>
@@ -249,7 +243,6 @@ export function ShiftModule({
                                   );
                                 })()}
 
-                                {/* Delete Action */}
                                 {(() => {
                                   const isAllowed = shift.actions ? shift.actions.is_shift_delete : true;
                                   return (
@@ -259,11 +252,10 @@ export function ShiftModule({
                                         size="icon"
                                         disabled={!isAllowed}
                                         onClick={() => isAllowed && onDelete(shift.shift_id)}
-                                        className={`h-8 w-8 rounded-lg transition-all ${
-                                          !isAllowed
+                                        className={`h-8 w-8 rounded-lg transition-all ${!isAllowed
                                             ? "text-slate-400 pointer-events-none"
                                             : "text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
-                                        }`}
+                                          }`}
                                       >
                                         <Trash2 className="w-4 h-4" />
                                       </Button>
@@ -388,7 +380,6 @@ export function ShiftModule({
               </div>
             </div>
 
-            {/* Desktop View: Horizontal Table */}
             <div className="hidden md:block border border-slate-100 rounded-lg overflow-hidden w-full">
               <div className="overflow-x-auto custom-scrollbar">
                 <Table className="min-w-[650px] md:min-w-full">
@@ -473,7 +464,6 @@ export function ShiftModule({
               </div>
             </div>
 
-            {/* Mobile View: Vertical Card Blocks */}
             <div className="block md:hidden space-y-4 w-full">
               {getDatesList(addShiftData.dateFrom, addShiftData.dateTo).map((date, i) => {
                 const dateKey = formatDateKey(date);

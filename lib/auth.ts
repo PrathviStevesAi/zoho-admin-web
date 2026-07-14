@@ -9,7 +9,6 @@ class CustomAuthError extends CredentialsSignin {
     }
 }
 
-// for the testing
 // console.log("AUTH_SECRET exists:", !!process.env.AUTH_SECRET);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({

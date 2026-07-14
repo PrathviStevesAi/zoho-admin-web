@@ -15,7 +15,6 @@ export function VoluntarySelfIdSection() {
 
   return (
     <>
-      {/* Voluntary Self-Identification */}
       <Card className="shadow-none border-slate-200">
         <CardHeader className="pb-3 border-b border-slate-100">
           <CardTitle className="text-base font-bold text-slate-800">Voluntary Self-Identification</CardTitle>
@@ -140,7 +139,6 @@ export function VoluntarySelfIdSection() {
         </CardContent>
       </Card>
 
-      {/* Veteran Status */}
       <Card className="shadow-none border-slate-200">
         <CardHeader className="pb-3 border-b border-slate-100">
           <CardTitle className="text-base font-bold text-slate-800">Veteran Status</CardTitle>
@@ -172,7 +170,6 @@ export function VoluntarySelfIdSection() {
         </CardContent>
       </Card>
 
-      {/* Disability Status */}
       <Card className="shadow-none border-slate-200">
         <CardHeader className="pb-3 border-b border-slate-100">
           <CardTitle className="text-base font-bold text-slate-800">Disability Status</CardTitle>
@@ -204,7 +201,6 @@ export function VoluntarySelfIdSection() {
         </CardContent>
       </Card>
 
-      {/* Candidate Acknowledgment */}
       <Card className="shadow-none border-slate-200">
         <CardHeader className="pb-3 border-b border-slate-100">
           <CardTitle className="text-base font-bold text-slate-800">Candidate Acknowledgment</CardTitle>

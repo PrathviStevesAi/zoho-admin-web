@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, Search, UserPlus, Video } from "lucide-react";
+import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
@@ -44,7 +44,6 @@ export function ShiftHeader({
 }: ShiftHeaderProps) {
   return (
     <div className="flex flex-col gap-6">
-      {/* Breadcrumbs & Title Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2 text-slate-700 text-[13px] mb-1">
@@ -136,7 +135,6 @@ export function ShiftHeader({
         </div>
       </div>
 
-      {/* Action Buttons Icons Panel */}
       <div className="flex flex-wrap items-center justify-center gap-x-6 md:gap-x-12 gap-y-6 py-4">
         {(() => {
           if (!shift) return null;

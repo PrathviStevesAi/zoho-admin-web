@@ -9,7 +9,6 @@ function ShiftViewContent() {
   const searchParams = useSearchParams();
   const shiftId = searchParams.get("shift_id") || "";
   const notificationId = searchParams.get("notification_id");
-
   return <ShiftDashboard shiftId={shiftId} notificationId={notificationId} />;
 }
 

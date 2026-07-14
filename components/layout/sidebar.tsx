@@ -90,7 +90,6 @@ export function Sidebar({ userRole }: { userRole?: string }) {
   }, []);
 
   useEffect(() => {
-    // Auto-open Users submenu if on sub-routes
     if (pathname.startsWith("/users-directory")) {
       setOpenSubmenus(prev => ({ ...prev, "Users": true }));
     }
@@ -111,7 +110,6 @@ export function Sidebar({ userRole }: { userRole?: string }) {
           isCollapsed ? "-left-[70px] md:left-0 w-[70px]" : "left-0 w-64"
         )}
       >
-        {/* Header */}
         <div className="flex items-center h-16 px-4 justify-between border-b shrink-0">
           {!isCollapsed && (
             <div className="relative w-24 h-8">
@@ -128,11 +126,9 @@ export function Sidebar({ userRole }: { userRole?: string }) {
           </Button>
         </div>
 
-        {/* Nav */}
         <nav className={cn("flex-1 px-3 py-4 overflow-y-auto", isCollapsed ? "space-y-1" : "space-y-4")}>
           {navGroups.map((group) => (
             <div key={group.groupLabel}>
-              {/* Section label — hidden when collapsed */}
               {!isCollapsed && (
                 <p className="px-2 mb-1 text-[13px] font-bold uppercase tracking-widest text-black select-none">
                   {group.groupLabel}
@@ -146,7 +142,6 @@ export function Sidebar({ userRole }: { userRole?: string }) {
                   const hasSubmenus = Array.isArray(route.submenus) && route.submenus.length > 0;
                   let submenus = hasSubmenus ? route.submenus! : [];
 
-                  // Hide "Member" submenu if user is a "member"
                   if (userRole === "member" && route.label === "Users") {
                     submenus = submenus.filter((sub) => sub.label !== "Member");
                   }

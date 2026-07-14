@@ -73,9 +73,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
   const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  // Local selection state (only apply to parent state when confirmed)
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
-
   const isFilterActive =
     debouncedSearchQuery !== "" ||
     userFilters.country !== "All Country" ||

@@ -7,7 +7,6 @@ export default function Loader() {
   useEffect(() => {
     const interval = setInterval(() => {
       setFilledCount((prev) => {
-        // Add a slight pause when fully filled before restarting
         if (prev > text.length + 2) {
           return 0;
         }

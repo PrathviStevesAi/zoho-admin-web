@@ -18,34 +18,25 @@ import Link from "next/link";
 
 export default function NewWorkOrderPage() {
   const router = useRouter();
-
-  // Form State
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [invoiceDigits, setInvoiceDigits] = useState("");
   const [invoiceDescription, setInvoiceDescription] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState("");
-
-  // Address State
   const [streetAddress, setStreetAddress] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [country, setCountry] = useState("");
-
-  // Errors state
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVerifyingInvoice, setIsVerifyingInvoice] = useState(false);
-
-  // Customer Selection State
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [customers, setCustomers] = useState<any[]>([]);
   const [isCustomersLoading, setIsCustomersLoading] = useState(false);
 
-  // Debounced search for customers
   React.useEffect(() => {
     if (isCustomerDialogOpen) {
       const delayDebounceFn = setTimeout(() => {
@@ -73,7 +64,7 @@ export default function NewWorkOrderPage() {
     setCustomerName(customer.company_name || `${customer.first_name} ${customer.last_name}`);
     setCustomerEmail(customer.email || "");
     setSelectedCustomerId(customer.id);
-    
+
     if (customer.service_address) {
       setStreetAddress(customer.service_address.street || customer.service_address.address || "");
       setCity(customer.service_address.city || "");
@@ -86,7 +77,7 @@ export default function NewWorkOrderPage() {
       clearError("zipCode");
       clearError("country");
     }
-    
+
     setIsCustomerDialogOpen(false);
     clearError("customerName");
     clearError("customerEmail");
@@ -107,13 +98,11 @@ export default function NewWorkOrderPage() {
     });
   };
 
-  // Generate random 5-digit invoice number
   const handleGenerateInvoiceNo = async () => {
     setIsVerifyingInvoice(true);
     let valid = false;
     let digits = "";
-    
-    // Try up to 5 times to find a unique one to avoid infinite loop just in case
+
     for (let i = 0; i < 5; i++) {
       digits = Math.floor(10000 + Math.random() * 90000).toString();
       const res = await verifyInvoiceNumberAction(digits);
@@ -122,7 +111,7 @@ export default function NewWorkOrderPage() {
         break;
       }
     }
-    
+
     setInvoiceDigits(digits);
     if (!valid) {
       setErrors(prev => ({ ...prev, invoiceNo: "Could not generate a unique invoice number. Please try again." }));
@@ -132,7 +121,6 @@ export default function NewWorkOrderPage() {
     setIsVerifyingInvoice(false);
   };
 
-  // Verify manual entry
   React.useEffect(() => {
     const verifyManual = async () => {
       if (invoiceDigits.length === 5) {
@@ -154,7 +142,6 @@ export default function NewWorkOrderPage() {
     return () => clearTimeout(delayDebounceFn);
   }, [invoiceDigits]);
 
-  // Validation
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -201,7 +188,6 @@ export default function NewWorkOrderPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle Form Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -255,13 +241,11 @@ export default function NewWorkOrderPage() {
   };
 
   const handleCancel = () => {
-    // Navigate back to the dashboard
     router.push("/dashboard");
   };
 
   return (
     <div className="max-w-4xl mx-auto py-0 px-4 font-sans space-y-6">
-      {/* Header */}
       <div className="space-y-1.5 pl-1 sm:pl-2">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-montserrat mb-0">
           Create New Work Order
@@ -270,14 +254,9 @@ export default function NewWorkOrderPage() {
           Fill in the details below to generate a new work order.
         </p>
       </div>
-
-      {/* Main Form Card */}
       <Card className="border-border shadow-md rounded-lg overflow-hidden bg-card">
-
         <CardContent className="p-6 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-
-            {/* Customer Information Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="customer_name" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -341,10 +320,7 @@ export default function NewWorkOrderPage() {
                 )}
               </div>
             </div>
-
-            {/* Invoice Info Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Invoice Number Generator */}
               <div className="space-y-2">
                 <Label htmlFor="invoice_no" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                   Invoice Number <span className="text-red-500">*</span>
@@ -383,7 +359,6 @@ export default function NewWorkOrderPage() {
                 )}
               </div>
 
-              {/* Invoice Amount */}
               <div className="space-y-2">
                 <Label htmlFor="invoice_amount" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                   Invoice Amount ($) <span className="text-red-500">*</span>
@@ -407,7 +382,6 @@ export default function NewWorkOrderPage() {
               </div>
             </div>
 
-            {/* Description textarea */}
             <div className="space-y-2">
               <Label htmlFor="invoice_description" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Service Description
@@ -422,7 +396,6 @@ export default function NewWorkOrderPage() {
               />
             </div>
 
-            {/* Shipping Address Section */}
             <div className="border-t border-border pt-6 space-y-4">
               <h3 className="text-md font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                 Service Address <span className="text-red-500">*</span>
@@ -550,7 +523,6 @@ export default function NewWorkOrderPage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex items-center justify-end gap-3 pt-6 border-t border-border">
               <Button
                 type="button"
@@ -581,7 +553,6 @@ export default function NewWorkOrderPage() {
         </CardContent>
       </Card>
 
-      {/* Customer Selection Dialog */}
       <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
         <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col bg-white">
           <DialogHeader>
@@ -627,9 +598,9 @@ export default function NewWorkOrderPage() {
                   customers.map((c: any) => (
                     <TableRow key={c.id} className="hover:bg-slate-50/80 transition-colors">
                       <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleSelectCustomer(c)}
                           className="text-[#0064cb] border-[#0064cb]/20 hover:bg-[#0064cb]/5"
                         >

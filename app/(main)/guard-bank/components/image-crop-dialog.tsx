@@ -71,40 +71,31 @@ export function ImageCropDialog({ isOpen, onClose, imageSrc, onCropApplied }: Im
 
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
-    
     const cropWidth = 180;
     const cropHeight = 240;
-    
     const cropLeft = (containerWidth - cropWidth) / 2;
     const cropTop = (containerHeight - cropHeight) / 2;
-    
     const renderedWidth = img.clientWidth;
     const renderedHeight = img.clientHeight;
-    
     const scaledWidth = renderedWidth * zoom;
     const scaledHeight = renderedHeight * zoom;
-    
     const imageCenterX = containerWidth / 2 + offset.x;
     const imageCenterY = containerHeight / 2 + offset.y;
-    
     const imageLeft = imageCenterX - scaledWidth / 2;
     const imageTop = imageCenterY - scaledHeight / 2;
-    
     const sx = (cropLeft - imageLeft) * (img.naturalWidth / scaledWidth);
     const sy = (cropTop - imageTop) * (img.naturalHeight / scaledHeight);
-    
     const sWidth = cropWidth * (img.naturalWidth / scaledWidth);
     const sHeight = cropHeight * (img.naturalHeight / scaledHeight);
-    
     const canvas = document.createElement("canvas");
     canvas.width = 360;
     canvas.height = 480;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    
+
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     try {
       ctx.drawImage(
         img,
@@ -117,7 +108,7 @@ export function ImageCropDialog({ isOpen, onClose, imageSrc, onCropApplied }: Im
         canvas.width,
         canvas.height
       );
-      
+
       canvas.toBlob((blob) => {
         if (blob) {
           const croppedFile = new File([blob], "cropped_headshot.jpg", {
@@ -138,9 +129,9 @@ export function ImageCropDialog({ isOpen, onClose, imageSrc, onCropApplied }: Im
         <DialogHeader className="border-b border-slate-100 pb-3 flex flex-row items-center justify-between">
           <DialogTitle className="text-lg font-bold text-slate-800">Free Crop Image</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6 pt-4">
-          <div 
+          <div
             className="w-full h-[300px] bg-[#9e9e9e] relative overflow-hidden select-none cursor-move rounded-lg"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -151,7 +142,7 @@ export function ImageCropDialog({ isOpen, onClose, imageSrc, onCropApplied }: Im
             onTouchEnd={handleTouchEnd}
           >
             {imageSrc && (
-              <img 
+              <img
                 ref={cropImageRef}
                 src={imageSrc}
                 alt="Crop Source"
@@ -167,12 +158,10 @@ export function ImageCropDialog({ isOpen, onClose, imageSrc, onCropApplied }: Im
                 }}
               />
             )}
-            
-            {/* Spotlight overlay with crop box container and grid lines */}
-            <div 
+
+            <div
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[180px] h-[240px] border border-white/95 pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] rounded-sm"
             >
-              {/* 3x3 Grid Lines */}
               <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
                 <div className="border-r border-b border-white/30 col-span-1 row-span-1"></div>
                 <div className="border-r border-b border-white/30 col-span-1 row-span-1"></div>
@@ -186,8 +175,7 @@ export function ImageCropDialog({ isOpen, onClose, imageSrc, onCropApplied }: Im
               </div>
             </div>
           </div>
-          
-          {/* Zoom Slider */}
+
           <div className="space-y-2">
             <div className="text-xs font-bold text-slate-800">
               Zoom: {Math.round(zoom * 100)}%
@@ -202,8 +190,7 @@ export function ImageCropDialog({ isOpen, onClose, imageSrc, onCropApplied }: Im
               className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0064cb]"
             />
           </div>
-          
-          {/* Action buttons */}
+
           <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
             <Button
               type="button"

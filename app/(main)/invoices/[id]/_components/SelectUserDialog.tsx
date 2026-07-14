@@ -3,7 +3,6 @@
 import {
   clientFetchGuardsAction
 } from "@/lib/client-actions";
-
 import { useState, useEffect } from "react";
 import { X, Search, XCircle } from "lucide-react";
 import { fetchLocationAction, } from "@/actions/dashboard.actions";
@@ -128,7 +127,6 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
         </div>
 
         <div className="p-6 space-y-6 flex-1 flex flex-col min-h-0">
-          {/* Filters Row */}
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="space-y-1.5 flex-1">
@@ -237,7 +235,6 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
             </div>
           </div>
 
-          {/* Table Area */}
           <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col flex-1 min-h-[250px] bg-white shadow-sm">
             <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto custom-scrollbar-visible">
               <Table className="border-collapse min-w-[1200px]">

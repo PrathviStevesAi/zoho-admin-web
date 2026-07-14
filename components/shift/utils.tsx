@@ -71,7 +71,6 @@ export const triggerFileDownload = async (url: string, fileName: string) => {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(blobUrl);
   } catch (error) {
-    // If CORS or network error occurs, fallback to standard link behavior in new window
     const link = document.createElement("a");
     link.href = url;
     link.target = "_blank";
@@ -184,7 +183,6 @@ export const formatStatus = (status: string) => {
 export const formatDateTime = (dateStr: string) => {
   if (!dateStr) return 'N/A';
   try {
-    // Replace space with T to make it a valid ISO string if it's a PostgreSQL timestamp
     const isoString = dateStr.replace(' ', 'T');
     const dt = DateTime.fromISO(isoString, { setZone: true });
     if (!dt.isValid) return 'N/A';

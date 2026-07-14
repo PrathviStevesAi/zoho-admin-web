@@ -23,7 +23,6 @@ export function Pagination({
   const activeTotalPages = Math.max(totalPages, 1);
   const activePage = page;
 
-  // Generate page numbers
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
     if (activeTotalPages <= 5) {
@@ -45,16 +44,13 @@ export function Pagination({
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-border bg-card shrink-0 select-none">
-      {/* Total Entries Status */}
       <div className="text-[13px] text-muted-foreground font-medium">
         Showing <span className="font-semibold text-foreground">{startItem}</span> to{" "}
         <span className="font-semibold text-foreground">{endItem}</span> of{" "}
         <span className="font-semibold text-foreground">{totalItems}</span> entries
       </div>
 
-      {/* Navigation Buttons */}
       <div className="flex items-center gap-1">
-        {/* Previous Button */}
         <Button
           variant="outline"
           size="icon"
@@ -66,7 +62,6 @@ export function Pagination({
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
-        {/* Page Number Buttons */}
         <div className="flex items-center gap-1 mx-1">
           {getPageNumbers().map((p, idx) => {
             if (p === "...") {
@@ -84,11 +79,10 @@ export function Pagination({
               <Button
                 key={`page-${pageNum}`}
                 variant={activePage === pageNum ? "primary" : "outline"}
-                className={`h-8 w-8 p-0 text-sm font-semibold rounded-md transition-all ${
-                  activePage === pageNum
+                className={`h-8 w-8 p-0 text-sm font-semibold rounded-md transition-all ${activePage === pageNum
                     ? "shadow-sm shadow-primary/20 cursor-default"
                     : "hover:bg-slate-50 cursor-pointer"
-                }`}
+                  }`}
                 onClick={() => onPageChange(pageNum)}
                 disabled={isPending || totalItems === 0}
               >
@@ -98,7 +92,6 @@ export function Pagination({
           })}
         </div>
 
-        {/* Next Button */}
         <Button
           variant="outline"
           size="icon"

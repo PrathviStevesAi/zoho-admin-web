@@ -61,7 +61,6 @@ export function GuardPriceTab({
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-6">
-      {/* Header */}
       <div className="flex flex-col items-center justify-center border-b border-slate-100 pb-5">
         <div className="flex items-center gap-2">
           <Banknote className="w-6 h-6 text-[#0064cb]" strokeWidth={2.5} />
@@ -69,7 +68,6 @@ export function GuardPriceTab({
         </div>
       </div>
 
-      {/* Action Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="w-full sm:max-w-md">
           {renderSelect(selectedTerritory, setSelectedTerritory, "Select Territory", Object.keys(pricesData), "All Territories", "bg-white")}
@@ -133,12 +131,10 @@ export function GuardPriceTab({
               const territoryData = pricesData[territoryName];
               return (
                 <div key={territoryName} className="space-y-6">
-                  {/* Territory Banner */}
                   <div className="bg-[#0064cb] rounded-lg p-3 px-5 shadow-sm">
                     <h3 className="text-white font-bold text-lg">{territoryName}</h3>
                   </div>
 
-                  {/* Cards Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {Object.keys(territoryData).map((stateName) => {
                       const statePrices = territoryData[stateName];

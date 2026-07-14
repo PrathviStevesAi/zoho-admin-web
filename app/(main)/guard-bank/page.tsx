@@ -35,7 +35,7 @@ function GuardBankContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -48,7 +48,6 @@ function GuardBankContent() {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
-
 
   const [guardsData, setGuardsData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,8 +73,6 @@ function GuardBankContent() {
     guardId: string;
   }>({ isOpen: false, guardId: "" });
   const [isDeleting, setIsDeleting] = useState(false);
-
-
 
   useEffect(() => {
     setSelectedCountry("all");
@@ -163,8 +160,7 @@ function GuardBankContent() {
       if (debouncedSearch) {
         url += `&search=${encodeURIComponent(debouncedSearch)}`;
       }
-      
-      // Bust any intermediate caches
+
       url += `&_t=${Date.now()}`;
 
       const res = await fetch(url, {
@@ -221,12 +217,8 @@ function GuardBankContent() {
       if (res.ok) {
         toast.success("Guard application deleted successfully");
         setDeleteConfirm({ isOpen: false, guardId: "" });
-        
-        // Optimistically remove from state instantly for a snappy UI
         setGuardsData(prev => prev.filter(guard => guard.id !== id));
         setTotalCount(prev => Math.max(0, prev - 1));
-        
-        // Delay the refetch slightly to ensure the backend database has fully committed the deletion
         setTimeout(() => {
           fetchGuards();
         }, 800);
@@ -588,8 +580,6 @@ function GuardBankContent() {
               {renderPagination()}
             </div>
           )}
-
-
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Plus, Trash2, X } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +53,7 @@ export function AssignmentModule({
     if (isNaN(num)) return "----";
     return `$${num.toFixed(2)}`;
   };
-  
+
   useEffect(() => {
     setSelectedShifts(prev => prev.filter(id => !pendingAssignments[id]));
 
@@ -63,7 +63,6 @@ export function AssignmentModule({
       setTravelFee("");
       setShiftRates({});
     } else {
-      // Initialize rates for new pending assignments
       setShiftRates(prev => {
         const next = { ...prev };
         let changed = false;
@@ -77,15 +76,14 @@ export function AssignmentModule({
             changed = true;
           }
         });
-        
-        // Clean up removed pending assignments
+
         Object.keys(next).forEach(id => {
           if (!pendingAssignments[id]) {
             delete next[id];
             changed = true;
           }
         });
-        
+
         return changed ? next : prev;
       });
     }
@@ -138,7 +136,6 @@ export function AssignmentModule({
 
   const selectableShifts = shifts.filter(s => !s.guard && !pendingAssignments[s.shift_id]);
   const isAllSelected = selectableShifts.length > 0 && selectableShifts.every(s => selectedShifts.includes(s.shift_id));
-
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedShifts(selectableShifts.map(s => s.shift_id));
@@ -279,8 +276,8 @@ export function AssignmentModule({
                       </TableRow>
                     ) : shifts.length > 0 ? (
                       shifts.map((shift) => (
-                        <TableRow 
-                          key={shift.shift_id} 
+                        <TableRow
+                          key={shift.shift_id}
                           className={cn(
                             "border-slate-50 transition-colors",
                             (shift.guard || pendingAssignments[shift.shift_id]) ? "bg-slate-50/50" : "hover:bg-slate-50/30"
@@ -377,8 +374,8 @@ export function AssignmentModule({
                           <TableCell className="py-4 px-6">
                             <span className={cn(
                               "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                              shift.is_seen === true ? "bg-green-50 text-green-600" : 
-                              shift.is_seen === false ? "bg-amber-50 text-amber-600" : "bg-slate-50 text-slate-700"
+                              shift.is_seen === true ? "bg-green-50 text-green-600" :
+                                shift.is_seen === false ? "bg-amber-50 text-amber-600" : "bg-slate-50 text-slate-700"
                             )}>
                               {shift.is_seen === true ? "Seen" : shift.is_seen === false ? "Not Seen" : "----"}
                             </span>
@@ -386,14 +383,14 @@ export function AssignmentModule({
                           <TableCell className="py-4 px-6">
                             <span className={cn(
                               "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                              (shift.status?.toLowerCase().includes("abandon") || 
-                               shift.status?.toLowerCase().includes("rejected") || 
-                               shift.status?.toLowerCase().includes("refused") ||
-                               shift.status?.toLowerCase().includes("cancel"))
+                              (shift.status?.toLowerCase().includes("abandon") ||
+                                shift.status?.toLowerCase().includes("rejected") ||
+                                shift.status?.toLowerCase().includes("refused") ||
+                                shift.status?.toLowerCase().includes("cancel"))
                                 ? "bg-red-50 text-red-600"
                                 : shift.status
-                                ? "bg-green-50 text-green-600"
-                                : "bg-slate-50 text-slate-700"
+                                  ? "bg-green-50 text-green-600"
+                                  : "bg-slate-50 text-slate-700"
                             )}>
                               {shift.status || "----"}
                             </span>

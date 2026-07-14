@@ -24,7 +24,7 @@ export default function InProgressInvoice({ initialData, pagination }: { initial
   const dateFrom = searchParams.get("date_from") || "";
   const dateTo = searchParams.get("date_to") || "";
 
-  const fetchAction = useCallback((page: number, search?: string, from?: string, to?: string) => 
+  const fetchAction = useCallback((page: number, search?: string, from?: string, to?: string) =>
     clientFetchInvoicesAction(page, search, from, to, "in_progress"), []);
 
   const {
@@ -45,7 +45,6 @@ export default function InProgressInvoice({ initialData, pagination }: { initial
     dateFrom,
     dateTo
   );
-
 
   useEffect(() => {
     if (setIsFetching) setIsFetching(isPending);

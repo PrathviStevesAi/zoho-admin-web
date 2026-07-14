@@ -259,7 +259,5 @@ export function FileUpload({
       </div>
     );
   }
-
-  // fallback to dragdrop if needed
   return null;
 }

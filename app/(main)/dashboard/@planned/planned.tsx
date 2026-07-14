@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-
 import { useSearchParams } from "next/navigation";
 import { Pagination, Record } from "@/types/dashboard.types";
-import { Loader2, Search } from "lucide-react";
-
+import { Search } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/table/data-table";
@@ -35,8 +33,8 @@ export default function Planned({ initialData, pagination }: { initialData: Reco
     limit,
     goToPage,
   } = useInfiniteSearch<Record>(
-    initialData, 
-    pagination, 
+    initialData,
+    pagination,
     clientFetchPlannedShiftAction,
     500,
     dateFrom,

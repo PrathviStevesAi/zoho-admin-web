@@ -52,7 +52,6 @@ export function ShiftCommentsTab({
         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight">General comments</h3>
       </div>
 
-      {/* Comment List */}
       {isCommentsLoading ? (
         <div className="space-y-6 animate-pulse">
           {[...Array(3)].map((_, i) => (
@@ -128,9 +127,7 @@ export function ShiftCommentsTab({
         </div>
       )}
 
-      {/* Comment Input Area */}
       <div className="pt-6 flex flex-col md:flex-row gap-3 items-start">
-        {/* Type Selection */}
         <div className="w-full md:w-28 flex-shrink-0 relative">
           <span className="absolute -top-2 left-3 px-1.5 bg-white text-[10px] font-bold text-slate-700 uppercase z-10">
             Type

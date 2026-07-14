@@ -71,7 +71,6 @@ export default function DashboardLayout({
                     </Suspense>
                 </div>
             )}
-
             <div>{children}</div>
         </DashboardProvider>
     )

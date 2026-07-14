@@ -8,9 +8,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-
 import { submitSubcontractorApplicationAction } from "@/actions/subcontractor.actions";
-
 import { EmailAndPhoneSection } from "./sections/EmailAndPhoneSection";
 import { ContactInformationSection } from "./sections/ContactInformationSection";
 import { LicenseExpirationSection } from "./sections/LicenseExpirationSection";
@@ -25,14 +23,12 @@ const formSchema = z.object({
   resume: z.any().optional(),
   license_number: z.string().trim().min(3, "License number is required").max(15, "License number cannot exceed 15 characters").regex(/^[A-Za-z0-9]+$/, "License number must be alphanumeric").toUpperCase(),
   expiration_date: z.string().min(1, "Expiration date is required"),
-
   headshot_image: z.any().optional(),
   security_guard_license: z.any().optional(),
   securityLicenseOptional: z.boolean().optional(),
   driver_license: z.any().optional(),
   firewatch_certificate: z.any().optional(),
   verificationVideo: z.any().optional(),
-
   firstName: z.string().trim().min(2, "First name is required").max(100).regex(/^[a-zA-Z\s\-']+$/, "First name can only contain alphabets"),
   lastName: z.string().trim().min(2, "Last name is required").max(100).regex(/^[a-zA-Z\s\-']+$/, "Last name can only contain alphabets"),
   address: z.string().trim().min(1, "Address is required").max(255),
@@ -42,36 +38,27 @@ const formSchema = z.object({
   zipCode: z.string().trim().min(1, "Zip Code is required").max(10, "Zip Code cannot exceed 10 characters"),
   phoneCode: z.string().min(1, "Code required"),
   phone: z.string().trim().min(10, "Phone number required"),
-
   howHeard: z.string().min(1, "This field is required"),
-
   onCallAcknowledge: z.string().min(1, "This field is required"),
   hasSmartphone: z.string().min(1, "This field is required"),
   canRespondAlerts: z.string().min(1, "This field is required"),
   hasSecurityLicense: z.string().min(1, "This field is required"),
   canPassBackgroundCheck: z.string().min(1, "This field is required"),
-
   hasReliableTransport: z.string().min(1, "This field is required"),
   unarmed: z.string().min(1, "This field is required"),
   armed: z.string().min(1, "This field is required"),
   english_language: z.string().min(1, "This field is required"),
-
   privacyAccepted: z.boolean().refine(val => val === true, { message: "You must accept the privacy policy" }),
-
   gender: z.string().min(1, "This field is required"),
   race: z.string().min(1, "This field is required"),
-
   veteranStatus: z.string().min(1, "This field is required"),
   disabilityStatus: z.string().min(1, "This field is required"),
-
   fullName: z.string().min(3, "Full Name is required").max(255),
 });
 
 export type FormValues = z.infer<typeof formSchema>;
-
 export default function SubcontractorForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const methods = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
@@ -106,7 +93,6 @@ export default function SubcontractorForm() {
   });
 
   const { handleSubmit, formState: { errors } } = methods;
-
   const hasVerificationError =
     (errors.email?.type === "manual") ||
     (errors.phone?.type === "manual");
@@ -188,9 +174,7 @@ export default function SubcontractorForm() {
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <EmailAndPhoneSection />
-
           <fieldset disabled={hasVerificationError || isSubmitting} className={`space-y-6 ${hasVerificationError || isSubmitting ? "opacity-50 pointer-events-none transition-opacity" : ""}`}>
-
             <LicenseExpirationSection />
             <DocumentsCredentialsSection />
             <ContactInformationSection />
@@ -198,7 +182,6 @@ export default function SubcontractorForm() {
             <AdditionalInformationSection />
             <PrivacyPolicySection />
             <VoluntarySelfIdSection />
-
             <div className="flex justify-center space-x-4 pt-6 pb-8">
               <Button type="submit" disabled={isSubmitting || hasVerificationError} className="px-8 bg-blue-600 hover:bg-blue-700 text-white rounded">
                 {isSubmitting ? (

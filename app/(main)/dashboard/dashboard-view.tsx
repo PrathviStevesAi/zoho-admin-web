@@ -2,7 +2,6 @@
 
 import { useSearchParams, usePathname } from "next/navigation";
 import { useDashboard } from "./dashboard-context";
-import { Loader2 } from "lucide-react";
 import { DispatchSummary } from "./_components/dispatch-summary";
 
 interface DashboardViewProps {
@@ -41,14 +40,11 @@ export function DashboardView({
     const { isPending, isFetching, loadingMessage } = useDashboard();
     const currentView = searchParams.get("view") || "guard-management";
 
-    // Only show the dashboard tables grid on the main dashboard page
     if (pathname !== "/dashboard") return null;
 
     return (
         <div className="relative">
-            {/* Dispatch View Summary Cards */}
             {currentView !== "guard-management" && <DispatchSummary />}
-
             <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 transition-all duration-300`}>
 
                 {currentView === "guard-management" ? (

@@ -82,30 +82,24 @@ export default function QuoteForm() {
     total_hours: "",
     perDaySchedules: [] as DailySchedule[],
   };
-
   const [formData, setFormData] = useState(initialFormData);
 
   useEffect(() => {
     if (formData.is_per_day && formData.Start_Date && formData.End_Date) {
       const start = new Date(formData.Start_Date);
       const end = new Date(formData.End_Date);
-
       if (start <= end) {
         const newSchedules: DailySchedule[] = [];
         const currentDate = new Date(start);
-
         while (currentDate <= end) {
           const yyyy = currentDate.getFullYear();
           const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
           const dd = String(currentDate.getDate()).padStart(2, '0');
           const dateStr = `${yyyy}-${mm}-${dd}`;
-
           const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
           const displayDate = `${daysOfWeek[currentDate.getDay()]}, ${months[currentDate.getMonth()]} ${currentDate.getDate()}`;
-
           const isStartOfWeek = newSchedules.length > 0 && currentDate.getDay() === 1;
-
           const existing = formData.perDaySchedules.find((s: DailySchedule) => s.dateStr === dateStr);
           if (existing) {
             newSchedules.push({ ...existing, isStartOfWeek });
@@ -126,7 +120,6 @@ export default function QuoteForm() {
         }
 
         setFormData(prev => {
-          // Prevent infinite loops by checking if arrays are identical
           if (prev.perDaySchedules.length === newSchedules.length && prev.perDaySchedules.every((s, i) => s.dateStr === newSchedules[i].dateStr)) {
             return prev;
           }

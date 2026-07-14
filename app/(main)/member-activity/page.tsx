@@ -72,9 +72,7 @@ export default function MemberActivityPage() {
     setLoading(true);
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-
       const dateParams = getDateParams(currentFilters);
-
       const queryParams = new URLSearchParams();
       if (page) {
         queryParams.append("page", page.toString());
@@ -98,7 +96,6 @@ export default function MemberActivityPage() {
 
       const url = `${baseUrl}/api/v1/guard/bank/user/activity?${queryParams.toString()}`;
       console.log("Fetching activities from:", url);
-
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -139,7 +136,6 @@ export default function MemberActivityPage() {
 
   useEffect(() => {
     if (mounted && status !== "loading") {
-      // Fetch initial data to populate summary cards without pagination params
       fetchActivities(null);
       setCurrentPage(1);
     }
@@ -258,7 +254,6 @@ export default function MemberActivityPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">

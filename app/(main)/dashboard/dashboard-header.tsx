@@ -16,10 +16,8 @@ export function DashboardHeader() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { isPending, startTransition, setLoadingMessage } = useDashboard();
-
     const currentView = searchParams.get("view") || "guard-management";
 
-    // Only show the dashboard-specific header on the main dashboard page
     if (pathname !== "/dashboard") return null;
 
     const handleValueChange = (value: string) => {
@@ -31,10 +29,8 @@ export function DashboardHeader() {
         });
     };
 
-
     return (
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-0 md:mb-10 border-b border-border pb-4 md:pb-8 gap-6">
-            {/* TYPOGRAPHY SECTION */}
             <div className="space-y-1.5 w-full md:w-auto">
                 <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-3">
                     {currentView === "guard-management" ? "Operation Dashboard" : "Dispatch View Dashboard"}
@@ -46,11 +42,8 @@ export function DashboardHeader() {
                 </p>
             </div>
 
-            {/* FILTERS SECTION */}
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6 w-full md:w-auto">
-
                 <PeriodFilter />
-
                 <div className="flex flex-col gap-1 w-full sm:w-auto">
                     <span className="text-[14px] font-semibold text-slate-600 tracking-tight ml-1">View</span>
                     <Select value={currentView} onValueChange={handleValueChange} disabled={isPending}>

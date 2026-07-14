@@ -151,7 +151,6 @@ export default function MemberDirectoryPage() {
 
   return (
     <div className="p-0 sm:p-4 md:p-6 max-w-[1400px] mx-auto space-y-8 animate-in fade-in duration-500">
-      {/* Breadcrumbs & Header */}
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
           <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
@@ -167,7 +166,6 @@ export default function MemberDirectoryPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Registration Form */}
         <div className="lg:col-span-5">
           <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-4 sm:p-6">
@@ -279,7 +277,6 @@ export default function MemberDirectoryPage() {
           </Card>
         </div>
 
-        {/* Member List */}
         <div className="lg:col-span-7">
           <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white min-h-[600px]">
             <CardHeader className="p-4 sm:p-8 pb-4">

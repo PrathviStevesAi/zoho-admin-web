@@ -3,7 +3,6 @@
 import {
   clientFetchGuardsAction
 } from "@/lib/client-actions";
-
 import { useState, useEffect } from "react";
 import { Loader2, Check, ChevronRight, Search, XCircle, UserCheck, CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,17 +48,12 @@ export function AvailableGuardsModule({
   onRefresh,
   totalGuards
 }: AvailableGuardsModuleProps) {
-  // 0: Results, 1: Select Shifts, 2: Select Guards, 3: Finalize/Find
   const [activeStep, setActiveStep] = useState(0);
   const [selectedShiftIds, setSelectedShiftIds] = useState<string[]>([]);
   const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
-
-  // Guard Selection State
   const [allGuards, setAllGuards] = useState<any[]>([]);
   const [isGuardsLoading, setIsGuardsLoading] = useState(false);
   const [isFinding, setIsFinding] = useState(false);
-
-  // Filters State
   const [guardSearchQuery, setGuardSearchQuery] = useState("");
   const [guardFilters, setGuardFilters] = useState({
     radiusMiles: "all",
@@ -70,7 +64,6 @@ export function AvailableGuardsModule({
   const [pagination, setPagination] = useState<any>(null);
   const debouncedSearchQuery = useDebounceValue(guardSearchQuery, 500);
 
-  // Load Guards with Filters
   useEffect(() => {
     if (activeStep === 2) {
       loadGuards();
@@ -192,7 +185,6 @@ export function AvailableGuardsModule({
   const renderStepper = () => (
     <div className="flex items-center justify-center py-3 px-4">
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Step 1 Button */}
         <button
           onClick={() => setActiveStep(1)}
           disabled={activeStep === 1}
@@ -214,7 +206,6 @@ export function AvailableGuardsModule({
 
         <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
 
-        {/* Step 2 Button */}
         <button
           onClick={() => {
             if (selectedShiftIds.length === 0 && activeStep !== 2) {
@@ -244,7 +235,6 @@ export function AvailableGuardsModule({
 
         <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
 
-        {/* Step 3 Button (Find) */}
         <button
           onClick={() => {
             if (selectedShiftIds.length === 0) {
@@ -393,7 +383,6 @@ export function AvailableGuardsModule({
 
           <div className="p-0">
             {activeStep === 0 ? (
-              /* RESULTS VIEW */
               <div className="overflow-x-auto custom-scrollbar w-full">
                 <Table className="min-w-[900px] md:min-w-full">
                   <TableHeader className="bg-slate-50/50">
@@ -461,7 +450,6 @@ export function AvailableGuardsModule({
                 </Table>
               </div>
             ) : activeStep === 1 ? (
-              /* SHIFT SELECTION VIEW */
               <div className="overflow-x-auto custom-scrollbar w-full">
                 <Table className="min-w-[650px] md:min-w-full">
                   <TableHeader className="bg-slate-50/50">
@@ -515,7 +503,6 @@ export function AvailableGuardsModule({
                 </Table>
               </div>
             ) : activeStep === 2 ? (
-              /* GUARD SELECTION VIEW */
               <div className="overflow-x-auto custom-scrollbar w-full">
                 <Table className="min-w-[1200px] md:min-w-full">
                   <TableHeader className="bg-slate-50/50">
@@ -588,7 +575,6 @@ export function AvailableGuardsModule({
                 </Table>
               </div>
             ) : (
-              /* STEP 3: FINALIZE VIEW */
               <div className="p-8 text-center space-y-8 animate-in fade-in duration-500">
                 <div className="max-w-2xl mx-auto space-y-6">
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
@@ -643,7 +629,6 @@ export function AvailableGuardsModule({
               </div>
             )}
 
-            {/* Footer Actions for Steps 1 and 2 */}
             {(activeStep === 1 || activeStep === 2) && (
               <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 w-full">
                 {activeStep === 1 ? (

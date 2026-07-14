@@ -28,7 +28,7 @@ export function ManualStartShiftDialog({
     e.preventDefault();
     if (!reason.trim()) return;
     await onConfirm(reason);
-    setReason(""); // Reset reason on submission
+    setReason("");
   };
 
   return (

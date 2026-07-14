@@ -6,7 +6,6 @@ importScripts(
     "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"
 );
 
-// Force the new service worker to activate immediately (no waiting for old tabs to close)
 self.addEventListener("install", (event) => {
     console.log("[firebase-messaging-sw.js] Installing new SW version...");
     self.skipWaiting();
@@ -27,11 +26,7 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
-
-// BroadcastChannel for reliable client communication
 const notificationChannel = new BroadcastChannel("fcm-notifications");
-
-// Handle background messages (tab not focused)
 messaging.onBackgroundMessage(function (payload) {
     console.log(
         "[firebase-messaging-sw.js] Received background message ",
@@ -52,16 +47,12 @@ messaging.onBackgroundMessage(function (payload) {
         notificationOptions
     );
 
-    // Also broadcast to any open tabs so they can refresh their notification list
     notificationChannel.postMessage({
         type: "FCM_FOREGROUND_MESSAGE",
         payload: payload,
     });
 });
 
-// Listen for ALL push events and forward to client pages via BroadcastChannel.
-// This fires for both foreground and background, ensuring the notification dropdown
-// always updates in real-time regardless of how Firebase SDK routes the message.
 self.addEventListener("push", function (event) {
     let payload = null;
     try {
@@ -75,13 +66,11 @@ self.addEventListener("push", function (event) {
 
     console.log("[firebase-messaging-sw.js] Push event received, broadcasting to clients:", payload);
 
-    // Use BroadcastChannel (more reliable than postMessage for uncontrolled clients)
     notificationChannel.postMessage({
         type: "FCM_FOREGROUND_MESSAGE",
         payload: payload,
     });
 
-    // Also try postMessage as fallback
     event.waitUntil(
         self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
             console.log(`[firebase-messaging-sw.js] postMessage to ${clients.length} client(s)`);

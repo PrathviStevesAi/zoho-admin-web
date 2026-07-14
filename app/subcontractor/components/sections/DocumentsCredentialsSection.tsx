@@ -10,9 +10,7 @@ import { FormValues } from "../SubcontractorForm";
 
 export function DocumentsCredentialsSection() {
   const { control, watch, setValue } = useFormContext<FormValues>();
-
   const [showVideoInstructions, setShowVideoInstructions] = useState(false);
-
   const isSecurityLicenseOptional = watch("securityLicenseOptional");
   const guardEmail = watch("email");
 

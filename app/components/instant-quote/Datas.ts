@@ -11,5 +11,4 @@ export const securityTypes = [
 
 export const StateList = [
   { value: "", label: "Select State" },
-  // This list will be populated dynamically from country-state-city, but keeping it for reference
 ];

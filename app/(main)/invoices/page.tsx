@@ -94,15 +94,11 @@ export default function InvoiceDetailsPage() {
           </Card>
         </div>
 
-        {/* Right Column - History */}
         <div className="lg:col-span-7 space-y-6">
-          {/* History Card */}
           <Card className="border-slate-200 shadow-sm relative">
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold text-slate-700 mb-6">History of changes</h2>
-
               <div className="space-y-8 relative before:absolute before:left-[7px] before:top-2 before:bottom-0 before:w-[1px] before:bg-slate-200">
-                {/* Event 1 */}
                 <div className="relative pl-8">
                   <div className="absolute left-0 top-[6px] w-[15px] h-[15px] rounded-full bg-sky-100 border border-sky-200" />
                   <div className="bg-sky-50/50 p-4 rounded-sm border border-sky-100">
@@ -114,7 +110,6 @@ export default function InvoiceDetailsPage() {
                   </div>
                 </div>
 
-                {/* Event 2 */}
                 <div className="relative pl-8">
                   <div className="absolute left-0 top-[6px] w-[15px] h-[15px] rounded-full bg-white border-2 border-red-500" />
                   <div className="space-y-4">
@@ -159,7 +154,6 @@ export default function InvoiceDetailsPage() {
         </div>
       </div>
 
-      {/* Edit Modal */}
       {isEditOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div

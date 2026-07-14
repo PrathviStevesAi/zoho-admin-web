@@ -24,7 +24,6 @@ export function useInfiniteSearch<T>(
   const [total, setTotal] = useState(pagination.total);
   const [limit, setLimit] = useState(pagination.limit);
 
-  // Sync state when initial props change (only if they actually have data)
   useEffect(() => {
     if (initialData && initialData.length > 0) {
       setData(initialData);
@@ -45,16 +44,13 @@ export function useInfiniteSearch<T>(
 
   const hasFetchedInitial = useRef(false);
 
-  // Search Logic
   useEffect(() => {
-    // If we're relying on client-side fetch from the start (initialData is empty)
-    // and we haven't fetched yet, we should fetch. Otherwise, wait for search term change.
     const isInitialEmpty = initialData.length === 0 && page === 1;
     const shouldFetchInitial = isInitialEmpty && !hasFetchedInitial.current;
 
-    const hasFiltersChanged = 
-      prevSearchTerm.current !== debouncedValue || 
-      prevDateFrom.current !== date_from || 
+    const hasFiltersChanged =
+      prevSearchTerm.current !== debouncedValue ||
+      prevDateFrom.current !== date_from ||
       prevDateTo.current !== date_to;
 
     if (!hasFiltersChanged && !shouldFetchInitial) {
@@ -80,7 +76,6 @@ export function useInfiniteSearch<T>(
     });
   }, [debouncedValue, fetchAction, date_from, date_to, initialData.length, page]);
 
-  // Go to page
   const goToPage = useCallback(async (p: number) => {
     if (p < 1 || p > totalPages || isPending) return;
 

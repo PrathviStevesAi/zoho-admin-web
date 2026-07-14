@@ -9,7 +9,6 @@ export function ImagePreview({ url, alt }: { url: string; alt: string }) {
 
   useEffect(() => {
     let isMounted = true;
-
     const loadImg = async () => {
       setLoading(true);
       try {
@@ -34,7 +33,7 @@ export function ImagePreview({ url, alt }: { url: string; alt: string }) {
       } catch (error) {
         console.error("Error loading image:", error);
         if (isMounted) {
-          setImgSrc(url); // fallback
+          setImgSrc(url);
         }
       } finally {
         if (isMounted) {

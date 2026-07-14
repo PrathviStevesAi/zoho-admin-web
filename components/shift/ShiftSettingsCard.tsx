@@ -49,7 +49,6 @@ export function ShiftSettingsCard({
   }, [isOpen]);
 
   if (!isOpen) return null;
-
   const handleSave = () => {
     onSave(form);
   };

@@ -22,10 +22,7 @@ interface ActivityCardProps {
 
 export function ActivityCard({ activity }: ActivityCardProps) {
   const router = useRouter();
-
   const handleCardClick = () => {
-    // Attempt to route to guard-bank using the activity id (which usually matches the guard/user id in this context)
-    // If the API returns a specific guard_id, we can fall back to it if added to the type later.
     const targetId = (activity as any).guard_id || (activity as any).user_id || activity.id;
     router.push(`/guard-bank/${targetId}`);
   };
@@ -63,7 +60,7 @@ export function ActivityCard({ activity }: ActivityCardProps) {
   };
 
   return (
-    <div 
+    <div
       onClick={handleCardClick}
       className="relative bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all group cursor-pointer hover:border-slate-300"
     >

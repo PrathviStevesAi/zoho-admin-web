@@ -76,7 +76,6 @@ export default function CustomerViewPage() {
   };
 
   const handleSave = async () => {
-    // Dirty checking
     const payload: any = {};
     if (formData.company_name !== customerData.company_name) payload.company_name = formData.company_name;
     if (formData.first_name !== customerData.first_name) payload.first_name = formData.first_name;
@@ -84,7 +83,6 @@ export default function CustomerViewPage() {
     if (formData.email !== customerData.email) payload.email = formData.email;
     if (formData.phone_number !== customerData.phone_number) payload.phone_number = formData.phone_number;
 
-    // Check billing address changes
     const billingChanged =
       formData.billing_street !== (customerData.billing_address?.street || "") ||
       formData.billing_city !== (customerData.billing_address?.city || "") ||
@@ -103,7 +101,6 @@ export default function CustomerViewPage() {
       };
     }
 
-    // Check service address changes
     const serviceChanged =
       formData.service_street !== (customerData.service_address?.street || "") ||
       formData.service_city !== (customerData.service_address?.city || "") ||
@@ -135,14 +132,13 @@ export default function CustomerViewPage() {
     if (res.success) {
       toast.success("Customer updated successfully");
       setIsEditing(false);
-      loadCustomer(); // reload fresh data
+      loadCustomer();
     } else {
       toast.error(res.error || "Failed to update customer");
     }
   };
 
   const handleCancel = () => {
-    // Reset to original data
     if (customerData) {
       setFormData({
         company_name: customerData.company_name || "",
@@ -168,7 +164,6 @@ export default function CustomerViewPage() {
   if (isLoading) {
     return (
       <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6">
-        {/* Header Skeleton */}
         <div className="flex items-center gap-4 border-b border-slate-200 pb-4">
           <Skeleton className="w-10 h-10 rounded-full" />
           <div className="space-y-2">
@@ -179,7 +174,6 @@ export default function CustomerViewPage() {
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 md:p-8 space-y-8">
-            {/* General Info Skeleton */}
             <div className="space-y-6">
               <Skeleton className="h-6 w-48" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -195,7 +189,6 @@ export default function CustomerViewPage() {
 
             <hr className="border-slate-200" />
 
-            {/* Addresses Skeleton */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <div className="space-y-6">
                 <Skeleton className="h-6 w-48" />
@@ -259,8 +252,6 @@ export default function CustomerViewPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-      {/* Header */}
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.push("/users-directory/customers")}
@@ -275,8 +266,6 @@ export default function CustomerViewPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
-
-        {/* Edit Toggle */}
         <div className="absolute top-4 right-4 z-10 flex gap-2">
           {isEditing ? (
             <>
@@ -296,7 +285,6 @@ export default function CustomerViewPage() {
         </div>
 
         <div className="p-6 md:p-8">
-          {/* General Information Section */}
           <div className="space-y-6">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <User className="w-5 h-5 text-slate-400" /> General Information
@@ -368,10 +356,7 @@ export default function CustomerViewPage() {
 
           <hr className="my-8 border-slate-200" />
 
-          {/* Addresses Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-
-            {/* Billing Address */}
             <div className="space-y-6">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-slate-400" /> Billing Address
@@ -431,8 +416,6 @@ export default function CustomerViewPage() {
                 </div>
               </div>
             </div>
-
-            {/* Service Address */}
             <div className="space-y-6">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-slate-400" /> Service Address
@@ -492,9 +475,7 @@ export default function CustomerViewPage() {
                 </div>
               </div>
             </div>
-
           </div>
-
         </div>
       </div>
     </div>

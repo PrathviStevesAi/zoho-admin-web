@@ -61,7 +61,7 @@ const getCountryAndPhone = (phoneVal: string) => {
     };
   }
   return {
-    country: countries[11], // default to US
+    country: countries[11],
     phone: phoneVal
   };
 };
@@ -85,10 +85,9 @@ export default function ProfilePage() {
     profile_img_url: ""
   });
 
-  const currentFullPhone = editFormData.phone_number 
-    ? `${selectedCountry.dialCode}${editFormData.phone_number}` 
+  const currentFullPhone = editFormData.phone_number
+    ? `${selectedCountry.dialCode}${editFormData.phone_number}`
     : "";
-
   const isFormChanged = user ? (
     editFormData.first_name !== user.first_name ||
     editFormData.last_name !== user.last_name ||
@@ -224,8 +223,6 @@ export default function ProfilePage() {
 
     try {
       setIsUpdating(true);
-
-      // Convert HEIC/HEIF to JPEG before upload (browsers can't handle HEIC natively)
       let uploadFile: File = file;
       const isHeic = file.type === "image/heic" || file.type === "image/heif"
         || file.name.toLowerCase().endsWith(".heic")
@@ -240,7 +237,6 @@ export default function ProfilePage() {
         uploadFile = new File([convertedBlob], jpegName, { type: "image/jpeg" });
       }
 
-      // Generate unique file name
       const fileExt = uploadFile.name.split('.').pop();
       const fileNameWithoutExt = uploadFile.name.replace(/\.[^/.]+$/, "");
       const uniqueId = Math.floor(1000 + Math.random() * 9000);
@@ -273,7 +269,6 @@ export default function ProfilePage() {
 
       if (updateRes.success) {
         toast.success("Profile image updated");
-        // Update local edit form state with the new path
         setEditFormData(prev => ({ ...prev, profile_img_url: file_path }));
 
         const refreshed = await fetchProfileAction();
@@ -424,7 +419,6 @@ export default function ProfilePage() {
               <Label className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">Phone Number</Label>
               {isEditing ? (
                 <div className="relative flex items-center h-11 bg-slate-50 border border-slate-200 rounded-xl focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0064cb]/10 focus-within:border-[#0064cb] transition-all">
-                  {/* Country Code Trigger */}
                   <button
                     type="button"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -439,7 +433,6 @@ export default function ProfilePage() {
                     <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
                   </button>
 
-                  {/* Phone Input */}
                   <div className="relative flex-1 h-full flex items-center">
                     <Phone className="absolute left-3 w-4 h-4 text-slate-700" />
                     <input
@@ -447,7 +440,6 @@ export default function ProfilePage() {
                       placeholder="Enter phone number"
                       value={editFormData.phone_number}
                       onChange={(e) => {
-                        // Allow only digits
                         const digits = e.target.value.replace(/\D/g, "").slice(0, 15);
                         setEditFormData(prev => ({ ...prev, phone_number: digits }));
                       }}
@@ -455,15 +447,13 @@ export default function ProfilePage() {
                     />
                   </div>
 
-                  {/* Backdrop/Overlay for closing dropdown when clicking outside */}
                   {isDropdownOpen && (
-                    <div 
-                      className="fixed inset-0 z-40 cursor-default" 
+                    <div
+                      className="fixed inset-0 z-40 cursor-default"
                       onClick={() => setIsDropdownOpen(false)}
                     />
                   )}
 
-                  {/* Country Dropdown list */}
                   {isDropdownOpen && (
                     <div className="absolute top-full left-0 mt-1 w-[260px] max-h-[220px] overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 animate-in fade-in duration-100">
                       {countries.map((country) => (
@@ -474,9 +464,8 @@ export default function ProfilePage() {
                             setSelectedCountry(country);
                             setIsDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${
-                            selectedCountry.code === country.code ? "bg-blue-50/30 font-semibold text-[#0064cb]" : "text-slate-700"
-                          }`}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${selectedCountry.code === country.code ? "bg-blue-50/30 font-semibold text-[#0064cb]" : "text-slate-700"
+                            }`}
                         >
                           <img
                             src={`https://flagcdn.com/w20/${country.code}.png`}

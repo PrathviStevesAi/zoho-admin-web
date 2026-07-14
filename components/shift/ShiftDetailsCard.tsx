@@ -36,14 +36,14 @@ export function ShiftDetailsCard({
   setIsEditLocationOpen,
 }: ShiftDetailsCardProps) {
   const router = useRouter();
-  
-  type EditingField = 
-    | "shift_description" 
-    | "scheduled_for" 
-    | "execution_time" 
-    | "per_hour_rate" 
-    | "per_shift_rate" 
-    | "travel_fee" 
+
+  type EditingField =
+    | "shift_description"
+    | "scheduled_for"
+    | "execution_time"
+    | "per_hour_rate"
+    | "per_shift_rate"
+    | "travel_fee"
     | null;
   const [editingField, setEditingField] = useState<EditingField>(null);
 
@@ -67,7 +67,6 @@ export function ShiftDetailsCard({
     per_shift_rate: "",
     travel_fee: "",
   });
-
   const [minDateTime, setMinDateTime] = useState("");
 
   useEffect(() => {
@@ -243,8 +242,8 @@ export function ShiftDetailsCard({
 
   const renderEditIcon = (field: Exclude<EditingField, null>, isAllowed: boolean, isDisabled?: boolean, disabledTooltip?: string) => {
     const isEffectivelyDisabled = !isAllowed || isDisabled;
-    const tooltipText = !isAllowed 
-      ? "Once a shift is execute, its details cannot be updated." 
+    const tooltipText = !isAllowed
+      ? "Once a shift is execute, its details cannot be updated."
       : (isDisabled ? disabledTooltip : `Edit ${field.replace("_", " ")}`);
 
     return (
@@ -385,7 +384,7 @@ export function ShiftDetailsCard({
                 const isObject = typeof guard === 'object' && guard !== null;
                 const guardId = isObject ? ((guard as any).guard_id || (guard as any).id) : null;
                 const applicationId = isObject ? (guard as any).application_id : null;
-                const guardName = isObject 
+                const guardName = isObject
                   ? (`${(guard as any).first_name || ""} ${(guard as any).last_name || ""}`.trim() || (guard as any).name || "Unknown Guard")
                   : (guard as string);
 

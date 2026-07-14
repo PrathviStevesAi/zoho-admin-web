@@ -33,7 +33,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const USER_NAME = session?.user?.name || session?.user?.email || "Admin";
 
   useEffect(() => {
-    // Wait until session is fully loaded and we have a valid USER_ID
+
     if (typeof window === "undefined" || status === "loading" || !USER_ID) return;
 
     const initZego = async () => {
@@ -41,7 +41,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         const { ZIM } = await import("zego-zim-web");
         const { ZegoUIKitPrebuilt } = await import("@zegocloud/zego-uikit-prebuilt");
 
-        // The token must have a room ID for ZegoUIKitPrebuilt's kit token generator.
         const token = ZegoUIKitPrebuilt.generateKitTokenForTest(
           APP_ID,
           APP_SIGN,
@@ -52,7 +51,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
         const zp = ZegoUIKitPrebuilt.create(token);
 
-        // Let ZegoUIKitPrebuilt handle the ZIM login and Call Invitation UI automatically!
         zp.addPlugins({ ZIM });
 
         const handleCallEnd = () => {
@@ -125,27 +123,23 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const zimGuardId = toZimUserId(guardId);
-
-      // Zego UIKit Prebuilt automatically constructs the extendedData object.
-      // We must pass our custom parameters via the customData field.
       const customDataPayload = JSON.stringify({ shift_id: shiftId || "" });
-
       const invitationConfig = {
         callees: [{ userID: zimGuardId, userName: "Guard" }],
-        callType: type === 1 ? 1 : 0, // 1 is Video, 0 is Voice in ZegoUIKitPrebuilt
+        callType: type === 1 ? 1 : 0,
         timeout: 60,
         data: customDataPayload,
         notificationConfig: {
-          resourcesID: "zego_call", // Must exactly match the Resource ID in Zego Console
+          resourcesID: "zego_call",
           title: type === 1 ? "Incoming Video Call" : "Incoming Voice Call",
           message: "Admin is calling",
         }
       };
 
-      console.log("🚀 [Zego Web] Sending Call Invitation:");
-      console.log("-> target guardId:", zimGuardId);
-      console.log("-> customData (containing shift_id):", customDataPayload);
-      console.log("-> full config:", invitationConfig);
+      console.log("Zego Web Sending Call Invitation...");
+      console.log("target guardId...", zimGuardId);
+      console.log("customdata...", customDataPayload);
+      console.log("full config...", invitationConfig);
 
       const res = await zpInstance.sendCallInvitation(invitationConfig);
 
@@ -174,7 +168,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       }
 
       toast.error(`Failed to call guard: ${errorMsg}`);
-      
+
       if (shiftId) {
         endVideoCallAction(shiftId).catch(console.error);
         activeShiftIdRef.current = null;
@@ -183,7 +177,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   };
 
   const endCall = async () => {
-    // End call UI is handled natively by ZegoUIKitPrebuilt
     if (activeShiftIdRef.current) {
       endVideoCallAction(activeShiftIdRef.current)
         .then((res) => {

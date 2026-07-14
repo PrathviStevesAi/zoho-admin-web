@@ -61,7 +61,6 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
                             return k.replace(/:+$/, '');
                           };
 
-                          // Handle array values (like Shift No)
                           const displayValue = Array.isArray(value)
                             ? value.join(', ')
                             : typeof value === 'object' && value !== null

@@ -43,11 +43,9 @@ export function Header() {
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState<any>(null);
-
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
-
   const { data: session } = useSession();
 
   const loadProfile = useCallback(async () => {
@@ -141,7 +139,6 @@ export function Header() {
           </div>
         ) : (
           <div className="py-2 divide-y divide-slate-100">
-            {/* Invoice Section */}
             <div className="p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">Invoice</h3>
@@ -185,7 +182,6 @@ export function Header() {
               )}
             </div>
 
-            {/* Shift Section */}
             <div className="p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">Shift</h3>
@@ -236,7 +232,6 @@ export function Header() {
 
   return (
     <header className="flex items-center justify-between h-16 border-b bg-white px-4 md:px-6 sticky top-0 z-50">
-      {/* Mobile Search Overlay */}
       {isMobileSearchOpen && (
         <div className="absolute inset-0 bg-white z-50 flex items-center px-2 gap-2 md:hidden animate-in slide-in-from-top duration-250">
           <Button
@@ -298,7 +293,6 @@ export function Header() {
         </div>
       )}
 
-      {/* LEFT: Logo & Mobile Hamburger Menu */}
       <div className="flex items-center gap-2 md:gap-3 shrink-0 w-auto md:w-[240px]">
         <Button
           variant="ghost"
@@ -321,7 +315,6 @@ export function Header() {
         </Link>
       </div>
 
-      {/* CENTER: Global Search Bar */}
       <div className="hidden md:flex flex-1 justify-center px-4 max-w-2xl relative" ref={searchRef}>
         <div className="relative group w-full max-w-[580px]">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -361,7 +354,6 @@ export function Header() {
             )}
           </div>
 
-          {/* Search Results Dropdown */}
           {renderSearchResultsDropdown()}
         </div>
       </div>

@@ -4,8 +4,7 @@ import { useEffect } from "react";
 
 import { useSearchParams } from "next/navigation";
 import { Pagination, Record } from "@/types/dashboard.types";
-import { Loader2, Search } from "lucide-react";
-
+import { Search } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/table/data-table";
@@ -42,7 +41,6 @@ export default function NotApproved({ initialData, pagination }: { initialData: 
     dateFrom,
     dateTo
   );
-
 
   useEffect(() => {
     if (setIsFetching) setIsFetching(isPending);

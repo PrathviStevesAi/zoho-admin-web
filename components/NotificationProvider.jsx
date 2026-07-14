@@ -11,13 +11,11 @@ export default function NotificationProvider() {
     const pathname = usePathname();
     const { status } = useSession();
 
-    // Suppress Next.js dev overlay for ZegoCloud offline errors
     useEffect(() => {
         if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
             const originalError = console.error;
             console.error = (...args) => {
                 if (typeof args[0] === "string" && args[0].includes("[ZIMManager]")) {
-                    // Downgrade to console.warn to avoid Next.js dev overlay
                     console.warn("Suppressed ZIMManager error:", ...args);
                     return;
                 }
@@ -27,19 +25,19 @@ export default function NotificationProvider() {
     }, []);
 
     useEffect(() => {
-        console.log("[NotificationProvider] Status change:", status);
+        console.log("NotificationProvider Status change...", status);
 
         if (typeof window !== "undefined" && "Notification" in window) {
-            console.log("[NotificationProvider] Current Permission:", Notification.permission);
+            console.log("Current Permission:", Notification.permission);
         }
 
         if (status !== "authenticated") return;
 
-        console.log("[NotificationProvider] Authenticated! Syncing FCM...");
+        console.log("Authenticated! Syncing FCM...");
         const handleToken = async () => {
             const token = await generateToken();
             if (token) {
-                console.log("[NotificationProvider] FCM Token generated. Syncing with server...");
+                console.log("FCM Token generated. Syncing with server...");
                 try {
                     const res = await fetch("/api/fcm-token", {
                         method: "PUT",
@@ -62,12 +60,12 @@ export default function NotificationProvider() {
         handleToken();
 
         const unsubscribe = onMessageListener((payload) => {
-            console.log("[NotificationProvider] Foreground message received:", payload);
+            console.log("NotificationProvider Foreground message received:", payload);
             if (payload?._focusRefresh) return;
 
             const type = payload?.data?.type || payload?.type;
             if (type === "incoming_vc_call") {
-                console.log("[NotificationProvider] Intercepted incoming_vc_call foreground notification");
+                console.log("Intercepted incoming_vc_call foreground notification");
                 if (typeof window !== "undefined") {
                     const callId = payload?.data?.call_id || payload?.call_id;
                     const shiftId = payload?.data?.shift_id || payload?.shift_id;
@@ -79,7 +77,7 @@ export default function NotificationProvider() {
             }
 
             if (type === "decline_vc_call") {
-                console.log("[NotificationProvider] Intercepted decline_vc_call foreground notification");
+                console.log("Intercepted decline_vc_call foreground notification");
                 if (typeof window !== "undefined") {
                     window.dispatchEvent(new CustomEvent("decline-vc-call"));
                 }
@@ -92,7 +90,7 @@ export default function NotificationProvider() {
             const invoiceId = payload?.data?.invoice_id || payload?.data?.invoiceId || payload?.invoice_id || payload?.invoiceId;
             const view = payload?.data?.view || payload?.view;
 
-            console.log("[NotificationProvider] Processing toast:", { title, body, notificationId, shiftId, invoiceId, view });
+            console.log("Processing toast:", { title, body, notificationId, shiftId, invoiceId, view });
 
             if (title || body) {
                 toast(title, {
@@ -157,7 +155,6 @@ export default function NotificationProvider() {
                     className: "group font-montserrat",
                 });
 
-                // Show Google Notification toaster (native browser notification)
                 if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
                     try {
                         const nativeNotification = new Notification(title, {
@@ -209,10 +206,10 @@ export default function NotificationProvider() {
                         });
                         if (res.ok) {
                             localStorage.setItem("last_fcm_token", token);
-                            console.log("[NotificationProvider] FCM Token synced to server successfully on /dashboard.");
+                            console.log("FCM Token synced to server successfully on /dashboard.");
                         }
                     } catch (err) {
-                        console.error("[NotificationProvider] Error syncing FCM token on /dashboard:", err);
+                        console.error("Error syncing FCM token on /dashboard:", err);
                     }
                 }
             };

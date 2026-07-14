@@ -4,8 +4,7 @@ import { useCallback, useEffect } from "react";
 
 import { InvoiceData, Pagination } from "@/types/dashboard.types";
 import { clientFetchInvoicesAction } from "@/lib/client-actions";
-import { Loader2, Search } from "lucide-react";
-
+import { Search } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/table/data-table";
@@ -25,7 +24,7 @@ export default function CompleteInvoice({ initialData, pagination }: { initialDa
   const dateTo = searchParams.get("date_to") || "";
   const view = searchParams.get("view") || "";
 
-  const fetchAction = useCallback((page: number, search?: string, from?: string, to?: string) => 
+  const fetchAction = useCallback((page: number, search?: string, from?: string, to?: string) =>
     clientFetchInvoicesAction(page, search, from, to, "complete"), []);
 
   const {
@@ -46,7 +45,6 @@ export default function CompleteInvoice({ initialData, pagination }: { initialDa
     dateFrom,
     dateTo
   );
-
 
   useEffect(() => {
     if (setIsFetching) setIsFetching(isPending);

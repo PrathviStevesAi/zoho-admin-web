@@ -38,7 +38,7 @@ function SummaryCard({ label, value, variant = "default", onClick }: SummaryCard
     };
 
     return (
-        <Card 
+        <Card
             className={cn("border shadow-none rounded-xl transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-pointer", variants[variant])}
             onClick={onClick}
         >
@@ -58,7 +58,6 @@ export function DispatchSummary() {
     const router = useRouter();
     const [counts, setCounts] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
-
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedType, setSelectedType] = useState("");
     const [selectedLabel, setSelectedLabel] = useState("Information");
@@ -135,7 +134,6 @@ export function DispatchSummary() {
     }
 
     const data = counts || { scheduled: 0, finished: 0, late_shift_start: 0, late_shift_end: 0, out_of_geofence: 0 };
-
     const formatStatus = (status: string) => {
         if (!status) return "";
         return status
@@ -161,15 +159,15 @@ export function DispatchSummary() {
                         <DialogTitle className="text-xl font-semibold">{selectedLabel}</DialogTitle>
                         <div className="relative w-72 mr-4">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                                placeholder="Search..." 
+                            <Input
+                                placeholder="Search..."
                                 className="pl-9 bg-slate-50/50 border border-slate-200 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-9"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                     </DialogHeader>
-                    
+
                     <div className="flex-1 overflow-auto mt-4 rounded-md border">
                         <Table>
                             <TableHeader className="bg-blue-50 sticky top-0 z-10">
@@ -205,8 +203,8 @@ export function DispatchSummary() {
                                     </TableRow>
                                 ) : (
                                     dialogData.map((shift, i) => (
-                                        <TableRow 
-                                            key={shift.shift_id || i} 
+                                        <TableRow
+                                            key={shift.shift_id || i}
                                             className="hover:bg-blue-50 transition-colors cursor-pointer group"
                                             onClick={() => router.push(`/shift/view?shift_id=${shift.shift_id}`)}
                                         >

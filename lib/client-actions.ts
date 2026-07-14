@@ -26,7 +26,6 @@ export async function clientFetchInvoicesAction(
   }
 }
 
-
 export async function clientFetchPreShiftCheckInAction(
   page: number,
   search: string = "",
@@ -51,7 +50,6 @@ export async function clientFetchPreShiftCheckInAction(
   }
 }
 
-
 export async function clientFetchInProgressShiftAction(
   page: number,
   search: string = "",
@@ -75,7 +73,6 @@ export async function clientFetchInProgressShiftAction(
     return { success: false, error: message || "Unknown Error" };
   }
 }
-
 
 export async function clientFetchFinishedShiftAction(
   page: number,
@@ -176,7 +173,6 @@ export async function clientFetchCreatedShiftAction(
   }
 }
 
-
 export async function clientFetchAcceptedShiftAction(
   page: number,
   search: string = "",
@@ -200,7 +196,6 @@ export async function clientFetchAcceptedShiftAction(
     return { success: false, error: message || "Unknown Error" };
   }
 }
-
 
 export async function clientFetchRefusedShiftAction(
   page: number,
@@ -226,7 +221,6 @@ export async function clientFetchRefusedShiftAction(
   }
 }
 
-
 export async function clientFetchAbandonShiftAction(
   page: number,
   search: string = "",
@@ -250,7 +244,6 @@ export async function clientFetchAbandonShiftAction(
     return { success: false, error: message || "Unknown Error" };
   }
 }
-
 
 export async function clientFetchApprovedShiftAction(
   page: number,
@@ -276,7 +269,6 @@ export async function clientFetchApprovedShiftAction(
   }
 }
 
-
 export async function clientFetchNotApprovedShiftAction(
   page: number,
   search: string = "",
@@ -301,7 +293,6 @@ export async function clientFetchNotApprovedShiftAction(
   }
 }
 
-
 export async function clientFetchInvoiceDetailsAction(
   id: string,
 ): Promise<SingleFetchResponse<InvoiceData>> {
@@ -315,7 +306,6 @@ export async function clientFetchInvoiceDetailsAction(
     return { success: false, error: message || "Unknown Error" };
   }
 }
-
 
 export async function clientFetchInvoiceShiftsAction(
   invoiceId: string,
@@ -334,7 +324,6 @@ export async function clientFetchInvoiceShiftsAction(
     return { success: false, error: message || "Unknown Error" };
   }
 }
-
 
 export async function clientFetchShiftDetailsAction(
   shiftId: string,
@@ -481,8 +470,7 @@ export async function clientFetchCustomersAction(params: {
     const response = await clientApiFetch<any>(
       `/api/v1/customer/list?${query.toString()}`
     );
-    
-    // Construct pagination manually since the customer API returns it at the root
+
     const pagination = {
       page: response.page || 1,
       limit: response.page_size || 10,
@@ -580,7 +568,6 @@ export async function clientFetchGuardTrackingAction(guard_id: string, shift_id:
 export async function clientFetchCustomerByIdAction(customer_id: string): Promise<SingleFetchResponse<any>> {
   try {
     const data = await clientApiFetch<any>(`/api/v1/customer/${customer_id}`);
-    // If data is nested under 'data', unwrap it, otherwise return as is
     return { success: true, data: data?.data || data };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to fetch customer details" };

@@ -10,7 +10,6 @@ import {
   ChevronRight,
   ChevronDown,
   ArrowLeft,
-  User,
   Building,
   MapPin,
   Users
@@ -107,14 +106,11 @@ export default function CustomerDirectoryPage() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
-
   const [billingAddressStates, setBillingAddressStates] = useState<any[]>([]);
   const [billingAddressCities, setBillingAddressCities] = useState<any[]>([]);
-  
   const [serviceAddressStates, setServiceAddressStates] = useState<any[]>([]);
   const [serviceAddressCities, setServiceAddressCities] = useState<any[]>([]);
 
-  // Billing address effects
   useEffect(() => {
     if (formData.billingCountry === "US") {
       const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
@@ -145,7 +141,6 @@ export default function CustomerDirectoryPage() {
     }
   }, [formData.billingState, formData.billingCountry]);
 
-  // Service address effects
   useEffect(() => {
     if (formData.serviceCountry === "US") {
       const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
@@ -176,7 +171,6 @@ export default function CustomerDirectoryPage() {
     }
   }, [formData.serviceState, formData.serviceCountry]);
 
-  // Handle same as billing
   useEffect(() => {
     if (formData.sameAsBilling) {
       setFormData(prev => ({
@@ -199,7 +193,6 @@ export default function CustomerDirectoryPage() {
     formData.billingCountry
   ]);
 
-  // Debounced search query implementation
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       loadCustomers(1);
@@ -313,7 +306,6 @@ export default function CustomerDirectoryPage() {
 
   return (
     <div className="p-0 sm:p-4 md:p-6 max-w-[1500px] mx-auto space-y-8 animate-in fade-in duration-500">
-      {/* Breadcrumbs & Header */}
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
           <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
@@ -331,7 +323,6 @@ export default function CustomerDirectoryPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Registration Form */}
         <div className="lg:col-span-5">
           <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white !gap-0 !py-0">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-4 sm:p-6">
@@ -346,11 +337,8 @@ export default function CustomerDirectoryPage() {
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
               <form onSubmit={handleRegister} className="space-y-6">
-                
-                {/* General Info */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-bold text-slate-700 border-b pb-2">General Information</h3>
-                  
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Company Name</label>
                     <div className="relative">
@@ -444,9 +432,8 @@ export default function CustomerDirectoryPage() {
                                 setSelectedCountry(country);
                                 setIsDropdownOpen(false);
                               }}
-                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${
-                                selectedCountry.code === country.code ? "bg-blue-50/30 font-semibold text-[#0064cb]" : "text-slate-700"
-                              }`}
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${selectedCountry.code === country.code ? "bg-blue-50/30 font-semibold text-[#0064cb]" : "text-slate-700"
+                                }`}
                             >
                               <img
                                 src={`https://flagcdn.com/w20/${country.code}.png`}
@@ -463,10 +450,9 @@ export default function CustomerDirectoryPage() {
                   </div>
                 </div>
 
-                {/* Billing Address */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-bold text-slate-700 border-b pb-2">Billing Address</h3>
-                  
+
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Street Address</label>
                     <div className="relative">
@@ -484,8 +470,8 @@ export default function CustomerDirectoryPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
-                      <Select 
-                        onValueChange={(val) => setFormData({ ...formData, billingCountry: val, billingState: "", billingCity: "" })} 
+                      <Select
+                        onValueChange={(val) => setFormData({ ...formData, billingCountry: val, billingState: "", billingCity: "" })}
                         value={formData.billingCountry}
                       >
                         <SelectTrigger className="!h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium">
@@ -500,9 +486,9 @@ export default function CustomerDirectoryPage() {
                     </div>
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">State</label>
-                      <Select 
+                      <Select
                         key={`billing-state-${billingAddressStates.length}`}
-                        onValueChange={(val) => setFormData({ ...formData, billingState: val, billingCity: "" })} 
+                        onValueChange={(val) => setFormData({ ...formData, billingState: val, billingCity: "" })}
                         value={formData.billingState}
                         disabled={!formData.billingCountry}
                       >
@@ -521,9 +507,9 @@ export default function CustomerDirectoryPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">City</label>
-                      <Select 
+                      <Select
                         key={`billing-city-${billingAddressCities.length}`}
-                        onValueChange={(val) => setFormData({ ...formData, billingCity: val })} 
+                        onValueChange={(val) => setFormData({ ...formData, billingCity: val })}
                         value={formData.billingCity}
                         disabled={!formData.billingState}
                       >
@@ -550,7 +536,6 @@ export default function CustomerDirectoryPage() {
                   </div>
                 </div>
 
-                {/* Service Address */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between border-b pb-2">
                     <h3 className="text-sm font-bold text-slate-700">Service Address</h3>
@@ -567,7 +552,7 @@ export default function CustomerDirectoryPage() {
                       </label>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Street Address</label>
                     <div className="relative">
@@ -596,8 +581,8 @@ export default function CustomerDirectoryPage() {
                           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         </div>
                       ) : (
-                        <Select 
-                          onValueChange={(val) => setFormData({ ...formData, serviceCountry: val, serviceState: "", serviceCity: "" })} 
+                        <Select
+                          onValueChange={(val) => setFormData({ ...formData, serviceCountry: val, serviceState: "", serviceCity: "" })}
                           value={formData.serviceCountry}
                         >
                           <SelectTrigger className="!h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium">
@@ -617,7 +602,7 @@ export default function CustomerDirectoryPage() {
                         <div className="relative">
                           <Input
                             value={
-                              formData.billingCountry === "US" 
+                              formData.billingCountry === "US"
                                 ? Object.entries(US_STATE_CITY_DATA).find(([_, s]) => s.short_code === formData.billingState)?.[0] || formData.billingState
                                 : formData.billingState
                             }
@@ -627,9 +612,9 @@ export default function CustomerDirectoryPage() {
                           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         </div>
                       ) : (
-                        <Select 
+                        <Select
                           key={`service-state-${serviceAddressStates.length}`}
-                          onValueChange={(val) => setFormData({ ...formData, serviceState: val, serviceCity: "" })} 
+                          onValueChange={(val) => setFormData({ ...formData, serviceState: val, serviceCity: "" })}
                           value={formData.serviceState}
                           disabled={!formData.serviceCountry}
                         >
@@ -659,9 +644,9 @@ export default function CustomerDirectoryPage() {
                           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         </div>
                       ) : (
-                        <Select 
+                        <Select
                           key={`service-city-${serviceAddressCities.length}`}
-                          onValueChange={(val) => setFormData({ ...formData, serviceCity: val })} 
+                          onValueChange={(val) => setFormData({ ...formData, serviceCity: val })}
                           value={formData.serviceCity}
                           disabled={!formData.serviceState}
                         >
@@ -707,7 +692,6 @@ export default function CustomerDirectoryPage() {
           </Card>
         </div>
 
-        {/* Customer List */}
         <div className="lg:col-span-7">
           <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white min-h-[600px] flex flex-col !gap-0 !py-0">
             <CardHeader className="p-4 sm:p-6 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100">
@@ -723,7 +707,6 @@ export default function CustomerDirectoryPage() {
                 </div>
               </div>
 
-              {/* Search Box */}
               <div className="relative w-full sm:w-[260px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
                 <Input
@@ -745,60 +728,60 @@ export default function CustomerDirectoryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {isLoading ? (
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i} className="hover:bg-transparent border-slate-50">
-                          <TableCell className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <Skeleton className="w-8 h-8 rounded-full bg-slate-100" />
-                              <Skeleton className="h-4 w-24 bg-slate-100" />
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4 px-4"><Skeleton className="h-4 w-24 bg-slate-100" /></TableCell>
-                          <TableCell className="py-4 px-4"><Skeleton className="h-4 w-36 bg-slate-100" /></TableCell>
-                        </TableRow>
-                      ))
-                    ) : customers.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="h-96 text-center">
-                          <div className="flex flex-col items-center justify-center gap-2">
-                            <Users className="w-12 h-12 text-slate-200" />
-                            <p className="text-sm font-medium text-slate-700">No customers found</p>
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i} className="hover:bg-transparent border-slate-50">
+                        <TableCell className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="w-8 h-8 rounded-full bg-slate-100" />
+                            <Skeleton className="h-4 w-24 bg-slate-100" />
                           </div>
                         </TableCell>
+                        <TableCell className="py-4 px-4"><Skeleton className="h-4 w-24 bg-slate-100" /></TableCell>
+                        <TableCell className="py-4 px-4"><Skeleton className="h-4 w-36 bg-slate-100" /></TableCell>
                       </TableRow>
-                    ) : (
-                      customers.map((customer) => (
-                        <TableRow key={customer.id || customer.customer_id || Math.random()} className="group hover:bg-slate-50/50 border-slate-50 transition-colors">
-                          <TableCell className="px-6 py-4">
-                            <Link href={`/users-directory/customers/${customer.id || customer.customer_id}`}>
-                              <Button variant="outline" size="sm" className="h-8 px-3 rounded-full text-xs font-semibold text-[#0064cb] border-[#0064cb]/20 hover:bg-[#0064cb]/5 hover:text-[#0052ae]">
-                                View
-                              </Button>
-                            </Link>
-                          </TableCell>
-                          <TableCell className="px-4 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
-                                <Building className="w-4 h-4" />
-                              </div>
-                              <span className="text-sm font-bold text-slate-700">
-                                {customer.company_name || "---"}
-                              </span>
+                    ))
+                  ) : customers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-96 text-center">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Users className="w-12 h-12 text-slate-200" />
+                          <p className="text-sm font-medium text-slate-700">No customers found</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    customers.map((customer) => (
+                      <TableRow key={customer.id || customer.customer_id || Math.random()} className="group hover:bg-slate-50/50 border-slate-50 transition-colors">
+                        <TableCell className="px-6 py-4">
+                          <Link href={`/users-directory/customers/${customer.id || customer.customer_id}`}>
+                            <Button variant="outline" size="sm" className="h-8 px-3 rounded-full text-xs font-semibold text-[#0064cb] border-[#0064cb]/20 hover:bg-[#0064cb]/5 hover:text-[#0052ae]">
+                              View
+                            </Button>
+                          </Link>
+                        </TableCell>
+                        <TableCell className="px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+                              <Building className="w-4 h-4" />
                             </div>
-                          </TableCell>
-                          <TableCell className="py-4 px-4">
-                             <span className="text-xs text-slate-800 font-medium">
-                               {customer.first_name || "---"} {customer.last_name || ""}
-                             </span>
-                          </TableCell>
-                          <TableCell className="py-4 px-4">
-                            <span className="text-xs text-slate-800 font-medium">{customer.email}</span>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
+                            <span className="text-sm font-bold text-slate-700">
+                              {customer.company_name || "---"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <span className="text-xs text-slate-800 font-medium">
+                            {customer.first_name || "---"} {customer.last_name || ""}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <span className="text-xs text-slate-800 font-medium">{customer.email}</span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
               </Table>
             </CardContent>
             {pagination && (

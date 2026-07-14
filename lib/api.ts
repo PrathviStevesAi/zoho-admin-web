@@ -17,8 +17,6 @@ export async function apiFetch<T>(
       if (!token) console.warn(`[apiFetch] No token found for ${endpoint}`);
 
       if (session?.user?.role && session.user.role !== "admin" && session.user.role !== "member") {
-        // Silently abort the fetch for non-admins to prevent 12 parallel routes from 
-        // throwing 403 errors in the server console, since the layout already blocks the UI.
         return { success: false, data: [], pagination: { page: 1, limit: 10, total: 0, total_pages: 0 } } as any;
       }
 

@@ -6,7 +6,6 @@ import {
   clientFetchSecurityServicesAction,
   clientFetchAvailableGuardsAction
 } from "@/lib/client-actions";
-
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
@@ -436,7 +435,7 @@ export default function InvoiceDetailsPage() {
     if (isServiceChanged) {
       payload.security_service_id = data.service_id;
     }
-    
+
     console.log("[handleUpdateShift] Updating shift details with payload:", payload);
     const res = await updateShiftDetailsAction(payload);
     if (res.success) {
@@ -629,13 +628,12 @@ export default function InvoiceDetailsPage() {
   const handleAssignGuards = async (
     shiftRates: Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>
   ) => {
-    // Group shifts assigned to the same guard with the same rates together to optimize payload size
     const groups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; perShiftRate?: number; travelFee?: number }> = {};
 
     Object.entries(pendingAssignments).forEach(([shiftId, data]) => {
       const rates = shiftRates[shiftId] || {};
       const key = `${data.guard_id}_${rates.hourlyRate ?? ""}_${rates.perShiftRate ?? ""}_${rates.travelFee ?? ""}`;
-      
+
       if (!groups[key]) {
         groups[key] = {
           guard_id: data.guard_id,

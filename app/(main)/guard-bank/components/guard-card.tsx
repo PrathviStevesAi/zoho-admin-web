@@ -60,12 +60,11 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
   };
 
   return (
-    <div 
+    <div
       onClick={handleCardClick}
       className="relative bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all group cursor-pointer hover:border-slate-300"
     >
-      {/* Delete button */}
-      <button 
+      <button
         onClick={(e) => {
           e.stopPropagation();
           onDelete?.(guard.id);
@@ -76,12 +75,10 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
       </button>
 
       <div className="flex gap-4">
-        {/* Avatar */}
         <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200 text-slate-400 overflow-hidden">
           <User className="w-6 h-6" />
         </div>
 
-        {/* Info */}
         <div className="space-y-1.5 flex-1 pr-8">
           <h4 className="font-bold text-slate-800 text-[15px]">
             {`${guard.first_name || ""} ${guard.last_name || ""}`.trim()}

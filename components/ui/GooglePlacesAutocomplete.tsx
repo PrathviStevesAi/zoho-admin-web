@@ -69,7 +69,6 @@ export function GooglePlacesAutocomplete({
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || DEFAULT_API_KEY;
 
-  // Load Google Maps SDK dynamically on component mount
   useEffect(() => {
     loadGoogleMapsScript(apiKey)
       .then(() => {
@@ -84,7 +83,6 @@ export function GooglePlacesAutocomplete({
       .catch((err) => console.error("Failed to load Google Maps SDK:", err));
   }, [apiKey]);
 
-  // Click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -98,7 +96,6 @@ export function GooglePlacesAutocomplete({
     };
   }, []);
 
-  // Clear predictions/dropdown when value is cleared externally
   useEffect(() => {
     if (!value) {
       setPredictions([]);
@@ -223,7 +220,7 @@ export function GooglePlacesAutocomplete({
                 cityPartIndex = formattedAddress.indexOf(city);
               }
             }
-            
+
             if (cityPartIndex > 0) {
               finalStreet = formattedAddress.slice(0, cityPartIndex).trim();
             } else {
@@ -234,7 +231,7 @@ export function GooglePlacesAutocomplete({
               if (nextPartIndex === -1 && country) {
                 nextPartIndex = formattedAddress.indexOf(`, ${country}`);
               }
-              
+
               if (nextPartIndex > 0) {
                 finalStreet = formattedAddress.slice(0, nextPartIndex).trim();
               } else {
@@ -242,7 +239,7 @@ export function GooglePlacesAutocomplete({
               }
             }
           }
-          
+
           if (!finalStreet || finalStreet.trim() === "") {
             finalStreet = streetNumber ? `${streetNumber} ${route}` : (route || streetLabel);
           }

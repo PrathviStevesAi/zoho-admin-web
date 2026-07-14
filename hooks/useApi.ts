@@ -3,7 +3,6 @@
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 
-// A generic fetcher function that takes the URL and the token
 const fetcher = async ([url, token]: [string, string]) => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${url}`, {
     headers: {
@@ -15,16 +14,16 @@ const fetcher = async ([url, token]: [string, string]) => {
 
   if (!response.ok) {
     if (response.status === 401) {
-       window.location.href = "/admin-login";
+      window.location.href = "/admin-login";
     }
     const errorText = await response.text().catch(() => "");
     let errorData: any = {};
     try {
       errorData = JSON.parse(errorText);
     } catch {
-       errorData = { message: errorText || `API Request Failed with status ${response.status}` };
+      errorData = { message: errorText || `API Request Failed with status ${response.status}` };
     }
-    
+
     let detailMessage = "";
     if (typeof errorData.detail === "string") {
       try {
@@ -43,20 +42,18 @@ const fetcher = async ([url, token]: [string, string]) => {
     }
     throw new Error(detailMessage);
   }
-  
+
   return response.json();
 };
 
 export function useApi<T>(endpoint: string | null) {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
-
-  // If endpoint is null or token is missing, SWR won't fetch
   const key = (endpoint && token) ? [endpoint, token] : null;
 
   const { data, error, isLoading, mutate } = useSWR<T>(key, fetcher, {
-      revalidateOnFocus: false, // Prevent excessive refetching
-      shouldRetryOnError: false // Can be enabled if needed
+    revalidateOnFocus: false,
+    shouldRetryOnError: false
   });
 
   return {

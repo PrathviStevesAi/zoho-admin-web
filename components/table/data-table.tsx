@@ -32,11 +32,9 @@ export function DataTable<T extends { id?: string | number }>({
         if (!row.id) return;
 
         const rowObj = row as any;
-        // Check if it's an invoice row:
         if ('invoice_no' in rowObj && !('shift_no' in rowObj)) {
             router.push(`/invoices/${rowObj.id}`);
         } else {
-            // It's a shift row:
             router.push(`/shift/view?shift_id=${rowObj.id}`);
         }
     };

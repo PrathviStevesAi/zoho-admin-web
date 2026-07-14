@@ -46,12 +46,9 @@ interface NewAssignGuardPanelProps {
 }
 
 export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates }: NewAssignGuardPanelProps) {
-  // Rate inputs
   const [hourlyRate, setHourlyRate] = useState(initialRates?.per_hour_rate ? String(initialRates.per_hour_rate) : "");
   const [perShiftRate, setPerShiftRate] = useState(initialRates?.per_shift_rate ? String(initialRates.per_shift_rate) : "");
   const [travelFee, setTravelFee] = useState(initialRates?.travel_fee ? String(initialRates.travel_fee) : "");
-
-  // Guard search & filters
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     country: "",
@@ -72,7 +69,6 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
   const debouncedSearchQuery = useDebounceValue(searchQuery, 500);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Load locations on mount and when country/state filters change
   useEffect(() => {
     const loadLocations = async () => {
       const res = await fetchLocationAction(filters.country, filters.state, "approved");
@@ -87,7 +83,6 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
     loadLocations();
   }, [filters.country, filters.state]);
 
-  // Load guards when search/filters change
   useEffect(() => {
     const loadGuards = async () => {
       setIsLoadingGuards(true);
@@ -131,7 +126,6 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      {/* Header */}
       <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-blue-50/60 to-white">
         <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2.5">
           {isReassign ? "Re-Assign Guard" : "Assign New Guard"}
@@ -139,7 +133,6 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         <p className="text-[13px] text-slate-500 mt-1">Enter guard pay rates and select a guard to assign to this shift</p>
       </div>
 
-      {/* Rate Inputs Section */}
       <div className="px-6 pt-5 pb-4 border-b border-slate-100">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1.5">
@@ -198,7 +191,6 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         </div>
       </div>
 
-      {/* Search & Filters Section */}
       <div className="px-6 pt-5 pb-4 space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="space-y-1.5 flex-1">
@@ -307,7 +299,6 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         </div>
       </div>
 
-      {/* Guard Table */}
       <div className="px-6 pb-4">
         <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col min-h-[300px] bg-white shadow-sm">
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto custom-scrollbar-visible">
@@ -392,7 +383,6 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         </div>
       </div>
 
-      {/* Footer with Cancel */}
       <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50/50">
         <button
           onClick={onClose}

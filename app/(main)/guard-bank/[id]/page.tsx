@@ -276,7 +276,6 @@ export default function GuardDetailPage() {
   if (loading) {
     return (
       <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
-        {/* Header skeleton */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-20" />
@@ -295,13 +294,11 @@ export default function GuardDetailPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden divide-y divide-slate-100">
-          {/* Title banner */}
           <div className="px-6 py-5 flex items-center gap-3">
             <Skeleton className="h-5 w-5 rounded" />
             <Skeleton className="h-6 w-48" />
           </div>
 
-          {/* Personal Details skeleton */}
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2 pb-2">
               <Skeleton className="h-4 w-4 rounded" />
@@ -317,7 +314,6 @@ export default function GuardDetailPage() {
             </div>
           </div>
 
-          {/* Contact Info skeleton */}
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2 pb-2">
               <Skeleton className="h-4 w-4 rounded" />
@@ -336,7 +332,6 @@ export default function GuardDetailPage() {
             </div>
           </div>
 
-          {/* Address skeleton */}
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2 pb-2">
               <Skeleton className="h-4 w-4 rounded" />
@@ -356,7 +351,6 @@ export default function GuardDetailPage() {
             </div>
           </div>
 
-          {/* Preferences skeleton */}
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2 pb-2">
               <Skeleton className="h-4 w-4 rounded" />
@@ -372,7 +366,6 @@ export default function GuardDetailPage() {
             </div>
           </div>
 
-          {/* Images skeleton */}
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2 pb-2">
               <Skeleton className="h-4 w-4 rounded" />
@@ -388,7 +381,6 @@ export default function GuardDetailPage() {
             </div>
           </div>
 
-          {/* Video skeleton */}
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2 pb-2">
               <Skeleton className="h-4 w-4 rounded" />
@@ -397,7 +389,6 @@ export default function GuardDetailPage() {
             <Skeleton className="max-w-2xl mx-auto w-full aspect-video rounded-2xl" />
           </div>
 
-          {/* Resume skeleton */}
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2 pb-2">
               <Skeleton className="h-4 w-4 rounded" />
@@ -418,7 +409,6 @@ export default function GuardDetailPage() {
             </div>
           </div>
 
-          {/* Admin Notes skeleton */}
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2 pb-2">
               <Skeleton className="h-4 w-4 rounded" />
@@ -431,13 +421,11 @@ export default function GuardDetailPage() {
           </div>
         </div>
 
-        {/* Approve / Decline buttons skeleton */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xs mx-auto">
           <Skeleton className="w-full h-12 rounded-xl" />
           <Skeleton className="w-full h-12 rounded-xl" />
         </div>
 
-        {/* Footer skeleton */}
         <div className="text-center space-y-2 pt-4 border-t border-slate-100">
           <Skeleton className="h-3.5 w-56 mx-auto" />
           <Skeleton className="h-3.5 w-44 mx-auto" />
@@ -463,8 +451,6 @@ export default function GuardDetailPage() {
   const getErrorMessage = (data: any, fallback: string): string => {
     if (!data) return fallback;
     if (typeof data === "string") return data;
-
-    // Handle detail field
     if (data.detail !== undefined && data.detail !== null) {
       if (typeof data.detail === "string") return data.detail;
       if (typeof data.detail.error === "string") return data.detail.error;
@@ -472,15 +458,11 @@ export default function GuardDetailPage() {
       if (Array.isArray(data.detail) && data.detail[0]?.msg) return data.detail[0].msg;
       return JSON.stringify(data.detail);
     }
-
-    // Handle error field
     if (data.error !== undefined && data.error !== null) {
       if (typeof data.error === "string") return data.error;
       if (typeof data.error.message === "string") return data.error.message;
       return JSON.stringify(data.error);
     }
-
-    // Handle message field
     if (typeof data.message === "string") return data.message;
 
     return fallback;
@@ -516,7 +498,6 @@ export default function GuardDetailPage() {
 
   return (
     <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
-      {/* Breadcrumbs & Header */}
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
           <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
@@ -536,8 +517,6 @@ export default function GuardDetailPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden divide-y divide-slate-100">
-
-        {/* Title Banner */}
         <div className="px-6 py-5 bg-slate-50/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <User className="w-5 h-5 text-[#0064cb]" />
@@ -566,7 +545,6 @@ export default function GuardDetailPage() {
           </div>
         </div>
 
-        {/* 1. Personal Details */}
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
             <User className="w-4 h-4 text-[#0064cb]" />
@@ -612,7 +590,6 @@ export default function GuardDetailPage() {
           </div>
         </div>
 
-        {/* 2. Contact Info */}
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
             <Mail className="w-4 h-4 text-[#0064cb]" />
@@ -640,7 +617,6 @@ export default function GuardDetailPage() {
           </div>
         </div>
 
-        {/* 3. Address */}
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
             <MapPin className="w-4 h-4 text-[#0064cb]" />
@@ -670,7 +646,6 @@ export default function GuardDetailPage() {
           </div>
         </div>
 
-        {/* 4. Job Preferences */}
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
             <Shield className="w-4 h-4 text-[#0064cb]" />
@@ -722,7 +697,6 @@ export default function GuardDetailPage() {
           </div>
         </div>
 
-        {/* 5. Uploaded Images */}
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
             <FileText className="w-4 h-4 text-[#0064cb]" />
@@ -762,7 +736,6 @@ export default function GuardDetailPage() {
           </div>
         </div>
 
-        {/* 6. Verification Video */}
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
             <Video className="w-4 h-4 text-[#0064cb]" />
@@ -784,7 +757,6 @@ export default function GuardDetailPage() {
           )}
         </div>
 
-        {/* 7. Resume Document */}
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
             <FileText className="w-4 h-4 text-[#0064cb]" />
@@ -833,7 +805,6 @@ export default function GuardDetailPage() {
           )}
         </div>
 
-        {/* 8. Admin Notes */}
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
             <NotebookText className="w-4 h-4 text-[#0064cb]" />
@@ -892,7 +863,6 @@ export default function GuardDetailPage() {
               </div>
             ) : (
               <div className="flex flex-col items-center py-4">
-                {/* Badge card image container */}
                 <div
                   onClick={() => setIsViewModalOpen(true)}
                   className="cursor-pointer border border-slate-200 rounded-lg p-2 bg-slate-50 hover:shadow-md transition-shadow"
@@ -904,7 +874,6 @@ export default function GuardDetailPage() {
                   />
                 </div>
 
-                {/* Delete button below card */}
                 <Button
                   onClick={handleDeleteBadge}
                   variant="outline"
@@ -972,7 +941,6 @@ export default function GuardDetailPage() {
         </div>
       )}
 
-      {/* Footer Info */}
       <div className="text-center text-xs text-slate-500 space-y-1 pt-0 border-t border-slate-100">
         {guard.performed_by && (
           <p className="font-semibold">Record touch by : <span className="text-slate-700">{guard.performed_by}</span></p>
@@ -982,7 +950,6 @@ export default function GuardDetailPage() {
         )}
       </div>
 
-      {/* Delete Confirmation */}
       <ConfirmationDialog
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}

@@ -19,7 +19,6 @@ export default function GuardPricePage() {
   const [loading, setLoading] = useState(false);
   const [pricesData, setPricesData] = useState<Record<string, Record<string, Record<string, number>>>>({});
   const [initialPricesData, setInitialPricesData] = useState<Record<string, Record<string, Record<string, number>>>>({});
-  
   const hasChanges = JSON.stringify(initialPricesData) !== JSON.stringify(pricesData);
   const [selectedTerritory, setSelectedTerritory] = useState("all");
   const [submittingPrices, setSubmittingPrices] = useState(false);

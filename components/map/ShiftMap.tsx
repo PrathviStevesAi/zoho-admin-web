@@ -100,7 +100,6 @@ const startIcon = new L.DivIcon({
   iconAnchor: [16, 32]
 });
 
-// Guard Avatar Live Location Icon (Compact Premium Guard Avatar Style)
 const guardIcon = new L.DivIcon({
   className: "custom-leaflet-icon",
   html: `
@@ -198,12 +197,11 @@ export default function ShiftMap({
 }: ShiftMapProps) {
   const [zoomLevel, setZoomLevel] = useState(15);
 
-  // If checkpoints are provided, default to the first checkpoint; otherwise default shift location or fallback
   const fallbackCenter = shiftLocation || [35.4435, -80.8611];
   const actualCenter = center || (checkpoints && checkpoints.length > 0 ? checkpoints[checkpoints.length - 1] : fallbackCenter);
 
   const activeCheckpoints = checkpoints || [
-    [35.4400, -80.8620], // Start fallback default checkpoints
+    [35.4400, -80.8620],
     [35.4410, -80.8590],
     [35.4430, -80.8580],
     [35.4445, -80.8590],
@@ -246,7 +244,6 @@ export default function ShiftMap({
             }}
           />
 
-          {/* Patrol Region Polygon */}
           {activeCheckpoints.length > 2 && (
             <Polygon
               positions={activeCheckpoints}
@@ -260,7 +257,6 @@ export default function ShiftMap({
             />
           )}
 
-          {/* Patrol Path Polyline */}
           {activeCheckpoints.length > 1 && (
             <Polyline
               positions={activeCheckpoints}
@@ -268,7 +264,6 @@ export default function ShiftMap({
             />
           )}
 
-          {/* Shift Location Marker - Site Address (Red Pin) */}
           {(shiftLocation || !checkpoints) && (
             <Marker position={shiftLocation || actualCenter} icon={startIcon}>
               <Popup>Shift Location (Site Address)</Popup>
@@ -276,7 +271,6 @@ export default function ShiftMap({
             </Marker>
           )}
 
-          {/* Guard Live Location Marker (Pulsing Avatar) */}
           {activeCheckpoints.length > 0 && checkpoints && (
             <Marker position={end} icon={guardIcon}>
               <Popup>Guard Live Position</Popup>
@@ -284,14 +278,12 @@ export default function ShiftMap({
             </Marker>
           )}
 
-          {/* Patrol Path Start Point */}
           {activeCheckpoints.length > 0 && checkpoints && (
             <Marker position={start} icon={customIcon('#10b981')}>
               <Popup>Patrol Start Point</Popup>
             </Marker>
           )}
 
-          {/* Intermediate Checkpoints */}
           {activeCheckpoints.length > 2 && checkpoints && intermediates.map((pos, idx) => (
             <Marker key={idx} position={pos} icon={customIcon('#3b82f6')}>
               <Popup>Checkpoint {idx + 1}</Popup>
