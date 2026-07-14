@@ -358,7 +358,7 @@ export function Header() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4 shrink-0 w-auto md:w-[240px] justify-end">
+      <div className="flex items-center gap-2 md:gap-4 shrink-0 w-auto md:w-auto md:min-w-[240px] justify-end">
         <Button
           variant="ghost"
           size="icon"
@@ -372,7 +372,8 @@ export function Header() {
         >
           <Search className="size-[22px] stroke-[1.5px]" />
         </Button>
-        <NotificationsNav />
+        <NotificationsNav priority="normal" />
+        <NotificationsNav priority="critical" />
         <UserNav session={session} dynamicProfile={profile} />
       </div>
     </header>

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Bell, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "next-auth/react";
 import { Notification } from "@/types/notification.types";
 import { markNotificationAsReadAction } from "@/actions/notification.actions";
@@ -27,7 +28,7 @@ const formatHeaderDate = (dateStr: string) => {
   }
 };
 
-export function NotificationsNav() {
+export function NotificationsNav({ priority = "normal" }: { priority?: "normal" | "critical" }) {
   const { status } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,14 +39,27 @@ export function NotificationsNav() {
   const limit = 10;
   const loadRef = useRef<((page: number) => Promise<void>) | null>(null);
 
+  const fetchCount = useCallback(async () => {
+    if (status !== "authenticated") return;
+    try {
+      const response = await fetch(`/api/notifications?count_only=true`);
+      const res = await response.json();
+      if (res.success && res.data) {
+        setUnreadCount(priority === "normal" ? res.data.normal : res.data.critical);
+      }
+    } catch (error) {
+      console.error("Error loading notification count:", error);
+    }
+  }, [status, priority]);
+
   const loadNotifications = useCallback(async (page: number) => {
     console.log("[NotificationsNav] Attempting load, status:", status);
     if (status !== "authenticated") return;
 
     setLoading(true);
-    console.log("[NotificationsNav] Fetching notifications...");
+    console.log(`[NotificationsNav] Fetching ${priority} notifications...`);
     try {
-      const response = await fetch(`/api/notifications?page=${page}&t=${Date.now()}`);
+      const response = await fetch(`/api/notifications?page=${page}&priority=${priority}&count_only=false`);
       const res = await response.json();
       if (res.success) {
         const sorted = [...res.data].sort((a, b) => {
@@ -68,8 +82,8 @@ export function NotificationsNav() {
   }, [loadNotifications]);
 
   useEffect(() => {
-    loadNotifications(currentPage);
-  }, [loadNotifications, currentPage]);
+    fetchCount();
+  }, [fetchCount]);
 
   useEffect(() => {
     const handleFCMMessage = (payload: any) => {
@@ -105,13 +119,19 @@ export function NotificationsNav() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
           onClick={() => loadNotifications(1)}
-          className="relative text-[#474d56] hover:text-primary transition-colors h-10 w-10 rounded-full cursor-pointer"
+          className="relative transition-colors h-10 w-10 p-0 flex items-center justify-center rounded-[10px] border border-slate-200 cursor-pointer outline-none hover:bg-slate-50 shrink-0"
         >
-          <Bell className="size-[22px] stroke-[1.5px]" />
+          {priority === "normal" ? (
+            <Bell className="size-[20px] stroke-[2px] text-[#0064cb]" />
+          ) : (
+            <AlertTriangle className="size-[20px] stroke-[2px] text-[#e11d48]" />
+          )}
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 flex items-center justify-center min-w-[19px] h-[19px] bg-[#ff4d4f] text-white text-[10px] font-bold rounded-full border-[1.5px] border-white shadow-sm">
+            <span className={cn(
+              "absolute -top-2 -right-2 flex items-center justify-center min-w-[20px] px-1 h-[20px] text-white text-[11px] font-bold rounded-full shadow-sm z-10",
+              priority === "normal" ? "bg-[#0064cb]" : "bg-[#e11d48]"
+            )}>
               {unreadCount}
             </span>
           )}
@@ -129,8 +149,19 @@ export function NotificationsNav() {
 
         <div className="max-h-[400px] overflow-y-auto custom-scrollbar bg-[#f8fafc] p-3">
           {loading && notifications.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              Loading notifications...
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-lg border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-3 flex gap-3 relative overflow-hidden">
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-3/4 rounded-sm" />
+                    <Skeleton className="h-3 w-full rounded-sm" />
+                    <Skeleton className="h-3 w-5/6 rounded-sm" />
+                    <div className="pt-2">
+                      <Skeleton className="h-3 w-1/4 rounded-sm" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : notifications.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
@@ -152,8 +183,10 @@ export function NotificationsNav() {
                           <div
                             key={notification.id}
                             className={cn(
-                              "bg-white rounded-l-lg rounded-r-none border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-4 flex gap-3 relative transition-all duration-200 overflow-hidden",
-                              isUnread ? "border-l-[4px] border-l-[#0064cb]" : "border-l-[4px] border-l-transparent"
+                              "bg-white rounded-l-lg rounded-r-none border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-3 flex gap-3 relative transition-all duration-200 overflow-hidden",
+                              isUnread 
+                                ? priority === "normal" ? "border-l-[4px] border-l-[#0064cb]" : "border-l-[4px] border-l-[#e11d48]"
+                                : "border-l-[4px] border-l-transparent"
                             )}
                           >
                             <div className="flex-1 space-y-1">
@@ -161,7 +194,9 @@ export function NotificationsNav() {
                                 <h4
                                   className={cn(
                                     "text-[14px] leading-tight cursor-pointer hover:underline",
-                                    isUnread ? "font-bold text-[#0064cb]" : "font-medium text-slate-400"
+                                    isUnread 
+                                      ? priority === "normal" ? "font-bold text-[#0064cb]" : "font-bold text-[#e11d48]"
+                                      : "font-medium text-slate-400"
                                   )}
                                 >
                                   <Link
@@ -228,7 +263,10 @@ export function NotificationsNav() {
                 variant="ghost"
                 size="sm"
                 onClick={handlePreviousPage}
-                className="cursor-pointer text-[13px] text-[#0064cb] hover:text-[#0052ae] hover:bg-white font-semibold"
+                className={cn(
+                  "cursor-pointer text-[13px] hover:bg-white font-semibold",
+                  priority === "normal" ? "text-[#0064cb] hover:text-[#0052ae]" : "text-[#e11d48] hover:text-[#be123c]"
+                )}
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Previous
@@ -239,7 +277,10 @@ export function NotificationsNav() {
                 variant="ghost"
                 size="sm"
                 onClick={handleNextPage}
-                className="cursor-pointer text-[13px] text-[#0064cb] hover:text-[#0052ae] hover:bg-white font-semibold"
+                className={cn(
+                  "cursor-pointer text-[13px] hover:bg-white font-semibold",
+                  priority === "normal" ? "text-[#0064cb] hover:text-[#0052ae]" : "text-[#e11d48] hover:text-[#be123c]"
+                )}
               >
                 Next
                 <ChevronRight className="w-4 h-4 ml-1" />
