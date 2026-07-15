@@ -15,8 +15,9 @@ export default function NotificationProvider() {
         if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
             const originalError = console.error;
             console.error = (...args) => {
-                if (typeof args[0] === "string" && args[0].includes("[ZIMManager]")) {
-                    console.warn("Suppressed ZIMManager error:", ...args);
+                const argStr = typeof args[0] === "string" ? args[0] : "";
+                if (argStr.includes("[ZIMManager]") || argStr.includes("【ZEGOCLOUD】")) {
+                    console.warn("Suppressed Zego SDK error log:", ...args);
                     return;
                 }
                 originalError(...args);

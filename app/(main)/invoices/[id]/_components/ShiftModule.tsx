@@ -415,11 +415,22 @@ export function ShiftModule({
                           <TableCell className="py-4 px-6">
                             <Input
                               type="number"
-                              min="0.01"
-                              max="24"
                               step="any"
                               placeholder="e.g., 8"
                               value={row.hours}
+                              onKeyDown={(e) => {
+                                if (e.key === "ArrowUp") {
+                                  e.preventDefault();
+                                  const current = Number(row.hours) || 0;
+                                  const next = Math.min(24, Math.floor(current + 1));
+                                  handleRowChange(dateKey, 'hours', next.toString());
+                                } else if (e.key === "ArrowDown") {
+                                  e.preventDefault();
+                                  const current = Number(row.hours) || 0;
+                                  const next = Math.max(0, Math.ceil(current - 1));
+                                  handleRowChange(dateKey, 'hours', next > 0 ? next.toString() : "");
+                                }
+                              }}
                               onChange={(e) => {
                                 const inputVal = e.target.value;
                                 if (inputVal === "") {
@@ -428,7 +439,7 @@ export function ShiftModule({
                                 }
                                 let valNum = Number(inputVal);
                                 if (valNum < 0) {
-                                  return;
+                                  valNum = 0;
                                 }
                                 if (valNum > 24) {
                                   valNum = 24;

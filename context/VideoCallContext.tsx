@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { startVideoCallAction, endVideoCallAction } from "@/actions/vc.actions";
+import { startVideoCallAction, endVideoCallAction, activeVideoCallsAction } from "@/actions/vc.actions";
 
 interface VideoCallContextType {
   startCall: (guardId: string, shiftId?: string, type?: number) => Promise<void>;
@@ -27,6 +27,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
   const [zpInstance, setZpInstance] = useState<any>(null);
   const activeShiftIdRef = useRef<string | null>(null);
+  const guardHungUpRef = useRef<boolean>(false);
 
   const rawUserId = session?.user?.id || "";
   const USER_ID = toZimUserId(rawUserId);
@@ -51,22 +52,9 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
       zp.addPlugins({ ZIM });
 
-      const handleCallEnd = (reason?: any) => {
-        if (typeof reason === 'string' && reason === 'LeaveRoom') {
-          activeShiftIdRef.current = null;
-          return;
-        }
-
+      const handleApiEndCall = () => {
         if (activeShiftIdRef.current) {
-          endVideoCallAction(activeShiftIdRef.current)
-            .then((res) => {
-              if (res.success) {
-                toast.success(res.message || "Call ended successfully.");
-              } else {
-                toast.error(res.error || "Failed to record call end.");
-              }
-            })
-            .catch(console.error);
+          endVideoCallAction(activeShiftIdRef.current).catch(console.error);
           activeShiftIdRef.current = null;
         }
       };
@@ -77,10 +65,35 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           incomingCallUrl: '',
           outgoingCallUrl: ''
         },
-        onCallInvitationEnded: handleCallEnd,
-        onOutgoingCallDeclined: handleCallEnd,
-        onOutgoingCallTimeout: handleCallEnd,
-        onOutgoingCallRejected: handleCallEnd,
+        onSetRoomConfigBeforeJoining: (callType: any) => {
+          return {
+            onUserLeave: (users: any) => {
+              console.log("Remote user left the room (Guard hung up)", users);
+              guardHungUpRef.current = true;
+            },
+            onLeaveRoom: () => {
+              console.log("Local user left the room");
+              if (!guardHungUpRef.current) {
+                // Admin clicked Hang up
+                handleApiEndCall();
+              } else {
+                // Guard hung up first, so we just clear the local ref
+                activeShiftIdRef.current = null;
+              }
+              guardHungUpRef.current = false;
+            }
+          };
+        },
+        onCallInvitationEnded: (reason: any, data: any) => {
+          if (typeof reason === 'string' && reason === 'LeaveRoom') {
+            // Handled by onLeaveRoom in room config
+            return;
+          }
+          handleApiEndCall();
+        },
+        onOutgoingCallDeclined: handleApiEndCall,
+        onOutgoingCallTimeout: handleApiEndCall,
+        onOutgoingCallRejected: handleApiEndCall,
       });
 
       setZpInstance(zp);
@@ -112,11 +125,30 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    guardHungUpRef.current = false;
+
     let roomID = "";
     if (shiftId) {
       const toastId = toast.loading("Initializing call...");
       try {
-        const apiRes = await startVideoCallAction(shiftId);
+        let apiRes = await startVideoCallAction(shiftId);
+        
+        if (!apiRes.success && apiRes.error?.toLowerCase().includes("already on call")) {
+          // Attempt to clear stuck calls
+          console.log("Detected stuck call state, attempting to auto-clear...");
+          const activeCallsRes = await activeVideoCallsAction();
+          if (activeCallsRes.success && Array.isArray(activeCallsRes.data)) {
+            for (const call of activeCallsRes.data) {
+              const stuckShiftId = call?.shift?.id || call?.shift_id || call?.id;
+              if (stuckShiftId) {
+                await endVideoCallAction(stuckShiftId).catch(console.error);
+              }
+            }
+          }
+          // Retry starting the call
+          apiRes = await startVideoCallAction(shiftId);
+        }
+
         toast.dismiss(toastId);
         if (!apiRes.success) {
           toast.error(`Failed to initialize call: ${apiRes.error}`);
@@ -179,12 +211,29 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
       if (errorMsg.toLowerCase().includes("not logged")) {
         console.log("Zego connection stale, attempting to re-initialize and retry...");
+        const toastId = toast.loading("Reconnecting to call service...");
         try {
           currentZp = await initZego();
           if (currentZp) {
-             const retryRes = await currentZp.sendCallInvitation(invitationConfig);
+             let retryRes;
+             for (let attempt = 1; attempt <= 3; attempt++) {
+               await new Promise(resolve => setTimeout(resolve, 1200));
+               try {
+                 retryRes = await currentZp.sendCallInvitation(invitationConfig);
+                 break;
+               } catch (e: any) {
+                 const eMsg = e?.message || (typeof e === 'string' ? e : JSON.stringify(e));
+                 if (eMsg.toLowerCase().includes("not logged") && attempt < 3) {
+                    console.log(`Re-connection attempt ${attempt} failed, retrying...`);
+                    continue;
+                 }
+                 throw e;
+               }
+             }
+
+             toast.dismiss(toastId);
              console.log(`Retry call invitation sent to ${zimGuardId}`, retryRes);
-             if (retryRes.errorInvitees && retryRes.errorInvitees.length > 0) {
+             if (retryRes?.errorInvitees && retryRes.errorInvitees.length > 0) {
                toast.error(`Guard is offline or unavailable.`);
                if (shiftId) {
                  endVideoCallAction(shiftId).catch(console.error);
@@ -194,7 +243,9 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
              return;
           }
         } catch(retryErr: any) {
+           toast.dismiss(toastId);
            console.error("Retry failed:", retryErr);
+           errorMsg = retryErr?.message || "Failed to start call after reconnecting.";
         }
       }
 

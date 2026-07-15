@@ -76,21 +76,24 @@ export function ShiftSettingsCard({
         </div>
         <div className="space-y-1.5">
           <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Guard Break Max Duration</Label>
-          <Input
-            type="number"
-            min={0}
-            value={form.guard_break_max_duration}
-            onKeyDown={(e) => {
-              if (e.key === "-" || e.key === "e") e.preventDefault();
-            }}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val.includes("-")) return;
-              setForm(prev => ({ ...prev, guard_break_max_duration: val }));
-            }}
-            placeholder="e.g. 30"
-            className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-          />
+          <div className="relative">
+            <Input
+              type="number"
+              min={0}
+              value={form.guard_break_max_duration}
+              onKeyDown={(e) => {
+                if (e.key === "-" || e.key === "e") e.preventDefault();
+              }}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val.includes("-")) return;
+                setForm(prev => ({ ...prev, guard_break_max_duration: val }));
+              }}
+              placeholder="e.g. 30"
+              className="h-11 pr-14 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-medium pointer-events-none">Mins</span>
+          </div>
         </div>
         <div className="space-y-1.5">
           <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Guard Break Limit (Count)</Label>
