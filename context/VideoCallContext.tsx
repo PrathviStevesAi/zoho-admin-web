@@ -32,67 +32,77 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const USER_ID = toZimUserId(rawUserId);
   const USER_NAME = session?.user?.name || session?.user?.email || "Admin";
 
+  const initZego = async () => {
+    if (typeof window === "undefined" || status === "loading" || !USER_ID) return null;
+
+    try {
+      const { ZIM } = await import("zego-zim-web");
+      const { ZegoUIKitPrebuilt } = await import("@zegocloud/zego-uikit-prebuilt");
+
+      const token = ZegoUIKitPrebuilt.generateKitTokenForTest(
+        APP_ID,
+        APP_SIGN,
+        "admin_dashboard_room",
+        USER_ID,
+        USER_NAME,
+      );
+
+      const zp = ZegoUIKitPrebuilt.create(token);
+
+      zp.addPlugins({ ZIM });
+
+      const handleCallEnd = (reason?: any) => {
+        if (typeof reason === 'string' && reason === 'LeaveRoom') {
+          activeShiftIdRef.current = null;
+          return;
+        }
+
+        if (activeShiftIdRef.current) {
+          endVideoCallAction(activeShiftIdRef.current)
+            .then((res) => {
+              if (res.success) {
+                toast.success(res.message || "Call ended successfully.");
+              } else {
+                toast.error(res.error || "Failed to record call end.");
+              }
+            })
+            .catch(console.error);
+          activeShiftIdRef.current = null;
+        }
+      };
+
+      zp.setCallInvitationConfig({
+        enableNotifyWhenAppRunningInBackgroundOrQuit: true,
+        ringtoneConfig: {
+          incomingCallUrl: '',
+          outgoingCallUrl: ''
+        },
+        onCallInvitationEnded: handleCallEnd,
+        onOutgoingCallDeclined: handleCallEnd,
+        onOutgoingCallTimeout: handleCallEnd,
+        onOutgoingCallRejected: handleCallEnd,
+      });
+
+      setZpInstance(zp);
+      console.log("[ZegoUIKit] Call invitation plugins added successfully for user:", USER_ID);
+      return zp;
+    } catch (err: any) {
+      console.error("Failed to initialize Zego plugins", err);
+      return null;
+    }
+  };
+
   useEffect(() => {
-
-    if (typeof window === "undefined" || status === "loading" || !USER_ID) return;
-
-    const initZego = async () => {
-      try {
-        const { ZIM } = await import("zego-zim-web");
-        const { ZegoUIKitPrebuilt } = await import("@zegocloud/zego-uikit-prebuilt");
-
-        const token = ZegoUIKitPrebuilt.generateKitTokenForTest(
-          APP_ID,
-          APP_SIGN,
-          "admin_dashboard_room",
-          USER_ID,
-          USER_NAME,
-        );
-
-        const zp = ZegoUIKitPrebuilt.create(token);
-
-        zp.addPlugins({ ZIM });
-
-        const handleCallEnd = () => {
-          if (activeShiftIdRef.current) {
-            endVideoCallAction(activeShiftIdRef.current)
-              .then((res) => {
-                if (res.success) {
-                  toast.success(res.message || "Call ended successfully.");
-                } else {
-                  toast.error(res.error || "Failed to record call end.");
-                }
-              })
-              .catch(console.error);
-            activeShiftIdRef.current = null;
-          }
-        };
-
-        zp.setCallInvitationConfig({
-          enableNotifyWhenAppRunningInBackgroundOrQuit: true,
-          ringtoneConfig: {
-            incomingCallUrl: '',
-            outgoingCallUrl: ''
-          },
-          onCallInvitationEnded: handleCallEnd,
-          onOutgoingCallDeclined: handleCallEnd,
-          onOutgoingCallTimeout: handleCallEnd,
-          onOutgoingCallRejected: handleCallEnd,
-        });
-
-        setZpInstance(zp);
-        console.log("[ZegoUIKit] Call invitation plugins added successfully for user:", USER_ID);
-      } catch (err: any) {
-        console.error("Failed to initialize Zego plugins", err);
-      }
-    };
-
     initZego();
-
   }, [USER_ID, USER_NAME, status]);
 
   const startCall = async (guardId: string, shiftId?: string, type: number = 1) => {
-    if (!zpInstance) {
+    let currentZp = zpInstance;
+    if (!currentZp) {
+      currentZp = await initZego();
+    }
+    
+    if (!currentZp) {
       toast.error("Call service is still initializing. Please try again.");
       return;
     }
@@ -121,27 +131,27 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    try {
-      const zimGuardId = toZimUserId(guardId);
-      const customDataPayload = JSON.stringify({ shift_id: shiftId || "" });
-      const invitationConfig = {
-        callees: [{ userID: zimGuardId, userName: "Guard" }],
-        callType: type === 1 ? 1 : 0,
-        timeout: 60,
-        data: customDataPayload,
-        notificationConfig: {
-          resourcesID: "zego_call",
-          title: type === 1 ? "Incoming Video Call" : "Incoming Voice Call",
-          message: "Admin is calling",
-        }
-      };
+    const zimGuardId = toZimUserId(guardId);
+    const customDataPayload = JSON.stringify({ shift_id: shiftId || "" });
+    const invitationConfig = {
+      callees: [{ userID: zimGuardId, userName: "Guard" }],
+      callType: type === 1 ? 1 : 0,
+      timeout: 60,
+      data: customDataPayload,
+      notificationConfig: {
+        resourcesID: "zego_call",
+        title: type === 1 ? "Incoming Video Call" : "Incoming Voice Call",
+        message: "Admin is calling",
+      }
+    };
 
+    try {
       console.log("Zego Web Sending Call Invitation...");
       console.log("target guardId...", zimGuardId);
       console.log("customdata...", customDataPayload);
       console.log("full config...", invitationConfig);
 
-      const res = await zpInstance.sendCallInvitation(invitationConfig);
+      const res = await currentZp.sendCallInvitation(invitationConfig);
 
       console.log(`Call invitation sent to ${zimGuardId}`, res);
 
@@ -165,6 +175,27 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (e) {
         errorMsg = err?.message || typeof err === "string" ? err : "Unknown error";
+      }
+
+      if (errorMsg.toLowerCase().includes("not logged")) {
+        console.log("Zego connection stale, attempting to re-initialize and retry...");
+        try {
+          currentZp = await initZego();
+          if (currentZp) {
+             const retryRes = await currentZp.sendCallInvitation(invitationConfig);
+             console.log(`Retry call invitation sent to ${zimGuardId}`, retryRes);
+             if (retryRes.errorInvitees && retryRes.errorInvitees.length > 0) {
+               toast.error(`Guard is offline or unavailable.`);
+               if (shiftId) {
+                 endVideoCallAction(shiftId).catch(console.error);
+                 activeShiftIdRef.current = null;
+               }
+             }
+             return;
+          }
+        } catch(retryErr: any) {
+           console.error("Retry failed:", retryErr);
+        }
       }
 
       toast.error(`Failed to call guard: ${errorMsg}`);

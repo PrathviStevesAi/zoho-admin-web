@@ -321,7 +321,22 @@ export default function QuoteForm() {
   const handleScheduleChange = (index: number, field: string, value: any) => {
     setFormData(prev => {
       const newSchedules = [...prev.perDaySchedules];
-      const schedule = { ...newSchedules[index], [field]: value };
+      let finalValue = value;
+      if (field === 'hoursStr' && typeof value === 'string') {
+        finalValue = value.replace(/[^0-9:\.]/g, '');
+        let h = 0, m = 0;
+        if (finalValue.includes(':')) {
+          const parts = finalValue.split(':');
+          h = parseFloat(parts[0]) || 0;
+          m = parseFloat(parts[1]) || 0;
+        } else {
+          h = parseFloat(finalValue) || 0;
+        }
+        if (h > 24 || (h === 24 && m > 0)) {
+          finalValue = "24";
+        }
+      }
+      const schedule = { ...newSchedules[index], [field]: finalValue };
 
       const parseHoursToMs = (hStr: string) => {
         let h = 0, m = 0;
@@ -651,7 +666,6 @@ export default function QuoteForm() {
             <div>
               <label className="block text-sm font-medium mb-1 text-slate-700">Type Of Security Needed? <span className="text-red-500">*</span></label>
               <select name="Security_Type" value={formData.Security_Type} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.Security_Type ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white`}>
-                <option value="" disabled>Select Security Type</option>
                 {securityTypes.map((type, idx) => (
                   <option key={idx} value={type.value} disabled={type.value === ""}>{type.label}</option>
                 ))}
@@ -711,9 +725,9 @@ export default function QuoteForm() {
                   {formData["is_24/7"] ? "End Date & Time" : "End Date"} <span className="text-red-500">*</span>
                 </label>
                 {formData["is_24/7"] ? (
-                  <input type="datetime-local" min={minDateTime} name="End_Date" value={formData.End_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.End_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+                  <input type="datetime-local" min={formData.Start_Date || minDateTime} name="End_Date" value={formData.End_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.End_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
                 ) : (
-                  <input type="date" min={minDate} name="End_Date" value={formData.End_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.End_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+                  <input type="date" min={formData.Start_Date || minDate} name="End_Date" value={formData.End_Date} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.End_Date ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
                 )}
                 {formErrors.End_Date && <span className="text-xs text-red-500 mt-1 block">{formErrors.End_Date}</span>}
               </div>

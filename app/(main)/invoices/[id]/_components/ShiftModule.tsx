@@ -416,6 +416,7 @@ export function ShiftModule({
                             <Input
                               type="number"
                               min="0.01"
+                              max="24"
                               step="any"
                               placeholder="e.g., 8"
                               value={row.hours}
@@ -425,11 +426,14 @@ export function ShiftModule({
                                   handleRowChange(dateKey, 'hours', "");
                                   return;
                                 }
-                                const valNum = Number(inputVal);
+                                let valNum = Number(inputVal);
                                 if (valNum < 0) {
                                   return;
                                 }
-                                handleRowChange(dateKey, 'hours', inputVal);
+                                if (valNum > 24) {
+                                  valNum = 24;
+                                }
+                                handleRowChange(dateKey, 'hours', valNum.toString());
                               }}
                               className="h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg font-medium text-slate-700"
                             />
@@ -495,6 +499,7 @@ export function ShiftModule({
                         <Input
                           type="number"
                           min="0.01"
+                          max="24"
                           step="any"
                           disabled={!row.checked}
                           placeholder="e.g., 8"
@@ -505,11 +510,14 @@ export function ShiftModule({
                               handleRowChange(dateKey, 'hours', "");
                               return;
                             }
-                            const valNum = Number(inputVal);
+                            let valNum = Number(inputVal);
                             if (valNum < 0) {
                               return;
                             }
-                            handleRowChange(dateKey, 'hours', inputVal);
+                            if (valNum > 24) {
+                              valNum = 24;
+                            }
+                            handleRowChange(dateKey, 'hours', valNum.toString());
                           }}
                           className="h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg font-medium text-slate-700 disabled:bg-slate-100 disabled:text-slate-400"
                         />
