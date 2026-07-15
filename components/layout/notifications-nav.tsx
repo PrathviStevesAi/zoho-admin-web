@@ -144,7 +144,9 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
         className="w-[calc(100vw-32px)] sm:w-[380px] p-0 mt-2 bg-card border-border shadow-xl rounded-sm animate-in fade-in-0 zoom-in-95"
       >
         <div className="flex items-center justify-between p-4 border-b border-border/50">
-          <h3 className="font-semibold text-slate-700">Notifications</h3>
+          <h3 className="font-semibold text-slate-700">
+            {priority === "normal" ? "Normal Notifications" : "Critical Notifications"}
+          </h3>
         </div>
 
         <div className="max-h-[400px] overflow-y-auto custom-scrollbar bg-[#f8fafc] p-3">
@@ -173,7 +175,7 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
                 const group = notifications.filter((n) => formatHeaderDate(n.created_at) === dateKey);
                 return (
                   <div key={dateKey} className="space-y-2">
-                    <div className="text-[12px] font-bold text-black px-1 py-1">
+                    <div className="text-[12px] font-bold text-black">
                       {dateKey}
                     </div>
                     <div className="space-y-3">
@@ -184,7 +186,7 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
                             key={notification.id}
                             className={cn(
                               "bg-white rounded-l-lg rounded-r-none border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-3 flex gap-3 relative transition-all duration-200 overflow-hidden",
-                              isUnread 
+                              isUnread
                                 ? priority === "normal" ? "border-l-[4px] border-l-[#0064cb]" : "border-l-[4px] border-l-[#e11d48]"
                                 : "border-l-[4px] border-l-transparent"
                             )}
@@ -194,7 +196,7 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
                                 <h4
                                   className={cn(
                                     "text-[14px] leading-tight cursor-pointer hover:underline",
-                                    isUnread 
+                                    isUnread
                                       ? priority === "normal" ? "font-bold text-[#0064cb]" : "font-bold text-[#e11d48]"
                                       : "font-medium text-slate-400"
                                   )}

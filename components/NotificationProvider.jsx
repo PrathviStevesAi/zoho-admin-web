@@ -20,7 +20,11 @@ export default function NotificationProvider() {
                     console.warn("Suppressed Zego SDK error log:", ...args);
                     return;
                 }
-                originalError(...args);
+                originalError.apply(console, args);
+            };
+
+            return () => {
+                console.error = originalError;
             };
         }
     }, []);
