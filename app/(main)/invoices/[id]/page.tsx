@@ -456,8 +456,9 @@ export default function InvoiceDetailsPage() {
     if (!start.isValid || !end.isValid) return "";
     if (end < start) end = end.plus({ days: 1 });
     const diff = end.diff(start, ['hours', 'minutes']).toObject();
-    const hours = (diff.hours || 0) + (diff.minutes || 0) / 60;
-    return hours.toFixed(2);
+    const h = diff.hours || 0;
+    const m = Math.round(diff.minutes || 0);
+    return `${h}:${String(m).padStart(2, '0')}`;
   };
 
   const handleRowChange = (dateKey: string, field: string, value: any) => {
@@ -469,8 +470,16 @@ export default function InvoiceDetailsPage() {
         endTime: ""
       };
       const updated = { ...current, [field]: value };
+      const parseHours = (val: string) => {
+        if (typeof val === 'string' && val.includes(':')) {
+          const parts = val.split(':');
+          return (parseFloat(parts[0]) || 0) + (parseFloat(parts[1]) || 0) / 60;
+        }
+        return parseFloat(val);
+      };
+
       if (field === 'startTime') {
-        const hoursNum = parseFloat(updated.hours);
+        const hoursNum = parseHours(updated.hours);
         if (!isNaN(hoursNum) && updated.hours !== "") {
           const start = DateTime.fromISO(updated.startTime, { zone: invoiceTimezone });
           if (start.isValid) {
@@ -487,7 +496,7 @@ export default function InvoiceDetailsPage() {
         if (value === "") {
           updated.endTime = "";
         } else {
-          const hoursNum = parseFloat(value);
+          const hoursNum = parseHours(value);
           if (!isNaN(hoursNum)) {
             const start = DateTime.fromISO(updated.startTime, { zone: invoiceTimezone });
             if (start.isValid) {
@@ -529,7 +538,13 @@ export default function InvoiceDetailsPage() {
           toast.error(`Please select start and end times for ${formattedDate}`);
           return;
         }
-        const hoursNum = parseFloat(row.hours);
+        let hoursNum = 0;
+        if (typeof row.hours === 'string' && row.hours.includes(':')) {
+          const parts = row.hours.split(':');
+          hoursNum = (parseFloat(parts[0]) || 0) + (parseFloat(parts[1]) || 0) / 60;
+        } else {
+          hoursNum = parseFloat(row.hours);
+        }
         if (isNaN(hoursNum) || hoursNum <= 0) {
           toast.error(`Hours per Day for ${formattedDate} must be a positive number greater than 0`);
           return;

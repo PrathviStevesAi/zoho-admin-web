@@ -323,12 +323,15 @@ export default function QuoteForm() {
       const newSchedules = [...prev.perDaySchedules];
       let finalValue = value;
       if (field === 'hoursStr' && typeof value === 'string') {
-        finalValue = value.replace(/[^0-9:\.]/g, '');
+        finalValue = value.replace(/\./g, ':').replace(/[^0-9:]/g, '');
         let h = 0, m = 0;
         if (finalValue.includes(':')) {
           const parts = finalValue.split(':');
-          h = parseFloat(parts[0]) || 0;
-          m = parseFloat(parts[1]) || 0;
+          const hoursPart = parts[0];
+          const minutesPart = parts.slice(1).join('').substring(0, 2);
+          finalValue = `${hoursPart}:${minutesPart}`;
+          h = parseFloat(hoursPart) || 0;
+          m = parseFloat(minutesPart) || 0;
         } else {
           h = parseFloat(finalValue) || 0;
         }
@@ -675,7 +678,7 @@ export default function QuoteForm() {
 
             <div>
               <label className="block text-sm font-medium mb-1 text-slate-700">How many Guards do you want? <span className="text-red-500">*</span></label>
-              <input type="number" name="No_of_Guards" min="1" value={formData.No_of_Guards} onChange={handleInputChange} placeholder="1" className={`flex h-10 w-full rounded-md border ${formErrors.No_of_Guards ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+              <input type="number" name="No_of_Guards" min="1" step="1" onKeyDown={(e) => { if (['.', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); }} value={formData.No_of_Guards} onChange={handleInputChange} placeholder="1" className={`flex h-10 w-full rounded-md border ${formErrors.No_of_Guards ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
               {formErrors.No_of_Guards && <span className="text-xs text-red-500 mt-1 block">{formErrors.No_of_Guards}</span>}
             </div>
 

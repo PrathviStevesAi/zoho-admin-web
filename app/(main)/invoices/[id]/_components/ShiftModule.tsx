@@ -414,37 +414,31 @@ export function ShiftModule({
                           </TableCell>
                           <TableCell className="py-4 px-6">
                             <Input
-                              type="number"
-                              step="any"
-                              placeholder="e.g., 8"
+                              type="text"
+                              placeholder="e.g., 8:00"
                               value={row.hours}
-                              onKeyDown={(e) => {
-                                if (e.key === "ArrowUp") {
-                                  e.preventDefault();
-                                  const current = Number(row.hours) || 0;
-                                  const next = Math.min(24, Math.floor(current + 1));
-                                  handleRowChange(dateKey, 'hours', next.toString());
-                                } else if (e.key === "ArrowDown") {
-                                  e.preventDefault();
-                                  const current = Number(row.hours) || 0;
-                                  const next = Math.max(0, Math.ceil(current - 1));
-                                  handleRowChange(dateKey, 'hours', next > 0 ? next.toString() : "");
-                                }
-                              }}
                               onChange={(e) => {
-                                const inputVal = e.target.value;
-                                if (inputVal === "") {
+                                let val = e.target.value;
+                                if (val === "") {
                                   handleRowChange(dateKey, 'hours', "");
                                   return;
                                 }
-                                let valNum = Number(inputVal);
-                                if (valNum < 0) {
-                                  valNum = 0;
+                                val = val.replace(/\./g, ':').replace(/[^0-9:]/g, '');
+                                let h = 0, m = 0;
+                                if (val.includes(':')) {
+                                  const parts = val.split(':');
+                                  const hoursPart = parts[0];
+                                  const minutesPart = parts.slice(1).join('').substring(0, 2);
+                                  val = `${hoursPart}:${minutesPart}`;
+                                  h = parseFloat(hoursPart) || 0;
+                                  m = parseFloat(minutesPart) || 0;
+                                } else {
+                                  h = parseFloat(val) || 0;
                                 }
-                                if (valNum > 24) {
-                                  valNum = 24;
+                                if (h > 24 || (h === 24 && m > 0)) {
+                                  val = "24:00";
                                 }
-                                handleRowChange(dateKey, 'hours', valNum.toString());
+                                handleRowChange(dateKey, 'hours', val);
                               }}
                               className="h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg font-medium text-slate-700"
                             />
@@ -508,27 +502,32 @@ export function ShiftModule({
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Hours per Day</Label>
                         <Input
-                          type="number"
-                          min="0.01"
-                          max="24"
-                          step="any"
+                          type="text"
                           disabled={!row.checked}
-                          placeholder="e.g., 8"
+                          placeholder="e.g., 8:00"
                           value={row.hours}
                           onChange={(e) => {
-                            const inputVal = e.target.value;
-                            if (inputVal === "") {
+                            let val = e.target.value;
+                            if (val === "") {
                               handleRowChange(dateKey, 'hours', "");
                               return;
                             }
-                            let valNum = Number(inputVal);
-                            if (valNum < 0) {
-                              return;
+                            val = val.replace(/\./g, ':').replace(/[^0-9:]/g, '');
+                            let h = 0, m = 0;
+                            if (val.includes(':')) {
+                              const parts = val.split(':');
+                              const hoursPart = parts[0];
+                              const minutesPart = parts.slice(1).join('').substring(0, 2);
+                              val = `${hoursPart}:${minutesPart}`;
+                              h = parseFloat(hoursPart) || 0;
+                              m = parseFloat(minutesPart) || 0;
+                            } else {
+                              h = parseFloat(val) || 0;
                             }
-                            if (valNum > 24) {
-                              valNum = 24;
+                            if (h > 24 || (h === 24 && m > 0)) {
+                              val = "24:00";
                             }
-                            handleRowChange(dateKey, 'hours', valNum.toString());
+                            handleRowChange(dateKey, 'hours', val);
                           }}
                           className="h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg font-medium text-slate-700 disabled:bg-slate-100 disabled:text-slate-400"
                         />
