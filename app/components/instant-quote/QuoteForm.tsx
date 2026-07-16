@@ -336,7 +336,10 @@ export default function QuoteForm() {
           h = parseFloat(finalValue) || 0;
         }
         if (h > 24 || (h === 24 && m > 0)) {
-          finalValue = "24";
+          finalValue = "24:00";
+        }
+        if (h === 0 && m === 0 && (finalValue === "00:00" || finalValue === "0:00")) {
+          finalValue = "0:01";
         }
       }
       const schedule = { ...newSchedules[index], [field]: finalValue };
@@ -362,7 +365,8 @@ export default function QuoteForm() {
           let startMs = (sh * 60 + sm) * 60000;
           let endMs = (eh * 60 + em) * 60000;
           if (endMs < startMs) endMs += 24 * 60 * 60000;
-          const diffMs = endMs - startMs;
+          let diffMs = endMs - startMs;
+          if (diffMs === 0) diffMs = 60000;
           const hours = Math.floor(diffMs / (1000 * 60 * 60));
           const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
           schedule.hoursStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
@@ -372,6 +376,7 @@ export default function QuoteForm() {
           const [sh, sm] = schedule.startTime.split(':').map(Number);
           let startMs = (sh * 60 + sm) * 60000;
           let durationMs = parseHoursToMs(schedule.hoursStr);
+          if (durationMs === 0) durationMs = 60000;
           let endMs = startMs + durationMs;
           const endHours = Math.floor((endMs / (1000 * 60 * 60)) % 24);
           const endMinutes = Math.floor((endMs % (1000 * 60 * 60)) / 60000);
@@ -382,7 +387,8 @@ export default function QuoteForm() {
           let startMs = (sh * 60 + sm) * 60000;
           let endMs = (eh * 60 + em) * 60000;
           if (endMs < startMs) endMs += 24 * 60 * 60000;
-          const diffMs = endMs - startMs;
+          let diffMs = endMs - startMs;
+          if (diffMs === 0) diffMs = 60000;
           const hours = Math.floor(diffMs / (1000 * 60 * 60));
           const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
           schedule.hoursStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;

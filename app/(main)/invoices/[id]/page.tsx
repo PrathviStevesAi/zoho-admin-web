@@ -456,8 +456,11 @@ export default function InvoiceDetailsPage() {
     if (!start.isValid || !end.isValid) return "";
     if (end < start) end = end.plus({ days: 1 });
     const diff = end.diff(start, ['hours', 'minutes']).toObject();
-    const h = diff.hours || 0;
-    const m = Math.round(diff.minutes || 0);
+    let h = diff.hours || 0;
+    let m = Math.round(diff.minutes || 0);
+    if (h === 0 && m === 0) {
+      m = 1;
+    }
     return `${h}:${String(m).padStart(2, '0')}`;
   };
 

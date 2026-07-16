@@ -438,6 +438,9 @@ export function ShiftModule({
                                 if (h > 24 || (h === 24 && m > 0)) {
                                   val = "24:00";
                                 }
+                                if (h === 0 && m === 0 && (val === "00:00" || val === "0:00")) {
+                                  val = "0:01";
+                                }
                                 handleRowChange(dateKey, 'hours', val);
                               }}
                               className="h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg font-medium text-slate-700"
@@ -526,6 +529,9 @@ export function ShiftModule({
                             }
                             if (h > 24 || (h === 24 && m > 0)) {
                               val = "24:00";
+                            }
+                            if (h === 0 && m === 0 && (val === "00:00" || val === "0:00")) {
+                              val = "0:01";
                             }
                             handleRowChange(dateKey, 'hours', val);
                           }}
