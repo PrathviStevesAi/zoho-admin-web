@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 // console.log("proxy AUTH_SECRET:", !!process.env.AUTH_SECRET);
-// console.log("proxy NEXTAUTH_SECRET:", !!process.env.NEXTAUTH_SECRET);
+console.log("proxy NEXTAUTH_SECRET:", !!process.env.NEXTAUTH_SECRET);
 // console.log("AUTH_SECRET raw:", process.env.AUTH_SECRET);
 
 export async function proxy(req: NextRequest) {
