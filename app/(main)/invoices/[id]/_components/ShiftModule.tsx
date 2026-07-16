@@ -427,11 +427,17 @@ export function ShiftModule({
                                 let h = 0, m = 0;
                                 if (val.includes(':')) {
                                   const parts = val.split(':');
-                                  const hoursPart = parts[0];
-                                  const minutesPart = parts.slice(1).join('').substring(0, 2);
-                                  val = `${hoursPart}:${minutesPart}`;
+                                  let hoursPart = parts[0];
+                                  let minutesPart = parts.slice(1).join('').substring(0, 2);
                                   h = parseFloat(hoursPart) || 0;
                                   m = parseFloat(minutesPart) || 0;
+                                  if (m >= 60) {
+                                    h += Math.floor(m / 60);
+                                    m = m % 60;
+                                    hoursPart = h.toString().padStart(hoursPart.length >= 2 ? 2 : 1, '0');
+                                    minutesPart = m.toString().padStart(2, '0');
+                                  }
+                                  val = `${hoursPart}:${minutesPart}`;
                                 } else {
                                   h = parseFloat(val) || 0;
                                 }
@@ -519,11 +525,17 @@ export function ShiftModule({
                             let h = 0, m = 0;
                             if (val.includes(':')) {
                               const parts = val.split(':');
-                              const hoursPart = parts[0];
-                              const minutesPart = parts.slice(1).join('').substring(0, 2);
-                              val = `${hoursPart}:${minutesPart}`;
+                              let hoursPart = parts[0];
+                              let minutesPart = parts.slice(1).join('').substring(0, 2);
                               h = parseFloat(hoursPart) || 0;
                               m = parseFloat(minutesPart) || 0;
+                              if (m >= 60) {
+                                h += Math.floor(m / 60);
+                                m = m % 60;
+                                hoursPart = h.toString().padStart(hoursPart.length >= 2 ? 2 : 1, '0');
+                                minutesPart = m.toString().padStart(2, '0');
+                              }
+                              val = `${hoursPart}:${minutesPart}`;
                             } else {
                               h = parseFloat(val) || 0;
                             }

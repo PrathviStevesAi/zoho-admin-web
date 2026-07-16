@@ -393,11 +393,17 @@ export default function QuoteForm() {
         let h = 0, m = 0;
         if (finalValue.includes(':')) {
           const parts = finalValue.split(':');
-          const hoursPart = parts[0];
-          const minutesPart = parts.slice(1).join('').substring(0, 2);
-          finalValue = `${hoursPart}:${minutesPart}`;
+          let hoursPart = parts[0];
+          let minutesPart = parts.slice(1).join('').substring(0, 2);
           h = parseFloat(hoursPart) || 0;
           m = parseFloat(minutesPart) || 0;
+          if (m >= 60) {
+            h += Math.floor(m / 60);
+            m = m % 60;
+            hoursPart = h.toString().padStart(hoursPart.length >= 2 ? 2 : 1, '0');
+            minutesPart = m.toString().padStart(2, '0');
+          }
+          finalValue = `${hoursPart}:${minutesPart}`;
         } else {
           h = parseFloat(finalValue) || 0;
         }

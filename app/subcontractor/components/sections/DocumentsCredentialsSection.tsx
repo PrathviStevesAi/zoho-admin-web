@@ -116,7 +116,7 @@ export function DocumentsCredentialsSection() {
                 label=""
                 helperText=""
                 accept="video/*"
-                maxSizeMB={10}
+                maxSizeMB={20}
                 onFileSelect={(file) => setValue("verificationVideo", file)}
                 variant="red-button"
                 buttonText="Upload Verification Video<span class='text-red-500'>*</span>"
@@ -143,7 +143,7 @@ export function DocumentsCredentialsSection() {
                   <li>Show your security license on camera and mention the license type</li>
                   <li>Make sure the video is front-facing (camera directly facing you)</li>
                   <li>Upload the video in any standard video format</li>
-                  <li>The video should be less than 10MB</li>
+                  <li>The video should be less than 20MB</li>
                 </ul>
                 <div className="bg-green-50 p-3 rounded text-green-800 text-xs border border-green-100">
                   <strong>Note:</strong> Please upload all required documents and the verification video correctly. Do not upload unnecessary or incorrect files. If the wrong documents are uploaded, your application may be rejected.
