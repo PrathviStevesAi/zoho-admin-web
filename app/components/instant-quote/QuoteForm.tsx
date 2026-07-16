@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Country, State, City as CityLib } from "country-state-city";
@@ -37,6 +37,72 @@ export type DailySchedule = {
 const addressAutocompleteOptions = {
   types: ["address"],
   componentRestrictions: { country: "us" },
+};
+
+const CityAutocomplete = ({ name, value, onChange, options, disabled, placeholder, error }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(value || "");
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSearchTerm(value || "");
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearchTerm(value || "");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [value]);
+
+  const filteredOptions = options.filter((opt: any) =>
+    opt.name.toLowerCase().includes((searchTerm || "").toLowerCase())
+  );
+
+  return (
+    <div ref={wrapperRef} className="relative w-full">
+      <input
+        type="text"
+        name={name}
+        value={searchTerm}
+        disabled={disabled}
+        placeholder={placeholder}
+        autoComplete="none"
+        className={`flex h-10 w-full rounded-md border ${error ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white disabled:opacity-50`}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+      />
+      {isOpen && !disabled && (
+        <ul className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-slate-200 bg-white shadow-lg text-sm">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((opt: any, i: number) => (
+              <li
+                key={i}
+                className="cursor-pointer px-3 py-2 hover:bg-slate-100"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange({ target: { name, value: opt.name, type: "text" } });
+                  setSearchTerm(opt.name);
+                  setIsOpen(false);
+                }}
+              >
+                {opt.name}
+              </li>
+            ))
+          ) : (
+            <li className="px-3 py-2 text-slate-500">No results found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
 };
 
 export default function QuoteForm() {
@@ -832,18 +898,15 @@ export default function QuoteForm() {
 
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">City <span className="text-red-500">*</span></label>
-                <select
+                <CityAutocomplete
                   name="City"
                   value={formData.City}
                   onChange={handleInputChange}
-                  className={`flex h-10 w-full rounded-md border ${formErrors.City ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white`}
-                  disabled={!formData.State || cities.length === 0}
-                >
-                  <option value="">{cities.length === 0 ? "Select State first" : "Select City"}</option>
-                  {cities.map((c, i) => (
-                    <option key={`${c.name}-${i}`} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
+                  options={cities}
+                  placeholder={!formData.State ? "Select State first" : "Search or enter city"}
+                  error={formErrors.City}
+                  disabled={!formData.State}
+                />
                 {formErrors.City && <span className="text-xs text-red-500 mt-1 block">{formErrors.City}</span>}
               </div>
             </div>
@@ -916,18 +979,15 @@ export default function QuoteForm() {
 
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">City <span className="text-red-500">*</span></label>
-                <select
+                <CityAutocomplete
                   name="Service_City"
                   value={formData.Service_City}
                   onChange={handleInputChange}
-                  className={`flex h-10 w-full rounded-md border ${formErrors.Service_City ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white disabled:opacity-50`}
-                  disabled={sameAsBilling || !formData.Service_State || serviceCities.length === 0}
-                >
-                  <option value="">{serviceCities.length === 0 ? "Select State first" : "Select City"}</option>
-                  {serviceCities.map((c, i) => (
-                    <option key={`${c.name}-${i}`} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
+                  options={serviceCities}
+                  placeholder={!formData.Service_State ? "Select State first" : "Search or enter city"}
+                  error={formErrors.Service_City}
+                  disabled={sameAsBilling || !formData.Service_State}
+                />
                 {formErrors.Service_City && <span className="text-xs text-red-500 mt-1 block">{formErrors.Service_City}</span>}
               </div>
             </div>
