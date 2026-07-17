@@ -86,7 +86,7 @@ export default function ProfilePage() {
   });
 
   const currentFullPhone = editFormData.phone_number
-    ? `${selectedCountry.dialCode}${editFormData.phone_number}`
+    ? `+1${editFormData.phone_number}`
     : "";
   const isFormChanged = user ? (
     editFormData.first_name !== user.first_name ||
@@ -419,19 +419,16 @@ export default function ProfilePage() {
               <Label className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">Phone Number</Label>
               {isEditing ? (
                 <div className="relative flex items-center h-11 bg-slate-50 border border-slate-200 rounded-xl focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0064cb]/10 focus-within:border-[#0064cb] transition-all">
-                  <button
-                    type="button"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center gap-1.5 px-3 h-full rounded-l-xl hover:bg-slate-100/50 border-r border-slate-200/80 transition-colors focus:outline-none cursor-pointer"
+                  <div
+                    className="flex items-center gap-1.5 px-3 h-full rounded-l-xl bg-slate-100/50 border-r border-slate-200/80 transition-colors"
                   >
                     <img
-                      src={`https://flagcdn.com/w20/${selectedCountry.code}.png`}
-                      alt={selectedCountry.name}
+                      src="https://flagcdn.com/w20/us.png"
+                      alt="United States"
                       className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
                     />
-                    <span className="text-sm font-semibold text-slate-700">{selectedCountry.dialCode}</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-                  </button>
+                    <span className="text-sm font-semibold text-slate-700">+1</span>
+                  </div>
 
                   <div className="relative flex-1 h-full flex items-center">
                     <Phone className="absolute left-3 w-4 h-4 text-slate-700" />
@@ -447,58 +444,23 @@ export default function ProfilePage() {
                     />
                   </div>
 
-                  {isDropdownOpen && (
-                    <div
-                      className="fixed inset-0 z-40 cursor-default"
-                      onClick={() => setIsDropdownOpen(false)}
-                    />
-                  )}
 
-                  {isDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-[260px] max-h-[220px] overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 animate-in fade-in duration-100">
-                      {countries.map((country) => (
-                        <button
-                          key={country.code}
-                          type="button"
-                          onClick={() => {
-                            setSelectedCountry(country);
-                            setIsDropdownOpen(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${selectedCountry.code === country.code ? "bg-blue-50/30 font-semibold text-[#0064cb]" : "text-slate-700"
-                            }`}
-                        >
-                          <img
-                            src={`https://flagcdn.com/w20/${country.code}.png`}
-                            alt={country.name}
-                            className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
-                          />
-                          <span className="flex-1 truncate font-medium">{country.name}</span>
-                          <span className="text-slate-700 text-xs font-semibold">{country.dialCode}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 px-0.5">
-                  {(() => {
-                    const countryMatch = findCountryFromPhone(currentUser.phone_number || "");
-                    if (countryMatch) {
-                      const displayNum = (currentUser.phone_number || "").slice(countryMatch.dialCode.length);
-                      return (
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={`https://flagcdn.com/w20/${countryMatch.code}.png`}
-                            alt={countryMatch.name}
-                            className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
-                          />
-                          <span className="text-slate-700 font-semibold text-sm">{countryMatch.dialCode}</span>
-                          <span className="text-[14px] font-medium text-slate-700">{displayNum}</span>
-                        </div>
-                      );
-                    }
-                    return <p className="text-[14px] font-medium text-slate-700">{currentUser.phone_number || "Not provided"}</p>;
-                  })()}
+                  <img
+                    src="https://flagcdn.com/w20/us.png"
+                    alt="United States"
+                    className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
+                  />
+                  <span className="text-slate-700 font-semibold text-sm">+1</span>
+                  <span className="text-[14px] font-medium text-slate-700">
+                    {(currentUser.phone_number || "").startsWith("+1")
+                      ? (currentUser.phone_number || "").slice(2)
+                      : (currentUser.phone_number || "").startsWith("+") 
+                        ? currentUser.phone_number 
+                        : currentUser.phone_number || "Not provided"}
+                  </span>
                 </div>
               )}
             </div>
