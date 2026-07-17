@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ["localhost:3000", "*.amplifyapp.com", "*.amplify.app"],
+      allowedOrigins: ["localhost:3000", "*.amplifyapp.com", "*.amplify.app", "*.securityguardbank.com", "securityguardbank.com"],
     },
   },
   env: {

@@ -39,6 +39,18 @@ export default function LoginPage() {
     const [canResend, setCanResend] = useState(false);
 
     useEffect(() => {
+        // If the user lands here but already has an active session, redirect to dashboard.
+        // This helps resolve cases where the login page was cached but the user has a valid cookie.
+        import("next-auth/react").then(({ getSession }) => {
+            getSession().then((session) => {
+                if (session?.user) {
+                    window.location.href = "/dashboard";
+                }
+            });
+        });
+    }, []);
+
+    useEffect(() => {
         let interval: NodeJS.Timeout;
         if (timer > 0) {
             interval = setInterval(() => {
