@@ -110,30 +110,36 @@ export default function LoginPage() {
         e.preventDefault();
         setIsLoggingIn(true);
 
-        // 1. Manually check the credentials first to get the EXACT backend error message if it fails
-        const preCheck = await preCheckLoginAction({ email, password });
+        try {
+            // 1. Manually check the credentials first to get the EXACT backend error message if it fails
+            const preCheck = await preCheckLoginAction({ email, password });
 
-        if (!preCheck.success) {
-            toast.error(preCheck.error);
-            setIsLoggingIn(false);
-            return;
-        }
+            if (!preCheck.success) {
+                toast.error(preCheck.error);
+                setIsLoggingIn(false);
+                return;
+            }
 
-        // 2. If backend succeeds, use client-side signIn to set the session cookies without triggering Server Action bugs
-        const result = await signIn("credentials", {
-            email,
-            password,
-            redirect: false,
-        });
+            // 2. If backend succeeds, use client-side signIn to set the session cookies without triggering Server Action bugs
+            const result = await signIn("credentials", {
+                email,
+                password,
+                redirect: false,
+            });
 
-        if (result?.error) {
-            toast.error("Invalid Credentials");
-            setIsLoggingIn(false);
-        } else if (result?.ok) {
-            toast.success("Login Successful");
-            window.location.href = "/dashboard";
-        } else {
-            toast.error("Something went wrong. Please try again.");
+            if (result?.error) {
+                toast.error("Invalid Credentials");
+                setIsLoggingIn(false);
+            } else if (result?.ok) {
+                toast.success("Login Successful");
+                window.location.href = "/dashboard";
+            } else {
+                toast.error("Something went wrong. Please try again.");
+                setIsLoggingIn(false);
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            toast.error("An unexpected error occurred during login. Please try again.");
             setIsLoggingIn(false);
         }
     };
