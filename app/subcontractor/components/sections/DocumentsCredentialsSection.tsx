@@ -116,7 +116,7 @@ export function DocumentsCredentialsSection() {
                 label=""
                 helperText=""
                 accept="video/*"
-                maxSizeMB={20}
+                maxSizeMB={10}
                 onFileSelect={(file) => setValue("verificationVideo", file)}
                 variant="red-button"
                 buttonText="Upload Verification Video<span class='text-red-500'>*</span>"

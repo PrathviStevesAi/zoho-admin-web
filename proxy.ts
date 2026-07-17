@@ -28,7 +28,8 @@ export async function proxy(req: NextRequest) {
 
   const isRootPage = nextUrl.pathname === "/";
   const isAuthPage = nextUrl.pathname.startsWith("/admin-login");
-  const isProtectedRoute = !isAuthPage && !isRootPage;
+  const isSubcontractorPage = nextUrl.pathname.startsWith("/subcontractor");
+  const isProtectedRoute = !isAuthPage && !isRootPage && !isSubcontractorPage;
   const hasError = tokenFallback?.error === "RefreshAccessTokenError";
 
   if (hasError && isProtectedRoute) {

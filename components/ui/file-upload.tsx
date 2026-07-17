@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { generateUploadUrlAction } from "@/actions/subcontractor.actions";
 import { toast } from "sonner";
 import imageCompression from 'browser-image-compression';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 interface FileUploadProps {
   onFileSelect: (file: File | null) => void;
@@ -43,7 +45,7 @@ export function FileUpload({
 
   const validateFile = (file: File) => {
     if (file.size > maxSizeMB * 1024 * 1024) {
-      alert(`File is too large. Maximum size is ${maxSizeMB}MB.`);
+      toast.error(`File is too large. Maximum size is ${maxSizeMB}MB.`);
       return false;
     }
     return true;
@@ -75,6 +77,72 @@ export function FileUpload({
             } catch (error) {
               console.error("Error compressing image", error);
               toast.error("Failed to compress image");
+              setIsUploading(false);
+              if (inputRef.current) inputRef.current.value = "";
+              return;
+            }
+          } else if (file.type.startsWith("video/")) {
+            try {
+              console.log(`[Compression] Before compression: Original file size: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+              toast.info("Compressing video... This may take a moment.");
+              const ffmpeg = new FFmpeg();
+
+              ffmpeg.on('progress', ({ progress }) => {
+                const percent = Math.round(progress * 100);
+                if (percent >= 0 && percent <= 100) {
+                  console.log(`[Compression] Compressing... Progress: ${percent}%`);
+                  setUploadProgress(percent);
+                }
+              });
+
+              const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd';
+              await ffmpeg.load({
+                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+              });
+
+              const inputName = 'input' + (file.name.substring(file.name.lastIndexOf('.')) || '.mp4');
+              const outputName = 'output.mp4';
+              await ffmpeg.writeFile(inputName, await fetchFile(file));
+
+              const getVideoDuration = (f: File): Promise<number> => {
+                return new Promise((resolve) => {
+                  const video = document.createElement("video");
+                  video.preload = "metadata";
+                  video.onloadedmetadata = () => {
+                    window.URL.revokeObjectURL(video.src);
+                    resolve(video.duration);
+                  };
+                  video.src = URL.createObjectURL(f);
+                });
+              };
+
+              let duration = await getVideoDuration(file);
+              if (!duration || duration <= 0) duration = 1;
+
+              // Target file size is 50% of original. 
+              // Size (bits) = (file.size / 2) * 8 = file.size * 4
+              // Bitrate (kbps) = (Size / duration) / 1000
+              const targetBitrateKbps = Math.max(100, Math.round(((file.size * 4) / duration) / 1000));
+
+              await ffmpeg.exec([
+                '-i', inputName,
+                '-vcodec', 'libx264',
+                '-b:v', `${targetBitrateKbps}k`,
+                '-maxrate', `${Math.round(targetBitrateKbps * 1.2)}k`,
+                '-bufsize', `${targetBitrateKbps * 2}k`,
+                '-preset', 'ultrafast',
+                outputName
+              ]);
+
+              const data = await ffmpeg.readFile(outputName);
+              file = new File([data as any], file.name.replace(/\.[^/.]+$/, "") + ".mp4", { type: 'video/mp4' });
+              console.log(`[Compression] After compression: New file size: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+
+              setUploadProgress(0);
+            } catch (error) {
+              console.error("Error compressing video", error);
+              toast.error("Failed to compress video");
               setIsUploading(false);
               if (inputRef.current) inputRef.current.value = "";
               return;
