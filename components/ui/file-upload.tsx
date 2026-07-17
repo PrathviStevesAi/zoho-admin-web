@@ -27,7 +27,7 @@ interface FileUploadProps {
 export function FileUpload({
   onFileSelect,
   accept = "*",
-  maxSizeMB = 5,
+  maxSizeMB = 15,
   label,
   helperText,
   error,
@@ -48,6 +48,36 @@ export function FileUpload({
       toast.error(`File is too large. Maximum size is ${maxSizeMB}MB.`);
       return false;
     }
+
+    if (accept && accept !== "*") {
+      const acceptedTypes = accept.split(",").map((t) => t.trim().toLowerCase());
+
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      const fileType = file.type.toLowerCase();
+
+      const isAccepted = acceptedTypes.some((type) => {
+        if (type.endsWith('/*')) {
+          const baseType = type.replace('/*', '');
+          return fileType.startsWith(baseType);
+        }
+        if (type.startsWith('.')) {
+          return `.${fileExtension}` === type;
+        }
+        return fileType === type;
+      });
+
+      if (!isAccepted) {
+        if (accept.includes('video')) {
+          toast.error("Invalid file type. Please upload a valid video (e.g. mp4, mov, hevc, etc).");
+        } else if (accept.includes('image')) {
+          toast.error("Invalid file type. Please upload a valid image (e.g. jpg, png, jpeg, etc).");
+        } else {
+          toast.error(`Invalid file type. Please upload a valid file matching: ${accept}`);
+        }
+        return false;
+      }
+    }
+
     return true;
   };
 
