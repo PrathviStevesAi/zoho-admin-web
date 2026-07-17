@@ -38,7 +38,7 @@ export function DocumentsCredentialsSection() {
       <Card className="shadow-none border-slate-200">
         <CardContent className="p-6 space-y-4">
           <p className="text-sm font-medium text-slate-800 mb-4">
-            Documents & Credentials: (Please upload each of the documents / images & videos, max 5MB) requested below if you have the certifications. Failing to do so may delay or deny processing of your application)
+            Documents & Credentials: (Please upload each of the documents / images, max 5MB and videos max 15MB) requested below if you have the certifications. Failing to do so may delay or deny processing of your application)
           </p>
 
           <div className="space-y-3">

@@ -83,6 +83,16 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           onOutgoingCallDeclined: handleCallEnd,
           onOutgoingCallTimeout: handleCallEnd,
           onOutgoingCallRejected: handleCallEnd,
+          onSetRoomConfigBeforeJoining: (callType: any) => {
+            return {
+              onUserLeave: (users: any) => {
+                handleCallEnd();
+                if (zp) {
+                  zp.hangUp();
+                }
+              }
+            };
+          }
         });
 
         if (!isMounted) {
