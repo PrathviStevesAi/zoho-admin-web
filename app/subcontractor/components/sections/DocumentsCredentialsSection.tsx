@@ -15,8 +15,8 @@ export function DocumentsCredentialsSection() {
   const guardEmail = watch("email");
 
   return (
-    <>
-      <div className="border border-slate-200 rounded-lg p-4 bg-white">
+    <div id="documents-credentials-section">
+      <div className="border border-slate-200 rounded-lg p-4 bg-white mb-6">
         <div className="mb-3">
           <h3 className="font-semibold text-slate-800">Upload Your Resume / CV <span className="text-red-500">*</span></h3>
           <p className="text-xs text-slate-500 mt-1">Documents must be in one of the following formats: <strong>DOC, DOCX, PDF</strong> and less than <strong>5MB</strong>.</p>
@@ -153,6 +153,6 @@ export function DocumentsCredentialsSection() {
           </div>
         </CardContent>
       </Card>
-    </>
+    </div>
   );
 }

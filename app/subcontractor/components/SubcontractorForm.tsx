@@ -98,6 +98,22 @@ export default function SubcontractorForm() {
     (errors.phone?.type === "manual");
 
   const onSubmit = async (data: FormValues) => {
+    if (
+      !data.resume ||
+      !data.headshot_image ||
+      (!data.securityLicenseOptional && !data.security_guard_license) ||
+      !data.driver_license ||
+      !data.verificationVideo
+    ) {
+      toast.error("Please upload all required documents and credentials.");
+      const element = document.getElementById("documents-credentials-section");
+      if (element) {
+        const y = element.getBoundingClientRect().top + window.scrollY - 100;
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
