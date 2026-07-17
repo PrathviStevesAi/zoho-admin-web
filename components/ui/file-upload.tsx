@@ -179,6 +179,8 @@ export function FileUpload({
             }
           }
 
+          console.log(`[Upload API] Starting API processing to upload file: ${file.name} (Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+
           const trimmedGuardEmail = guardEmail.trim();
           const res = await generateUploadUrlAction(file.name, uploadType, trimmedGuardEmail);
 
@@ -199,6 +201,7 @@ export function FileUpload({
           xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {
               const percentComplete = Math.round((event.loaded / event.total) * 100);
+              console.log(`[Upload API] Uploading... Progress: ${percentComplete}%`);
               setUploadProgress(percentComplete);
             }
           };
@@ -206,6 +209,7 @@ export function FileUpload({
           xhr.onload = () => {
             setIsUploading(false);
             if (xhr.status >= 200 && xhr.status < 300) {
+              console.log(`[Upload API] Upload completed successfully!`);
               setSelectedFile(file);
               onFileSelect(res.data.file_path);
             } else {

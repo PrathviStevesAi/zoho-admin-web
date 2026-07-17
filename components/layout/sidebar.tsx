@@ -127,7 +127,19 @@ export function Sidebar({ userRole }: { userRole?: string }) {
         </div>
 
         <nav className={cn("flex-1 px-3 py-4 overflow-y-auto", isCollapsed ? "space-y-1" : "space-y-4")}>
-          {navGroups.map((group) => (
+          {navGroups.map((group) => {
+            const filteredItems = group.items.filter(route => {
+              if (userRole === "member") {
+                if (route.label === "Guard Price" || route.label === "Member Activity" || route.label === "Service Logs") {
+                  return false;
+                }
+              }
+              return true;
+            });
+
+            if (filteredItems.length === 0) return null;
+
+            return (
             <div key={group.groupLabel}>
               {!isCollapsed && (
                 <p className="px-2 mb-1 text-[13px] font-bold uppercase tracking-widest text-black select-none">
@@ -135,10 +147,8 @@ export function Sidebar({ userRole }: { userRole?: string }) {
                 </p>
               )}
 
-
-
               <div className="space-y-1">
-                {group.items.map((route) => {
+                {filteredItems.map((route) => {
                   const hasSubmenus = Array.isArray(route.submenus) && route.submenus.length > 0;
                   let submenus = hasSubmenus ? route.submenus! : [];
 
@@ -246,7 +256,8 @@ export function Sidebar({ userRole }: { userRole?: string }) {
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </nav>
       </aside>
 

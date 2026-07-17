@@ -611,7 +611,7 @@ export default function GuardDetailPage() {
               </div>
               <div className="space-y-0.5">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Cell Phone</span>
-                <a href={`tel:${guard.phone_number}`} className="text-sm font-bold text-slate-850 hover:text-[#0064cb] block">{guard.phone_number || "N/A"}</a>
+                <a href={`tel:${guard.phone_number?.replace(/\s/g, '')}`} className="text-sm font-bold text-slate-850 hover:text-[#0064cb] block">{guard.phone_number || "N/A"}</a>
               </div>
             </div>
           </div>
