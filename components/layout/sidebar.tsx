@@ -198,6 +198,7 @@ export function Sidebar({ userRole }: { userRole?: string }) {
                   ) : (
                     <Link
                       href={route.href!}
+                      onClick={() => setIsCollapsed(true)}
                       className={cn(
                         "group flex items-center h-11 rounded-lg transition-all duration-200",
                         isCollapsed ? "justify-center px-0" : "px-3",
@@ -238,6 +239,7 @@ export function Sidebar({ userRole }: { userRole?: string }) {
                               <Link
                                 key={sub.href}
                                 href={sub.href}
+                                onClick={() => setIsCollapsed(true)}
                                 className={cn(
                                   "flex items-center h-9 px-3 rounded-lg text-xs font-medium transition-all duration-200",
                                   isSubActive
