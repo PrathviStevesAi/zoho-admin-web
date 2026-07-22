@@ -42,6 +42,7 @@ export interface ShiftActions {
   is_flat_rate_edit?: boolean;
   is_travel_fee_edit?: boolean;
   is_join_vc_call?: boolean;
+  is_find_standby_guard?: boolean;
   call_id?: string;
 }
 

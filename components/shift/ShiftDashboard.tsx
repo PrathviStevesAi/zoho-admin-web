@@ -28,6 +28,7 @@ import { ShiftMapCard } from "./ShiftMapCard";
 import { ShiftSettingsCard } from "./ShiftSettingsCard";
 import { ShiftTabsModule } from "./ShiftTabsModule";
 import { NewAssignGuardPanel } from "./NewAssignGuardPanel";
+import { StandbyGuardsPanel } from "./StandbyGuardsPanel";
 import { EditShiftLocationDialog } from "./dialogs/EditShiftLocationDialog";
 import { ManualStartShiftDialog } from "./dialogs/ManualStartShiftDialog";
 import { FilePreviewDialog } from "./dialogs/FilePreviewDialog";
@@ -55,6 +56,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [mapCenter, setMapCenter] = useState<[number, number] | undefined>(undefined);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isNewAssignOpen, setIsNewAssignOpen] = useState(false);
+  const [isStandbyGuardsOpen, setIsStandbyGuardsOpen] = useState(false);
   const [isReassign, setIsReassign] = useState(false);
   const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
@@ -473,6 +475,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsNewAssignOpen(true);
     setIsReassign(true);
     setIsSettingsOpen(false);
+    setIsStandbyGuardsOpen(false);
   };
 
   const handleNewAssignGuard = () => {
@@ -487,6 +490,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsNewAssignOpen(true);
     setIsReassign(false);
     setIsSettingsOpen(false);
+    setIsStandbyGuardsOpen(false);
   };
 
   const handleNewAssignSelect = async (guard: any, rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number }) => {
@@ -568,20 +572,22 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6">
-      {/* Breadcrumbs & Header Actions */}
       <ShiftHeader
         shift={shift}
         shiftId={shiftId}
         notificationId={notificationId}
         isSettingsOpen={isSettingsOpen}
-        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) setIsNewAssignOpen(false); }}
+        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) { setIsNewAssignOpen(false); setIsStandbyGuardsOpen(false); } }}
         isNewAssignOpen={isNewAssignOpen}
+        isStandbyGuardsOpen={isStandbyGuardsOpen}
         isReassign={isReassign}
         onCloseNewAssign={() => setIsNewAssignOpen(false)}
+        onCloseStandbyGuards={() => setIsStandbyGuardsOpen(false)}
         isStartingShift={isStartingShift}
         onManualStart={() => setIsManualStartOpen(true)}
         onAssignGuard={handleAssignGuard}
         onNewAssignGuard={handleNewAssignGuard}
+        onFindStandbyGuard={() => { setIsStandbyGuardsOpen(true); setIsNewAssignOpen(false); setIsSettingsOpen(false); }}
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
         onStartVideoCall={() => {
@@ -621,6 +627,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           onClose={() => setIsSettingsOpen(false)}
           isSaving={isSavingSettings}
         />
+      ) : isStandbyGuardsOpen ? (
+        <StandbyGuardsPanel shift={shift} onClose={() => setIsStandbyGuardsOpen(false)} />
       ) : !isLoading && !shift ? (
         <div className="max-w-2xl mx-auto w-full">
           <ShiftDetailsCard

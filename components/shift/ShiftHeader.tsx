@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video } from "lucide-react";
+import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
@@ -11,12 +11,15 @@ interface ShiftHeaderProps {
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
   isNewAssignOpen: boolean;
+  isStandbyGuardsOpen?: boolean;
   isReassign?: boolean;
   onCloseNewAssign: () => void;
+  onCloseStandbyGuards?: () => void;
   isStartingShift: boolean;
   onManualStart: () => void;
   onAssignGuard: () => void;
   onNewAssignGuard: () => void;
+  onFindStandbyGuard?: () => void;
   onCancelService: () => void;
   showSettingBtn: boolean;
   onStartVideoCall: () => void;
@@ -31,12 +34,15 @@ export function ShiftHeader({
   isSettingsOpen,
   setIsSettingsOpen,
   isNewAssignOpen,
+  isStandbyGuardsOpen,
   isReassign,
   onCloseNewAssign,
+  onCloseStandbyGuards,
   isStartingShift,
   onManualStart,
   onAssignGuard,
   onNewAssignGuard,
+  onFindStandbyGuard,
   onCancelService,
   onStartVideoCall,
   onJoinVideoCall,
@@ -57,10 +63,11 @@ export function ShiftHeader({
                 e.preventDefault();
                 setIsSettingsOpen(false);
                 onCloseNewAssign();
+                if (onCloseStandbyGuards) onCloseStandbyGuards();
               }}
               className={cn(
                 "transition-colors font-medium",
-                (isSettingsOpen || isNewAssignOpen)
+                (isSettingsOpen || isNewAssignOpen || isStandbyGuardsOpen)
                   ? "text-slate-500 hover:text-[#0064cb] cursor-pointer"
                   : "text-[#0064cb] font-bold cursor-default pointer-events-none"
               )}
@@ -77,6 +84,12 @@ export function ShiftHeader({
               <>
                 <ChevronRight className="w-3.5 h-3.5" />
                 <span className="text-[#0064cb] font-bold">{isReassign ? "Re-Assign Guard" : "New Assign Guard"}</span>
+              </>
+            )}
+            {isStandbyGuardsOpen && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="text-[#0064cb] font-bold">Standby Guard</span>
               </>
             )}
           </div>
@@ -160,6 +173,14 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "blue" as const,
                 onClick: onNewAssignGuard,
+              });
+            }
+            if (act.is_find_standby_guard) {
+              buttons.push({
+                label: "Standby Guard",
+                icon: UserCheck,
+                color: "teal" as const,
+                onClick: onFindStandbyGuard || (() => {}),
               });
             }
             if (act.is_manual_start_shift) {

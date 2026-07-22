@@ -585,3 +585,57 @@ export async function updateCustomerAction(customer_id: string, payload: any): P
     return { success: false, error: error.message || "Failed to update customer" };
   }
 }
+
+export async function clientFetchStandbyGuardsAction(shift_id: string): Promise<SingleFetchResponse<any>> {
+  try {
+    const data = await clientApiFetch<any>(`/api/v1/shift/${shift_id}/standby-guards`);
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to fetch standby guards" };
+  }
+}
+
+export async function clientFindStandbyGuardsAction(payload: {
+  shift_id: string;
+  guard_ids: string[];
+  start_time: string;
+  end_time: string;
+  hourly_rate: number;
+  total_hours: number;
+}) {
+  try {
+    const data = await clientApiFetch<any>("/api/v1/shift/find-standby-guards", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to find standby guards" };
+  }
+}
+
+export async function clientAssignStandbyGuardAction(payload: {
+  shift_id: string;
+  standby_id: string;
+}) {
+  try {
+    const data = await clientApiFetch<any>("/api/v1/shift/assign-standby-guard", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to assign standby guard" };
+  }
+}
+
+export async function clientDeleteStandbyRequestAction(standby_id: string) {
+  try {
+    const data = await clientApiFetch<any>(`/api/v1/shift/standby-request/${standby_id}`, {
+      method: "DELETE",
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to delete standby request" };
+  }
+}
