@@ -342,16 +342,17 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
                   const endTimeStr = formatDateTime(guard.end_time);
 
                   // Response Badge Logic
-                  let responseLabel = "No Response";
-                  let responseColor = "bg-slate-100 text-slate-500 border-slate-200";
+                  let responseLabel = "Pending";
+                  let responseColor = "bg-amber-50 text-amber-500 border-amber-200";
                   if (guard.status === "available" || guard.status === "accepted") {
-                    responseLabel = "Accepted";
+                    responseLabel = "Available";
                     responseColor = "bg-green-50 text-green-600 border-green-100";
                   } else if (guard.status === "not_available" || guard.status === "declined") {
-                    responseLabel = "Declined";
+                    responseLabel = "Not Available";
                     responseColor = "bg-red-50 text-red-500 border-red-100";
                   } else if (guard.status === "pending") {
-                    responseLabel = "No Response";
+                    responseLabel = "Pending";
+                    responseColor = "bg-amber-50 text-amber-500 border-amber-200";
                   }
 
                   const isRowAssigned = guard.action?.assigned_guard_on_shift;
