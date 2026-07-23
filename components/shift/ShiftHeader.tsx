@@ -133,12 +133,12 @@ export function ShiftHeader({
               </h1>
 
               {shift?.invoice_description && (
-                <div className="absolute left-0 top-full mt-2 w-80 p-4 bg-slate-900 text-white text-[11px] rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[70] border border-slate-800 shadow-blue-900/20">
+                <div className="absolute left-0 top-full mt-2 w-[280px] sm:w-80 md:w-96 p-3 sm:p-4 bg-slate-900 text-white text-[11px] rounded-xl sm:rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[70] border border-slate-800 shadow-blue-900/20">
                   <div className="absolute -top-1.5 left-6 w-3 h-3 bg-slate-900 rotate-45 border-l border-t border-slate-800" />
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800">
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3 pb-2 border-b border-slate-800">
                     <p className="font-bold text-blue-400">Shift Description</p>
                   </div>
-                  <div className="max-h-[350px] overflow-y-auto custom-scrollbar pr-1">
+                  <div className="max-h-[250px] sm:max-h-[350px] overflow-y-auto custom-scrollbar pr-1 text-slate-300 leading-relaxed">
                     {formatDescription(shift.invoice_description)}
                   </div>
                 </div>

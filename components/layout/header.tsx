@@ -231,7 +231,7 @@ export function Header() {
   };
 
   return (
-    <header className="flex items-center justify-between h-16 border-b bg-white px-4 md:px-6 sticky top-0 z-50">
+    <header className="flex items-center justify-between h-16 border-b bg-white px-2 sm:px-4 md:px-6 sticky top-0 z-50">
       {isMobileSearchOpen && (
         <div className="absolute inset-0 bg-white z-50 flex items-center px-2 gap-2 md:hidden animate-in slide-in-from-top duration-250">
           <Button
@@ -293,23 +293,22 @@ export function Header() {
         </div>
       )}
 
-      <div className="flex items-center gap-2 md:gap-3 shrink-0 w-auto md:w-[240px]">
+      <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0 w-auto md:w-[240px]">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => window.dispatchEvent(new Event("toggle-sidebar"))}
-          className="md:hidden p-1 mr-1 hover:bg-muted cursor-pointer shrink-0"
+          className="md:hidden p-1 mr-0 hover:bg-muted cursor-pointer shrink-0"
         >
-          <Menu className="size-6 text-slate-700" />
+          <Menu className="size-5 sm:size-6 text-slate-700" />
         </Button>
-        <Link href="/dashboard" className="flex items-center">
+        <Link href="/dashboard" className="flex items-center shrink-0">
           <Image
             src="/images/website-logo.png"
             alt="logo"
             width={110}
             height={32}
-            className="object-contain"
-            style={{ width: 'auto' }}
+            className="object-contain h-6 w-auto sm:h-8"
             priority
           />
         </Link>
@@ -358,7 +357,7 @@ export function Header() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4 shrink-0 w-auto md:w-auto md:min-w-[240px] justify-end">
+      <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0 w-auto md:w-auto md:min-w-[240px] justify-end">
         <Button
           variant="ghost"
           size="icon"
@@ -368,9 +367,9 @@ export function Header() {
               mobileSearchInputRef.current?.focus();
             }, 50);
           }}
-          className="md:hidden text-[#474d56] hover:text-[#0064cb] transition-colors h-10 w-10 rounded-full cursor-pointer flex items-center justify-center shrink-0"
+          className="md:hidden text-[#474d56] hover:text-[#0064cb] transition-colors h-8 w-8 sm:h-10 sm:w-10 rounded-full cursor-pointer flex items-center justify-center shrink-0"
         >
-          <Search className="size-[22px] stroke-[1.5px]" />
+          <Search className="size-[20px] sm:size-[22px] stroke-[1.5px]" />
         </Button>
         <NotificationsNav priority="normal" />
         <NotificationsNav priority="critical" />
@@ -392,11 +391,11 @@ function UserNav({ session, dynamicProfile }: { session: any, dynamicProfile: an
       <DropdownMenuTrigger asChild className="cursor-pointer">
         <Button
           variant="ghost"
-          className="relative h-10 flex items-center gap-2 pl-1 pr-2 rounded-full hover:bg-muted transition-all active:scale-95"
+          className="relative h-8 sm:h-10 flex items-center gap-1 sm:gap-2 pl-0 sm:pl-1 pr-1 sm:pr-2 rounded-full hover:bg-muted transition-all active:scale-95"
         >
-          <Avatar className="h-9 w-9 border border-slate-200 shadow-sm">
+          <Avatar className="h-7 w-7 sm:h-9 sm:w-9 border border-slate-200 shadow-sm">
             <AvatarImage src={profileImage} alt={name} className="object-cover" />
-            <AvatarFallback className="bg-slate-100 text-[#0064cb] text-xs font-bold">
+            <AvatarFallback className="bg-slate-100 text-[#0064cb] text-[10px] sm:text-xs font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -404,7 +403,7 @@ function UserNav({ session, dynamicProfile }: { session: any, dynamicProfile: an
             <span className="text-sm font-semibold leading-none">{name}</span>
             <span className="text-[10px] text-muted-foreground leading-tight mt-0.5 capitalize">{role}</span>
           </div>
-          <ChevronDown className="size-3.5 text-muted-foreground ml-1" />
+          <ChevronDown className="size-3 sm:size-3.5 text-muted-foreground ml-0.5 sm:ml-1" />
         </Button>
       </DropdownMenuTrigger>
 

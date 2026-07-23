@@ -120,19 +120,19 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
         <Button
           variant="ghost"
           onClick={() => loadNotifications(1)}
-          className="relative transition-colors h-10 w-10 p-0 flex items-center justify-center rounded-[10px] border border-slate-200 cursor-pointer outline-none hover:bg-slate-50 shrink-0"
+          className="relative transition-colors h-8 w-8 sm:h-10 sm:w-10 p-0 flex items-center justify-center rounded-[10px] border border-slate-200 cursor-pointer outline-none hover:bg-slate-50 shrink-0"
         >
           {priority === "normal" ? (
-            <Bell className="size-[20px] stroke-[2px] text-[#0064cb]" />
+            <Bell className="size-[18px] sm:size-[20px] stroke-[2px] text-[#0064cb]" />
           ) : (
-            <AlertTriangle className="size-[20px] stroke-[2px] text-[#e11d48]" />
+            <AlertTriangle className="size-[18px] sm:size-[20px] stroke-[2px] text-[#e11d48]" />
           )}
           {unreadCount > 0 && (
             <span className={cn(
-              "absolute -top-2 -right-2 flex items-center justify-center min-w-[20px] px-1 h-[20px] text-white text-[11px] font-bold rounded-full shadow-sm z-10",
+              "absolute -top-2 -right-1 sm:-right-2 flex items-center justify-center min-w-[18px] sm:min-w-[20px] px-1 h-[18px] sm:h-[20px] text-white text-[10px] sm:text-[11px] font-bold rounded-full shadow-sm z-10",
               priority === "normal" ? "bg-[#0064cb]" : "bg-[#e11d48]"
             )}>
-              {unreadCount}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
         </Button>

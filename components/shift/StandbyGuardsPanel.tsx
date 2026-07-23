@@ -250,18 +250,18 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {stats.map((stat, idx) => (
-          <div key={idx} className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm flex items-center gap-4">
-            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", stat.bg, stat.text)}>
-              <stat.icon className="w-6 h-6" />
+          <div key={idx} className="bg-white rounded-xl border border-slate-100 p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-4">
+            <div className={cn("w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0", stat.bg, stat.text)}>
+              <stat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <p className="text-[13px] font-semibold text-slate-700">{stat.label}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] sm:text-[13px] font-semibold text-slate-700 leading-tight">{stat.label}</p>
               {isLoading ? (
-                <Skeleton className="h-7 w-12 mt-1" />
+                <Skeleton className="h-6 sm:h-7 w-10 mt-1" />
               ) : (
-                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{stat.value}</h3>
+                <h3 className="text-lg sm:text-2xl font-bold text-slate-900 mt-0.5">{stat.value}</h3>
               )}
             </div>
           </div>
@@ -362,6 +362,9 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
                           </div>
                           <div>
                             <div className="text-[14px] font-bold text-slate-800">{guard.guard_name || "Unknown"}</div>
+                            {guard.phone_number && (
+                              <div className="text-[12px] text-slate-500 font-medium mt-0.5">{guard.phone_number}</div>
+                            )}
                           </div>
                         </div>
                       </TableCell>

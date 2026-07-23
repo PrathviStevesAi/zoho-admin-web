@@ -174,7 +174,7 @@ export function InvoiceDetailsCard({
             </div>
           </div>
 
-          <div className="flex flex-col md:grid md:grid-cols-4 p-4 gap-2 md:gap-0 items-start border-t border-slate-50">
+          <div id="shift-detail-section" className="flex flex-col md:grid md:grid-cols-4 p-4 gap-2 md:gap-0 items-start border-t border-slate-50">
             <div className="flex items-center gap-1.5 pt-1">
               <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Shift Detail:</span>
               <div className="group relative">
