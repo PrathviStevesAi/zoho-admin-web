@@ -771,6 +771,7 @@ export default function InvoiceDetailsPage() {
         description={invoice.invoice_description || invoice.description || ""}
         shippingAddress={invoice.shipping_address}
         onOpenPayment={() => { setIsPaymentOpen(true); setIsScheduleOpen(false); setIsAssignGuardOpen(false); }}
+        onOpenShiftDetail={() => { setIsEditOpen(true); }}
         onOpenSchedule={() => { setIsScheduleOpen(true); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAddingShift(false); loadShifts("schedule"); }}
         onOpenAssignGuard={() => {
           const paymentStatus = invoice?.payment_status?.toLowerCase();

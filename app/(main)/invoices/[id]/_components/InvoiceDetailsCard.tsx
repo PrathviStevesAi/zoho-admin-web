@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Edit2, Loader2, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ interface InvoiceDetailsCardProps {
 
 export function InvoiceDetailsCard({
   invoice,
+  isEditOpen,
+  setIsEditOpen,
   isSaving,
   formData,
   setFormData,
@@ -29,6 +31,17 @@ export function InvoiceDetailsCard({
   onEditLocation
 }: InvoiceDetailsCardProps) {
   const [activeEditField, setActiveEditField] = useState<'title' | 'description' | 'shift_description' | null>(null);
+
+  useEffect(() => {
+    if (isEditOpen) {
+      setActiveEditField('shift_description');
+      setIsEditOpen(false);
+      const element = document.getElementById("shift-detail-section");
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [isEditOpen, setIsEditOpen]);
 
   const handleSaveField = async () => {
     await onSave();

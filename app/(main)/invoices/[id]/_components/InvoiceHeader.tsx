@@ -11,7 +11,6 @@ import {
   ExternalLink,
   XCircle,
   FileEdit,
-  Info
 } from "lucide-react";
 
 interface InvoiceHeaderProps {
@@ -22,6 +21,7 @@ interface InvoiceHeaderProps {
   shippingAddress?: any;
   onOpenPayment: () => void;
   onOpenSchedule: () => void;
+  onOpenShiftDetail?: () => void;
   onOpenAssignGuard: () => void;
   onOpenAvailableGuards: () => void;
   onResetView: () => void;
@@ -47,6 +47,7 @@ export function InvoiceHeader({
   shippingAddress,
   onOpenPayment,
   onOpenSchedule,
+  onOpenShiftDetail,
   onOpenAssignGuard,
   onOpenAvailableGuards,
   onResetView,
@@ -192,25 +193,35 @@ export function InvoiceHeader({
       </div>
 
       {!status?.toLowerCase().includes('cancelled') && (
-        <div className="w-fit mx-auto bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 sm:py-2.5 flex flex-col xl:flex-row items-center gap-3 sm:gap-4 shadow-sm">
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[#0064cb]">
-              <Info className="w-3.5 h-3.5" />
+        <div className="w-full flex justify-center pt-2 pb-4">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-center gap-2 sm:gap-3 text-[13px] sm:text-sm text-black">
+            <div className="flex items-center gap-1 whitespace-nowrap">
+              <span className="font-bold">Step-1</span>
+              <span className="font-medium">Update payment status</span>
             </div>
-            <p className="text-xs text-slate-800 font-bold tracking-wider">
-              Workflow Steps:
-            </p>
-          </div>
-          <div className="flex items-center justify-center flex-wrap gap-1.5 sm:gap-2 text-[10px] sm:text-xs">
-            <span className="font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100 whitespace-nowrap">1. Payment Status</span>
-            <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />
-            <span className="font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-100 whitespace-nowrap">2. Shift Detail</span>
-            <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />
-            <span className="font-bold text-[#0064cb] bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100 whitespace-nowrap">3. Schedule Shift</span>
-            <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />
-            <span className="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100 whitespace-nowrap">4. Assign Guard</span>
-            <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />
-            <span className="font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-md border border-orange-100 flex items-center gap-1 whitespace-nowrap">5. Find Guard <span className="opacity-75 font-medium">(Optional)</span></span>
+            <span className="hidden sm:block text-slate-300">|</span>
+            <div 
+              className="flex items-center gap-1 whitespace-nowrap cursor-pointer hover:text-[#0064cb] transition-colors" 
+              onClick={() => onOpenShiftDetail?.()}
+            >
+              <span className="font-bold">Step-2</span>
+              <span className="font-medium">Update Shift Detail</span>
+            </div>
+            <span className="hidden sm:block text-slate-300">|</span>
+            <div className="flex items-center gap-1 whitespace-nowrap">
+              <span className="font-bold">Step-3</span>
+              <span className="font-medium">Schedule Shift</span>
+            </div>
+            <span className="hidden sm:block text-slate-300">|</span>
+            <div className="flex items-center gap-1 whitespace-nowrap">
+              <span className="font-bold">Step-4</span>
+              <span className="font-medium">Assign Guard</span>
+            </div>
+            <span className="hidden sm:block text-slate-300">|</span>
+            <div className="flex items-center gap-1 whitespace-nowrap">
+              <span className="font-bold">Step-5</span>
+              <span className="font-medium">Find Guard <span className="text-gray-500 font-normal">(Optional)</span></span>
+            </div>
           </div>
         </div>
       )}
@@ -230,9 +241,13 @@ export function InvoiceHeader({
                 <div
                   className="flex flex-col items-center gap-1.5 group cursor-pointer"
                   onClick={() => {
-                    const element = document.getElementById("shift-detail-section");
-                    if (element) {
-                      element.scrollIntoView({ behavior: "smooth" });
+                    if (onOpenShiftDetail) {
+                      onOpenShiftDetail();
+                    } else {
+                      const element = document.getElementById("shift-detail-section");
+                      if (element) {
+                        element.scrollIntoView({ behavior: "smooth" });
+                      }
                     }
                   }}
                 >
