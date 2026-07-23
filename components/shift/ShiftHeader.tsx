@@ -180,7 +180,7 @@ export function ShiftHeader({
                 label: "Standby Guard",
                 icon: UserCheck,
                 color: "teal" as const,
-                onClick: onFindStandbyGuard || (() => {}),
+                onClick: onFindStandbyGuard || (() => { }),
               });
             }
             if (act.is_manual_start_shift) {
@@ -208,15 +208,6 @@ export function ShiftHeader({
                 onClick: onStartVideoCall,
               });
             }
-
-            // if (act.is_join_vc_call) {
-            //   buttons.push({
-            //     label: "Join Video Call",
-            //     icon: Video,
-            //     color: "teal" as const,
-            //     onClick: onJoinVideoCall,
-            //   });
-            // }
 
             if (act.is_cancel_service) {
               buttons.push({
