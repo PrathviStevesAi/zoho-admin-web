@@ -58,7 +58,16 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
         zp.addPlugins({ ZIM });
 
-        const handleCallEnd = () => {
+        const handleCallEnd = (...args: any[]) => {
+          console.log("[ZegoUIKit] Call ended/rejected. Event args:", ...args);
+          if (zp && typeof zp.hangUp === "function") {
+            try {
+              zp.hangUp();
+            } catch (err) {
+              console.error("[ZegoUIKit] Failed to hang up:", err);
+            }
+          }
+          
           if (activeShiftIdRef.current) {
             endVideoCallAction(activeShiftIdRef.current)
               .then((res) => {
@@ -87,9 +96,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
             return {
               onUserLeave: (users: any) => {
                 handleCallEnd();
-                if (zp) {
-                  zp.hangUp();
-                }
               }
             };
           }
