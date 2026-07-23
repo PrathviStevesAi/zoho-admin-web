@@ -39,7 +39,6 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
   const [isSelectGuardsOpen, setIsSelectGuardsOpen] = useState(false);
   const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
   const [isFinding, setIsFinding] = useState(false);
-
   const [assignConfirm, setAssignConfirm] = useState<{ isOpen: boolean; guard: any | null }>({ isOpen: false, guard: null });
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; guard: any | null }>({ isOpen: false, guard: null });
   const [isAssigning, setIsAssigning] = useState(false);
@@ -192,9 +191,7 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
 
   return (
     <div className="space-y-6">
-      {/* Filter Bar */}
       <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm flex flex-wrap items-end gap-4">
-        {/* Time From */}
         <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
           <label className="text-[14px] font-bold text-black">Standby Time From</label>
           <input
@@ -206,7 +203,6 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
           />
         </div>
 
-        {/* Time To */}
         <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
           <label className="text-[14px] font-bold text-black">Standby Time To</label>
           <input
@@ -218,7 +214,6 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
           />
         </div>
 
-        {/* Pay Per Hour */}
         <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
           <label className="text-[14px] font-bold text-black">Pay Per Hour</label>
           <div className="relative">
@@ -233,7 +228,6 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
           <button
             onClick={() => setIsSelectGuardsOpen(true)}
@@ -256,7 +250,6 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
         </div>
       </div>
 
-      {/* Top Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {stats.map((stat, idx) => (
           <div key={idx} className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm flex items-center gap-4">
@@ -275,7 +268,6 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
         ))}
       </div>
 
-      {/* Main List Panel */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900">Standby Guards List</h2>
@@ -340,8 +332,6 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
                 data.map((guard) => {
                   const startTimeStr = formatDateTime(guard.start_time);
                   const endTimeStr = formatDateTime(guard.end_time);
-
-                  // Response Badge Logic
                   let responseLabel = "Pending";
                   let responseColor = "bg-amber-50 text-amber-500 border-amber-200";
                   if (guard.status === "available" || guard.status === "accepted") {
@@ -440,7 +430,6 @@ export function StandbyGuardsPanel({ shift }: StandbyGuardsPanelProps) {
         </div>
       </div>
 
-      {/* Info Alert Footer */}
       <div className="bg-[#f5f8ff] rounded-xl p-5 flex items-start gap-4 border border-blue-100 shadow-sm">
         <div className="w-8 h-8 rounded-full bg-[#0064cb] text-white flex items-center justify-center shrink-0 mt-0.5">
           <Info className="w-4 h-4" />
