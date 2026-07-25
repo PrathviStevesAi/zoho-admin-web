@@ -639,3 +639,27 @@ export async function clientDeleteStandbyRequestAction(standby_id: string) {
     return { success: false, error: error.message || "Failed to delete standby request" };
   }
 }
+
+export async function clientFetchOperationDashboardAction(): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const data = await clientApiFetch<{ success: boolean; data: any }>(
+      `/api/v1/dashboard/operation-dashboard`
+    );
+    return { success: true, data: data?.data || data };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Something went wrong";
+    return { success: false, error: message || "Unknown Error" };
+  }
+}
+
+export async function clientFetchDispatchDashboardAction(): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const data = await clientApiFetch<{ success: boolean; data: any }>(
+      `/api/v1/dashboard/dispatch-dashboard`
+    );
+    return { success: true, data: data?.data || data };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Something went wrong";
+    return { success: false, error: message || "Unknown Error" };
+  }
+}

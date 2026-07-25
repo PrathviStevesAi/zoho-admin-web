@@ -120,40 +120,41 @@ export default function InvoiceDetailsPage() {
   const [isAvailableGuardsLoading, setIsAvailableGuardsLoading] = useState(false);
   const [totalAvailableGuards, setTotalAvailableGuards] = useState(0);
 
-  useEffect(() => {
-    async function loadInvoice() {
-      setLoading(true);
-      const res = await clientFetchInvoiceDetailsAction(id);
-      if (res.success) {
-        setInvoice(res.data);
-        setInvoiceTimezone(res.data.timezone || 'America/Los_Angeles');
-        setFormData({
-          title: res.data.customer_name || "",
-          description: res.data.invoice_description || res.data.description || "",
-          shift_description: res.data.shift_description || ""
-        });
-        const initialPerHour = Number(res.data.per_hour_rate);
-        const initialPerShift = Number(res.data.per_shift_rate);
-        setPaymentFormData({
-          payment_status: res.data.payment_status || "",
-          reminder_date: res.data.reminder_date || "",
-          per_hour_rate: initialPerHour && initialPerHour > 0 ? String(initialPerHour) : "",
-          per_shift_rate: initialPerShift && initialPerShift > 0 ? String(initialPerShift) : ""
-        });
+  const loadInvoice = async () => {
+    setLoading(true);
+    const res = await clientFetchInvoiceDetailsAction(id);
+    if (res.success) {
+      setInvoice(res.data);
+      setInvoiceTimezone(res.data.timezone || 'America/Los_Angeles');
+      setFormData({
+        title: res.data.customer_name || "",
+        description: res.data.invoice_description || res.data.description || "",
+        shift_description: res.data.shift_description || ""
+      });
+      const initialPerHour = Number(res.data.per_hour_rate);
+      const initialPerShift = Number(res.data.per_shift_rate);
+      setPaymentFormData({
+        payment_status: res.data.payment_status || "",
+        reminder_date: res.data.reminder_date || "",
+        per_hour_rate: initialPerHour && initialPerHour > 0 ? String(initialPerHour) : "",
+        per_shift_rate: initialPerShift && initialPerShift > 0 ? String(initialPerShift) : ""
+      });
 
-        if (typeof window !== "undefined" && window.location.hash) {
-          if (window.location.hash === "#edit") {
-            setIsEditOpen(true);
-          } else if (window.location.hash === "#edit-location") {
-            setIsEditLocationOpen(true);
-          }
+      if (typeof window !== "undefined" && window.location.hash) {
+        if (window.location.hash === "#edit") {
+          setIsEditOpen(true);
+        } else if (window.location.hash === "#edit-location") {
+          setIsEditLocationOpen(true);
         }
-      } else {
-        toast.error(res.error || "Failed to load invoice");
       }
-      setLoading(false);
-      console.log('responseee', res);
+    } else {
+      toast.error(res.error || "Failed to load invoice");
     }
+    setLoading(false);
+    console.log('responseee', res);
+  };
+
+  useEffect(() => {
     loadInvoice();
     loadServices();
   }, [id]);
@@ -202,9 +203,12 @@ export default function InvoiceDetailsPage() {
     });
     if (res.success) {
       toast.success("Location updated successfully");
-      const refreshed = await clientFetchInvoiceDetailsAction(id);
-      if (refreshed.success) setInvoice(refreshed.data);
       setIsEditLocationOpen(false);
+      setIsSaving(false);
+      // Re-fetch all sections data
+      await loadInvoice();
+      loadServices();
+      return;
     } else {
       toast.error(res.error || "Failed to update location");
     }

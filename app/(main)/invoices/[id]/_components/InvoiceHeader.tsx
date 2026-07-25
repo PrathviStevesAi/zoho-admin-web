@@ -192,40 +192,6 @@ export function InvoiceHeader({
         )}
       </div>
 
-      {!status?.toLowerCase().includes('cancelled') && (
-        <div className="w-full flex justify-center pt-2 pb-4">
-          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-center gap-2 sm:gap-3 text-[13px] sm:text-sm text-black">
-            <div className="flex items-center gap-1 whitespace-nowrap">
-              <span className="font-bold">Step-1</span>
-              <span className="font-medium">Update payment status</span>
-            </div>
-            <span className="hidden sm:block text-slate-300">|</span>
-            <div 
-              className="flex items-center gap-1 whitespace-nowrap cursor-pointer hover:text-[#0064cb] transition-colors" 
-              onClick={() => onOpenShiftDetail?.()}
-            >
-              <span className="font-bold">Step-2</span>
-              <span className="font-medium">Update Shift Detail</span>
-            </div>
-            <span className="hidden sm:block text-slate-300">|</span>
-            <div className="flex items-center gap-1 whitespace-nowrap">
-              <span className="font-bold">Step-3</span>
-              <span className="font-medium">Schedule Shift</span>
-            </div>
-            <span className="hidden sm:block text-slate-300">|</span>
-            <div className="flex items-center gap-1 whitespace-nowrap">
-              <span className="font-bold">Step-4</span>
-              <span className="font-medium">Assign Guard</span>
-            </div>
-            <span className="hidden sm:block text-slate-300">|</span>
-            <div className="flex items-center gap-1 whitespace-nowrap">
-              <span className="font-bold">Step-5</span>
-              <span className="font-medium">Find Guard <span className="text-gray-500 font-normal">(Optional)</span></span>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 py-4">
         {!status?.toLowerCase().includes('cancelled') && (
           <>
@@ -236,6 +202,7 @@ export function InvoiceHeader({
                     <RefreshCcw className="w-5.5 h-5.5" />
                   </div>
                   <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Update<br />payment status</span>
+                  <span className="text-xs font-bold text-slate-900 mt-0.5">Step-1</span>
                 </div>
 
                 <div
@@ -255,6 +222,7 @@ export function InvoiceHeader({
                     <FileEdit className="w-5.5 h-5.5" />
                   </div>
                   <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Update<br />Shift Detail</span>
+                  <span className="text-xs font-bold text-slate-900 mt-0.5">Step-2</span>
                 </div>
               </>
             )}
@@ -265,6 +233,7 @@ export function InvoiceHeader({
                   <Calendar className="w-5.5 h-5.5" />
                 </div>
                 <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Schedule<br />Shift</span>
+                <span className="text-xs font-bold text-slate-900 mt-0.5">Step-3</span>
               </div>
             )}
 
@@ -274,6 +243,7 @@ export function InvoiceHeader({
                   <Search className="w-5.5 h-5.5" />
                 </div>
                 <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Find Available<br />Guard</span>
+                <span className="text-xs font-bold text-slate-900 mt-0.5">Step-5 ( Optional )</span>
               </div>
             )}
 
@@ -283,6 +253,7 @@ export function InvoiceHeader({
                   <UserPlus className="w-5.5 h-5.5" />
                 </div>
                 <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Assign<br />Guard</span>
+                <span className="text-xs font-bold text-slate-900 mt-0.5">Step-4</span>
               </div>
             )}
 
