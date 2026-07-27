@@ -42,7 +42,7 @@ const navGroups: NavGroup[] = [
       { label: "Operation Dashboard", icon: LayoutDashboard, href: "/dashboard" },
       { label: "New Work Order", icon: ClipboardList, href: "/new-work-order" },
       { label: "Schedule Calendar", icon: Calendar, href: "/calendar" },
-      { label: "Broadcast Notification", icon: Megaphone, href: "/broadcast-notifications" },
+      { label: "Blast Messages", icon: Megaphone, href: "/broadcast-notifications" },
     ],
   },
   {

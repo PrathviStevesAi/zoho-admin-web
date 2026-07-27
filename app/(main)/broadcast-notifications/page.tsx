@@ -16,12 +16,12 @@ export default function BroadcastNotificationsPage() {
 
   const handleSend = async () => {
     if (!message.trim()) {
-      toast.error("Please enter a notification message");
+      toast.error("Please enter a blast message");
       return;
     }
 
     if (recipientType === "filter" && selectedGuardIds.length === 0) {
-      toast.error("Please select at least one guard to send the notification to");
+      toast.error("Please select at least one guard to send the blast message to");
       return;
     }
 
@@ -34,16 +34,16 @@ export default function BroadcastNotificationsPage() {
       });
 
       if (res.success) {
-        toast.success(res.message || "Notification broadcasted successfully!");
+        toast.success(res.message || "Blast message sent successfully!");
         setMessage("");
         if (recipientType === "filter") {
           setSelectedGuardIds([]);
         }
       } else {
-        toast.error(res.error || "Failed to send notification");
+        toast.error(res.error || "Failed to send blast message");
       }
     } catch {
-      toast.error("An error occurred while sending the notification");
+      toast.error("An error occurred while sending the blast message");
     } finally {
       setIsSending(false);
     }
@@ -53,7 +53,7 @@ export default function BroadcastNotificationsPage() {
     <div className="p-0 sm:p-2 md:p-2 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="space-y-1.5 pl-1 sm:pl-2">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-montserrat mb-0">
-          Broadcast Notifications
+          Blast Messages
         </h1>
         <p className="text-[14px] text-slate-500 font-medium leading-relaxed">
           Send important announcements and updates to guards in real-time.
@@ -67,7 +67,7 @@ export default function BroadcastNotificationsPage() {
               htmlFor="notification-message"
               className="text-[14px] font-semibold text-slate-900 tracking-wide block"
             >
-              Notification Message
+              Blast Message
             </label>
             <div className="relative">
               <textarea
@@ -78,7 +78,7 @@ export default function BroadcastNotificationsPage() {
                     setMessage(e.target.value);
                   }
                 }}
-                placeholder="Enter your notification message here..."
+                placeholder="Enter your blast message here..."
                 rows={6}
                 className="w-full p-4 bg-slate-50/55 border border-slate-200/90 focus:border-[#0064cb] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#0064cb]/5 rounded-xl text-[14px] leading-relaxed text-slate-900 placeholder:text-slate-400 transition-all duration-300 resize-none pr-4 pb-8"
               />
@@ -106,7 +106,7 @@ export default function BroadcastNotificationsPage() {
                     Send to All Guards
                   </h3>
                   <p className="text-[12px] leading-relaxed text-slate-500 font-medium">
-                    Deliver this notification to every active guard in the system.
+                    Deliver this blast message to every active guard in the system.
                   </p>
                 </div>
 
@@ -186,7 +186,7 @@ export default function BroadcastNotificationsPage() {
             ) : (
               <>
                 <SendHorizontal className="h-4 w-4 stroke-[2px]" />
-                Send Notification
+                Send Blast Message
               </>
             )}
           </Button>

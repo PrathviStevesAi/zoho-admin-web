@@ -136,7 +136,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
           <div>
             <DialogTitle className="text-lg font-bold text-slate-900">Select Guards</DialogTitle>
             <DialogDescription className="sr-only">
-              Search and select multiple guards to send broadcast notifications.
+              Search and select multiple guards to send blast messages.
             </DialogDescription>
           </div>
         </div>
