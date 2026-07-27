@@ -57,6 +57,43 @@ const formSchema = z.object({
 });
 
 export type FormValues = z.infer<typeof formSchema>;
+
+const getPayload = (data: FormValues) => {
+  return {
+    email: data.email,
+    phone_number: `${data.phoneCode}${data.phone}`.replace(/\s+/g, ""),
+    license_number: data.license_number,
+    license_expiration_date: data.expiration_date,
+    resume_url: typeof data.resume === "string" ? data.resume : "",
+    headshot_image_url: typeof data.headshot_image === "string" ? data.headshot_image : "",
+    security_guard_license_url: typeof data.security_guard_license === "string" ? data.security_guard_license : "",
+    driver_license_url: typeof data.driver_license === "string" ? data.driver_license : "",
+    firewatch_certificate_url: typeof data.firewatch_certificate === "string" ? data.firewatch_certificate : "",
+    verification_video_url: typeof data.verificationVideo === "string" ? data.verificationVideo : "",
+    first_name: data.firstName,
+    last_name: data.lastName,
+    street_address: data.address,
+    country: data.country,
+    state: data.state,
+    city: data.city,
+    zip_code: data.zipCode,
+    referral: data.howHeard,
+    on_call: data.onCallAcknowledge === "yes",
+    smartphone: data.hasSmartphone === "yes",
+    job_alerts: data.canRespondAlerts === "yes",
+    license: data.hasSecurityLicense === "yes",
+    background: data.canPassBackgroundCheck === "yes",
+    transport: data.hasReliableTransport === "yes",
+    unarmed: data.unarmed === "yes",
+    armed: data.armed === "yes",
+    english_language: data.english_language === "yes",
+    gender: data.gender,
+    ethnicity: data.race,
+    veteran_status: data.veteranStatus,
+    disability_status: data.disabilityStatus,
+  };
+};
+
 export default function SubcontractorForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const methods = useForm<FormValues>({
@@ -116,39 +153,7 @@ export default function SubcontractorForm() {
 
     setIsSubmitting(true);
     try {
-      const payload = {
-        email: data.email,
-        phone_number: `${data.phoneCode} ${data.phone}`,
-        license_number: data.license_number,
-        license_expiration_date: data.expiration_date,
-        resume_url: typeof data.resume === "string" ? data.resume : "",
-        headshot_image_url: typeof data.headshot_image === "string" ? data.headshot_image : "",
-        security_guard_license_url: typeof data.security_guard_license === "string" ? data.security_guard_license : "",
-        driver_license_url: typeof data.driver_license === "string" ? data.driver_license : "",
-        firewatch_certificate_url: typeof data.firewatch_certificate === "string" ? data.firewatch_certificate : "",
-        verification_video_url: typeof data.verificationVideo === "string" ? data.verificationVideo : "",
-        first_name: data.firstName,
-        last_name: data.lastName,
-        street_address: data.address,
-        country: data.country,
-        state: data.state,
-        city: data.city,
-        zip_code: data.zipCode,
-        referral: data.howHeard,
-        on_call: data.onCallAcknowledge === "yes",
-        smartphone: data.hasSmartphone === "yes",
-        job_alerts: data.canRespondAlerts === "yes",
-        license: data.hasSecurityLicense === "yes",
-        background: data.canPassBackgroundCheck === "yes",
-        transport: data.hasReliableTransport === "yes",
-        unarmed: data.unarmed === "yes",
-        armed: data.armed === "yes",
-        english_language: data.english_language === "yes",
-        gender: data.gender,
-        ethnicity: data.race,
-        veteran_status: data.veteranStatus,
-        disability_status: data.disabilityStatus,
-      };
+      const payload = getPayload(data);
 
       console.log("Submitting payload:", payload);
       const res = await submitSubcontractorApplicationAction(payload);
@@ -199,7 +204,18 @@ export default function SubcontractorForm() {
             <PrivacyPolicySection />
             <VoluntarySelfIdSection />
             <div className="flex justify-center space-x-4 pt-6 pb-8">
-              <Button type="submit" disabled={isSubmitting || hasVerificationError} className="px-8 bg-blue-600 hover:bg-blue-700 text-white rounded">
+              <Button
+                type="submit"
+                disabled={isSubmitting || hasVerificationError}
+                className="px-8 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                onClick={() => {
+                  const currentValues = methods.getValues();
+                  const payload = getPayload(currentValues);
+                  console.log("Submit button clicked.");
+                  console.log("Current form values:", currentValues);
+                  console.log("Form payload:", payload);
+                }}
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
