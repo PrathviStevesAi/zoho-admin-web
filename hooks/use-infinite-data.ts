@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import useDebounceValue from "@/hooks/use-debounce";
 import { FetchResponse, Pagination } from "@/types/dashboard.types";
+import { useDashboard } from "@/app/(main)/dashboard/dashboard-context";
 
 export function useInfiniteSearch<T>(
   initialData: T[],
@@ -23,6 +24,16 @@ export function useInfiniteSearch<T>(
   const [totalPages, setTotalPages] = useState(pagination.total_pages);
   const [total, setTotal] = useState(pagination.total);
   const [limit, setLimit] = useState(pagination.limit);
+
+  let isInitialLoading = false;
+  let dashboardFailed = false;
+  try {
+    const dashboardContext = useDashboard();
+    isInitialLoading = dashboardContext.isInitialLoading;
+    dashboardFailed = dashboardContext.dashboardFailed;
+  } catch (error) {
+    // Fallback if context is not available
+  }
 
   useEffect(() => {
     if (initialData && initialData.length > 0) {
@@ -46,7 +57,8 @@ export function useInfiniteSearch<T>(
 
   useEffect(() => {
     const isInitialEmpty = initialData.length === 0 && page === 1;
-    const shouldFetchInitial = isInitialEmpty && !hasFetchedInitial.current;
+    // Only fetch initial fallback if dashboard has finished loading AND failed
+    const shouldFetchInitial = isInitialEmpty && !isInitialLoading && dashboardFailed && !hasFetchedInitial.current;
 
     const hasFiltersChanged =
       prevSearchTerm.current !== debouncedValue ||
@@ -56,6 +68,7 @@ export function useInfiniteSearch<T>(
     if (!hasFiltersChanged && !shouldFetchInitial) {
       return;
     }
+
 
     prevSearchTerm.current = debouncedValue;
     prevDateFrom.current = date_from;
@@ -74,10 +87,20 @@ export function useInfiniteSearch<T>(
         toast.error(res.error || "Failed to fetch search results");
       }
     });
-  }, [debouncedValue, fetchAction, date_from, date_to, initialData.length, page]);
+  }, [
+    debouncedValue,
+    fetchAction,
+    date_from,
+    date_to,
+    initialData.length,
+    page,
+    isInitialLoading,
+    dashboardFailed,
+  ]);
 
   const goToPage = useCallback(async (p: number) => {
     if (p < 1 || p > totalPages || isPending) return;
+
 
     startTransition(async () => {
       const res = await fetchAction(p, debouncedValue, date_from, date_to);

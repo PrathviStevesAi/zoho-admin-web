@@ -6,6 +6,7 @@ export async function clientApiFetch<T>(
   retries: number = 3
 ): Promise<T> {
   const url = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
+  console.log(`[clientApiFetch] Fetching: ${url}`);
   let lastError: any;
   for (let i = 0; i < retries; i++) {
     try {

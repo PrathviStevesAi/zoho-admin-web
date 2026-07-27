@@ -40,6 +40,7 @@ interface DashboardContextType {
     operationData: OperationDashboardData | null;
     dispatchData: DispatchDashboardData | null;
     isInitialLoading: boolean;
+    dashboardFailed: boolean;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -54,28 +55,42 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const [operationData, setOperationData] = useState<OperationDashboardData | null>(null);
     const [dispatchData, setDispatchData] = useState<DispatchDashboardData | null>(null);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
-    const [fetchedViews, setFetchedViews] = useState<Set<string>>(new Set());
+    const [operationFailed, setOperationFailed] = useState(false);
+    const [dispatchFailed, setDispatchFailed] = useState(false);
+
+    const dashboardFailed = currentView === "guard-management" ? operationFailed : dispatchFailed;
 
     useEffect(() => {
         async function fetchDashboardData() {
             try {
-                if (currentView === "guard-management" && !fetchedViews.has("guard-management")) {
+                if (currentView === "guard-management") {
                     setIsInitialLoading(true);
+                    setOperationFailed(false);
                     const operationRes = await clientFetchOperationDashboardAction();
                     if (operationRes.success && operationRes.data) {
                         setOperationData(operationRes.data);
+                        setOperationFailed(false);
+                    } else {
+                        setOperationFailed(true);
                     }
-                    setFetchedViews(prev => new Set(prev).add("guard-management"));
-                } else if (currentView === "shift-management" && !fetchedViews.has("shift-management")) {
+                } else if (currentView === "shift-management") {
                     setIsInitialLoading(true);
+                    setDispatchFailed(false);
                     const dispatchRes = await clientFetchDispatchDashboardAction();
                     if (dispatchRes.success && dispatchRes.data) {
                         setDispatchData(dispatchRes.data);
+                        setDispatchFailed(false);
+                    } else {
+                        setDispatchFailed(true);
                     }
-                    setFetchedViews(prev => new Set(prev).add("shift-management"));
                 }
             } catch (error) {
                 console.error("Failed to fetch dashboard data:", error);
+                if (currentView === "guard-management") {
+                    setOperationFailed(true);
+                } else {
+                    setDispatchFailed(true);
+                }
             } finally {
                 setIsInitialLoading(false);
             }
@@ -86,9 +101,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <DashboardContext.Provider value={{
-            isPending, startTransition, loadingMessage, setLoadingMessage,
+            isPending: isPending || isInitialLoading, startTransition, loadingMessage, setLoadingMessage,
             isFetching, setIsFetching,
-            operationData, dispatchData, isInitialLoading
+            operationData, dispatchData, isInitialLoading, dashboardFailed
         }}>
             {children}
         </DashboardContext.Provider>
