@@ -48,6 +48,7 @@ import { US_STATE_CITY_DATA } from "@/app/subcontractor/components/StaticData";
 import Swal from "sweetalert2";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Pagination } from "@/components/table/pagination";
 
 const countries = [
   { name: "Argentina", code: "ar", dialCode: "+54" },
@@ -88,7 +89,7 @@ export default function GuardDirectoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState(countries[11]); // Default to United States
+  const [selectedCountry, setSelectedCountry] = useState(countries[11]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -408,8 +409,8 @@ export default function GuardDirectoryPage() {
 
                     {/* Backdrop/Overlay for closing dropdown when clicking outside */}
                     {isDropdownOpen && (
-                      <div 
-                        className="fixed inset-0 z-40 cursor-default" 
+                      <div
+                        className="fixed inset-0 z-40 cursor-default"
                         onClick={() => setIsDropdownOpen(false)}
                       />
                     )}
@@ -425,9 +426,8 @@ export default function GuardDirectoryPage() {
                               setSelectedCountry(country);
                               setIsDropdownOpen(false);
                             }}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${
-                              selectedCountry.code === country.code ? "bg-blue-50/30 font-semibold text-[#0064cb]" : "text-slate-700"
-                            }`}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${selectedCountry.code === country.code ? "bg-blue-50/30 font-semibold text-[#0064cb]" : "text-slate-700"
+                              }`}
                           >
                             <img
                               src={`https://flagcdn.com/w20/${country.code}.png`}
@@ -460,8 +460,8 @@ export default function GuardDirectoryPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
-                    <Select 
-                      onValueChange={(val) => setFormData({ ...formData, country: val, state: "", city: "" })} 
+                    <Select
+                      onValueChange={(val) => setFormData({ ...formData, country: val, state: "", city: "" })}
                       value={formData.country}
                     >
                       <SelectTrigger className="!h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium">
@@ -478,8 +478,8 @@ export default function GuardDirectoryPage() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">State</label>
-                    <Select 
-                      onValueChange={(val) => setFormData({ ...formData, state: val, city: "" })} 
+                    <Select
+                      onValueChange={(val) => setFormData({ ...formData, state: val, city: "" })}
                       value={formData.state}
                       disabled={!formData.country}
                     >
@@ -500,8 +500,8 @@ export default function GuardDirectoryPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">City</label>
-                    <Select 
-                      onValueChange={(val) => setFormData({ ...formData, city: val })} 
+                    <Select
+                      onValueChange={(val) => setFormData({ ...formData, city: val })}
                       value={formData.city}
                       disabled={!formData.state}
                     >
@@ -775,33 +775,15 @@ export default function GuardDirectoryPage() {
                 </Table>
               </div>
 
-              {/* Pagination Controls */}
-              {pagination && pagination.pages > 1 && (
-                <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
-                  <span className="text-xs text-slate-700 font-medium">
-                    Showing Page {currentPage} of {pagination.pages} ({pagination.total} guards total)
-                  </span>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage <= 1}
-                      onClick={() => loadGuards(currentPage - 1)}
-                      className="cursor-pointer text-xs rounded-xl h-9"
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage >= pagination.pages}
-                      onClick={() => loadGuards(currentPage + 1)}
-                      className="cursor-pointer text-xs rounded-xl h-9"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
+              {pagination && (
+                <Pagination
+                  page={currentPage}
+                  totalPages={pagination.total_pages || pagination.pages || 1}
+                  totalItems={pagination.total}
+                  limit={pagination.limit || 10}
+                  onPageChange={loadGuards}
+                  isPending={isLoading}
+                />
               )}
             </CardContent>
           </Card>

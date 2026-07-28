@@ -446,10 +446,16 @@ export async function clientFetchGuardsAction(params: {
   if (radius_miles) query.append("radius_miles", radius_miles.toString());
 
   try {
-    const data = await clientApiFetch<BaseApiResponse<any>>(
+    const data = await clientApiFetch<any>(
       `/api/v1/guard/list?${query.toString()}`
     );
-    return { success: true, data: data?.data || data, pagination: data.pagination };
+    const pagination = {
+      page: data.page || 1,
+      limit: data.page_size || 10,
+      total: data.total || 0,
+      total_pages: Math.ceil((data.total || 0) / (data.page_size || 10))
+    };
+    return { success: true, data: data?.data || data, pagination };
   } catch (error: any) {
     const message = error.message || "Something went wrong";
     return { success: false, error: message || "Unknown Error" };
