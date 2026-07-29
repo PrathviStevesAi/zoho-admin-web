@@ -4,7 +4,9 @@ import {
   clientFetchInvoiceDetailsAction,
   clientFetchInvoiceShiftsAction,
   clientFetchSecurityServicesAction,
-  clientFetchAvailableGuardsAction
+  clientFetchAvailableGuardsAction,
+  clientFindStandbyGuardsAction,
+  clientDeleteStandbyRequestAction
 } from "@/lib/client-actions";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -114,7 +116,8 @@ export default function InvoiceDetailsPage() {
   const [rowSchedules, setRowSchedules] = useState<Record<string, any>>({});
   const [isSelectUserOpen, setIsSelectUserOpen] = useState(false);
   const [selectedShiftIds, setSelectedShiftIds] = useState<string[]>([]);
-  const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string }>>({});
+  const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number }>>({});
+  const [assignmentType, setAssignmentType] = useState<"lead" | "standby">("lead");
   const [isAssigning, setIsAssigning] = useState(false);
   const [availableGuards, setAvailableGuards] = useState<any[]>([]);
   const [isAvailableGuardsLoading, setIsAvailableGuardsLoading] = useState(false);
@@ -593,7 +596,50 @@ export default function InvoiceDetailsPage() {
     setIsCreatingShift(false);
   };
 
-  const handleGuardSelect = (guard: any) => {
+  const handleGuardSelect = async (guard: any, rates: { hourlyRate?: number; travelFee?: number; flatQcRate?: number }) => {
+    if (assignmentType === "standby") {
+      setIsShiftsLoading(true);
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const shiftId of selectedShiftIds) {
+        const shift = shifts.find(s => s.shift_id === shiftId);
+        if (!shift) continue;
+
+        const startMs = new Date(shift.start_time).getTime();
+        const endMs = new Date(shift.end_time).getTime();
+        const total_hours = Math.max(0, (endMs - startMs) / (1000 * 60 * 60));
+
+        const res = await clientFindStandbyGuardsAction({
+          shift_id: shift.shift_id,
+          guard_ids: [guard.guard_id],
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          hourly_rate: rates.flatQcRate || shift.per_hour_rate || 0,
+          total_hours: Number(total_hours.toFixed(2))
+        });
+
+        if (res.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      }
+
+      setIsShiftsLoading(false);
+      setIsSelectUserOpen(false);
+      setSelectedShiftIds([]);
+
+      if (successCount > 0) {
+        toast.success(`Standby request sent to ${guard.first_name} ${guard.last_name} for ${successCount} shifts.`);
+        loadShifts("assign_guard");
+      }
+      if (failCount > 0) {
+        toast.error(`Failed to send standby request for ${failCount} shifts.`);
+      }
+      return;
+    }
+
     const currentBatchShifts = shifts.filter(s => selectedShiftIds.includes(s.shift_id));
     for (let i = 0; i < currentBatchShifts.length; i++) {
       for (let j = i + 1; j < currentBatchShifts.length; j++) {
@@ -639,7 +685,12 @@ export default function InvoiceDetailsPage() {
 
     const newAssignments = { ...pendingAssignments };
     selectedShiftIds.forEach(id => {
-      newAssignments[id] = { guard_id: guard.guard_id, guard_name: `${guard.first_name} ${guard.last_name}` };
+      newAssignments[id] = {
+        guard_id: guard.guard_id,
+        guard_name: `${guard.first_name} ${guard.last_name}`,
+        hourlyRate: rates.hourlyRate,
+        travelFee: rates.travelFee
+      };
     });
     setPendingAssignments(newAssignments);
     setIsSelectUserOpen(false);
@@ -647,22 +698,18 @@ export default function InvoiceDetailsPage() {
     toast.success(`Guard ${guard.first_name} ${guard.last_name} selected for ${selectedShiftIds.length} shifts`);
   };
 
-  const handleAssignGuards = async (
-    shiftRates: Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>
-  ) => {
-    const groups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; perShiftRate?: number; travelFee?: number }> = {};
+  const handleAssignGuards = async () => {
+    const groups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; travelFee?: number }> = {};
 
     Object.entries(pendingAssignments).forEach(([shiftId, data]) => {
-      const rates = shiftRates[shiftId] || {};
-      const key = `${data.guard_id}_${rates.hourlyRate ?? ""}_${rates.perShiftRate ?? ""}_${rates.travelFee ?? ""}`;
+      const key = `${data.guard_id}_${data.hourlyRate ?? ""}_${data.travelFee ?? ""}`;
 
       if (!groups[key]) {
         groups[key] = {
           guard_id: data.guard_id,
           shift_ids: [],
-          hourlyRate: rates.hourlyRate,
-          perShiftRate: rates.perShiftRate,
-          travelFee: rates.travelFee
+          hourlyRate: data.hourlyRate,
+          travelFee: data.travelFee
         };
       }
       groups[key].shift_ids.push(shiftId);
@@ -680,7 +727,6 @@ export default function InvoiceDetailsPage() {
         guard_id: group.guard_id,
         shift_ids: group.shift_ids,
         per_hour_rate: cleanValue(group.hourlyRate),
-        per_shift_rate: cleanValue(group.perShiftRate),
         travel_fee: cleanValue(group.travelFee)
       };
       return assignment;
@@ -725,6 +771,18 @@ export default function InvoiceDetailsPage() {
       setUnassignConfirm({ isOpen: false, shiftOfferId: "" });
     } else {
       toast.error(res.error || "Failed to unassign guard");
+    }
+    setIsShiftsLoading(false);
+  };
+
+  const handleDeleteStandbyRequest = async (standbyId: string) => {
+    setIsShiftsLoading(true);
+    const res = await clientDeleteStandbyRequestAction(standbyId);
+    if (res.success) {
+      toast.success(res.data?.message || "Standby request deleted successfully");
+      loadShifts("assign_guard");
+    } else {
+      toast.error(res.error || "Failed to delete standby request");
     }
     setIsShiftsLoading(false);
   };
@@ -849,8 +907,9 @@ export default function InvoiceDetailsPage() {
           shifts={shifts}
           isLoading={isShiftsLoading}
           onDeleteShift={handleDeleteShift}
-          onOpenSelectUser={(ids) => {
+          onOpenSelectUser={(ids, type) => {
             setSelectedShiftIds(ids);
+            setAssignmentType(type);
             setIsSelectUserOpen(true);
           }}
           onBack={() => setIsAssignGuardOpen(false)}
@@ -865,6 +924,7 @@ export default function InvoiceDetailsPage() {
             });
           }}
           isAssigning={isAssigning}
+          onDeleteStandbyRequest={handleDeleteStandbyRequest}
         />
       ) : isAvailableGuardsOpen ? (
         <AvailableGuardsModule
@@ -901,6 +961,7 @@ export default function InvoiceDetailsPage() {
         onClose={() => setIsSelectUserOpen(false)}
         onSelect={handleGuardSelect}
         selectedShiftIds={selectedShiftIds}
+        mode={assignmentType}
       />
 
       <EditLocationDialog

@@ -302,7 +302,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
       <div className="px-6 pb-4">
         <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col min-h-[300px] bg-white shadow-sm">
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto custom-scrollbar-visible">
-            <Table className="border-collapse min-w-[1200px]">
+            <Table className="border-collapse min-w-[1200px]" scrollbarClass="custom-scrollbar-visible">
               <TableHeader className="bg-white sticky top-0 z-20">
                 <TableRow className="hover:bg-transparent border-b border-slate-100">
                   <TableHead className="w-[140px] py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-100">ACTION</TableHead>
