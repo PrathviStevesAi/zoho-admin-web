@@ -159,36 +159,6 @@ export default function NotificationProvider() {
                     },
                     className: "group font-montserrat",
                 });
-
-                if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-                    try {
-                        const nativeNotification = new Notification(title, {
-                            body: body,
-                            icon: "/images/website-logo.png",
-                        });
-
-                        nativeNotification.onclick = () => {
-                            window.focus();
-                            let targetShiftId = shiftId;
-                            let targetInvoiceId = invoiceId;
-                            let targetView = view;
-
-                            if (targetView === "shift_invoice_view" && targetInvoiceId && notificationId) {
-                                router.push(`/invoices/${targetInvoiceId}?notification_id=${notificationId}`);
-                            } else if (targetShiftId && notificationId) {
-                                router.push(`/notifications/view?shift_id=${targetShiftId}&notification_id=${notificationId}`);
-                            } else if (targetShiftId) {
-                                router.push(`/notifications/view?shift_id=${targetShiftId}`);
-                            } else if (notificationId) {
-                                router.push(`/notifications/view?notification_id=${notificationId}`);
-                            } else {
-                                router.push(`/notifications/view`);
-                            }
-                        };
-                    } catch (err) {
-                        console.error("Failed to show native browser notification:", err);
-                    }
-                }
             }
         });
 

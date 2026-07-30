@@ -695,14 +695,16 @@ export default function QuoteForm() {
       {loading && <Loader />}
       <div className="mb-8">
         <div className="flex justify-start mb-4">
-          <Image
-            src="/images/website-logo.png"
-            alt="Fast Guard Security Service"
-            width={220}
-            height={55}
-            className="object-contain"
-            priority
-          />
+          <a href="https://fastguardservice.com/" target="_blank" rel="noopener noreferrer">
+            <Image
+              src="/images/website-logo.png"
+              alt="Fast Guard Security Service"
+              width={220}
+              height={55}
+              className="object-contain"
+              priority
+            />
+          </a>
         </div>
         <h2 className="text-2xl font-bold text-center uppercase text-[#0d7943]">
           INSTANT QUOTE
