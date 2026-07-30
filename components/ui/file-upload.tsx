@@ -68,7 +68,7 @@ export function FileUpload({
         if (accept.includes('video')) {
           toast.error("Invalid file type. Please upload a valid video (e.g. mp4, mov, hevc, etc).");
         } else if (accept.includes('image')) {
-          toast.error("Invalid file type. Please upload a valid image (e.g. jpg, png, jpeg, etc).");
+          toast.error("Invalid file type. Please upload a valid image (e.g. jpg, png, jpeg, heic, etc).");
         } else {
           toast.error(`Invalid file type. Please upload a valid file matching: ${accept}`);
         }
@@ -94,7 +94,9 @@ export function FileUpload({
           setIsUploading(true);
           setUploadProgress(0);
 
-          if (file.type.startsWith("image/")) {
+          const isHeic = file.type.includes("heic") || file.type.includes("heif") || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
+
+          if (file.type.startsWith("image/") && !isHeic) {
             const options = {
               maxSizeMB: 1.5,
               maxWidthOrHeight: 1920,

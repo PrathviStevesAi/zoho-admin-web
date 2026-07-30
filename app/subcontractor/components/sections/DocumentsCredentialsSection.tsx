@@ -46,7 +46,7 @@ export function DocumentsCredentialsSection() {
               <FileUpload
                 label=""
                 helperText=""
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 maxSizeMB={5}
                 onFileSelect={(file) => setValue("headshot_image", file)}
                 variant="red-button"
@@ -60,7 +60,7 @@ export function DocumentsCredentialsSection() {
               <FileUpload
                 label=""
                 helperText=""
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 maxSizeMB={5}
                 onFileSelect={(file) => setValue("security_guard_license", file)}
                 variant="red-button"
@@ -86,7 +86,7 @@ export function DocumentsCredentialsSection() {
               <FileUpload
                 label=""
                 helperText=""
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 maxSizeMB={5}
                 onFileSelect={(file) => setValue("driver_license", file)}
                 variant="red-button"
@@ -100,7 +100,7 @@ export function DocumentsCredentialsSection() {
               <FileUpload
                 label=""
                 helperText=""
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 maxSizeMB={5}
                 onFileSelect={(file) => setValue("firewatch_certificate", file)}
                 variant="red-button"
