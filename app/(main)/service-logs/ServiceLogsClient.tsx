@@ -278,7 +278,7 @@ export default function ServiceLogsClient({ initialData }: ServiceLogsClientProp
               <p className="text-xs text-slate-500 font-medium">
                 {isAllOperational
                   ? "All database, queue, cache, and third-party API services are responding within healthy parameters."
-                  : "One or more core components are reporting outages. Click the 'View Error' button on the failed cards below."}
+                  : "One or more core components are reporting outages."}
               </p>
             </div>
           </div>

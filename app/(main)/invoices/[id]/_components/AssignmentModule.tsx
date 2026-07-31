@@ -24,7 +24,7 @@ interface AssignmentModuleProps {
   onOpenSelectUser: (selectedIds: string[]) => void;
   onBack: () => void;
   pendingAssignments: Record<string, { guard_id: string, guard_name: string }>;
-  onAdd: (shiftRates: Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>) => void;
+  onAdd: (shiftRates: Record<string, { hourlyRate?: number; travelFee?: number }>) => void;
   isAssigning: boolean;
   onRemovePendingAssignment?: (shiftId: string) => void;
 }
@@ -43,9 +43,8 @@ export function AssignmentModule({
 }: AssignmentModuleProps) {
   const [selectedShifts, setSelectedShifts] = useState<string[]>([]);
   const [hourlyRate, setHourlyRate] = useState<string>("");
-  const [perShiftRate, setPerShiftRate] = useState<string>("");
   const [travelFee, setTravelFee] = useState<string>("");
-  const [shiftRates, setShiftRates] = useState<Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>>({});
+  const [shiftRates, setShiftRates] = useState<Record<string, { hourlyRate?: number; travelFee?: number }>>({});
 
   const formatPrice = (val: any) => {
     if (val === null || val === undefined || val === "") return "----";
@@ -59,7 +58,6 @@ export function AssignmentModule({
 
     if (Object.keys(pendingAssignments).length === 0) {
       setHourlyRate("");
-      setPerShiftRate("");
       setTravelFee("");
       setShiftRates({});
     } else {
@@ -70,7 +68,6 @@ export function AssignmentModule({
           if (!next[id]) {
             next[id] = {
               hourlyRate: hourlyRate !== "" ? Number(hourlyRate) : undefined,
-              perShiftRate: perShiftRate !== "" ? Number(perShiftRate) : undefined,
               travelFee: travelFee !== "" ? Number(travelFee) : undefined,
             };
             changed = true;
@@ -98,21 +95,6 @@ export function AssignmentModule({
         next[shiftId] = {
           ...next[shiftId],
           hourlyRate: rateVal
-        };
-      });
-      return next;
-    });
-  };
-
-  const handleGlobalPerShiftRateChange = (val: string) => {
-    setPerShiftRate(val);
-    const rateVal = val !== "" ? Number(val) : undefined;
-    setShiftRates(prev => {
-      const next = { ...prev };
-      Object.keys(pendingAssignments).forEach(shiftId => {
-        next[shiftId] = {
-          ...next[shiftId],
-          perShiftRate: rateVal
         };
       });
       return next;
@@ -161,7 +143,7 @@ export function AssignmentModule({
           </div>
 
           <div className="p-6 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="hourly_rate" className="text-sm font-bold text-slate-700">Hourly Rate Paid to Guard</Label>
                 <div className="relative group">
@@ -170,29 +152,8 @@ export function AssignmentModule({
                     type="number"
                     min="0"
                     step="0.01"
-                    disabled={perShiftRate !== ""}
                     value={hourlyRate}
                     onChange={(e) => handleGlobalHourlyRateChange(e.target.value)}
-                    placeholder="0.00"
-                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <div className="h-5 w-px bg-slate-200 mr-2" />
-                    <span className="text-slate-700 text-[11px] font-bold tracking-wider">USD</span>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="per_shift_rate" className="text-sm font-bold text-slate-700">Per Shift Rate Paid to Guard</Label>
-                <div className="relative group">
-                  <Input
-                    id="per_shift_rate"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    disabled={hourlyRate !== ""}
-                    value={perShiftRate}
-                    onChange={(e) => handleGlobalPerShiftRateChange(e.target.value)}
                     placeholder="0.00"
                     className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                   />
@@ -260,7 +221,6 @@ export function AssignmentModule({
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">End Time</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Guard</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Hourly Rate</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Flat Rate</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Travel Fee</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Is Seen</TableHead>
                       <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Status</TableHead>
@@ -347,17 +307,6 @@ export function AssignmentModule({
                               {pendingAssignments[shift.shift_id]
                                 ? formatPrice(shiftRates[shift.shift_id]?.hourlyRate)
                                 : formatPrice(shift.per_hour_rate)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-4 px-6">
-                            <span className={cn(
-                              pendingAssignments[shift.shift_id]
-                                ? "text-[#0064cb] font-semibold text-[13px] animate-pulse"
-                                : "text-sm text-slate-800 font-medium"
-                            )}>
-                              {pendingAssignments[shift.shift_id]
-                                ? formatPrice(shiftRates[shift.shift_id]?.perShiftRate)
-                                : formatPrice(shift.per_shift_rate)}
                             </span>
                           </TableCell>
                           <TableCell className="py-4 px-6">
