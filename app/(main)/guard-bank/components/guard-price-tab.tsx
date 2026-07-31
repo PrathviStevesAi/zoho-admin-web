@@ -77,7 +77,7 @@ export function GuardPriceTab({
             <Button
               onClick={() => setIsEditing(true)}
               variant="outline"
-              className="w-full sm:w-auto text-[#0064cb] border-[#0064cb]/20 hover:bg-[#0064cb]/5 px-8 h-10"
+              className="flex-1 sm:flex-none text-[#0064cb] border-[#0064cb]/20 hover:bg-[#0064cb]/5 px-8 h-10"
             >
               Edit
             </Button>
@@ -85,7 +85,7 @@ export function GuardPriceTab({
             <Button
               onClick={() => setIsEditing(false)}
               variant="ghost"
-              className="w-full sm:w-auto text-slate-500 hover:text-slate-700 px-8 h-10"
+              className="flex-1 sm:flex-none text-slate-500 hover:text-slate-700 px-8 h-10"
             >
               <X className="w-4 h-4 mr-2" />
               Cancel
@@ -97,7 +97,7 @@ export function GuardPriceTab({
               setIsEditing(false);
             }}
             disabled={submittingPrices || !hasChanges || loading || !isEditing}
-            className="w-full sm:w-auto bg-[#0064cb] hover:bg-[#0064cb]/90 text-white px-8 h-10 flex items-center justify-center gap-2"
+            className="flex-1 sm:flex-none bg-[#0064cb] hover:bg-[#0064cb]/90 text-white px-8 h-10 flex items-center justify-center gap-2"
           >
             {submittingPrices && <Loader2 className="w-4 h-4 animate-spin" />}
             Save
