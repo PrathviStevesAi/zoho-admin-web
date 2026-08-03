@@ -9,7 +9,7 @@ import { SelectGuardsDialog } from "./_components/SelectGuardsDialog";
 
 export default function BroadcastNotificationsPage() {
   const [message, setMessage] = useState("");
-  const [sendViaInApp, setSendViaInApp] = useState(true);
+  const [sendViaInApp, setSendViaInApp] = useState(false);
   const [sendViaSms, setSendViaSms] = useState(false);
   const [recipientType, setRecipientType] = useState<"all" | "filter">("all");
   const [isSending, setIsSending] = useState(false);
