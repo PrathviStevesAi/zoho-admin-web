@@ -12,19 +12,35 @@ export default function NotificationProvider() {
     const { status } = useSession();
 
     useEffect(() => {
-        if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
-            const originalError = console.error;
-            console.error = (...args) => {
-                const argStr = typeof args[0] === "string" ? args[0] : "";
-                if (argStr.includes("[ZIMManager]") || argStr.includes("【ZEGOCLOUD】")) {
-                    console.warn("Suppressed Zego SDK error log:", ...args);
-                    return;
+        if (typeof window !== "undefined") {
+            const handleUnhandledRejection = (event) => {
+                if (event.reason && event.reason.message && typeof event.reason.message === 'string' && event.reason.message.includes("exceed user mau limit")) {
+                    event.preventDefault();
+                    console.warn("Suppressed Zego SDK MAU limit unhandled rejection");
                 }
-                originalError.apply(console, args);
             };
+            window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+            let originalError = console.error;
+            if (process.env.NODE_ENV !== "production") {
+                console.error = (...args) => {
+                    const argStr = typeof args[0] === "string" ? args[0] : "";
+                    const isZegoError = argStr.includes("【ZIMManager】") || argStr.includes("[ZIMManager]") || argStr.includes("【ZEGOCLOUD】");
+                    const isUnhandledZego = argStr.includes("unhandledRejection") && args[1] && args[1].message && typeof args[1].message === 'string' && args[1].message.includes("exceed user mau limit");
+                    
+                    if (isZegoError || isUnhandledZego) {
+                        console.warn("Suppressed Zego SDK error log:", ...args);
+                        return;
+                    }
+                    originalError.apply(console, args);
+                };
+            }
 
             return () => {
-                console.error = originalError;
+                window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+                if (process.env.NODE_ENV !== "production") {
+                    console.error = originalError;
+                }
             };
         }
     }, []);
