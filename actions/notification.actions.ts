@@ -72,7 +72,10 @@ export async function fetchShiftReportsAction(shiftId: string): Promise<{ succes
 }
 
 export async function sendBroadcastNotificationAction(payload: {
+    title: string;
     message: string;
+    send_in_app: boolean;
+    send_sms: boolean;
     send_to_all: boolean;
     guard_ids: string[];
 }): Promise<{ success: boolean; message?: string; error?: string }> {
