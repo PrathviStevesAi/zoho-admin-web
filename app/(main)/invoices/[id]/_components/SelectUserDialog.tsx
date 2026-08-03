@@ -4,7 +4,7 @@ import {
   clientFetchGuardsAction
 } from "@/lib/client-actions";
 import { useState, useEffect } from "react";
-import { X, Search, XCircle } from "lucide-react";
+import { X, XCircle } from "lucide-react";
 import { fetchLocationAction, } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { Loader2 } from "lucide-react";
@@ -63,7 +63,6 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
   const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-
   const [hourlyRate, setHourlyRate] = useState("");
   const [travelFee, setTravelFee] = useState("");
   const [flatQcRate, setFlatQcRate] = useState("");
@@ -88,7 +87,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
       const fqr = parseFloat(flatQcRate);
       if (!isNaN(fqr) && fqr > 0) rates.flatQcRate = fqr;
     }
-    
+
     try {
       await onSelect(guard, rates);
     } finally {
