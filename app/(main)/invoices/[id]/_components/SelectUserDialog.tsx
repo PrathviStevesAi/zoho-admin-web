@@ -58,6 +58,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
   });
   const [guards, setGuards] = useState<any[]>([]);
   const [isLoadingGuards, setIsLoadingGuards] = useState(false);
+  const [isSelectingGuardId, setIsSelectingGuardId] = useState<string | null>(null);
   const [pagination, setPagination] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
@@ -75,7 +76,8 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
     }
   }, [isOpen]);
 
-  const handleSelectGuard = (guard: any) => {
+  const handleSelectGuard = async (guard: any) => {
+    setIsSelectingGuardId(guard.guard_id);
     const rates: { hourlyRate?: number; travelFee?: number; flatQcRate?: number } = {};
     if (mode === "lead") {
       const hr = parseFloat(hourlyRate);
@@ -86,7 +88,12 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
       const fqr = parseFloat(flatQcRate);
       if (!isNaN(fqr) && fqr > 0) rates.flatQcRate = fqr;
     }
-    onSelect(guard, rates);
+    
+    try {
+      await onSelect(guard, rates);
+    } finally {
+      setIsSelectingGuardId(null);
+    }
   };
 
   useEffect(() => {
@@ -379,10 +386,10 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                         <TableCell className="py-5 px-6 border-r border-slate-50/50">
                           <button
                             onClick={() => handleSelectGuard(guard)}
-                            disabled={assigningGuardId === guard.guard_id}
+                            disabled={isSelectingGuardId === guard.guard_id || assigningGuardId === guard.guard_id}
                             className="cursor-pointer text-[13px] font-bold text-[#0064cb] hover:text-[#0052ae] flex items-center gap-2 transition-all disabled:opacity-50"
                           >
-                            {assigningGuardId === guard.guard_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                            {(isSelectingGuardId === guard.guard_id || assigningGuardId === guard.guard_id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                             {mode === "lead" ? "Select Lead Guard" : "Select Standby Guard"}
                           </button>
                         </TableCell>

@@ -12,19 +12,35 @@ export default function NotificationProvider() {
     const { status } = useSession();
 
     useEffect(() => {
-        if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
-            const originalError = console.error;
-            console.error = (...args) => {
-                const argStr = typeof args[0] === "string" ? args[0] : "";
-                if (argStr.includes("[ZIMManager]") || argStr.includes("【ZEGOCLOUD】")) {
-                    console.warn("Suppressed Zego SDK error log:", ...args);
-                    return;
+        if (typeof window !== "undefined") {
+            const handleUnhandledRejection = (event) => {
+                if (event.reason && event.reason.message && typeof event.reason.message === 'string' && event.reason.message.includes("exceed user mau limit")) {
+                    event.preventDefault();
+                    console.warn("Suppressed Zego SDK MAU limit unhandled rejection");
                 }
-                originalError.apply(console, args);
             };
+            window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+            let originalError = console.error;
+            if (process.env.NODE_ENV !== "production") {
+                console.error = (...args) => {
+                    const argStr = typeof args[0] === "string" ? args[0] : "";
+                    const isZegoError = argStr.includes("【ZIMManager】") || argStr.includes("[ZIMManager]") || argStr.includes("【ZEGOCLOUD】");
+                    const isUnhandledZego = argStr.includes("unhandledRejection") && args[1] && args[1].message && typeof args[1].message === 'string' && args[1].message.includes("exceed user mau limit");
+                    
+                    if (isZegoError || isUnhandledZego) {
+                        console.warn("Suppressed Zego SDK error log:", ...args);
+                        return;
+                    }
+                    originalError.apply(console, args);
+                };
+            }
 
             return () => {
-                console.error = originalError;
+                window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+                if (process.env.NODE_ENV !== "production") {
+                    console.error = originalError;
+                }
             };
         }
     }, []);
@@ -159,36 +175,6 @@ export default function NotificationProvider() {
                     },
                     className: "group font-montserrat",
                 });
-
-                if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-                    try {
-                        const nativeNotification = new Notification(title, {
-                            body: body,
-                            icon: "/images/website-logo.png",
-                        });
-
-                        nativeNotification.onclick = () => {
-                            window.focus();
-                            let targetShiftId = shiftId;
-                            let targetInvoiceId = invoiceId;
-                            let targetView = view;
-
-                            if (targetView === "shift_invoice_view" && targetInvoiceId && notificationId) {
-                                router.push(`/invoices/${targetInvoiceId}?notification_id=${notificationId}`);
-                            } else if (targetShiftId && notificationId) {
-                                router.push(`/notifications/view?shift_id=${targetShiftId}&notification_id=${notificationId}`);
-                            } else if (targetShiftId) {
-                                router.push(`/notifications/view?shift_id=${targetShiftId}`);
-                            } else if (notificationId) {
-                                router.push(`/notifications/view?notification_id=${notificationId}`);
-                            } else {
-                                router.push(`/notifications/view`);
-                            }
-                        };
-                    } catch (err) {
-                        console.error("Failed to show native browser notification:", err);
-                    }
-                }
             }
         });
 

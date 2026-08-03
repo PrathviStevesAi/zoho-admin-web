@@ -25,7 +25,8 @@ import {
   unassignGuardAction,
   cancelInvoiceServiceAction,
   updateInvoiceDetailsAction,
-  updateShiftDetailsAction
+  updateShiftDetailsAction,
+  assignStandbyGuardsAction
 } from "@/actions/dashboard.actions";
 import { InvoiceData } from "@/types/dashboard.types";
 import { toast } from "sonner";
@@ -88,7 +89,7 @@ export default function InvoiceDetailsPage() {
   const [isEditShiftOpen, setIsEditShiftOpen] = useState(false);
   const [editingShift, setEditingShift] = useState<any | null>(null);
   const [isSavingShift, setIsSavingShift] = useState(false);
-  const [unassignConfirm, setUnassignConfirm] = useState<{ isOpen: boolean, shiftOfferId: string }>({ isOpen: false, shiftOfferId: "" });
+  const [unassignConfirm, setUnassignConfirm] = useState<{ isOpen: boolean, shiftOfferId: string, type: "lead_guard" | "standby_guard" }>({ isOpen: false, shiftOfferId: "", type: "lead_guard" });
   const [invoiceTimezone, setInvoiceTimezone] = useState<string>('America/Los_Angeles');
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
   const [paymentFormData, setPaymentFormData] = useState<{
@@ -599,43 +600,31 @@ export default function InvoiceDetailsPage() {
   const handleGuardSelect = async (guard: any, rates: { hourlyRate?: number; travelFee?: number; flatQcRate?: number }) => {
     if (assignmentType === "standby") {
       setIsShiftsLoading(true);
-      let successCount = 0;
-      let failCount = 0;
 
-      for (const shiftId of selectedShiftIds) {
-        const shift = shifts.find(s => s.shift_id === shiftId);
-        if (!shift) continue;
+      const payload = {
+        invoice_id: id,
+        assignments: [
+          {
+            guard_id: guard.guard_id,
+            shift_ids: selectedShiftIds,
+            per_hour_rate: 0,
+            qc_flat_rate: rates.flatQcRate || 0,
+            travel_fee: 0
+          }
+        ]
+      };
 
-        const startMs = new Date(shift.start_time).getTime();
-        const endMs = new Date(shift.end_time).getTime();
-        const total_hours = Math.max(0, (endMs - startMs) / (1000 * 60 * 60));
-
-        const res = await clientFindStandbyGuardsAction({
-          shift_id: shift.shift_id,
-          guard_ids: [guard.guard_id],
-          start_time: shift.start_time,
-          end_time: shift.end_time,
-          hourly_rate: rates.flatQcRate || shift.per_hour_rate || 0,
-          total_hours: Number(total_hours.toFixed(2))
-        });
-
-        if (res.success) {
-          successCount++;
-        } else {
-          failCount++;
-        }
-      }
+      const res = await assignStandbyGuardsAction(payload);
 
       setIsShiftsLoading(false);
       setIsSelectUserOpen(false);
       setSelectedShiftIds([]);
 
-      if (successCount > 0) {
-        toast.success(`Standby request sent to ${guard.first_name} ${guard.last_name} for ${successCount} shifts.`);
+      if (res.success) {
+        toast.success(res.message || `Standby request sent to ${guard.first_name} ${guard.last_name} for ${selectedShiftIds.length} shifts.`);
         loadShifts("assign_guard");
-      }
-      if (failCount > 0) {
-        toast.error(`Failed to send standby request for ${failCount} shifts.`);
+      } else {
+        toast.error(res.error || "Failed to send standby request.");
       }
       return;
     }
@@ -698,7 +687,7 @@ export default function InvoiceDetailsPage() {
     toast.success(`Guard ${guard.first_name} ${guard.last_name} selected for ${selectedShiftIds.length} shifts`);
   };
 
-  const handleAssignGuards = async () => {
+  const handleAssignGuards = async (shiftRates?: any, clearSelection?: () => void) => {
     const groups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; travelFee?: number }> = {};
 
     Object.entries(pendingAssignments).forEach(([shiftId, data]) => {
@@ -726,8 +715,9 @@ export default function InvoiceDetailsPage() {
       const assignment: any = {
         guard_id: group.guard_id,
         shift_ids: group.shift_ids,
-        per_hour_rate: cleanValue(group.hourlyRate),
-        travel_fee: cleanValue(group.travelFee)
+        per_hour_rate: cleanValue(group.hourlyRate) || 0,
+        qc_flat_rate: 0,
+        travel_fee: cleanValue(group.travelFee) || 0
       };
       return assignment;
     });
@@ -752,6 +742,7 @@ export default function InvoiceDetailsPage() {
     if (res.success) {
       toast.success("Guards assigned successfully");
       setPendingAssignments({});
+      if (typeof clearSelection === 'function') clearSelection();
       loadShifts("assign_guard");
     } else {
       toast.error(res.error || "Failed to assign guards");
@@ -759,30 +750,18 @@ export default function InvoiceDetailsPage() {
     setIsAssigning(false);
   };
 
-  const handleUnassignGuard = (shiftOfferId: string) => setUnassignConfirm({ isOpen: true, shiftOfferId });
+  const handleUnassignGuard = (shiftOfferId: string, type: "lead_guard" | "standby_guard") => setUnassignConfirm({ isOpen: true, shiftOfferId, type });
 
   const handleConfirmUnassign = async () => {
     if (!unassignConfirm.shiftOfferId) return;
     setIsShiftsLoading(true);
-    const res = await unassignGuardAction(unassignConfirm.shiftOfferId);
+    const res = await unassignGuardAction(unassignConfirm.shiftOfferId, unassignConfirm.type);
     if (res.success) {
-      toast.success("Guard unassigned successfully");
+      toast.success(res.message || "Guard unassigned successfully");
       loadShifts("assign_guard");
-      setUnassignConfirm({ isOpen: false, shiftOfferId: "" });
+      setUnassignConfirm({ isOpen: false, shiftOfferId: "", type: "lead_guard" });
     } else {
       toast.error(res.error || "Failed to unassign guard");
-    }
-    setIsShiftsLoading(false);
-  };
-
-  const handleDeleteStandbyRequest = async (standbyId: string) => {
-    setIsShiftsLoading(true);
-    const res = await clientDeleteStandbyRequestAction(standbyId);
-    if (res.success) {
-      toast.success(res.data?.message || "Standby request deleted successfully");
-      loadShifts("assign_guard");
-    } else {
-      toast.error(res.error || "Failed to delete standby request");
     }
     setIsShiftsLoading(false);
   };
@@ -924,7 +903,6 @@ export default function InvoiceDetailsPage() {
             });
           }}
           isAssigning={isAssigning}
-          onDeleteStandbyRequest={handleDeleteStandbyRequest}
         />
       ) : isAvailableGuardsOpen ? (
         <AvailableGuardsModule
@@ -1003,7 +981,7 @@ export default function InvoiceDetailsPage() {
 
       <ConfirmationDialog
         isOpen={unassignConfirm.isOpen}
-        onClose={() => setUnassignConfirm({ isOpen: false, shiftOfferId: "" })}
+        onClose={() => setUnassignConfirm({ isOpen: false, shiftOfferId: "", type: "lead_guard" })}
         onConfirm={handleConfirmUnassign}
         title="Unassign Guard?"
         description="This will remove the guard from this shift. Are you sure?"

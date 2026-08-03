@@ -19,19 +19,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface AssignmentModuleProps {
   shifts: any[];
   isLoading: boolean;
   onDeleteShift: (id: string) => void;
-  onUnassignGuard: (shiftOfferId: string) => void;
+  onUnassignGuard: (shiftOfferId: string, type: "lead_guard" | "standby_guard") => void;
   onOpenSelectUser: (selectedIds: string[], type: "lead" | "standby") => void;
   onBack: () => void;
   pendingAssignments: Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number }>;
-  onAdd: (shiftRates: Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>) => void;
+  onAdd: (shiftRates: Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>, clearSelection?: () => void) => void;
   isAssigning: boolean;
   onRemovePendingAssignment?: (shiftId: string) => void;
-  onDeleteStandbyRequest?: (standbyId: string) => void;
 }
 
 export function AssignmentModule({
@@ -44,10 +45,12 @@ export function AssignmentModule({
   pendingAssignments,
   onAdd,
   isAssigning,
-  onRemovePendingAssignment,
-  onDeleteStandbyRequest
+  onRemovePendingAssignment
 }: AssignmentModuleProps) {
   const [selectedShifts, setSelectedShifts] = useState<string[]>([]);
+  const [hourlyRate, setHourlyRate] = useState<string>("");
+  const [travelFee, setTravelFee] = useState<string>("");
+  const [shiftRates, setShiftRates] = useState<Record<string, { hourlyRate?: number; travelFee?: number }>>({});
 
   const formatPrice = (val: any) => {
     if (val === null || val === undefined || val === "") return "----";
@@ -58,8 +61,66 @@ export function AssignmentModule({
 
   useEffect(() => {
     setSelectedShifts(prev => prev.filter(id => !pendingAssignments[id]));
-  }, [pendingAssignments]);
 
+    if (Object.keys(pendingAssignments).length === 0) {
+      setHourlyRate("");
+      setTravelFee("");
+      setShiftRates({});
+    } else {
+      setShiftRates(prev => {
+        const next = { ...prev };
+        let changed = false;
+        Object.keys(pendingAssignments).forEach(id => {
+          if (!next[id]) {
+            next[id] = {
+              hourlyRate: hourlyRate !== "" ? Number(hourlyRate) : undefined,
+              travelFee: travelFee !== "" ? Number(travelFee) : undefined,
+            };
+            changed = true;
+          }
+        });
+
+        Object.keys(next).forEach(id => {
+          if (!pendingAssignments[id]) {
+            delete next[id];
+            changed = true;
+          }
+        });
+
+        return changed ? next : prev;
+      });
+    }
+  }, [pendingAssignments, hourlyRate, travelFee]);
+
+  const handleGlobalHourlyRateChange = (val: string) => {
+    setHourlyRate(val);
+    const rateVal = val !== "" ? Number(val) : undefined;
+    setShiftRates(prev => {
+      const next = { ...prev };
+      Object.keys(pendingAssignments).forEach(shiftId => {
+        next[shiftId] = {
+          ...next[shiftId],
+          hourlyRate: rateVal
+        };
+      });
+      return next;
+    });
+  };
+
+  const handleGlobalTravelFeeChange = (val: string) => {
+    setTravelFee(val);
+    const feeVal = val !== "" ? Number(val) : undefined;
+    setShiftRates(prev => {
+      const next = { ...prev };
+      Object.keys(pendingAssignments).forEach(shiftId => {
+        next[shiftId] = {
+          ...next[shiftId],
+          travelFee: feeVal
+        };
+      });
+      return next;
+    });
+  };
   const selectableShifts = shifts.filter(s => !s.guard && !pendingAssignments[s.shift_id]);
   const isAllSelected = selectableShifts.length > 0 && selectableShifts.every(s => selectedShifts.includes(s.shift_id));
   const handleSelectAll = (checked: boolean) => {
@@ -87,6 +148,46 @@ export function AssignmentModule({
           </div>
 
           <div className="p-6 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="hourly_rate" className="text-sm font-bold text-slate-700">Hourly Rate Paid to Guard</Label>
+                <div className="relative group">
+                  <Input
+                    id="hourly_rate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={hourlyRate}
+                    onChange={(e) => handleGlobalHourlyRateChange(e.target.value)}
+                    placeholder="0.00"
+                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <div className="h-5 w-px bg-slate-200 mr-2" />
+                    <span className="text-slate-700 text-[11px] font-bold tracking-wider">USD</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="travel_fee" className="text-sm font-bold text-slate-700">Travel Fee Paid to Guard</Label>
+                <div className="relative group">
+                  <Input
+                    id="travel_fee"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={travelFee}
+                    onChange={(e) => handleGlobalTravelFeeChange(e.target.value)}
+                    placeholder="0.00"
+                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <div className="h-5 w-px bg-slate-200 mr-2" />
+                    <span className="text-slate-700 text-[11px] font-bold tracking-wider">USD</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div className="border border-slate-100 rounded-lg overflow-hidden shadow-sm w-full">
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h3 className="text-sm font-bold text-slate-700">Select guards for shifts</h3>
@@ -136,9 +237,9 @@ export function AssignmentModule({
                       <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6 border-b border-slate-100">Start Time</TableHead>
                       <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6 border-b border-slate-100">End Time</TableHead>
                       <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6 border-b border-slate-100">Hourly Rate</TableHead>
+                      <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6 border-b border-slate-100">Travel Fee</TableHead>
                       <TableHead colSpan={3} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-6 text-center border-l border-r border-b border-slate-100 bg-slate-100/30">Lead Guard</TableHead>
                       <TableHead colSpan={3} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-6 text-center border-r border-b border-slate-100 bg-amber-50/10">Secondary Guard (QC)</TableHead>
-                      <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6 text-center border-b border-slate-100">Actions</TableHead>
                     </TableRow>
                     <TableRow className="hover:bg-transparent border-slate-100">
                       <TableHead className="text-[10px] font-bold text-slate-700 uppercase py-2 px-4 border-l border-slate-100 bg-slate-100/10 border-b">Guard</TableHead>
@@ -195,27 +296,42 @@ export function AssignmentModule({
                                 : ""
                             )}>
                               {pendingAssignments[shift.shift_id]
-                                ? formatPrice(pendingAssignments[shift.shift_id].hourlyRate)
+                                ? formatPrice(shiftRates[shift.shift_id]?.hourlyRate ?? pendingAssignments[shift.shift_id]?.hourlyRate)
                                 : formatPrice(shift.per_hour_rate)}
                               {((pendingAssignments[shift.shift_id]?.hourlyRate || shift.per_hour_rate) !== null) && " /hr"}
                             </span>
                           </TableCell>
 
+                          {/* Travel Fee column */}
+                          <TableCell className="py-4 px-6 text-sm text-slate-800 font-medium">
+                            <span className={cn(
+                              pendingAssignments[shift.shift_id]
+                                ? "text-[#0064cb] font-semibold text-[13px] animate-pulse"
+                                : ""
+                            )}>
+                              {pendingAssignments[shift.shift_id]
+                                ? formatPrice(shiftRates[shift.shift_id]?.travelFee ?? pendingAssignments[shift.shift_id]?.travelFee)
+                                : formatPrice(shift.travel_fee)}
+                            </span>
+                          </TableCell>
+
+
                           {/* Lead Guard columns */}
                           {(() => {
                             const pending = pendingAssignments[shift.shift_id];
-                            const guard = shift.guard;
+                            const leadData = shift.lead_guard || shift.guard;
 
-                            if (guard || pending) {
+                            if (leadData || pending) {
+                              const actualGuard = leadData?.guard || leadData;
                               const name = pending
                                 ? pending.guard_name
-                                : (typeof guard === 'object' ? `${guard.first_name || ""} ${guard.last_name || ""}`.trim() || guard.name || "Unknown" : String(guard));
+                                : (typeof actualGuard === 'object' ? `${actualGuard?.first_name || ""} ${actualGuard?.last_name || ""}`.trim() || actualGuard?.name || "Unknown" : String(actualGuard));
 
                               const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f1f5f9&color=334155`;
 
-                              const isSeen = pending ? false : (shift.is_seen === true);
-                              const isResponded = pending ? false : (shift.status && shift.status.toLowerCase() !== "pending" && shift.status.toLowerCase() !== "unassigned");
-                              const status = pending ? "PENDING" : (shift.status || "PENDING").toUpperCase();
+                              const isSeen = pending ? false : (leadData?.is_seen === true);
+                              const isResponded = pending ? false : (leadData?.status && leadData.status.toLowerCase() !== "pending" && leadData.status.toLowerCase() !== "unassigned");
+                              const status = pending ? "PENDING" : (leadData?.status || "PENDING").toUpperCase();
 
                               let statusColor = "bg-amber-50 text-amber-600 border-amber-100";
                               if (status.includes("ACCEPT") || status.includes("ACTIVE")) {
@@ -247,7 +363,7 @@ export function AssignmentModule({
                                         </button>
                                       ) : (
                                         <button
-                                          onClick={() => onUnassignGuard(shift.shift_offer_id)}
+                                          onClick={() => onUnassignGuard(leadData?.shift_offer_id || leadData?.offer_id || shift.shift_offer_id, "lead_guard")}
                                           className="w-4 h-4 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer shadow-sm shadow-red-500/20 ml-auto"
                                           title="Unassign Lead Guard"
                                         >
@@ -277,19 +393,8 @@ export function AssignmentModule({
                             } else {
                               return (
                                 <>
-                                  <TableCell className="py-3 px-4 border-l border-slate-100">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-7 h-7 rounded-full bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center border border-slate-200">
-                                        <img src="https://ui-avatars.com/api/?name=Unassigned&background=f1f5f9&color=94a3b8" alt="Unassigned" className="w-full h-full object-cover" />
-                                      </div>
-                                      <span className="text-[13px] text-slate-400 font-medium">Unassigned</span>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="py-3 px-4 text-center">
-                                    <span className="text-xs text-red-500 font-bold">No</span>
-                                  </TableCell>
-                                  <TableCell className="py-3 px-4 border-r border-slate-100">
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 bg-slate-50 text-slate-400 block text-center uppercase tracking-wide">
+                                  <TableCell colSpan={3} className="py-3 px-4 border-l border-r border-slate-100 text-center">
+                                    <span className="px-3 py-1 rounded-full text-[11px] font-bold border border-slate-200 bg-slate-50 text-slate-400 uppercase tracking-wide inline-flex items-center justify-center">
                                       UNASSIGNED
                                     </span>
                                   </TableCell>
@@ -300,15 +405,16 @@ export function AssignmentModule({
 
                           {/* Secondary Guard (QC) columns */}
                           {(() => {
-                            const guard = shift.secondary_guard || shift.standby_guard || shift.qc_guard || (shift.standby_guards && shift.standby_guards[0]);
+                            const standbyData = shift.secondary_guard || shift.standby_guard || shift.qc_guard || (shift.standby_guards && shift.standby_guards[0]);
 
-                            if (guard) {
-                              const name = guard.guard_name || `${guard.first_name || ""} ${guard.last_name || ""}`.trim() || guard.name || "Unknown";
+                            if (standbyData) {
+                              const actualGuard = standbyData.guard || standbyData;
+                              const name = actualGuard.guard_name || `${actualGuard.first_name || ""} ${actualGuard.last_name || ""}`.trim() || actualGuard.name || "Unknown";
                               const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f1f5f9&color=334155`;
 
-                              const isSeen = guard.is_seen === true || guard.notification_seen === true;
-                              const isResponded = guard.is_responded === true || guard.responded === true || (guard.status && guard.status.toLowerCase() !== "pending" && guard.status.toLowerCase() !== "unassigned");
-                              const status = (guard.status || "PENDING").toUpperCase();
+                              const isSeen = standbyData.is_seen === true || standbyData.notification_seen === true;
+                              const isResponded = standbyData.is_responded === true || standbyData.responded === true || (standbyData.status && standbyData.status.toLowerCase() !== "pending" && standbyData.status.toLowerCase() !== "unassigned");
+                              const status = (standbyData.status || "PENDING").toUpperCase();
 
                               let statusColor = "bg-amber-50 text-amber-600 border-amber-100";
                               if (status.includes("ACCEPT") || status.includes("ACTIVE") || status.includes("SITE") || status.includes("ARRIVED") || status.includes("WORKING")) {
@@ -327,9 +433,9 @@ export function AssignmentModule({
                                       <span className="text-[13px] font-semibold text-slate-800 whitespace-nowrap">
                                         {name}
                                       </span>
-                                      {onDeleteStandbyRequest && guard.standby_id && (
+                                      {(standbyData.standby_id || standbyData.offer_id) && (
                                         <button
-                                          onClick={() => onDeleteStandbyRequest(guard.standby_id)}
+                                          onClick={() => onUnassignGuard(standbyData.standby_id || standbyData.offer_id, "standby_guard")}
                                           className="w-4 h-4 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer shadow-sm shadow-red-500/20 ml-auto"
                                           title="Delete Standby Request"
                                         >
@@ -359,19 +465,8 @@ export function AssignmentModule({
                             } else {
                               return (
                                 <>
-                                  <TableCell className="py-3 px-4">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-7 h-7 rounded-full bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center border border-slate-200">
-                                        <img src="https://ui-avatars.com/api/?name=Unassigned&background=f1f5f9&color=94a3b8" alt="Unassigned" className="w-full h-full object-cover" />
-                                      </div>
-                                      <span className="text-[13px] text-slate-400 font-medium">Unassigned</span>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="py-3 px-4 text-center">
-                                    <span className="text-xs text-red-500 font-bold">No</span>
-                                  </TableCell>
-                                  <TableCell className="py-3 px-4 border-r border-slate-100">
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 bg-slate-50 text-slate-400 block text-center uppercase tracking-wide">
+                                  <TableCell colSpan={3} className="py-3 px-4 border-r border-slate-100 text-center">
+                                    <span className="px-3 py-1 rounded-full text-[11px] font-bold border border-slate-200 bg-slate-50 text-slate-400 uppercase tracking-wide inline-flex items-center justify-center">
                                       UNASSIGNED
                                     </span>
                                   </TableCell>
@@ -380,27 +475,7 @@ export function AssignmentModule({
                             }
                           })()}
 
-                          {/* Actions column */}
-                          <TableCell className="py-4 px-6 text-center">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0 rounded-full hover:bg-slate-100 cursor-pointer flex items-center justify-center mx-auto"
-                                >
-                                  <MoreVertical className="h-4 w-4 text-slate-500" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-white border border-slate-100 shadow-xl rounded-lg z-[300]">
-                                <DropdownMenuItem
-                                  onClick={() => onDeleteShift(shift.shift_id)}
-                                  className="text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600 font-bold text-xs cursor-pointer px-4 py-2"
-                                >
-                                  Delete Shift
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
+
                         </TableRow>
                       ))
                     ) : (
@@ -423,7 +498,7 @@ export function AssignmentModule({
               Back
             </Button>
             <Button
-              onClick={() => onAdd({})}
+              onClick={() => onAdd(shiftRates, () => setSelectedShifts([]))}
               disabled={isAssigning || Object.keys(pendingAssignments).length === 0}
               className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer min-w-[120px] w-full sm:w-auto flex justify-center items-center"
             >

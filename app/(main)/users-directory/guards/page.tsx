@@ -1,10 +1,13 @@
 "use client";
 
 import {
-  clientFetchGuardsAction
+  clientFetchGuardsAction,
+  clientResendGuardPasswordAction
 } from "@/lib/client-actions";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ConfirmationDialog } from "@/app/(main)/guard-bank/components/confirmation-dialog";
 import {
   Shield,
   UserPlus,
@@ -85,7 +88,14 @@ const ALLOWED_COUNTRIES: Record<string, string> = {
 };
 
 export default function GuardDirectoryPage() {
+  const router = useRouter();
   const [guards, setGuards] = useState<any[]>([]);
+  const [resendPasswordConfirm, setResendPasswordConfirm] = useState<{
+    isOpen: boolean;
+    guardId: string;
+    guardName: string;
+  }>({ isOpen: false, guardId: "", guardName: "" });
+  const [isResendingPassword, setIsResendingPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -298,6 +308,26 @@ export default function GuardDirectoryPage() {
         toast.error(res.error || "Failed to delete guard", { id: toastId });
       }
     }
+  };
+
+  const handleResendPassword = (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    setResendPasswordConfirm({ isOpen: true, guardId: id, guardName: name });
+  };
+
+  const handleConfirmResendPassword = async () => {
+    const id = resendPasswordConfirm.guardId;
+    if (!id) return;
+    setIsResendingPassword(true);
+    const res = await clientResendGuardPasswordAction(id);
+
+    if (res.success) {
+      toast.success(res.message || "Password sent successfully");
+    } else {
+      toast.error(res.error || "Failed to resend password");
+    }
+    setIsResendingPassword(false);
+    setResendPasswordConfirm({ isOpen: false, guardId: "", guardName: "" });
   };
 
   return (
@@ -614,6 +644,7 @@ export default function GuardDirectoryPage() {
                       <Input
                         type="date"
                         value={formData.licenseExpirationDate}
+                        min={new Date().toISOString().split("T")[0]}
                         onChange={(e) => setFormData({ ...formData, licenseExpirationDate: e.target.value })}
                         className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-slate-800 font-medium cursor-pointer"
                       />
@@ -677,7 +708,7 @@ export default function GuardDirectoryPage() {
                       <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider text-center">Unarmed</TableHead>
                       <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Address</TableHead>
                       <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Status</TableHead>
-                      {/* <TableHead className="py-4 px-6 text-right text-[11px] font-bold text-slate-700 uppercase tracking-wider">Action</TableHead> */}
+                      <TableHead className="py-4 px-6 text-right text-[11px] font-bold text-slate-700 uppercase tracking-wider">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -696,7 +727,7 @@ export default function GuardDirectoryPage() {
                           <TableCell className="py-4 px-4"><Skeleton className="h-4 w-8 mx-auto bg-slate-100" /></TableCell>
                           <TableCell className="py-4 px-4"><Skeleton className="h-4 w-32 bg-slate-100" /></TableCell>
                           <TableCell className="py-4 px-4"><Skeleton className="h-4 w-12 bg-slate-100" /></TableCell>
-                          <TableCell className="px-6 py-4 text-right"><Skeleton className="w-8 h-8 rounded-lg ml-auto bg-slate-50" /></TableCell>
+                          <TableCell className="px-6 py-4 text-right"><Skeleton className="w-24 h-8 rounded-lg ml-auto bg-slate-50" /></TableCell>
                         </TableRow>
                       ))
                     ) : guards.length === 0 ? (
@@ -710,7 +741,15 @@ export default function GuardDirectoryPage() {
                       </TableRow>
                     ) : (
                       guards.map((guard) => (
-                        <TableRow key={guard.guard_id} className="group hover:bg-slate-50/50 border-slate-50 transition-colors">
+                        <TableRow 
+                          key={guard.guard_id} 
+                          className="group hover:bg-slate-50/50 border-slate-50 transition-colors cursor-pointer"
+                          onClick={() => {
+                            if (guard.application_id) {
+                              router.push(`/guard-bank/${guard.application_id}`);
+                            }
+                          }}
+                        >
                           <TableCell className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
@@ -758,16 +797,16 @@ export default function GuardDirectoryPage() {
                               {guard.status ? "Active" : "Inactive"}
                             </span>
                           </TableCell>
-                          {/* <TableCell className="px-6 py-4 text-right">
+                          <TableCell className="px-6 py-4 text-right">
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(guard.guard_id, `${guard.first_name || "---"} ${guard.last_name || "---"}`)}
-                              className="cursor-pointer w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 transition-all"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => handleResendPassword(e, guard.guard_id, `${guard.first_name || ""} ${guard.last_name || ""}`.trim())}
+                              className="cursor-pointer h-8 text-[11px] font-bold text-[#0064cb] hover:text-[#0052ae] hover:bg-blue-50 transition-all border border-[#0064cb]/20 hover:border-[#0064cb]/40 rounded-lg px-3"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              Resend Password
                             </Button>
-                          </TableCell> */}
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
@@ -789,6 +828,18 @@ export default function GuardDirectoryPage() {
           </Card>
         </div>
       </div>
+
+      <ConfirmationDialog
+        isOpen={resendPasswordConfirm.isOpen}
+        onClose={() => setResendPasswordConfirm({ isOpen: false, guardId: "", guardName: "" })}
+        onConfirm={handleConfirmResendPassword}
+        title="Are you sure?"
+        description={`You are about to resend the password for guard ${resendPasswordConfirm.guardName}.`}
+        confirmText="Yes"
+        cancelText="Cancel"
+        isDanger={false}
+        isLoading={isResendingPassword}
+      />
     </div>
   );
 }

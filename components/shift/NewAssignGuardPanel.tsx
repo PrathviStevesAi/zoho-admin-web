@@ -47,7 +47,6 @@ interface NewAssignGuardPanelProps {
 
 export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates }: NewAssignGuardPanelProps) {
   const [hourlyRate, setHourlyRate] = useState(initialRates?.per_hour_rate ? String(initialRates.per_hour_rate) : "");
-  const [perShiftRate, setPerShiftRate] = useState(initialRates?.per_shift_rate ? String(initialRates.per_shift_rate) : "");
   const [travelFee, setTravelFee] = useState(initialRates?.travel_fee ? String(initialRates.travel_fee) : "");
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
@@ -114,11 +113,9 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
   const handleSelectGuard = (guard: any) => {
     const rates: GuardRates = {};
     const hr = parseFloat(hourlyRate);
-    const sr = parseFloat(perShiftRate);
     const tf = parseFloat(travelFee);
 
     if (!isNaN(hr) && hr > 0) rates.per_hour_rate = hr;
-    if (!isNaN(sr) && sr > 0) rates.per_shift_rate = sr;
     if (!isNaN(tf) && tf > 0) rates.travel_fee = tf;
 
     onSelect(guard, rates);
@@ -134,11 +131,11 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
       </div>
 
       <div className="px-6 pt-5 pb-4 border-b border-slate-100">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label className="text-[13px] font-medium text-slate-700">Hourly Rate paid to Guard</Label>
             <div className="relative">
-              <span className={cn("absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium", perShiftRate ? "text-slate-300" : "text-slate-400")}>$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
               <Input
                 type="number"
                 min="0"
@@ -146,30 +143,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
                 value={hourlyRate}
                 onChange={(e) => setHourlyRate(e.target.value)}
                 placeholder="0.00"
-                disabled={!!perShiftRate}
-                className={cn(
-                  "h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm",
-                  perShiftRate && "opacity-50 cursor-not-allowed bg-slate-50"
-                )}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[13px] font-medium text-slate-700">Per Shift Rate paid to Guard</Label>
-            <div className="relative">
-              <span className={cn("absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium", hourlyRate ? "text-slate-300" : "text-slate-400")}>$</span>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={perShiftRate}
-                onChange={(e) => setPerShiftRate(e.target.value)}
-                placeholder="0.00"
-                disabled={!!hourlyRate}
-                className={cn(
-                  "h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm",
-                  hourlyRate && "opacity-50 cursor-not-allowed bg-slate-50"
-                )}
+                className="h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
               />
             </div>
           </div>

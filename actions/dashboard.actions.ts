@@ -518,19 +518,42 @@ export async function fetchGuardsAction(params: {
 
 export async function assignGuardsAction(payload: {
   invoice_id: string;
-  per_hour_rate?: number | null;
-  per_shift_rate?: number | null;
   assignments: {
     guard_id: string;
     shift_ids: string[];
     per_hour_rate?: number | null;
-    per_shift_rate?: number | null;
+    qc_flat_rate?: number | null;
     travel_fee?: number | null;
   }[];
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const res = await apiFetch<{ success: boolean; message?: string }>(
-      `/api/v1/shift/assign-guard`,
+      `/api/v1/shift/assign-lead-guard`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    return { success: true, message: res.message };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function assignStandbyGuardsAction(payload: {
+  invoice_id: string;
+  assignments: {
+    guard_id: string;
+    shift_ids: string[];
+    per_hour_rate?: number | null;
+    qc_flat_rate?: number | null;
+    travel_fee?: number | null;
+  }[];
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/assign-standby-guard`,
       {
         method: "POST",
         body: JSON.stringify(payload),
@@ -605,13 +628,14 @@ export async function reassignGuardToShiftAction(payload: {
   }
 }
 
-export async function unassignGuardAction(shift_offer_id: string): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function unassignGuardAction(shift_offer_id: string, offer_type: "lead_guard" | "standby_guard" = "lead_guard"): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
+    console.log("unassignGuardAction called with shift_offer_id:", shift_offer_id, "offer_type:", offer_type);
     const res = await apiFetch<{ success: boolean; message?: string }>(
       `/api/v1/shift/assign-guard`,
       {
         method: "DELETE",
-        body: JSON.stringify({ shift_offer_id }),
+        body: JSON.stringify({ shift_offer_id, offer_type }),
       }
     );
     return { success: true, message: res.message };
