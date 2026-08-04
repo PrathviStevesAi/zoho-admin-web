@@ -156,7 +156,7 @@ export function AssignmentModule({
             <div className="w-full">
               <Table
                 className="w-full border-collapse text-xs [&_th]:whitespace-normal"
-                scrollbarClass="overflow-hidden"
+                scrollbarClass="overflow-x-auto md:overflow-hidden custom-scrollbar-visible"
               >
                 <TableHeader className="bg-slate-50/50">
                   <TableRow className="hover:bg-transparent border-slate-100">
