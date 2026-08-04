@@ -115,7 +115,7 @@ export default function InvoiceDetailsPage() {
   const [rowSchedules, setRowSchedules] = useState<Record<string, any>>({});
   const [isSelectUserOpen, setIsSelectUserOpen] = useState(false);
   const [selectedShiftIds, setSelectedShiftIds] = useState<string[]>([]);
-  const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number }>>({});
+  const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number, type: "lead" | "standby", flatQcRate?: number }>>({});
   const [assignmentType, setAssignmentType] = useState<"lead" | "standby">("lead");
   const [isAssigning, setIsAssigning] = useState(false);
   const [availableGuards, setAvailableGuards] = useState<any[]>([]);
@@ -596,36 +596,7 @@ export default function InvoiceDetailsPage() {
   };
 
   const handleGuardSelect = async (guard: any, rates: { hourlyRate?: number; travelFee?: number; flatQcRate?: number }) => {
-    if (assignmentType === "standby") {
-      setIsShiftsLoading(true);
 
-      const payload = {
-        invoice_id: id,
-        assignments: [
-          {
-            guard_id: guard.guard_id,
-            shift_ids: selectedShiftIds,
-            per_hour_rate: 0,
-            qc_flat_rate: rates.flatQcRate || 0,
-            travel_fee: 0
-          }
-        ]
-      };
-
-      const res = await assignStandbyGuardsAction(payload);
-
-      setIsShiftsLoading(false);
-      setIsSelectUserOpen(false);
-      setSelectedShiftIds([]);
-
-      if (res.success) {
-        toast.success(res.message || `Standby request sent to ${guard.first_name} ${guard.last_name} for ${selectedShiftIds.length} shifts.`);
-        loadShifts("assign_guard");
-      } else {
-        toast.error(res.error || "Failed to send standby request.");
-      }
-      return;
-    }
 
     const currentBatchShifts = shifts.filter(s => selectedShiftIds.includes(s.shift_id));
     for (let i = 0; i < currentBatchShifts.length; i++) {
@@ -676,7 +647,9 @@ export default function InvoiceDetailsPage() {
         guard_id: guard.guard_id,
         guard_name: `${guard.first_name} ${guard.last_name}`,
         hourlyRate: rates.hourlyRate,
-        travelFee: rates.travelFee
+        travelFee: rates.travelFee,
+        flatQcRate: rates.flatQcRate,
+        type: assignmentType
       };
     });
     setPendingAssignments(newAssignments);
@@ -686,23 +659,35 @@ export default function InvoiceDetailsPage() {
   };
 
   const handleAssignGuards = async (shiftRates?: any, clearSelection?: () => void) => {
-    const groups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; travelFee?: number }> = {};
+    const leadGroups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; travelFee?: number }> = {};
+    const standbyGroups: Record<string, { guard_id: string; shift_ids: string[]; flatQcRate?: number }> = {};
 
     Object.entries(pendingAssignments).forEach(([shiftId, data]) => {
-      const key = `${data.guard_id}_${data.hourlyRate ?? ""}_${data.travelFee ?? ""}`;
-
-      if (!groups[key]) {
-        groups[key] = {
-          guard_id: data.guard_id,
-          shift_ids: [],
-          hourlyRate: data.hourlyRate,
-          travelFee: data.travelFee
-        };
+      if (data.type === "standby") {
+        const key = `${data.guard_id}_${data.flatQcRate ?? ""}`;
+        if (!standbyGroups[key]) {
+          standbyGroups[key] = {
+            guard_id: data.guard_id,
+            shift_ids: [],
+            flatQcRate: data.flatQcRate
+          };
+        }
+        standbyGroups[key].shift_ids.push(shiftId);
+      } else {
+        const key = `${data.guard_id}_${data.hourlyRate ?? ""}_${data.travelFee ?? ""}`;
+        if (!leadGroups[key]) {
+          leadGroups[key] = {
+            guard_id: data.guard_id,
+            shift_ids: [],
+            hourlyRate: data.hourlyRate,
+            travelFee: data.travelFee
+          };
+        }
+        leadGroups[key].shift_ids.push(shiftId);
       }
-      groups[key].shift_ids.push(shiftId);
     });
 
-    const assignments = Object.values(groups).map((group) => {
+    const leadAssignments = Object.values(leadGroups).map((group) => {
       const assignment: any = {
         guard_id: group.guard_id,
         shift_ids: group.shift_ids,
@@ -721,31 +706,52 @@ export default function InvoiceDetailsPage() {
       return assignment;
     });
 
-    if (assignments.length === 0) {
+    const standbyAssignments = Object.values(standbyGroups).map((group) => {
+      const assignment: any = {
+        guard_id: group.guard_id,
+        shift_ids: group.shift_ids,
+        per_hour_rate: 0,
+        travel_fee: 0,
+        qc_flat_rate: group.flatQcRate || 0
+      };
+      return assignment;
+    });
+
+    if (leadAssignments.length === 0 && standbyAssignments.length === 0) {
       toast.error("Please assign at least one guard");
       return;
     }
 
-    const payload: any = {
-      invoice_id: id,
-      assignments
-    };
-
-    console.log("[handleAssignGuards] Payload to assignGuardsAction:", JSON.stringify(payload, null, 2));
-
     setIsAssigning(true);
-    const res = await assignGuardsAction(payload);
+    let success = true;
 
-    console.log("[handleAssignGuards] API Response:", JSON.stringify(res, null, 2));
+    if (leadAssignments.length > 0) {
+      const payload: any = { invoice_id: id, assignments: leadAssignments };
+      console.log("[handleAssignGuards] Payload to assignGuardsAction:", JSON.stringify(payload, null, 2));
+      const res = await assignGuardsAction(payload);
+      if (!res.success) {
+        success = false;
+        toast.error(res.error || "Failed to assign lead guards");
+      }
+    }
 
-    if (res.success) {
+    if (standbyAssignments.length > 0) {
+      const payload: any = { invoice_id: id, assignments: standbyAssignments };
+      console.log("[handleAssignGuards] Payload to assignStandbyGuardsAction:", JSON.stringify(payload, null, 2));
+      const res = await assignStandbyGuardsAction(payload);
+      if (!res.success) {
+        success = false;
+        toast.error(res.error || "Failed to assign standby guards");
+      }
+    }
+
+    if (success) {
       toast.success("Guards assigned successfully");
       setPendingAssignments({});
       if (typeof clearSelection === 'function') clearSelection();
       loadShifts("assign_guard");
-    } else {
-      toast.error(res.error || "Failed to assign guards");
     }
+    
     setIsAssigning(false);
   };
 

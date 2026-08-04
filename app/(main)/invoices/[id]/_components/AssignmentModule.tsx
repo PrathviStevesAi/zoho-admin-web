@@ -22,7 +22,7 @@ interface AssignmentModuleProps {
   onUnassignGuard: (shiftOfferId: string, type: "lead_guard" | "standby_guard") => void;
   onOpenSelectUser: (selectedIds: string[], type: "lead" | "standby") => void;
   onBack: () => void;
-  pendingAssignments: Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number }>;
+  pendingAssignments: Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number, type?: "lead" | "standby", flatQcRate?: number }>;
   onAdd: (shiftRates: Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>, clearSelection?: () => void) => void;
   isAssigning: boolean;
   onRemovePendingAssignment?: (shiftId: string) => void;
@@ -117,6 +117,18 @@ export function AssignmentModule({
     }
   };
 
+  const hasPending = Object.keys(pendingAssignments).length > 0;
+  
+  const isLeadDisabled = selectedShifts.length === 0 || hasPending || selectedShifts.some(id => {
+    const s = shifts.find(x => x.shift_id === id);
+    return s && (s.lead_guard || s.guard);
+  });
+
+  const isStandbyDisabled = selectedShifts.length === 0 || hasPending || selectedShifts.some(id => {
+    const s = shifts.find(x => x.shift_id === id);
+    return s && (s.secondary_guard || s.standby_guard || s.qc_guard || (s.standby_guards && s.standby_guards.length > 0));
+  });
+
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
       <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white w-full">
@@ -133,10 +145,10 @@ export function AssignmentModule({
                   variant="outline"
                   className={cn(
                     "text-[#0064cb] border-[#0064cb] hover:bg-blue-50 h-9 rounded-lg px-4 font-bold text-xs flex gap-2 transition-all cursor-pointer w-full sm:w-auto justify-center items-center shrink-0",
-                    selectedShifts.length === 0 && "opacity-50 pointer-events-none grayscale"
+                    isLeadDisabled && "opacity-50 pointer-events-none grayscale"
                   )}
                   onClick={() => onOpenSelectUser(selectedShifts, "lead")}
-                  disabled={selectedShifts.length === 0}
+                  disabled={isLeadDisabled}
                 >
                   Assign Lead Guard <Plus className="w-3.5 h-3.5" />
                 </Button>
@@ -144,10 +156,10 @@ export function AssignmentModule({
                   variant="outline"
                   className={cn(
                     "text-amber-600 border-amber-600 hover:bg-amber-50 h-9 rounded-lg px-4 font-bold text-xs flex gap-2 transition-all cursor-pointer w-full sm:w-auto justify-center items-center shrink-0",
-                    selectedShifts.length === 0 && "opacity-50 pointer-events-none grayscale"
+                    isStandbyDisabled && "opacity-50 pointer-events-none grayscale"
                   )}
                   onClick={() => onOpenSelectUser(selectedShifts, "standby")}
-                  disabled={selectedShifts.length === 0}
+                  disabled={isStandbyDisabled}
                 >
                   Assign Standby Guard <Plus className="w-3.5 h-3.5" />
                 </Button>
@@ -177,7 +189,6 @@ export function AssignmentModule({
                     <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 border-b border-slate-100">Start Time</TableHead>
                     <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 border-b border-slate-100">End Time</TableHead>
                     <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 border-b border-slate-100">Hourly Rate</TableHead>
-                    <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 border-b border-slate-100">Travel Fee</TableHead>
                     <TableHead colSpan={3} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 text-center border-l border-r border-b border-slate-100 bg-slate-100/30">Lead Guard</TableHead>
                     <TableHead colSpan={3} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 text-center border-r border-b border-slate-100 bg-amber-50/10">Standby Guard (QC)</TableHead>
                   </TableRow>
@@ -200,7 +211,7 @@ export function AssignmentModule({
                         <TableCell className="py-4 px-2 space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-16" /></TableCell>
                         <TableCell className="py-4 px-2 space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-16" /></TableCell>
                         <TableCell className="py-4 px-2"><Skeleton className="h-4 w-16" /></TableCell>
-                        <TableCell className="py-4 px-2"><Skeleton className="h-4 w-16" /></TableCell>
+
 
                         <TableCell className="py-4 px-2 border-l border-slate-100">
                           <div className="flex items-center gap-1.5">
@@ -271,20 +282,10 @@ export function AssignmentModule({
                           </span>
                         </TableCell>
 
-                        <TableCell className="py-3 px-2 text-xs text-slate-800 font-medium">
-                          <span className={cn(
-                            pendingAssignments[shift.shift_id]
-                              ? "text-[#0064cb] font-semibold text-[13px] animate-pulse"
-                              : ""
-                          )}>
-                            {pendingAssignments[shift.shift_id]
-                              ? formatPrice(shiftRates[shift.shift_id]?.travelFee ?? pendingAssignments[shift.shift_id]?.travelFee)
-                              : formatPrice(shift.travel_fee)}
-                          </span>
-                        </TableCell>
+
 
                         {(() => {
-                          const pending = pendingAssignments[shift.shift_id];
+                          const pending = pendingAssignments[shift.shift_id]?.type === "lead" ? pendingAssignments[shift.shift_id] : undefined;
                           const leadData = shift.lead_guard || shift.guard;
 
                           if (leadData || pending) {
@@ -377,16 +378,19 @@ export function AssignmentModule({
                         })()}
 
                         {(() => {
+                          const pending = pendingAssignments[shift.shift_id]?.type === "standby" ? pendingAssignments[shift.shift_id] : undefined;
                           const standbyData = shift.secondary_guard || shift.standby_guard || shift.qc_guard || (shift.standby_guards && shift.standby_guards[0]);
 
-                          if (standbyData) {
-                            const actualGuard = standbyData.guard || standbyData;
-                            const name = actualGuard.guard_name || `${actualGuard.first_name || ""} ${actualGuard.last_name || ""}`.trim() || actualGuard.name || "Unknown";
+                          if (standbyData || pending) {
+                            const actualGuard = standbyData?.guard || standbyData;
+                            const name = pending
+                              ? pending.guard_name
+                              : (actualGuard?.guard_name || `${actualGuard?.first_name || ""} ${actualGuard?.last_name || ""}`.trim() || actualGuard?.name || "Unknown");
                             const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f1f5f9&color=334155`;
 
-                            const isSeen = standbyData.is_seen === true || standbyData.notification_seen === true;
-                            const isResponded = standbyData.is_responded === true || standbyData.responded === true || (standbyData.status && standbyData.status.toLowerCase() !== "pending" && standbyData.status.toLowerCase() !== "unassigned");
-                            const status = (standbyData.status || "PENDING").toUpperCase();
+                            const isSeen = pending ? false : (standbyData?.is_seen === true || standbyData?.notification_seen === true);
+                            const isResponded = pending ? false : (standbyData?.is_responded === true || standbyData?.responded === true || (standbyData?.status && standbyData?.status.toLowerCase() !== "pending" && standbyData?.status.toLowerCase() !== "unassigned"));
+                            const status = pending ? "PENDING" : (standbyData?.status || "PENDING").toUpperCase();
 
                             let statusColor = "bg-amber-50 text-amber-600 border-amber-100";
                             if (status.includes("ACCEPT") || status.includes("ACTIVE") || status.includes("SITE") || status.includes("ARRIVED") || status.includes("WORKING")) {
@@ -403,7 +407,10 @@ export function AssignmentModule({
                                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex flex-col min-w-0 max-w-[90px]">
-                                      <span className="text-[11px] font-semibold text-slate-800 truncate">
+                                      <span className={cn(
+                                        "text-[11px] font-semibold truncate",
+                                        pending ? "text-[#0064cb] animate-pulse" : "text-slate-800"
+                                      )}>
                                         {name}
                                       </span>
                                       {actualGuard?.phone_number && (
@@ -412,7 +419,15 @@ export function AssignmentModule({
                                         </span>
                                       )}
                                     </div>
-                                    {(standbyData.standby_id || standbyData.offer_id) && (
+                                    {pending ? (
+                                      <button
+                                        onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
+                                        className="w-4 h-4 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-all cursor-pointer ml-auto"
+                                        title="Remove Selection"
+                                      >
+                                        <X className="w-2.5 h-2.5 stroke-[3]" />
+                                      </button>
+                                    ) : (standbyData?.standby_id || standbyData?.offer_id) && (
                                       <button
                                         onClick={() => onUnassignGuard(standbyData.standby_id || standbyData.offer_id, "standby_guard")}
                                         className="w-4 h-4 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer shadow-sm shadow-red-500/20 ml-auto"
@@ -457,7 +472,7 @@ export function AssignmentModule({
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={13} className="py-8 text-center text-slate-700">No shifts available to assign</TableCell>
+                      <TableCell colSpan={12} className="py-8 text-center text-slate-700">No shifts available to assign</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
