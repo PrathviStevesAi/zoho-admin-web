@@ -5,7 +5,7 @@ import {
 } from "@/lib/client-actions";
 
 import { useState, useEffect } from "react";
-import { Search, XCircle, DollarSign, Loader2 } from "lucide-react";
+import { XCircle, Loader2 } from "lucide-react";
 import { fetchLocationAction, } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
