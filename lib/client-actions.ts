@@ -314,7 +314,7 @@ export async function clientFetchInvoiceShiftsAction(
   const url = `/api/v1/invoice/${invoiceId}/shifts?view=${view}`;
   console.log("Fetching invoice shifts from:", url);
   try {
-    const data = await clientApiFetch<{ success: boolean; data: any[] }>(url);
+    const data = await clientApiFetch<{ success: boolean; data: any[] }>(url, { cache: "no-store" });
     console.log("Invoice shifts response data:", data);
     return { success: true, data: data?.data || data };
   } catch (error: any) {
@@ -510,7 +510,8 @@ export async function clientFetchAvailableGuardsAction(
 ): Promise<{ success: boolean; data?: any[]; total_guards?: number; error?: string }> {
   try {
     const data = await clientApiFetch<{ success: boolean; data: any[]; total_guards: number }>(
-      `/api/v1/invoice/${invoiceId}/available-guards`
+      `/api/v1/invoice/${invoiceId}/available-guards`,
+      { cache: "no-store" }
     );
     return { success: true, data: data?.data || data, total_guards: data.total_guards };
   } catch (error: any) {

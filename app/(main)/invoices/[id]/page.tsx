@@ -5,8 +5,6 @@ import {
   clientFetchInvoiceShiftsAction,
   clientFetchSecurityServicesAction,
   clientFetchAvailableGuardsAction,
-  clientFindStandbyGuardsAction,
-  clientDeleteStandbyRequestAction
 } from "@/lib/client-actions";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -705,20 +703,21 @@ export default function InvoiceDetailsPage() {
     });
 
     const assignments = Object.values(groups).map((group) => {
-      const cleanValue = (val: any) => {
-        if (val === undefined || val === null || val === "" || val === 0) {
-          return null;
-        }
-        return val;
-      };
-
       const assignment: any = {
         guard_id: group.guard_id,
         shift_ids: group.shift_ids,
-        per_hour_rate: cleanValue(group.hourlyRate) || 0,
-        qc_flat_rate: 0,
-        travel_fee: cleanValue(group.travelFee) || 0
       };
+
+      const parsedHourly = Number(group.hourlyRate);
+      if (!isNaN(parsedHourly) && parsedHourly >= 1) {
+        assignment.per_hour_rate = parsedHourly;
+      }
+
+      const parsedTravel = Number(group.travelFee);
+      if (!isNaN(parsedTravel) && parsedTravel >= 1) {
+        assignment.travel_fee = parsedTravel;
+      }
+
       return assignment;
     });
 
@@ -758,7 +757,10 @@ export default function InvoiceDetailsPage() {
     const res = await unassignGuardAction(unassignConfirm.shiftOfferId, unassignConfirm.type);
     if (res.success) {
       toast.success(res.message || "Guard unassigned successfully");
-      loadShifts("assign_guard");
+      await Promise.all([
+        loadShifts("assign_guard"),
+        loadAvailableGuards()
+      ]);
       setUnassignConfirm({ isOpen: false, shiftOfferId: "", type: "lead_guard" });
     } else {
       toast.error(res.error || "Failed to unassign guard");
