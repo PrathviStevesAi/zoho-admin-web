@@ -35,7 +35,7 @@ const formSchema = z.object({
   country: z.string().trim().min(1, "Country is required"),
   state: z.string().trim().min(1, "State is required"),
   city: z.string().trim().min(1, "City is required"),
-  zipCode: z.string().trim().min(1, "Zip Code is required").max(10, "Zip Code cannot exceed 10 characters"),
+  zipCode: z.string().trim().min(1, "Zip Code is required").max(10, "Zip Code cannot exceed 10 characters").regex(/^[a-zA-Z0-9]+$/, "Zip Code can only contain letters and numbers"),
   phoneCode: z.string().min(1, "Code required"),
   phone: z.string().trim().min(10, "Phone number required"),
   howHeard: z.string().min(1, "This field is required"),

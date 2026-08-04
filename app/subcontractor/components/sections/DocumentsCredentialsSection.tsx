@@ -13,6 +13,7 @@ export function DocumentsCredentialsSection() {
   const [showVideoInstructions, setShowVideoInstructions] = useState(false);
   const isSecurityLicenseOptional = watch("securityLicenseOptional");
   const guardEmail = watch("email");
+  const guardPhone = watch("phone");
 
   return (
     <div id="documents-credentials-section">
@@ -31,6 +32,7 @@ export function DocumentsCredentialsSection() {
             buttonText="My computer"
             uploadType="resume"
             guardEmail={guardEmail}
+            guardPhone={guardPhone}
           />
         </div>
       </div>
@@ -53,6 +55,7 @@ export function DocumentsCredentialsSection() {
                 buttonText="Upload HeadShot Image<span class='text-red-500'>*</span>"
                 uploadType="headshot-image"
                 guardEmail={guardEmail}
+                guardPhone={guardPhone}
               />
             </div>
 
@@ -67,6 +70,7 @@ export function DocumentsCredentialsSection() {
                 buttonText={`Upload Security Guard License${!isSecurityLicenseOptional ? "<span class='text-red-500'>*</span>" : ""}`}
                 uploadType="security-guard-license-image"
                 guardEmail={guardEmail}
+                guardPhone={guardPhone}
                 slotRight={
                   <div className="flex items-center space-x-2">
                     <Controller
@@ -93,6 +97,7 @@ export function DocumentsCredentialsSection() {
                 buttonText="Upload Driver License<span class='text-red-500'>*</span>"
                 uploadType="driver-license-image"
                 guardEmail={guardEmail}
+                guardPhone={guardPhone}
               />
             </div>
 
@@ -108,6 +113,7 @@ export function DocumentsCredentialsSection() {
                 isOptional={true}
                 uploadType="firewatch-certificate-image"
                 guardEmail={guardEmail}
+                guardPhone={guardPhone}
               />
             </div>
 
@@ -122,6 +128,7 @@ export function DocumentsCredentialsSection() {
                 buttonText="Upload Verification Video<span class='text-red-500'>*</span>"
                 uploadType="verification_video"
                 guardEmail={guardEmail}
+                guardPhone={guardPhone}
               />
             </div>
 

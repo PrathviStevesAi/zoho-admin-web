@@ -177,7 +177,11 @@ export function ContactInformationSection() {
           <CustomInput 
             placeholder="Enter zip code" 
             maxLength={10} 
-            {...register("zipCode")} 
+            {...register("zipCode", {
+              onChange: (e) => {
+                e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+              }
+            })} 
           />
           {errors.zipCode && <p className="text-xs text-red-500">{errors.zipCode.message}</p>}
         </div>

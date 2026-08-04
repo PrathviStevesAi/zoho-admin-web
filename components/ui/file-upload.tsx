@@ -19,6 +19,7 @@ interface FileUploadProps {
   isOptional?: boolean;
   uploadType?: string;
   guardEmail?: string;
+  guardPhone?: string;
   slotRight?: React.ReactNode;
 }
 
@@ -34,6 +35,7 @@ export function FileUpload({
   isOptional = false,
   uploadType,
   guardEmail,
+  guardPhone,
   slotRight,
 }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -87,6 +89,11 @@ export function FileUpload({
         if (uploadType) {
           if (!guardEmail) {
             toast.error("Please enter your Email address first before uploading documents.");
+            if (inputRef.current) inputRef.current.value = "";
+            return;
+          }
+          if (!guardPhone) {
+            toast.error("Please enter your Cell Phone number first before uploading documents.");
             if (inputRef.current) inputRef.current.value = "";
             return;
           }
