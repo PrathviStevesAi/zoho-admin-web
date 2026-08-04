@@ -325,6 +325,8 @@ export default function QuoteForm() {
 
     if (name === "Mobile") {
       finalValue = formatPhoneNumber(value as string);
+    } else if (name === "Zip_Code" || name === "Service_Zip_Code") {
+      finalValue = (value as string).replace(/[^a-zA-Z0-9]/g, '');
     }
 
     setFormData((prev) => {
