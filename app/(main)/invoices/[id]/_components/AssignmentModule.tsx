@@ -288,17 +288,39 @@ export function AssignmentModule({
                           const pending = pendingAssignments[shift.shift_id]?.type === "lead" ? pendingAssignments[shift.shift_id] : undefined;
                           const leadData = shift.lead_guard || shift.guard;
 
-                          if (leadData || pending) {
+                          if (pending) {
+                            const name = pending.guard_name;
+                            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=dbeafe&color=1d4ed8`;
+
+                            return (
+                              <>
+                                <TableCell colSpan={3} className="py-2 px-2 border-l border-r border-slate-100">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <div className="w-5 h-5 rounded-full bg-blue-100 overflow-hidden shrink-0 flex items-center justify-center border border-blue-200">
+                                      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <span className="text-[11px] font-semibold text-[#0064cb] animate-pulse truncate max-w-[100px]">
+                                      {name}
+                                    </span>
+                                    <button
+                                      onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
+                                      className="w-4 h-4 flex items-center justify-center bg-slate-100 hover:bg-red-100 hover:text-red-500 text-slate-500 rounded-full transition-all cursor-pointer shrink-0"
+                                      title="Remove Selection"
+                                    >
+                                      <X className="w-2.5 h-2.5 stroke-[3]" />
+                                    </button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            );
+                          } else if (leadData) {
                             const actualGuard = leadData?.guard || leadData;
-                            const name = pending
-                              ? pending.guard_name
-                              : (typeof actualGuard === 'object' ? `${actualGuard?.first_name || ""} ${actualGuard?.last_name || ""}`.trim() || actualGuard?.name || "Unknown" : String(actualGuard));
+                            const name = typeof actualGuard === 'object' ? `${actualGuard?.first_name || ""} ${actualGuard?.last_name || ""}`.trim() || actualGuard?.name || "Unknown" : String(actualGuard);
 
                             const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f1f5f9&color=334155`;
 
-                            const isSeen = pending ? false : (leadData?.is_seen === true);
-                            const isResponded = pending ? false : (leadData?.status && leadData.status.toLowerCase() !== "pending" && leadData.status.toLowerCase() !== "unassigned");
-                            const status = pending ? "PENDING" : (leadData?.status || "PENDING").toUpperCase();
+                            const isSeen = leadData?.is_seen === true;
+                            const status = (leadData?.status || "PENDING").toUpperCase();
 
                             let statusColor = "bg-amber-50 text-amber-600 border-amber-100";
                             if (status.includes("ACCEPT") || status.includes("ACTIVE")) {
@@ -315,10 +337,7 @@ export function AssignmentModule({
                                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex flex-col min-w-0 max-w-[90px]">
-                                      <span className={cn(
-                                        "text-[11px] font-semibold truncate",
-                                        pending ? "text-[#0064cb] animate-pulse" : "text-slate-800"
-                                      )}>
+                                      <span className="text-[11px] font-semibold truncate text-slate-800">
                                         {name}
                                       </span>
                                       {actualGuard?.phone_number && (
@@ -327,23 +346,13 @@ export function AssignmentModule({
                                         </span>
                                       )}
                                     </div>
-                                    {pending ? (
-                                      <button
-                                        onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
-                                        className="w-4 h-4 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-all cursor-pointer ml-auto"
-                                        title="Remove Selection"
-                                      >
-                                        <X className="w-2.5 h-2.5 stroke-[3]" />
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => onUnassignGuard(leadData?.shift_offer_id || leadData?.offer_id || shift.shift_offer_id, "lead_guard")}
-                                        className="w-4 h-4 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer shadow-sm shadow-red-500/20 ml-auto"
-                                        title="Unassign Lead Guard"
-                                      >
-                                        <X className="w-2.5 h-2.5 stroke-[3]" />
-                                      </button>
-                                    )}
+                                    <button
+                                      onClick={() => onUnassignGuard(leadData?.shift_offer_id || leadData?.offer_id || shift.shift_offer_id, "lead_guard")}
+                                      className="w-4 h-4 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer shadow-sm shadow-red-500/20 ml-auto"
+                                      title="Unassign Lead Guard"
+                                    >
+                                      <X className="w-2.5 h-2.5 stroke-[3]" />
+                                    </button>
                                   </div>
                                 </TableCell>
                                 <TableCell className="py-2 px-1 text-center">
@@ -381,16 +390,38 @@ export function AssignmentModule({
                           const pending = pendingAssignments[shift.shift_id]?.type === "standby" ? pendingAssignments[shift.shift_id] : undefined;
                           const standbyData = shift.secondary_guard || shift.standby_guard || shift.qc_guard || (shift.standby_guards && shift.standby_guards[0]);
 
-                          if (standbyData || pending) {
+                          if (pending) {
+                            const name = pending.guard_name;
+                            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=fef3c7&color=92400e`;
+
+                            return (
+                              <>
+                                <TableCell colSpan={3} className="py-2 px-2 border-r border-slate-100">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <div className="w-5 h-5 rounded-full bg-amber-100 overflow-hidden shrink-0 flex items-center justify-center border border-amber-200">
+                                      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <span className="text-[11px] font-semibold text-amber-700 animate-pulse truncate max-w-[100px]">
+                                      {name}
+                                    </span>
+                                    <button
+                                      onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
+                                      className="w-4 h-4 flex items-center justify-center bg-slate-100 hover:bg-red-100 hover:text-red-500 text-slate-500 rounded-full transition-all cursor-pointer shrink-0"
+                                      title="Remove Selection"
+                                    >
+                                      <X className="w-2.5 h-2.5 stroke-[3]" />
+                                    </button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            );
+                          } else if (standbyData) {
                             const actualGuard = standbyData?.guard || standbyData;
-                            const name = pending
-                              ? pending.guard_name
-                              : (actualGuard?.guard_name || `${actualGuard?.first_name || ""} ${actualGuard?.last_name || ""}`.trim() || actualGuard?.name || "Unknown");
+                            const name = actualGuard?.guard_name || `${actualGuard?.first_name || ""} ${actualGuard?.last_name || ""}`.trim() || actualGuard?.name || "Unknown";
                             const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f1f5f9&color=334155`;
 
-                            const isSeen = pending ? false : (standbyData?.is_seen === true || standbyData?.notification_seen === true);
-                            const isResponded = pending ? false : (standbyData?.is_responded === true || standbyData?.responded === true || (standbyData?.status && standbyData?.status.toLowerCase() !== "pending" && standbyData?.status.toLowerCase() !== "unassigned"));
-                            const status = pending ? "PENDING" : (standbyData?.status || "PENDING").toUpperCase();
+                            const isSeen = standbyData?.is_seen === true || standbyData?.notification_seen === true;
+                            const status = (standbyData?.status || "PENDING").toUpperCase();
 
                             let statusColor = "bg-amber-50 text-amber-600 border-amber-100";
                             if (status.includes("ACCEPT") || status.includes("ACTIVE") || status.includes("SITE") || status.includes("ARRIVED") || status.includes("WORKING")) {
@@ -407,10 +438,7 @@ export function AssignmentModule({
                                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex flex-col min-w-0 max-w-[90px]">
-                                      <span className={cn(
-                                        "text-[11px] font-semibold truncate",
-                                        pending ? "text-[#0064cb] animate-pulse" : "text-slate-800"
-                                      )}>
+                                      <span className="text-[11px] font-semibold truncate text-slate-800">
                                         {name}
                                       </span>
                                       {actualGuard?.phone_number && (
@@ -419,15 +447,7 @@ export function AssignmentModule({
                                         </span>
                                       )}
                                     </div>
-                                    {pending ? (
-                                      <button
-                                        onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
-                                        className="w-4 h-4 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-all cursor-pointer ml-auto"
-                                        title="Remove Selection"
-                                      >
-                                        <X className="w-2.5 h-2.5 stroke-[3]" />
-                                      </button>
-                                    ) : (standbyData?.standby_id || standbyData?.offer_id) && (
+                                    {(standbyData?.standby_id || standbyData?.offer_id) && (
                                       <button
                                         onClick={() => onUnassignGuard(standbyData.standby_id || standbyData.offer_id, "standby_guard")}
                                         className="w-4 h-4 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer shadow-sm shadow-red-500/20 ml-auto"

@@ -8,6 +8,7 @@ import { X, XCircle } from "lucide-react";
 import { fetchLocationAction, } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -72,6 +73,17 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
       setHourlyRate("");
       setTravelFee("");
       setFlatQcRate("");
+    } else {
+      setUserSearchQuery("");
+      setUserFilters({
+        country: "All Country",
+        state: "All State",
+        city: "All City",
+        status: "all",
+        service: "All"
+      });
+      setCurrentPage(1);
+      setShowMobileFilters(false);
     }
   }, [isOpen]);
 
@@ -373,12 +385,40 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                 </TableHeader>
                 <TableBody>
                   {isLoadingGuards ? (
-                    <TableRow>
-                      <TableCell colSpan={10} className="py-12 text-center">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#0064cb]" />
-                        <p className="text-xs text-slate-700 mt-2">Loading guards...</p>
-                      </TableCell>
-                    </TableRow>
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <TableRow key={`skel-${i}`} className="border-b border-slate-50">
+                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                          <Skeleton className="h-4 w-14 rounded" />
+                        </TableCell>
+                        <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                          <Skeleton className="h-4 w-6 rounded mx-auto" />
+                        </TableCell>
+                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                          <Skeleton className="h-4 w-28 rounded" />
+                        </TableCell>
+                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                          <Skeleton className="h-4 w-36 rounded" />
+                        </TableCell>
+                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                          <Skeleton className="h-4 w-24 rounded" />
+                        </TableCell>
+                        <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                          <Skeleton className="h-4 w-8 rounded mx-auto" />
+                        </TableCell>
+                        <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                          <Skeleton className="h-4 w-8 rounded mx-auto" />
+                        </TableCell>
+                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                          <Skeleton className="h-4 w-32 rounded" />
+                        </TableCell>
+                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                          <Skeleton className="h-4 w-20 rounded" />
+                        </TableCell>
+                        <TableCell className="py-4 px-6">
+                          <Skeleton className="h-5 w-14 rounded-full mx-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ))
                   ) : guards.length > 0 ? (
                     guards.map((guard, index) => (
                       <TableRow key={guard.guard_id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
@@ -389,7 +429,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                             className="cursor-pointer text-[13px] font-bold text-[#0064cb] hover:text-[#0052ae] flex items-center gap-2 transition-all disabled:opacity-50"
                           >
                             {(isSelectingGuardId === guard.guard_id || assigningGuardId === guard.guard_id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                            {mode === "lead" ? "Select Lead Guard" : "Select Standby Guard"}
+                            Select
                           </button>
                         </TableCell>
                         <TableCell className="text-[13px] text-slate-800 py-5 px-6 border-r border-slate-50/50 text-center">

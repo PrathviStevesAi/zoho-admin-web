@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { fetchLocationAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/types/dashboard.types";
 import {
   Dialog,
@@ -82,6 +83,20 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
     userFilters.status !== "all" ||
     userFilters.service !== "All";
 
+  useEffect(() => {
+    if (!isOpen) {
+      setUserSearchQuery("");
+      setUserFilters({
+        country: "All Country",
+        state: "All State",
+        city: "All City",
+        status: "all",
+        service: "All"
+      });
+      setCurrentPage(1);
+      setShowMobileFilters(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -326,12 +341,34 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
               </TableHeader>
               <TableBody>
                 {isLoadingGuards ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="py-12 text-center">
-                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#0064cb]" />
-                      <p className="text-xs text-slate-700 mt-2">Loading guards...</p>
-                    </TableCell>
-                  </TableRow>
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={`skel-${i}`} className="border-b border-slate-50">
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100 text-center">
+                        <Skeleton className="w-4 h-4 rounded mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100 text-center">
+                        <Skeleton className="h-4 w-6 rounded mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100">
+                        <Skeleton className="h-4 w-28 rounded" />
+                      </TableCell>
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100">
+                        <Skeleton className="h-4 w-36 rounded" />
+                      </TableCell>
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100">
+                        <Skeleton className="h-4 w-24 rounded" />
+                      </TableCell>
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100 text-center">
+                        <Skeleton className="h-4 w-8 rounded mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100 text-center">
+                        <Skeleton className="h-4 w-8 rounded mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-3.5 px-4 text-center">
+                        <Skeleton className="h-5 w-14 rounded-full mx-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ))
                 ) : guards.length > 0 ? (
                   guards.map((guard, index) => (
                     <TableRow key={guard.guard_id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
