@@ -334,10 +334,10 @@ export async function clientFetchShiftDetailsAction(
       ? `/api/v1/shift/${shiftId}?notification_id=${notificationId}`
       : `/api/v1/shift/${shiftId}`;
     const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
-    console.log("fetchShiftDetailsAction: Requesting URL:", fullUrl);
+    console.log(`[API Call] GET ${endpoint} Request URL:`, fullUrl);
 
     const data = await clientApiFetch<{ success: boolean; data: any }>(endpoint);
-    console.log("fetchShiftDetailsAction: Response data:", data);
+    console.log(`[API Call] GET ${endpoint} Response:`, data);
 
     if (data.success && data.data && data.data.invoice_no) {
       try {

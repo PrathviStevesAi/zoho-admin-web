@@ -29,6 +29,10 @@ export interface ExecutionTime {
 export interface ShiftActions {
   is_reassigned?: boolean;
   is_new_assigned?: boolean;
+  is_lead_reassigned?: boolean;
+  is_standby_reassigned?: boolean;
+  is_new_lead_assigned?: boolean;
+  is_new_standby_assigned?: boolean;
   is_manual_start_shift?: boolean;
   is_config_settings?: boolean;
   is_cancel_service?: boolean;
@@ -40,6 +44,7 @@ export interface ShiftActions {
   is_execution_time_edit?: boolean;
   is_hourly_rate_edit?: boolean;
   is_flat_rate_edit?: boolean;
+  is_qc_flat_rate_edit?: boolean;
   is_travel_fee_edit?: boolean;
   is_join_vc_call?: boolean;
   is_find_standby_guard?: boolean;

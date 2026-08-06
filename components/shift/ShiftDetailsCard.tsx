@@ -76,7 +76,7 @@ export function ShiftDetailsCard({
     | "scheduled_for"
     | "execution_time"
     | "per_hour_rate"
-    | "per_shift_rate"
+    | "qc_flat_rate"
     | "travel_fee"
     | null;
   const [editingField, setEditingField] = useState<EditingField>(null);
@@ -104,7 +104,7 @@ export function ShiftDetailsCard({
     guard_shift_started_at: "",
     guard_shift_ended_at: "",
     per_hour_rate: "",
-    per_shift_rate: "",
+    qc_flat_rate: "",
     travel_fee: "",
   });
   const [minDateTime, setMinDateTime] = useState("");
@@ -135,9 +135,9 @@ export function ShiftDetailsCard({
           shift.per_hour_rate !== null && shift.per_hour_rate !== undefined
             ? String(shift.per_hour_rate)
             : "",
-        per_shift_rate:
-          shift.per_shift_rate !== null && shift.per_shift_rate !== undefined
-            ? String(shift.per_shift_rate)
+        qc_flat_rate:
+          shift.qc_flat_rate !== null && shift.qc_flat_rate !== undefined
+            ? String(shift.qc_flat_rate)
             : "",
         travel_fee:
           shift.travel_fee !== null && shift.travel_fee !== undefined
@@ -250,27 +250,19 @@ export function ShiftDetailsCard({
             ? String(shift.per_hour_rate)
             : "";
         if (editDetailsForm.per_hour_rate !== initialPerHourRate) {
-          const newRate =
+          payload.per_hour_rate =
             editDetailsForm.per_hour_rate === "" ? 0 : Number(editDetailsForm.per_hour_rate);
-          payload.per_hour_rate = newRate;
-          if (newRate > 0) {
-            payload.per_shift_rate = 0;
-          }
           dirty = true;
         }
         break;
-      case "per_shift_rate":
-        const initialPerShiftRate =
-          shift.per_shift_rate !== null && shift.per_shift_rate !== undefined
-            ? String(shift.per_shift_rate)
+      case "qc_flat_rate":
+        const initialQcFlatRate =
+          shift.qc_flat_rate !== null && shift.qc_flat_rate !== undefined
+            ? String(shift.qc_flat_rate)
             : "";
-        if (editDetailsForm.per_shift_rate !== initialPerShiftRate) {
-          const newRate =
-            editDetailsForm.per_shift_rate === "" ? 0 : Number(editDetailsForm.per_shift_rate);
-          payload.per_shift_rate = newRate;
-          if (newRate > 0) {
-            payload.per_hour_rate = 0;
-          }
+        if (editDetailsForm.qc_flat_rate !== initialQcFlatRate) {
+          payload.qc_flat_rate =
+            editDetailsForm.qc_flat_rate === "" ? 0 : Number(editDetailsForm.qc_flat_rate);
           dirty = true;
         }
         break;
@@ -853,9 +845,7 @@ export function ShiftDetailsCard({
                   </span>
                   {renderEditIcon(
                     "per_hour_rate",
-                    !!shift.action?.is_hourly_rate_edit,
-                    isPerShiftRateSet,
-                    "Clear Flat Rate paid to guard first to edit Hourly Rate"
+                    !!shift.action?.is_hourly_rate_edit
                   )}
                 </div>
               </div>
@@ -863,28 +853,28 @@ export function ShiftDetailsCard({
           </div>
 
           <div className="px-5 py-2.5">
-            {editingField === "per_shift_rate" ? (
+            {editingField === "qc_flat_rate" ? (
               <div className="w-full flex flex-col gap-2">
                 <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                  Flat Rate Paid to Guard
+                  Flat QC Rate Paid to Guard
                 </Label>
                 <Input
                   type="number"
                   step="0.01"
                   min="0"
                   placeholder="0.00"
-                  value={editDetailsForm.per_shift_rate}
+                  value={editDetailsForm.qc_flat_rate}
                   onChange={(e) =>
-                    setEditDetailsForm((prev) => ({ ...prev, per_shift_rate: e.target.value }))
+                    setEditDetailsForm((prev) => ({ ...prev, qc_flat_rate: e.target.value }))
                   }
                   className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
                 />
-                {renderEditButtons("per_shift_rate", () => {
+                {renderEditButtons("qc_flat_rate", () => {
                   setEditDetailsForm((prev) => ({
                     ...prev,
-                    per_shift_rate:
-                      shift.per_shift_rate !== null && shift.per_shift_rate !== undefined
-                        ? String(shift.per_shift_rate)
+                    qc_flat_rate:
+                      shift.qc_flat_rate !== null && shift.qc_flat_rate !== undefined
+                        ? String(shift.qc_flat_rate)
                         : "",
                   }));
                   setEditingField(null);
@@ -893,18 +883,16 @@ export function ShiftDetailsCard({
             ) : (
               <div className="flex items-center">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight min-w-[160px] shrink-0">
-                  Flat Rate Paid to Guard
+                  Flat QC Rate Paid to Guard
                 </span>
                 <span className="text-slate-300 mx-3 shrink-0">:</span>
                 <div className="flex-1 flex items-center justify-between gap-4">
                   <span className="text-sm text-slate-800 font-medium">
-                    {formatPrice(shift.per_shift_rate)}
+                    {formatPrice(shift.qc_flat_rate)}
                   </span>
                   {renderEditIcon(
-                    "per_shift_rate",
-                    !!shift.action?.is_flat_rate_edit,
-                    isPerHourRateSet,
-                    "Clear Hourly Rate paid to guard first to edit Flat Rate"
+                    "qc_flat_rate",
+                    !!shift.action?.is_qc_flat_rate_edit
                   )}
                 </div>
               </div>
