@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { UserPlus, Paperclip, Loader2, Send, XCircle, Lock } from "lucide-react";
+import { UserPlus, Paperclip, Loader2, Send, XCircle, Lock, Users, User } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,8 +18,10 @@ interface ShiftCommentsTabProps {
   comments: Comment[];
   isCommentsLoading: boolean;
   commentsError: string | null;
-  onCommentSubmit: (text: string, type: "external" | "internal", file: File | null) => Promise<boolean>;
+  onCommentSubmit: (text: string, type: "external" | "internal", file: File | null, recipient?: string) => Promise<boolean>;
   setPreviewFile: (file: PreviewFile | null) => void;
+  hasLeadGuard?: boolean;
+  hasStandbyGuard?: boolean;
 }
 
 export function ShiftCommentsTab({
@@ -28,8 +30,11 @@ export function ShiftCommentsTab({
   commentsError,
   onCommentSubmit,
   setPreviewFile,
+  hasLeadGuard = false,
+  hasStandbyGuard = false,
 }: ShiftCommentsTabProps) {
   const [commentType, setCommentType] = useState<"external" | "internal">("external");
+  const [recipient, setRecipient] = useState<"lead" | "standby" | "both">(hasLeadGuard ? "lead" : "standby");
   const [commentText, setCommentText] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +43,7 @@ export function ShiftCommentsTab({
   const handleSubmit = async () => {
     if (!commentText.trim() && !attachedFile) return;
     setIsSubmitting(true);
-    const success = await onCommentSubmit(commentText, commentType, attachedFile);
+    const success = await onCommentSubmit(commentText, commentType, attachedFile, recipient);
     if (success) {
       setCommentText("");
       setAttachedFile(null);
@@ -48,7 +53,85 @@ export function ShiftCommentsTab({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between pb-2">
+      {(hasLeadGuard || hasStandbyGuard) && (
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight">Select Recipient</h3>
+          <div
+            className={cn(
+              "flex items-center p-1 bg-white rounded-xl border border-slate-200 relative",
+              !(hasLeadGuard && hasStandbyGuard) ? "w-fit" : "w-full"
+            )}
+          >
+            {hasLeadGuard && (
+              <button
+                type="button"
+                onClick={() => setRecipient("lead")}
+                className={cn(
+                  "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all cursor-pointer rounded-lg",
+                  hasLeadGuard && hasStandbyGuard ? "flex-1" : "px-8",
+                  recipient === "lead"
+                    ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
+                    : "text-slate-500 hover:text-slate-700 border border-transparent hover:bg-slate-50"
+                )}
+              >
+                <UserPlus className="w-[18px] h-[18px]" />
+                <span className="text-[13px]">Lead Guard</span>
+              </button>
+            )}
+            
+            {hasLeadGuard && hasStandbyGuard && (
+              recipient !== "lead" && recipient !== "standby" ? (
+                <div className="w-[1px] h-6 bg-slate-200 mx-0.5" />
+              ) : (
+                <div className="w-0 mx-0.5" />
+              )
+            )}
+
+            {hasStandbyGuard && (
+              <button
+                type="button"
+                onClick={() => setRecipient("standby")}
+                className={cn(
+                  "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all cursor-pointer rounded-lg",
+                  hasLeadGuard && hasStandbyGuard ? "flex-1" : "px-8",
+                  recipient === "standby"
+                    ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
+                    : "text-slate-500 hover:text-slate-700 border border-transparent hover:bg-slate-50"
+                )}
+              >
+                <User className="w-[18px] h-[18px]" />
+                <span className="text-[13px]">Standby Guard</span>
+              </button>
+            )}
+
+            {hasLeadGuard && hasStandbyGuard && (
+              recipient !== "standby" && recipient !== "both" ? (
+                <div className="w-[1px] h-6 bg-slate-200 mx-0.5" />
+              ) : (
+                <div className="w-0 mx-0.5" />
+              )
+            )}
+
+            {hasLeadGuard && hasStandbyGuard && (
+              <button
+                type="button"
+                onClick={() => setRecipient("both")}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all cursor-pointer rounded-lg",
+                  recipient === "both"
+                    ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
+                    : "text-slate-500 hover:text-slate-700 border border-transparent hover:bg-slate-50"
+                )}
+              >
+                <Users className="w-[18px] h-[18px]" />
+                <span className="text-[13px]">Both Guards</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pb-2 pt-2">
         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight">General comments</h3>
       </div>
 

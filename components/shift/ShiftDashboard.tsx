@@ -126,11 +126,13 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   }, [shiftId, loadShiftDetails]);
 
   useEffect(() => {
-    if (shift && shift.shift_id && shift.assigned_guard) {
-      const guardId =
-        typeof shift.assigned_guard === "object"
-          ? shift.assigned_guard.id || shift.assigned_guard.guard_id
-          : shift.assigned_guard;
+    if (shift && shift.shift_id) {
+      const guardId = shift.lead_guard?.guard_id || 
+        (shift.assigned_guard
+          ? (typeof shift.assigned_guard === "object"
+              ? shift.assigned_guard.id || shift.assigned_guard.guard_id
+              : shift.assigned_guard)
+          : null);
 
       if (guardId) {
         clientFetchGuardTrackingAction(guardId, shift.shift_id).then((res) => {
@@ -413,7 +415,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     }
   };
 
-  const handleCommentSubmit = async (text: string, type: "internal" | "external", file: File | null) => {
+  const handleCommentSubmit = async (text: string, type: "internal" | "external", file: File | null, recipient?: string) => {
     try {
       let attachFileUrl = null;
       if (file) {
@@ -441,11 +443,17 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         attachFileUrl = file_path;
       }
 
+      let guard_role = undefined;
+      if (recipient === "lead") guard_role = "lead_guard";
+      else if (recipient === "standby") guard_role = "standby_guard";
+      else if (recipient === "both") guard_role = "both";
+
       const res = await addCommentAction({
         shift_id: shiftId,
         type,
         user_message: text.trim() || null,
         attach_file_url: attachFileUrl,
+        guard_role,
       });
 
       if (res.success) {
@@ -591,9 +599,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
         onStartVideoCall={() => {
-          const guardId = typeof shift?.assigned_guard === 'object'
-            ? shift?.assigned_guard?.id || shift?.assigned_guard?.guard_id
-            : shift?.assigned_guard;
+          const guardId = shift?.lead_guard?.guard_id || 
+            (typeof shift?.assigned_guard === 'object'
+              ? shift?.assigned_guard?.id || shift?.assigned_guard?.guard_id
+              : shift?.assigned_guard);
 
           if (!guardId) {
             toast.error("No guard assigned to this shift yet.");
@@ -678,6 +687,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 setPreviewFile={setPreviewFile}
                 securityServiceId={shift?.security_service_id}
                 isLoading={isLoading}
+                hasLeadGuard={!!(shift?.lead_guard && Object.keys(shift.lead_guard).length > 0)}
+                hasStandbyGuard={!!(shift?.standby_guard && Object.keys(shift.standby_guard).length > 0)}
               />
             </div>
           </div>
@@ -707,6 +718,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               setPreviewFile={setPreviewFile}
               securityServiceId={shift?.security_service_id}
               isLoading={isLoading}
+              hasLeadGuard={!!(shift?.lead_guard && Object.keys(shift.lead_guard).length > 0)}
+              hasStandbyGuard={!!(shift?.standby_guard && Object.keys(shift.standby_guard).length > 0)}
             />
 
             {!isLoading && shift && (

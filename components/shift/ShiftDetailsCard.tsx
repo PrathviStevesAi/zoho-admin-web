@@ -1,7 +1,8 @@
+import type { ReactNode } from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Edit2, Loader2, XCircle } from "lucide-react";
+import { Edit2, Loader2, XCircle, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,39 @@ import {
   formatStatus,
   formatDateTime
 } from "./utils";
+
+function SectionBlock({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="border-t border-slate-100">
+      <div className="px-5 py-3">
+        <span className="text-[11px] font-bold text-[#0064cb] uppercase tracking-widest">
+          {title}
+        </span>
+      </div>
+      <div className="divide-y divide-slate-100">{children}</div>
+    </div>
+  );
+}
+
+function SectionRow({
+  label,
+  alignTop,
+  children,
+}: {
+  label: string;
+  alignTop?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn("flex px-5 py-2.5", alignTop ? "items-start" : "items-center")}>
+      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight min-w-[160px] shrink-0">
+        {label}
+      </span>
+      <span className="text-slate-300 mx-3 shrink-0">:</span>
+      <div className="flex-1 min-w-0">{children}</div>
+    </div>
+  );
+}
 
 interface ShiftDetailsCardProps {
   shift: Shift | null;
@@ -47,8 +81,14 @@ export function ShiftDetailsCard({
     | null;
   const [editingField, setEditingField] = useState<EditingField>(null);
 
-  const isPerHourRateSet = shift?.per_hour_rate !== null && shift?.per_hour_rate !== undefined && Number(shift.per_hour_rate) > 0;
-  const isPerShiftRateSet = shift?.per_shift_rate !== null && shift?.per_shift_rate !== undefined && Number(shift.per_shift_rate) > 0;
+  const isPerHourRateSet =
+    shift?.per_hour_rate !== null &&
+    shift?.per_hour_rate !== undefined &&
+    Number(shift.per_hour_rate) > 0;
+  const isPerShiftRateSet =
+    shift?.per_shift_rate !== null &&
+    shift?.per_shift_rate !== undefined &&
+    Number(shift.per_shift_rate) > 0;
 
   const formatPrice = (val: any) => {
     if (val === null || val === undefined || val === "") return "----";
@@ -72,10 +112,10 @@ export function ShiftDetailsCard({
   useEffect(() => {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
     setMinDateTime(`${year}-${month}-${day}T${hours}:${minutes}`);
   }, []);
 
@@ -85,11 +125,24 @@ export function ShiftDetailsCard({
         shift_description: shift.shift_description || "",
         shift_start_time: toLocalDateTimeString(shift.scheduled_for?.shift_start_time || ""),
         shift_end_time: toLocalDateTimeString(shift.scheduled_for?.shift_end_time || ""),
-        guard_shift_started_at: toLocalDateTimeString(shift.execution_time?.guard_shift_started_at || ""),
-        guard_shift_ended_at: toLocalDateTimeString(shift.execution_time?.guard_shift_ended_at || ""),
-        per_hour_rate: shift.per_hour_rate !== null && shift.per_hour_rate !== undefined ? String(shift.per_hour_rate) : "",
-        per_shift_rate: shift.per_shift_rate !== null && shift.per_shift_rate !== undefined ? String(shift.per_shift_rate) : "",
-        travel_fee: shift.travel_fee !== null && shift.travel_fee !== undefined ? String(shift.travel_fee) : "",
+        guard_shift_started_at: toLocalDateTimeString(
+          shift.execution_time?.guard_shift_started_at || ""
+        ),
+        guard_shift_ended_at: toLocalDateTimeString(
+          shift.execution_time?.guard_shift_ended_at || ""
+        ),
+        per_hour_rate:
+          shift.per_hour_rate !== null && shift.per_hour_rate !== undefined
+            ? String(shift.per_hour_rate)
+            : "",
+        per_shift_rate:
+          shift.per_shift_rate !== null && shift.per_shift_rate !== undefined
+            ? String(shift.per_shift_rate)
+            : "",
+        travel_fee:
+          shift.travel_fee !== null && shift.travel_fee !== undefined
+            ? String(shift.travel_fee)
+            : "",
       });
     }
   }, [shift]);
@@ -107,7 +160,10 @@ export function ShiftDetailsCard({
         </div>
         <div className="space-y-4 pt-2">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="grid grid-cols-4 py-2 border-b border-slate-55 last:border-none items-center gap-4">
+            <div
+              key={i}
+              className="grid grid-cols-4 py-2 border-b border-slate-55 last:border-none items-center gap-4"
+            >
               <div className="h-3.5 bg-slate-200 rounded w-24" />
               <div className="col-span-3 h-4 bg-slate-100/80 rounded w-1/2" />
             </div>
@@ -122,7 +178,9 @@ export function ShiftDetailsCard({
       <Card className="border-slate-200 shadow-sm rounded-xl bg-white p-10 text-center">
         <XCircle className="w-12 h-12 text-red-200 mx-auto mb-4" />
         <p className="text-sm font-bold text-slate-600 mb-1">{error || "No shift data found"}</p>
-        <p className="text-xs text-slate-700 font-medium">The shift may have been deleted or the ID is invalid.</p>
+        <p className="text-xs text-slate-700 font-medium">
+          The shift may have been deleted or the ID is invalid.
+        </p>
         <Button
           variant="outline"
           className="cursor-pointer mt-6 h-9 rounded-xl text-xs font-bold text-[#0064cb] border-blue-100 hover:bg-blue-50"
@@ -146,8 +204,12 @@ export function ShiftDetailsCard({
         }
         break;
       case "scheduled_for":
-        const initialScheduledStart = toLocalDateTimeString(shift.scheduled_for?.shift_start_time || "");
-        const initialScheduledEnd = toLocalDateTimeString(shift.scheduled_for?.shift_end_time || "");
+        const initialScheduledStart = toLocalDateTimeString(
+          shift.scheduled_for?.shift_start_time || ""
+        );
+        const initialScheduledEnd = toLocalDateTimeString(
+          shift.scheduled_for?.shift_end_time || ""
+        );
         if (
           editDetailsForm.shift_start_time !== initialScheduledStart ||
           editDetailsForm.shift_end_time !== initialScheduledEnd
@@ -155,14 +217,18 @@ export function ShiftDetailsCard({
           const tz = shift.shipping_location?.timezone;
           payload.shift_time = {
             start_time: toUTCISO(editDetailsForm.shift_start_time, tz),
-            end_time: toUTCISO(editDetailsForm.shift_end_time, tz)
+            end_time: toUTCISO(editDetailsForm.shift_end_time, tz),
           };
           dirty = true;
         }
         break;
       case "execution_time":
-        const initialExecStart = toLocalDateTimeString(shift.execution_time?.guard_shift_started_at || "");
-        const initialExecEnd = toLocalDateTimeString(shift.execution_time?.guard_shift_ended_at || "");
+        const initialExecStart = toLocalDateTimeString(
+          shift.execution_time?.guard_shift_started_at || ""
+        );
+        const initialExecEnd = toLocalDateTimeString(
+          shift.execution_time?.guard_shift_ended_at || ""
+        );
         if (
           editDetailsForm.guard_shift_started_at !== initialExecStart ||
           editDetailsForm.guard_shift_ended_at !== initialExecEnd
@@ -173,15 +239,19 @@ export function ShiftDetailsCard({
             guard_shift_ended_at: toUTCISO(editDetailsForm.guard_shift_ended_at, tz),
             start_time: toUTCISO(editDetailsForm.guard_shift_started_at, tz),
             end_time: toUTCISO(editDetailsForm.guard_shift_ended_at, tz),
-            total_break_duration_min: shift.execution_time?.total_break_duration_min ?? 0
+            total_break_duration_min: shift.execution_time?.total_break_duration_min ?? 0,
           };
           dirty = true;
         }
         break;
       case "per_hour_rate":
-        const initialPerHourRate = shift.per_hour_rate !== null && shift.per_hour_rate !== undefined ? String(shift.per_hour_rate) : "";
+        const initialPerHourRate =
+          shift.per_hour_rate !== null && shift.per_hour_rate !== undefined
+            ? String(shift.per_hour_rate)
+            : "";
         if (editDetailsForm.per_hour_rate !== initialPerHourRate) {
-          const newRate = editDetailsForm.per_hour_rate === "" ? 0 : Number(editDetailsForm.per_hour_rate);
+          const newRate =
+            editDetailsForm.per_hour_rate === "" ? 0 : Number(editDetailsForm.per_hour_rate);
           payload.per_hour_rate = newRate;
           if (newRate > 0) {
             payload.per_shift_rate = 0;
@@ -190,9 +260,13 @@ export function ShiftDetailsCard({
         }
         break;
       case "per_shift_rate":
-        const initialPerShiftRate = shift.per_shift_rate !== null && shift.per_shift_rate !== undefined ? String(shift.per_shift_rate) : "";
+        const initialPerShiftRate =
+          shift.per_shift_rate !== null && shift.per_shift_rate !== undefined
+            ? String(shift.per_shift_rate)
+            : "";
         if (editDetailsForm.per_shift_rate !== initialPerShiftRate) {
-          const newRate = editDetailsForm.per_shift_rate === "" ? 0 : Number(editDetailsForm.per_shift_rate);
+          const newRate =
+            editDetailsForm.per_shift_rate === "" ? 0 : Number(editDetailsForm.per_shift_rate);
           payload.per_shift_rate = newRate;
           if (newRate > 0) {
             payload.per_hour_rate = 0;
@@ -201,9 +275,13 @@ export function ShiftDetailsCard({
         }
         break;
       case "travel_fee":
-        const initialTravelFee = shift.travel_fee !== null && shift.travel_fee !== undefined ? String(shift.travel_fee) : "";
+        const initialTravelFee =
+          shift.travel_fee !== null && shift.travel_fee !== undefined
+            ? String(shift.travel_fee)
+            : "";
         if (editDetailsForm.travel_fee !== initialTravelFee) {
-          payload.travel_fee = editDetailsForm.travel_fee === "" ? 0 : Number(editDetailsForm.travel_fee);
+          payload.travel_fee =
+            editDetailsForm.travel_fee === "" ? 0 : Number(editDetailsForm.travel_fee);
           dirty = true;
         }
         break;
@@ -219,7 +297,10 @@ export function ShiftDetailsCard({
     setEditingField(null);
   };
 
-  const renderEditButtons = (field: Exclude<EditingField, null>, onCancel: () => void) => {
+  const renderEditButtons = (
+    field: Exclude<EditingField, null>,
+    onCancel: () => void
+  ) => {
     return (
       <div className="flex items-center gap-2 mt-2 self-end">
         <Button
@@ -240,14 +321,24 @@ export function ShiftDetailsCard({
     );
   };
 
-  const renderEditIcon = (field: Exclude<EditingField, null>, isAllowed: boolean, isDisabled?: boolean, disabledTooltip?: string) => {
+  const renderEditIcon = (
+    field: Exclude<EditingField, null>,
+    isAllowed: boolean,
+    isDisabled?: boolean,
+    disabledTooltip?: string
+  ) => {
     const isEffectivelyDisabled = !isAllowed || isDisabled;
     const tooltipText = !isAllowed
       ? "Once a shift is execute, its details cannot be updated."
-      : (isDisabled ? disabledTooltip : `Edit ${field.replace("_", " ")}`);
+      : isDisabled
+        ? disabledTooltip
+        : `Edit ${field.replace("_", " ")}`;
 
     return (
-      <div title={tooltipText} className={cn("inline-block ml-2", isEffectivelyDisabled && "cursor-not-allowed")}>
+      <div
+        title={tooltipText}
+        className={cn("inline-block ml-2", isEffectivelyDisabled && "cursor-not-allowed")}
+      >
         <Button
           variant="outline"
           size="icon"
@@ -266,10 +357,16 @@ export function ShiftDetailsCard({
     );
   };
 
+  const leadGuard = shift.lead_guard;
+  const standbyGuard = shift.standby_guard;
+
+  const hasLeadGuard = leadGuard && Object.keys(leadGuard).length > 0;
+  const hasStandbyGuard = standbyGuard && Object.keys(standbyGuard).length > 0;
+
   return (
     <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white">
       <CardContent className="p-0">
-        <div className="p-6 space-y-4">
+        <div className="p-5 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xl font-bold text-slate-700">#SH-{shift.shift_no}</span>
             <Button
@@ -280,7 +377,11 @@ export function ShiftDetailsCard({
                   setIsEditLocationOpen(true);
                 }
               }}
-              title={isAddressEditable ? "Edit location" : "Location editing is only allowed for: Created, Planned, Accepted, Refused statuses"}
+              title={
+                isAddressEditable
+                  ? "Edit location"
+                  : "Location editing is only allowed for: Created, Planned, Accepted, Refused statuses"
+              }
               className={cn(
                 "h-8 rounded-lg font-bold text-[10px] flex gap-1.5 px-3 transition-all active:scale-95",
                 isAddressEditable
@@ -294,352 +395,566 @@ export function ShiftDetailsCard({
           </div>
 
           {shift.shipping_location?.location && (
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <p className="text-slate-600 font-bold text-sm">
-                Location - <span className="text-[#0064cb] cursor-pointer hover:underline">
+                Location -{" "}
+                <span className="text-[#0064cb] cursor-pointer hover:underline">
                   {[
                     shift.shipping_location.location.street,
                     shift.shipping_location.location.city,
                     shift.shipping_location.location.state,
                     shift.shipping_location.location.country,
                     shift.shipping_location.location.zip,
-                  ].filter(Boolean).join(", ")}
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
                 </span>
               </p>
               {shift.shipping_location.timezone && (
-                <p className="text-slate-600 font-bold text-md">
-                  Timezone: <span className="text-slate-800 font-medium">{shift.shipping_location.timezone}</span>
+                <p className="text-slate-600 font-bold text-sm">
+                  Timezone:{" "}
+                  <span className="text-slate-800 font-medium">
+                    {shift.shipping_location.timezone}
+                  </span>
                 </p>
               )}
             </div>
           )}
         </div>
 
-        <div className="border-t border-slate-100 divide-y divide-slate-100">
-          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">CUSTOMER NAME:</span>
-            <div className="w-full md:col-span-3 text-sm font-medium">
-              {shift.customer_id ? (
-                <Link href={`/users-directory/customers/${shift.customer_id}`} className="text-[#0064cb] hover:underline">
-                  {shift.customer_name}
-                </Link>
-              ) : (
-                <span className="text-slate-800">{shift.customer_name}</span>
-              )}
-            </div>
-          </div>
+        <SectionBlock title="Invoice Information">
+          {/* Customer Name */}
+          <SectionRow label="Customer Name">
+            {shift.customer_id ? (
+              <Link
+                href={`/users-directory/customers/${shift.customer_id}`}
+                className="text-[#0064cb] hover:underline text-sm font-medium"
+              >
+                {shift.customer_name}
+              </Link>
+            ) : (
+              <span className="text-sm text-slate-800 font-medium">{shift.customer_name}</span>
+            )}
+          </SectionRow>
 
+          {/* Invoice No */}
           {shift.invoice_no && (
-            <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">INVOICE NO:</span>
-              <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium">{shift.invoice_no}</div>
-            </div>
+            <SectionRow label="Invoice No.">
+              <span className="text-sm text-slate-800 font-medium">{shift.invoice_no}</span>
+            </SectionRow>
           )}
 
+          {/* Invoice Details */}
           {shift.invoice_description && (
-            <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start gap-2 md:gap-0">
-              <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">INVOICE DETAILS:</span>
-              <div className="w-full md:col-span-3 text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+            <SectionRow label="Invoice Details" alignTop>
+              <span className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
                 {shift.invoice_description}
-              </div>
-            </div>
+              </span>
+            </SectionRow>
           )}
 
-          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight pt-1">SHIFT DETAILS:</span>
-            <div className="w-full md:col-span-3">
-              {editingField === "shift_description" ? (
-                <div className="w-full flex flex-col gap-2">
-                  <textarea
-                    rows={4}
-                    value={editDetailsForm.shift_description}
-                    onChange={(e) => setEditDetailsForm(prev => ({ ...prev, shift_description: e.target.value }))}
-                    placeholder="Enter shift details..."
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[100px] resize-none text-slate-800"
-                  />
-                  {renderEditButtons("shift_description", () => {
-                    setEditDetailsForm(prev => ({ ...prev, shift_description: shift.shift_description || "" }));
-                    setEditingField(null);
-                  })}
-                </div>
-              ) : (
-                <div className="flex items-start justify-between gap-4">
+          {/* Shift Details — editable */}
+          <div className="px-5 py-2.5">
+            {editingField === "shift_description" ? (
+              <div className="w-full flex flex-col gap-2">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                  Shift Details
+                </Label>
+                <textarea
+                  rows={4}
+                  value={editDetailsForm.shift_description}
+                  onChange={(e) =>
+                    setEditDetailsForm((prev) => ({
+                      ...prev,
+                      shift_description: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter shift details..."
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0064cb]/5 focus-visible:border-[#0064cb] transition-all min-h-[100px] resize-none text-slate-800"
+                />
+                {renderEditButtons("shift_description", () => {
+                  setEditDetailsForm((prev) => ({
+                    ...prev,
+                    shift_description: shift.shift_description || "",
+                  }));
+                  setEditingField(null);
+                })}
+              </div>
+            ) : (
+              <div className="flex items-start">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight min-w-[160px] shrink-0 pt-0.5">
+                  Shift Details
+                </span>
+                <span className="text-slate-300 mx-3 shrink-0 pt-0.5">:</span>
+                <div className="flex-1 flex items-start justify-between gap-4 min-w-0">
                   <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
                     {shift.shift_description || "No shift details provided."}
                   </div>
                   {renderEditIcon("shift_description", !!shift.action?.is_shift_details_edit)}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
+        </SectionBlock>
 
-          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">ASSIGNED GUARD:</span>
-            <div className="w-full md:col-span-3 text-sm font-medium">
-              {(() => {
-                if (!shift.assigned_guard) {
-                  return <span className="text-slate-800">No guard assigned</span>;
-                }
-                const guard = shift.assigned_guard;
-                const isObject = typeof guard === 'object' && guard !== null;
-                const guardId = isObject ? ((guard as any).guard_id || (guard as any).id) : null;
-                const applicationId = isObject ? (guard as any).application_id : null;
-                const guardName = isObject
-                  ? (`${(guard as any).first_name || ""} ${(guard as any).last_name || ""}`.trim() || (guard as any).name || "Unknown Guard")
-                  : (guard as string);
-
-                if (guardId) {
-                  const redirectId = applicationId || guardId;
-                  return (
-                    <Link href={`/guard-bank/${redirectId}`} className="text-[#0064cb] hover:underline">
-                      {guardName}
-                    </Link>
-                  );
-                }
-                return <span className="text-slate-800">{guardName}</span>;
-              })()}
-            </div>
-          </div>
-
-          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">STATUS:</span>
-            <div className="w-full md:col-span-3">
-              <span className={cn(
-                "text-[10px] font-bold px-2.5 py-1 rounded-full border",
-                getStatusColor(shift.status)
-              )}>
-                {formatStatus(shift.status)}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">SCHEDULED FOR:</span>
-            <div className="w-full md:col-span-3">
-              {editingField === "scheduled_for" ? (
-                <div className="w-full flex flex-col gap-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-700 uppercase">Start Time</Label>
-                      <Input
-                        type="datetime-local"
-                        min={minDateTime}
-                        value={editDetailsForm.shift_start_time}
-                        onChange={(e) => setEditDetailsForm(prev => ({ ...prev, shift_start_time: e.target.value }))}
-                        className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-700 uppercase">End Time</Label>
-                      <Input
-                        type="datetime-local"
-                        min={editDetailsForm.shift_start_time || minDateTime}
-                        value={editDetailsForm.shift_end_time}
-                        onChange={(e) => setEditDetailsForm(prev => ({ ...prev, shift_end_time: e.target.value }))}
-                        className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-                      />
-                    </div>
+        <SectionBlock title="Shift Time">
+          {/* Scheduled For — editable */}
+          <div className="px-5 py-2.5">
+            {editingField === "scheduled_for" ? (
+              <div className="w-full flex flex-col gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-slate-700 uppercase">
+                      Start Time
+                    </Label>
+                    <Input
+                      type="datetime-local"
+                      min={minDateTime}
+                      value={editDetailsForm.shift_start_time}
+                      onChange={(e) =>
+                        setEditDetailsForm((prev) => ({
+                          ...prev,
+                          shift_start_time: e.target.value,
+                        }))
+                      }
+                      className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                    />
                   </div>
-                  {renderEditButtons("scheduled_for", () => {
-                    setEditDetailsForm(prev => ({
-                      ...prev,
-                      shift_start_time: toLocalDateTimeString(shift.scheduled_for?.shift_start_time || ""),
-                      shift_end_time: toLocalDateTimeString(shift.scheduled_for?.shift_end_time || ""),
-                    }));
-                    setEditingField(null);
-                  })}
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-slate-700 uppercase">
+                      End Time
+                    </Label>
+                    <Input
+                      type="datetime-local"
+                      min={editDetailsForm.shift_start_time || minDateTime}
+                      value={editDetailsForm.shift_end_time}
+                      onChange={(e) =>
+                        setEditDetailsForm((prev) => ({
+                          ...prev,
+                          shift_end_time: e.target.value,
+                        }))
+                      }
+                      className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                    />
+                  </div>
                 </div>
-              ) : (
-                <div className="flex items-center justify-between gap-4">
+                {renderEditButtons("scheduled_for", () => {
+                  setEditDetailsForm((prev) => ({
+                    ...prev,
+                    shift_start_time: toLocalDateTimeString(
+                      shift.scheduled_for?.shift_start_time || ""
+                    ),
+                    shift_end_time: toLocalDateTimeString(
+                      shift.scheduled_for?.shift_end_time || ""
+                    ),
+                  }));
+                  setEditingField(null);
+                })}
+              </div>
+            ) : (
+              <div className="flex items-start">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight min-w-[160px] shrink-0">
+                  Scheduled For
+                </span>
+                <span className="text-slate-300 mx-3 shrink-0">:</span>
+                <div className="flex-1 flex items-start justify-between gap-4 min-w-0">
                   <div className="flex flex-col gap-1">
                     {shift.scheduled_for?.shift_start_time && (
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-700 uppercase font-bold w-12">Start:</span>
-                        <span className="text-sm text-slate-800 font-medium">{formatDateTime(shift.scheduled_for.shift_start_time)}</span>
+                        <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
+                          Start:
+                        </span>
+                        <span className="text-sm text-slate-800 font-medium">
+                          {formatDateTime(shift.scheduled_for.shift_start_time)}
+                        </span>
                       </div>
                     )}
                     {shift.scheduled_for?.shift_end_time && (
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-700 uppercase font-bold w-12">End:</span>
-                        <span className="text-sm text-slate-800 font-medium">{formatDateTime(shift.scheduled_for.shift_end_time)}</span>
+                        <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
+                          End:
+                        </span>
+                        <span className="text-sm text-slate-800 font-medium">
+                          {formatDateTime(shift.scheduled_for.shift_end_time)}
+                        </span>
                       </div>
                     )}
-                    {!shift.scheduled_for?.shift_start_time && !shift.scheduled_for?.shift_end_time && (
-                      <span className="text-sm text-slate-700 font-medium">N/A</span>
-                    )}
+                    {!shift.scheduled_for?.shift_start_time &&
+                      !shift.scheduled_for?.shift_end_time && (
+                        <span className="text-sm text-slate-700 font-medium">N/A</span>
+                      )}
                   </div>
                   {renderEditIcon("scheduled_for", !!shift.action?.is_schedule_for_edit)}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">EXECUTION TIME:</span>
-            <div className="w-full md:col-span-3">
-              {editingField === "execution_time" ? (
-                <div className="w-full flex flex-col gap-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-700 uppercase">Actual Start Time</Label>
-                      <Input
-                        type="datetime-local"
-                        min={minDateTime}
-                        value={editDetailsForm.guard_shift_started_at}
-                        onChange={(e) => setEditDetailsForm(prev => ({ ...prev, guard_shift_started_at: e.target.value }))}
-                        className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-700 uppercase">Actual End Time</Label>
-                      <Input
-                        type="datetime-local"
-                        min={editDetailsForm.guard_shift_started_at || minDateTime}
-                        value={editDetailsForm.guard_shift_ended_at}
-                        onChange={(e) => setEditDetailsForm(prev => ({ ...prev, guard_shift_ended_at: e.target.value }))}
-                        className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-                      />
-                    </div>
-                  </div>
-                  {renderEditButtons("execution_time", () => {
-                    setEditDetailsForm(prev => ({
-                      ...prev,
-                      guard_shift_started_at: toLocalDateTimeString(shift.execution_time?.guard_shift_started_at || ""),
-                      guard_shift_ended_at: toLocalDateTimeString(shift.execution_time?.guard_shift_ended_at || ""),
-                    }));
-                    setEditingField(null);
-                  })}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-1">
-                    {shift.execution_time?.guard_shift_started_at && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-700 uppercase font-bold w-12">Start:</span>
-                        <span className="text-sm text-slate-800 font-medium">{formatDateTime(shift.execution_time.guard_shift_started_at)}</span>
-                      </div>
+        </SectionBlock>
+
+        <SectionBlock title="Lead Guard">
+          {hasLeadGuard && leadGuard ? (
+            <>
+              <SectionRow label="Guard Name">
+                {leadGuard.application_id || leadGuard.guard_id ? (
+                  <Link
+                    href={`/guard-bank/${leadGuard.application_id || leadGuard.guard_id}`}
+                    className="text-[#0064cb] hover:underline text-sm font-medium"
+                  >
+                    {`${leadGuard.first_name || ""} ${leadGuard.last_name || ""}`.trim() ||
+                      "Unknown Guard"}
+                  </Link>
+                ) : (
+                  <span className="text-sm text-slate-800 font-medium">
+                    {`${leadGuard.first_name || ""} ${leadGuard.last_name || ""}`.trim() ||
+                      "Unknown Guard"}
+                  </span>
+                )}
+              </SectionRow>
+
+              {leadGuard.phone_no && (
+                <SectionRow label="Phone No.">
+                  <span className="text-sm text-slate-800 font-medium">
+                    {leadGuard.phone_no}
+                  </span>
+                </SectionRow>
+              )}
+
+              {leadGuard.shift_status && (
+                <SectionRow label="Status">
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold px-2.5 py-1 rounded-full border",
+                      getStatusColor(leadGuard.shift_status)
                     )}
-                    {shift.execution_time?.guard_shift_ended_at && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-700 uppercase font-bold w-12">End:</span>
-                        <span className="text-sm text-slate-800 font-medium">{formatDateTime(shift.execution_time.guard_shift_ended_at)}</span>
+                  >
+                    {formatStatus(leadGuard.shift_status)}
+                  </span>
+                </SectionRow>
+              )}
+
+              {(!!shift.execution_time?.guard_shift_started_at ||
+                !!shift.execution_time?.guard_shift_ended_at ||
+                !!shift.action?.is_execution_time_edit ||
+                editingField === "execution_time") && (
+                  <div className="px-5 py-2.5">
+                    {editingField === "execution_time" ? (
+                      <div className="w-full flex flex-col gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-slate-700 uppercase">
+                              Actual Start Time
+                            </Label>
+                            <Input
+                              type="datetime-local"
+                              min={minDateTime}
+                              value={editDetailsForm.guard_shift_started_at}
+                              onChange={(e) =>
+                                setEditDetailsForm((prev) => ({
+                                  ...prev,
+                                  guard_shift_started_at: e.target.value,
+                                }))
+                              }
+                              className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-slate-700 uppercase">
+                              Actual End Time
+                            </Label>
+                            <Input
+                              type="datetime-local"
+                              min={editDetailsForm.guard_shift_started_at || minDateTime}
+                              value={editDetailsForm.guard_shift_ended_at}
+                              onChange={(e) =>
+                                setEditDetailsForm((prev) => ({
+                                  ...prev,
+                                  guard_shift_ended_at: e.target.value,
+                                }))
+                              }
+                              className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                            />
+                          </div>
+                        </div>
+                        {renderEditButtons("execution_time", () => {
+                          setEditDetailsForm((prev) => ({
+                            ...prev,
+                            guard_shift_started_at: toLocalDateTimeString(
+                              shift.execution_time?.guard_shift_started_at || ""
+                            ),
+                            guard_shift_ended_at: toLocalDateTimeString(
+                              shift.execution_time?.guard_shift_ended_at || ""
+                            ),
+                          }));
+                          setEditingField(null);
+                        })}
                       </div>
-                    )}
-                    {shift.execution_time?.total_break_duration_min && shift.execution_time.total_break_duration_min > 0 ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-700 uppercase font-bold w-12">Break:</span>
-                        <span className="text-sm text-slate-800 font-medium">
-                          {(() => {
-                            const mins = shift.execution_time.total_break_duration_min;
-                            if (mins < 60) {
-                              return `${mins} min`;
-                            }
-                            const hrs = mins / 60;
-                            return mins % 60 === 0 ? `${hrs.toFixed(1)} hr` : `${hrs.toFixed(2)} hr`;
-                          })()}
+                    ) : (
+                      <div className="flex items-start">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight min-w-[160px] shrink-0">
+                          Shift Execute Time
                         </span>
+                        <span className="text-slate-300 mx-3 shrink-0">:</span>
+                        <div className="flex-1 flex items-start justify-between gap-4 min-w-0">
+                          <div className="flex flex-col gap-1">
+                            {shift.execution_time?.guard_shift_started_at && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
+                                  Start:
+                                </span>
+                                <span className="text-sm text-slate-800 font-medium">
+                                  {formatDateTime(shift.execution_time.guard_shift_started_at)}
+                                </span>
+                              </div>
+                            )}
+                            {shift.execution_time?.guard_shift_ended_at && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
+                                  End:
+                                </span>
+                                <span className="text-sm text-slate-800 font-medium">
+                                  {formatDateTime(shift.execution_time.guard_shift_ended_at)}
+                                </span>
+                              </div>
+                            )}
+                            {shift.execution_time?.total_break_duration_min &&
+                              shift.execution_time.total_break_duration_min > 0 ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
+                                  Break:
+                                </span>
+                                <span className="text-sm text-slate-800 font-medium">
+                                  {(() => {
+                                    const mins = shift.execution_time.total_break_duration_min;
+                                    if (mins < 60) return `${mins} min`;
+                                    const hrs = mins / 60;
+                                    return mins % 60 === 0
+                                      ? `${hrs.toFixed(1)} hr`
+                                      : `${hrs.toFixed(2)} hr`;
+                                  })()}
+                                </span>
+                              </div>
+                            ) : null}
+                            {!shift.execution_time?.guard_shift_started_at &&
+                              !shift.execution_time?.guard_shift_ended_at && (
+                                <span className="text-sm text-slate-700 font-medium">N/A</span>
+                              )}
+                          </div>
+                          {renderEditIcon("execution_time", !!shift.action?.is_execution_time_edit)}
+                        </div>
                       </div>
-                    ) : null}
-                    {!shift.execution_time?.guard_shift_started_at && !shift.execution_time?.guard_shift_ended_at && (
-                      <span className="text-sm text-slate-700 font-medium">N/A</span>
                     )}
                   </div>
-                  {renderEditIcon("execution_time", !!shift.action?.is_execution_time_edit)}
-                </div>
-              )}
+                )}
+            </>
+          ) : (
+            <div className="mx-5 my-4 bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full border border-amber-200 flex items-center justify-center bg-white shrink-0">
+                <User className="w-5 h-5 text-amber-500" />
+              </div>
+              <span className="text-sm font-bold text-slate-800">
+                No lead guard assigned yet.
+              </span>
             </div>
-          </div>
+          )}
+        </SectionBlock>
 
-          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Hourly rate paid to guard:</span>
-            <div className="w-full md:col-span-3">
-              {editingField === "per_hour_rate" ? (
-                <div className="w-full flex flex-col gap-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={editDetailsForm.per_hour_rate}
-                    onChange={(e) => setEditDetailsForm(prev => ({ ...prev, per_hour_rate: e.target.value }))}
-                    className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-                  />
-                  {renderEditButtons("per_hour_rate", () => {
-                    setEditDetailsForm(prev => ({ ...prev, per_hour_rate: shift.per_hour_rate !== null && shift.per_hour_rate !== undefined ? String(shift.per_hour_rate) : "" }));
-                    setEditingField(null);
-                  })}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-4">
+        <SectionBlock title="Standby Guard">
+          {hasStandbyGuard && standbyGuard ? (
+            <>
+              <SectionRow label="Guard Name">
+                {standbyGuard.application_id || standbyGuard.guard_id ? (
+                  <Link
+                    href={`/guard-bank/${standbyGuard.application_id || standbyGuard.guard_id}`}
+                    className="text-[#0064cb] hover:underline text-sm font-medium"
+                  >
+                    {`${standbyGuard.first_name || ""} ${standbyGuard.last_name || ""}`.trim() ||
+                      "Unknown Guard"}
+                  </Link>
+                ) : (
                   <span className="text-sm text-slate-800 font-medium">
-                    {shift ? formatPrice(shift.per_hour_rate) : "----"}
+                    {`${standbyGuard.first_name || ""} ${standbyGuard.last_name || ""}`.trim() ||
+                      "Unknown Guard"}
                   </span>
-                  {renderEditIcon("per_hour_rate", !!shift.action?.is_hourly_rate_edit, isPerShiftRateSet, "Clear Flat Rate paid to guard first to edit Hourly Rate")}
-                </div>
-              )}
-            </div>
-          </div>
+                )}
+              </SectionRow>
 
-          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Flat rate paid to guard:</span>
-            <div className="w-full md:col-span-3">
-              {editingField === "per_shift_rate" ? (
-                <div className="w-full flex flex-col gap-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={editDetailsForm.per_shift_rate}
-                    onChange={(e) => setEditDetailsForm(prev => ({ ...prev, per_shift_rate: e.target.value }))}
-                    className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-                  />
-                  {renderEditButtons("per_shift_rate", () => {
-                    setEditDetailsForm(prev => ({ ...prev, per_shift_rate: shift.per_shift_rate !== null && shift.per_shift_rate !== undefined ? String(shift.per_shift_rate) : "" }));
-                    setEditingField(null);
-                  })}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-4">
+              {standbyGuard.phone_no && (
+                <SectionRow label="Phone No.">
                   <span className="text-sm text-slate-800 font-medium">
-                    {shift ? formatPrice(shift.per_shift_rate) : "----"}
+                    {standbyGuard.phone_no}
                   </span>
-                  {renderEditIcon("per_shift_rate", !!shift.action?.is_flat_rate_edit, isPerHourRateSet, "Clear Hourly Rate paid to guard first to edit Flat Rate")}
-                </div>
+                </SectionRow>
               )}
+
+              {standbyGuard.shift_status && (
+                <SectionRow label="Status">
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold px-2.5 py-1 rounded-full border",
+                      getStatusColor(standbyGuard.shift_status)
+                    )}
+                  >
+                    {formatStatus(standbyGuard.shift_status)}
+                  </span>
+                </SectionRow>
+              )}
+            </>
+          ) : (
+            <div className="mx-5 my-4 bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full border border-amber-200 flex items-center justify-center bg-white shrink-0">
+                <User className="w-5 h-5 text-amber-500" />
+              </div>
+              <span className="text-sm font-bold text-slate-800">
+                No standby guard assigned yet.
+              </span>
             </div>
+          )}
+        </SectionBlock>
+
+        <SectionBlock title="Expenses">
+          <div className="px-5 py-2.5">
+            {editingField === "per_hour_rate" ? (
+              <div className="w-full flex flex-col gap-2">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                  Hourly Rate Paid to Guard
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={editDetailsForm.per_hour_rate}
+                  onChange={(e) =>
+                    setEditDetailsForm((prev) => ({ ...prev, per_hour_rate: e.target.value }))
+                  }
+                  className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                />
+                {renderEditButtons("per_hour_rate", () => {
+                  setEditDetailsForm((prev) => ({
+                    ...prev,
+                    per_hour_rate:
+                      shift.per_hour_rate !== null && shift.per_hour_rate !== undefined
+                        ? String(shift.per_hour_rate)
+                        : "",
+                  }));
+                  setEditingField(null);
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight min-w-[160px] shrink-0">
+                  Hourly Rate Paid to Guard
+                </span>
+                <span className="text-slate-300 mx-3 shrink-0">:</span>
+                <div className="flex-1 flex items-center justify-between gap-4">
+                  <span className="text-sm text-slate-800 font-medium">
+                    {formatPrice(shift.per_hour_rate)}
+                  </span>
+                  {renderEditIcon(
+                    "per_hour_rate",
+                    !!shift.action?.is_hourly_rate_edit,
+                    isPerShiftRateSet,
+                    "Clear Flat Rate paid to guard first to edit Hourly Rate"
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-col md:grid md:grid-cols-4 p-4 items-start md:items-center gap-2 md:gap-0">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Travel Fees:</span>
-            <div className="w-full md:col-span-3">
-              {editingField === "travel_fee" ? (
-                <div className="w-full flex flex-col gap-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={editDetailsForm.travel_fee}
-                    onChange={(e) => setEditDetailsForm(prev => ({ ...prev, travel_fee: e.target.value }))}
-                    className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-                  />
-                  {renderEditButtons("travel_fee", () => {
-                    setEditDetailsForm(prev => ({ ...prev, travel_fee: shift.travel_fee !== null && shift.travel_fee !== undefined ? String(shift.travel_fee) : "" }));
-                    setEditingField(null);
-                  })}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-4">
+          <div className="px-5 py-2.5">
+            {editingField === "per_shift_rate" ? (
+              <div className="w-full flex flex-col gap-2">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                  Flat Rate Paid to Guard
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={editDetailsForm.per_shift_rate}
+                  onChange={(e) =>
+                    setEditDetailsForm((prev) => ({ ...prev, per_shift_rate: e.target.value }))
+                  }
+                  className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                />
+                {renderEditButtons("per_shift_rate", () => {
+                  setEditDetailsForm((prev) => ({
+                    ...prev,
+                    per_shift_rate:
+                      shift.per_shift_rate !== null && shift.per_shift_rate !== undefined
+                        ? String(shift.per_shift_rate)
+                        : "",
+                  }));
+                  setEditingField(null);
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight min-w-[160px] shrink-0">
+                  Flat Rate Paid to Guard
+                </span>
+                <span className="text-slate-300 mx-3 shrink-0">:</span>
+                <div className="flex-1 flex items-center justify-between gap-4">
                   <span className="text-sm text-slate-800 font-medium">
-                    {shift ? formatPrice(shift.travel_fee) : "----"}
+                    {formatPrice(shift.per_shift_rate)}
+                  </span>
+                  {renderEditIcon(
+                    "per_shift_rate",
+                    !!shift.action?.is_flat_rate_edit,
+                    isPerHourRateSet,
+                    "Clear Hourly Rate paid to guard first to edit Flat Rate"
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="px-5 py-2.5">
+            {editingField === "travel_fee" ? (
+              <div className="w-full flex flex-col gap-2">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                  Travel Fees
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={editDetailsForm.travel_fee}
+                  onChange={(e) =>
+                    setEditDetailsForm((prev) => ({ ...prev, travel_fee: e.target.value }))
+                  }
+                  className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                />
+                {renderEditButtons("travel_fee", () => {
+                  setEditDetailsForm((prev) => ({
+                    ...prev,
+                    travel_fee:
+                      shift.travel_fee !== null && shift.travel_fee !== undefined
+                        ? String(shift.travel_fee)
+                        : "",
+                  }));
+                  setEditingField(null);
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight min-w-[160px] shrink-0">
+                  Travel Fees
+                </span>
+                <span className="text-slate-300 mx-3 shrink-0">:</span>
+                <div className="flex-1 flex items-center justify-between gap-4">
+                  <span className="text-sm text-slate-800 font-medium">
+                    {formatPrice(shift.travel_fee)}
                   </span>
                   {renderEditIcon("travel_fee", !!shift.action?.is_travel_fee_edit)}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        </div>
+        </SectionBlock>
       </CardContent>
     </Card>
   );

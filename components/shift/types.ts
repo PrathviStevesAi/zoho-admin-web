@@ -54,6 +54,25 @@ export interface AssignedGuard {
   name?: string;
 }
 
+export interface LeadGuard {
+  guard_id?: string;
+  first_name?: string;
+  last_name?: string;
+  application_id?: string;
+  phone_no?: string;
+  shift_status?: string;
+  execution_time?: string | null;
+}
+
+export interface StandbyGuard {
+  guard_id?: string;
+  first_name?: string;
+  last_name?: string;
+  application_id?: string;
+  phone_no?: string;
+  shift_status?: string;
+}
+
 export interface Shift {
   shift_id: string;
   shift_no: string;
@@ -79,8 +98,11 @@ export interface Shift {
   per_hour_rate?: number | null;
   per_shift_rate?: number | null;
   travel_fee?: number | null;
+  qc_flat_rate?: number | null;
   security_service_id?: string | null;
   call_id?: string | null;
+  lead_guard?: LeadGuard;
+  standby_guard?: StandbyGuard;
 }
 
 export interface ShiftHistoryEvent {

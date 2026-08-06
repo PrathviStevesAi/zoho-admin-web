@@ -796,6 +796,7 @@ export async function addCommentAction(payload: {
   type: "internal" | "external";
   user_message: string | null;
   attach_file_url: string | null;
+  guard_role?: string;
 }): Promise<{ success: boolean; data?: unknown; error?: string }> {
   try {
     const data = await apiFetch<unknown>(`/api/v1/shift/comment`, {

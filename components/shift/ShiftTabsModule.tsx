@@ -13,7 +13,7 @@ interface ShiftTabsModuleProps {
   comments: Comment[];
   isCommentsLoading: boolean;
   commentsError: string | null;
-  onCommentSubmit: (text: string, type: "internal" | "external", file: File | null) => Promise<boolean>;
+  onCommentSubmit: (text: string, type: "internal" | "external", file: File | null, recipient?: string) => Promise<boolean>;
 
   reports: ShiftReports | null;
   isReportsLoading: boolean;
@@ -23,6 +23,8 @@ interface ShiftTabsModuleProps {
   setPreviewFile: (file: PreviewFile | null) => void;
   securityServiceId?: string | null;
   isLoading?: boolean;
+  hasLeadGuard?: boolean;
+  hasStandbyGuard?: boolean;
 }
 
 export function ShiftTabsModule({
@@ -37,6 +39,8 @@ export function ShiftTabsModule({
   setPreviewFile,
   securityServiceId,
   isLoading,
+  hasLeadGuard = false,
+  hasStandbyGuard = false,
 }: ShiftTabsModuleProps) {
   const [activeTab, setActiveTab] = useState("");
 
@@ -124,6 +128,8 @@ export function ShiftTabsModule({
                       commentsError={commentsError}
                       onCommentSubmit={onCommentSubmit}
                       setPreviewFile={setPreviewFile}
+                      hasLeadGuard={hasLeadGuard}
+                      hasStandbyGuard={hasStandbyGuard}
                     />
                   )}
                   {tab.id === "dar" && (

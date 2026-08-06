@@ -37,7 +37,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export function ShiftProgressStepper({ shift }: ShiftProgressStepperProps) {
-  const currentStatus = shift?.status?.toLowerCase() || "shift_created";
+  const currentStatus = shift?.lead_guard?.shift_status?.toLowerCase() || shift?.status?.toLowerCase() || "shift_created";
   const statusSteps = STATUS_STEPS_MAP[currentStatus] || [currentStatus];
 
   const steps = statusSteps.map((statusName, idx) => {
