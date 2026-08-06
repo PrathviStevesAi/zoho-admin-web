@@ -899,6 +899,11 @@ export interface Comment {
   user_message: string | null;
   attach_file_url: string | null;
   user_role?: string;
+  guard_role?: string;
+  send_by?: string;
+  send_to?: string;
+  recipient?: string;
+  sent_to?: string;
   created_at: string;
   updated_at: string;
 }

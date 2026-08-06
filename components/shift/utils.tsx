@@ -83,50 +83,76 @@ export const triggerFileDownload = async (url: string, fileName: string) => {
 };
 
 export const getCommentAuthorName = (comment: any) => {
-  if (comment.first_name || comment.last_name) {
-    return `${comment.first_name || ""} ${comment.last_name || ""}`.trim();
-  }
-  if (comment.user_name) return comment.user_name;
-  if (comment.created_by_name) return comment.created_by_name;
-  if (comment.name) return comment.name;
-  if (comment.user) {
-    if (comment.user.first_name || comment.user.last_name) {
-      return `${comment.user.first_name || ""} ${comment.user.last_name || ""}`.trim();
-    }
-    if (comment.user.name) return comment.user.name;
-    if (comment.user.user_name) return comment.user.user_name;
-  }
-  if (comment.created_by) {
-    if (typeof comment.created_by === 'object') {
-      if (comment.created_by.first_name || comment.created_by.last_name) {
-        return `${comment.created_by.first_name || ""} ${comment.created_by.last_name || ""}`.trim();
-      }
-      if (comment.created_by.name) return comment.created_by.name;
-    } else if (typeof comment.created_by === 'string') {
-      return comment.created_by;
-    }
-  }
-  if (comment.guard) {
-    if (typeof comment.guard === 'object') {
-      if (comment.guard.first_name || comment.guard.last_name) {
-        return `${comment.guard.first_name || ""} ${comment.guard.last_name || ""}`.trim();
-      }
-      if (comment.guard.name) return comment.guard.name;
-    }
-  }
-  if (comment.admin) {
-    if (typeof comment.admin === 'object') {
-      if (comment.admin.first_name || comment.admin.last_name) {
-        return `${comment.admin.first_name || ""} ${comment.admin.last_name || ""}`.trim();
-      }
-      if (comment.admin.name) return comment.admin.name;
-    }
-  }
+  if (!comment) return "User";
+
+  let role = "";
   if (comment.user_role) {
-    return comment.user_role.charAt(0).toUpperCase() + comment.user_role.slice(1);
+    role = comment.user_role.charAt(0).toUpperCase() + comment.user_role.slice(1);
   }
+
+  let sendBy = "";
+  if (typeof comment.send_by === "string") {
+    sendBy = comment.send_by;
+  } else if (typeof comment.send_by === "object" && comment.send_by) {
+    sendBy = comment.send_by.first_name || comment.send_by.name || comment.send_by.user_name || "";
+  }
+
+  if (!sendBy) {
+    if (comment.first_name || comment.last_name) {
+      sendBy = `${comment.first_name || ""} ${comment.last_name || ""}`.trim();
+    } else if (comment.user_name) sendBy = comment.user_name;
+    else if (comment.created_by_name) sendBy = comment.created_by_name;
+    else if (comment.name) sendBy = comment.name;
+    else if (comment.user) {
+      if (comment.user.first_name || comment.user.last_name) {
+        sendBy = `${comment.user.first_name || ""} ${comment.user.last_name || ""}`.trim();
+      } else if (comment.user.name) sendBy = comment.user.name;
+      else if (comment.user.user_name) sendBy = comment.user.user_name;
+    } else if (comment.created_by) {
+      if (typeof comment.created_by === "object") {
+        if (comment.created_by.first_name || comment.created_by.last_name) {
+          sendBy = `${comment.created_by.first_name || ""} ${comment.created_by.last_name || ""}`.trim();
+        } else if (comment.created_by.name) sendBy = comment.created_by.name;
+      } else if (typeof comment.created_by === "string") {
+        sendBy = comment.created_by;
+      }
+    } else if (comment.guard) {
+      if (typeof comment.guard === "object") {
+        if (comment.guard.first_name || comment.guard.last_name) {
+          sendBy = `${comment.guard.first_name || ""} ${comment.guard.last_name || ""}`.trim();
+        } else if (comment.guard.name) sendBy = comment.guard.name;
+      }
+    } else if (comment.admin) {
+      if (typeof comment.admin === "object") {
+        if (comment.admin.first_name || comment.admin.last_name) {
+          sendBy = `${comment.admin.first_name || ""} ${comment.admin.last_name || ""}`.trim();
+        } else if (comment.admin.name) sendBy = comment.admin.name;
+      }
+    }
+  }
+
+  if (role && sendBy) {
+    if (role.toLowerCase() === sendBy.toLowerCase()) {
+      return role;
+    }
+    return `${role} (${sendBy})`;
+  }
+  if (role) return role;
+  if (sendBy) return sendBy;
   return "User";
 };
+
+export const getSendByDisplay = (comment: any) => {
+  if (!comment) return null;
+  const raw = comment.sent_to || comment.send_to || comment.guard_role || comment.recipient;
+  if (!raw) return null;
+  const lower = String(raw).toLowerCase().trim();
+  if (lower === "lead_guard" || lower === "lead") return "Lead Guard";
+  if (lower === "standby_guard" || lower === "standby") return "Standby Guard";
+  if (lower === "both" || lower === "both_guards" || lower === "both guards") return "Both Guards";
+  return String(raw);
+};
+
 
 export const formatDescription = (text: string) => {
   if (!text) return null;

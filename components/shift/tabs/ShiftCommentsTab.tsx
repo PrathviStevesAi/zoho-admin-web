@@ -12,7 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Comment, PreviewFile } from "../types";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { getCommentAuthorName, formatDateTime, FileAttachmentCard } from "../utils";
+import { getCommentAuthorName, getSendByDisplay, formatDateTime, FileAttachmentCard } from "../utils";
 
 interface ShiftCommentsTabProps {
   comments: Comment[];
@@ -40,10 +40,12 @@ export function ShiftCommentsTab({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isInternal = commentType === "internal";
+
   const handleSubmit = async () => {
     if (!commentText.trim() && !attachedFile) return;
     setIsSubmitting(true);
-    const success = await onCommentSubmit(commentText, commentType, attachedFile, recipient);
+    const success = await onCommentSubmit(commentText, commentType, attachedFile, isInternal ? undefined : recipient);
     if (success) {
       setCommentText("");
       setAttachedFile(null);
@@ -54,7 +56,7 @@ export function ShiftCommentsTab({
   return (
     <div className="space-y-6">
       {(hasLeadGuard || hasStandbyGuard) && (
-        <div className="space-y-4">
+        <div className={cn("space-y-4 transition-opacity", isInternal && "opacity-50 pointer-events-none")}>
           <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight">Select Recipient</h3>
           <div
             className={cn(
@@ -65,13 +67,16 @@ export function ShiftCommentsTab({
             {hasLeadGuard && (
               <button
                 type="button"
+                disabled={isInternal}
                 onClick={() => setRecipient("lead")}
                 className={cn(
-                  "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all cursor-pointer rounded-lg",
+                  "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg",
+                  isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
                   hasLeadGuard && hasStandbyGuard ? "flex-1" : "px-8",
-                  recipient === "lead"
+                  recipient === "lead" && !isInternal
                     ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
-                    : "text-slate-500 hover:text-slate-700 border border-transparent hover:bg-slate-50"
+                    : "text-slate-500 border border-transparent",
+                  !isInternal && recipient !== "lead" && "hover:text-slate-700 hover:bg-slate-50"
                 )}
               >
                 <UserPlus className="w-[18px] h-[18px]" />
@@ -90,13 +95,16 @@ export function ShiftCommentsTab({
             {hasStandbyGuard && (
               <button
                 type="button"
+                disabled={isInternal}
                 onClick={() => setRecipient("standby")}
                 className={cn(
-                  "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all cursor-pointer rounded-lg",
+                  "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg",
+                  isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
                   hasLeadGuard && hasStandbyGuard ? "flex-1" : "px-8",
-                  recipient === "standby"
+                  recipient === "standby" && !isInternal
                     ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
-                    : "text-slate-500 hover:text-slate-700 border border-transparent hover:bg-slate-50"
+                    : "text-slate-500 border border-transparent",
+                  !isInternal && recipient !== "standby" && "hover:text-slate-700 hover:bg-slate-50"
                 )}
               >
                 <User className="w-[18px] h-[18px]" />
@@ -115,12 +123,15 @@ export function ShiftCommentsTab({
             {hasLeadGuard && hasStandbyGuard && (
               <button
                 type="button"
+                disabled={isInternal}
                 onClick={() => setRecipient("both")}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all cursor-pointer rounded-lg",
-                  recipient === "both"
+                  "flex-1 flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg",
+                  isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
+                  recipient === "both" && !isInternal
                     ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
-                    : "text-slate-500 hover:text-slate-700 border border-transparent hover:bg-slate-50"
+                    : "text-slate-500 border border-transparent",
+                  !isInternal && recipient !== "both" && "hover:text-slate-700 hover:bg-slate-50"
                 )}
               >
                 <Users className="w-[18px] h-[18px]" />
@@ -163,6 +174,7 @@ export function ShiftCommentsTab({
           {comments.map((comment: any) => {
             const authorName = getCommentAuthorName(comment);
             const isExternal = comment.type === "external";
+            const sendByDisplay = getSendByDisplay(comment);
             return (
               <div key={comment.id} className="flex gap-3">
                 <div
@@ -174,8 +186,23 @@ export function ShiftCommentsTab({
                   <UserPlus className="w-4 h-4" />
                 </div>
                 <div className="space-y-2 flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[13px] font-bold text-slate-800">{authorName}</span>
+                    {sendByDisplay && (
+                      <div className="flex items-center gap-1.5 text-[12px]">
+                        <span className="text-[#0064cb] font-semibold">Sent to :-</span>
+                        <div className="flex items-center gap-1 text-slate-700 font-semibold">
+                          {sendByDisplay === "Both Guards" ? (
+                            <Users className="w-3.5 h-3.5 text-slate-600" />
+                          ) : sendByDisplay === "Lead Guard" ? (
+                            <UserPlus className="w-3.5 h-3.5 text-slate-600" />
+                          ) : (
+                            <User className="w-3.5 h-3.5 text-slate-600" />
+                          )}
+                          <span>{sendByDisplay}</span>
+                        </div>
+                      </div>
+                    )}
                     <span className="text-[11px] text-slate-700">{formatDateTime(comment.created_at)}</span>
                     {!isExternal && (
                       <Tooltip>
