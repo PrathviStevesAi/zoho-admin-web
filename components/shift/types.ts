@@ -66,7 +66,7 @@ export interface LeadGuard {
   application_id?: string;
   phone_no?: string;
   shift_status?: string;
-  execution_time?: string | null;
+  execution_time?: ExecutionTime | string | null;
 }
 
 export interface StandbyGuard {

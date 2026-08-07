@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Shift } from "./types";
+import { Shift, ExecutionTime } from "./types";
 import {
   toLocalDateTimeString,
   toUTCISO,
@@ -121,15 +121,20 @@ export function ShiftDetailsCard({
 
   useEffect(() => {
     if (shift) {
+      const execTime: ExecutionTime | undefined =
+        (typeof shift.lead_guard?.execution_time === "object" && shift.lead_guard?.execution_time
+          ? (shift.lead_guard.execution_time as ExecutionTime)
+          : undefined) || shift.execution_time;
+
       setEditDetailsForm({
         shift_description: shift.shift_description || "",
         shift_start_time: toLocalDateTimeString(shift.scheduled_for?.shift_start_time || ""),
         shift_end_time: toLocalDateTimeString(shift.scheduled_for?.shift_end_time || ""),
         guard_shift_started_at: toLocalDateTimeString(
-          shift.execution_time?.guard_shift_started_at || ""
+          execTime?.guard_shift_started_at || ""
         ),
         guard_shift_ended_at: toLocalDateTimeString(
-          shift.execution_time?.guard_shift_ended_at || ""
+          execTime?.guard_shift_ended_at || ""
         ),
         per_hour_rate:
           shift.per_hour_rate !== null && shift.per_hour_rate !== undefined
@@ -223,11 +228,16 @@ export function ShiftDetailsCard({
         }
         break;
       case "execution_time":
+        const execTime: ExecutionTime | undefined =
+          (typeof shift.lead_guard?.execution_time === "object" && shift.lead_guard?.execution_time
+            ? (shift.lead_guard.execution_time as ExecutionTime)
+            : undefined) || shift.execution_time;
+
         const initialExecStart = toLocalDateTimeString(
-          shift.execution_time?.guard_shift_started_at || ""
+          execTime?.guard_shift_started_at || ""
         );
         const initialExecEnd = toLocalDateTimeString(
-          shift.execution_time?.guard_shift_ended_at || ""
+          execTime?.guard_shift_ended_at || ""
         );
         if (
           editDetailsForm.guard_shift_started_at !== initialExecStart ||
@@ -239,7 +249,7 @@ export function ShiftDetailsCard({
             guard_shift_ended_at: toUTCISO(editDetailsForm.guard_shift_ended_at, tz),
             start_time: toUTCISO(editDetailsForm.guard_shift_started_at, tz),
             end_time: toUTCISO(editDetailsForm.guard_shift_ended_at, tz),
-            total_break_duration_min: shift.execution_time?.total_break_duration_min ?? 0,
+            total_break_duration_min: execTime?.total_break_duration_min ?? 0,
           };
           dirty = true;
         }
@@ -625,119 +635,127 @@ export function ShiftDetailsCard({
                 </SectionRow>
               )}
 
-              {(!!shift.execution_time?.guard_shift_started_at ||
-                !!shift.execution_time?.guard_shift_ended_at ||
-                !!shift.action?.is_execution_time_edit ||
-                editingField === "execution_time") && (
-                  <div className="px-5 py-2.5">
-                    {editingField === "execution_time" ? (
-                      <div className="w-full flex flex-col gap-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-slate-700 uppercase">
-                              Actual Start Time
-                            </Label>
-                            <Input
-                              type="datetime-local"
-                              min={minDateTime}
-                              value={editDetailsForm.guard_shift_started_at}
-                              onChange={(e) =>
-                                setEditDetailsForm((prev) => ({
-                                  ...prev,
-                                  guard_shift_started_at: e.target.value,
-                                }))
-                              }
-                              className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-                            />
+              {(() => {
+                const execTime: ExecutionTime | undefined =
+                  (typeof leadGuard?.execution_time === "object" && leadGuard?.execution_time
+                    ? (leadGuard.execution_time as ExecutionTime)
+                    : undefined) || shift.execution_time;
+
+                return (!!execTime?.guard_shift_started_at ||
+                  !!execTime?.guard_shift_ended_at ||
+                  !!shift.action?.is_execution_time_edit ||
+                  editingField === "execution_time") && (
+                    <div className="px-5 py-2.5">
+                      {editingField === "execution_time" ? (
+                        <div className="w-full flex flex-col gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-[10px] font-bold text-slate-700 uppercase">
+                                Actual Start Time
+                              </Label>
+                              <Input
+                                type="datetime-local"
+                                min={minDateTime}
+                                value={editDetailsForm.guard_shift_started_at}
+                                onChange={(e) =>
+                                  setEditDetailsForm((prev) => ({
+                                    ...prev,
+                                    guard_shift_started_at: e.target.value,
+                                  }))
+                                }
+                                className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] font-bold text-slate-700 uppercase">
+                                Actual End Time
+                              </Label>
+                              <Input
+                                type="datetime-local"
+                                min={editDetailsForm.guard_shift_started_at || minDateTime}
+                                value={editDetailsForm.guard_shift_ended_at}
+                                onChange={(e) =>
+                                  setEditDetailsForm((prev) => ({
+                                    ...prev,
+                                    guard_shift_ended_at: e.target.value,
+                                  }))
+                                }
+                                className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+                              />
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-slate-700 uppercase">
-                              Actual End Time
-                            </Label>
-                            <Input
-                              type="datetime-local"
-                              min={editDetailsForm.guard_shift_started_at || minDateTime}
-                              value={editDetailsForm.guard_shift_ended_at}
-                              onChange={(e) =>
-                                setEditDetailsForm((prev) => ({
-                                  ...prev,
-                                  guard_shift_ended_at: e.target.value,
-                                }))
-                              }
-                              className="h-10 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-                            />
-                          </div>
+                          {renderEditButtons("execution_time", () => {
+                            setEditDetailsForm((prev) => ({
+                              ...prev,
+                              guard_shift_started_at: toLocalDateTimeString(
+                                execTime?.guard_shift_started_at || ""
+                              ),
+                              guard_shift_ended_at: toLocalDateTimeString(
+                                execTime?.guard_shift_ended_at || ""
+                              ),
+                            }));
+                            setEditingField(null);
+                          })}
                         </div>
-                        {renderEditButtons("execution_time", () => {
-                          setEditDetailsForm((prev) => ({
-                            ...prev,
-                            guard_shift_started_at: toLocalDateTimeString(
-                              shift.execution_time?.guard_shift_started_at || ""
-                            ),
-                            guard_shift_ended_at: toLocalDateTimeString(
-                              shift.execution_time?.guard_shift_ended_at || ""
-                            ),
-                          }));
-                          setEditingField(null);
-                        })}
-                      </div>
-                    ) : (
-                      <div className="flex items-start">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight min-w-[160px] shrink-0">
-                          Shift Execute Time
-                        </span>
-                        <span className="text-slate-300 mx-3 shrink-0">:</span>
-                        <div className="flex-1 flex items-start justify-between gap-4 min-w-0">
-                          <div className="flex flex-col gap-1">
-                            {shift.execution_time?.guard_shift_started_at && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
-                                  Start:
-                                </span>
-                                <span className="text-sm text-slate-800 font-medium">
-                                  {formatDateTime(shift.execution_time.guard_shift_started_at)}
-                                </span>
-                              </div>
-                            )}
-                            {shift.execution_time?.guard_shift_ended_at && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
-                                  End:
-                                </span>
-                                <span className="text-sm text-slate-800 font-medium">
-                                  {formatDateTime(shift.execution_time.guard_shift_ended_at)}
-                                </span>
-                              </div>
-                            )}
-                            {shift.execution_time?.total_break_duration_min &&
-                              shift.execution_time.total_break_duration_min > 0 ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
-                                  Break:
-                                </span>
-                                <span className="text-sm text-slate-800 font-medium">
-                                  {(() => {
-                                    const mins = shift.execution_time.total_break_duration_min;
-                                    if (mins < 60) return `${mins} min`;
-                                    const hrs = mins / 60;
-                                    return mins % 60 === 0
-                                      ? `${hrs.toFixed(1)} hr`
-                                      : `${hrs.toFixed(2)} hr`;
-                                  })()}
-                                </span>
-                              </div>
-                            ) : null}
-                            {!shift.execution_time?.guard_shift_started_at &&
-                              !shift.execution_time?.guard_shift_ended_at && (
-                                <span className="text-sm text-slate-700 font-medium">N/A</span>
+                      ) : (
+                        <div className="flex items-start">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight min-w-[160px] shrink-0">
+                            Shift Execute Time
+                          </span>
+                          <span className="text-slate-300 mx-3 shrink-0">:</span>
+                          <div className="flex-1 flex items-start justify-between gap-4 min-w-0">
+                            <div className="flex flex-col gap-1">
+                              {execTime?.guard_shift_started_at && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
+                                    Start:
+                                  </span>
+                                  <span className="text-sm text-slate-800 font-medium">
+                                    {formatDateTime(execTime.guard_shift_started_at)}
+                                  </span>
+                                </div>
                               )}
+                              {execTime?.guard_shift_ended_at && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
+                                    End:
+                                  </span>
+                                  <span className="text-sm text-slate-800 font-medium">
+                                    {formatDateTime(execTime.guard_shift_ended_at)}
+                                  </span>
+                                </div>
+                              )}
+                              {execTime?.total_break_duration_min !== undefined &&
+                                execTime?.total_break_duration_min !== null ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] text-slate-700 uppercase font-bold w-10">
+                                    Break:
+                                  </span>
+                                  <span className="text-sm text-slate-800 font-medium">
+                                    {(() => {
+                                      const mins = execTime.total_break_duration_min;
+                                      if (mins === 0) return "0 min";
+                                      if (mins < 60) return `${mins} min`;
+                                      const hrs = mins / 60;
+                                      return mins % 60 === 0
+                                        ? `${hrs.toFixed(1)} hr`
+                                        : `${hrs.toFixed(2)} hr`;
+                                    })()}
+                                  </span>
+                                </div>
+                              ) : null}
+                              {!execTime?.guard_shift_started_at &&
+                                !execTime?.guard_shift_ended_at && (
+                                  <span className="text-sm text-slate-700 font-medium">N/A</span>
+                                )}
+                            </div>
+                            {renderEditIcon("execution_time", !!shift.action?.is_execution_time_edit)}
                           </div>
-                          {renderEditIcon("execution_time", !!shift.action?.is_execution_time_edit)}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  );
+              })()}
             </>
           ) : (
             <div className="mx-5 my-4 bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex items-center gap-4">
