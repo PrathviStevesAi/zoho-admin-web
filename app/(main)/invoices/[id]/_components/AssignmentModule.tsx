@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Loader2, Plus, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -259,7 +260,14 @@ export function AssignmentModule({
                             disabled={!!shift.guard || !!pendingAssignments[shift.shift_id]}
                           />
                         </TableCell>
-                        <TableCell className="text-xs font-bold text-slate-700 py-3 px-2">{shift.shift_no}</TableCell>
+                        <TableCell className="text-xs font-bold text-slate-700 py-3 px-2">
+                          <Link
+                            href={`/shift/view?shift_id=${shift.shift_id}`}
+                            className="text-[#0064cb] hover:text-[#0052ae] hover:underline cursor-pointer transition-all"
+                          >
+                            {shift.shift_no}
+                          </Link>
+                        </TableCell>
                         <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 min-w-[100px]">{shift.service_name}</TableCell>
                         <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 whitespace-nowrap">
                           {new Date(shift.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br />

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   clientFetchGuardsAction
 } from "@/lib/client-actions";
@@ -480,7 +481,14 @@ export function AvailableGuardsModule({
                               onChange={(e) => handleSelectShift(shift.shift_id, e.target.checked)}
                             />
                           </TableCell>
-                          <TableCell className="text-sm font-bold text-slate-700 py-2.5 px-4">{shift.shift_no}</TableCell>
+                          <TableCell className="text-sm font-bold text-slate-700 py-2.5 px-4">
+                            <Link
+                              href={`/shift/view?shift_id=${shift.shift_id}`}
+                              className="text-[#0064cb] hover:text-[#0052ae] hover:underline cursor-pointer transition-all"
+                            >
+                              {shift.shift_no}
+                            </Link>
+                          </TableCell>
                           <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">{shift.service_name}</TableCell>
                           <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
                             {new Date(shift.start_time).toLocaleDateString()}<br />
