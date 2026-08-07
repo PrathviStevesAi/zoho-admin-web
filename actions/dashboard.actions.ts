@@ -367,18 +367,27 @@ export async function fetchShiftDetailsAction(
     const data = await apiFetch<{ success: boolean; data: any }>(endpoint);
     console.log("fetchShiftDetailsAction: Response data:", data);
 
-    if (data.success && data.data && data.data.invoice_no) {
+    if (data.success && data.data && !data.data.invoice_id && data.data.invoice_no) {
       try {
         console.log(`fetchShiftDetailsAction: Looking up invoice ID for ${data.data.invoice_no}`);
         const searchRes = await apiFetch<{ success: boolean; data: any[] }>(
           `/api/v1/invoice/global-search?search=${encodeURIComponent(data.data.invoice_no)}`
         );
         if (searchRes.success && searchRes.data) {
-          const match = searchRes.data.find(
-            (item: any) =>
-              item.type === "invoice" &&
-              item.invoice_no?.toLowerCase() === data.data.invoice_no.toLowerCase()
-          );
+          const match =
+            searchRes.data.find(
+              (item: any) =>
+                item.type === "invoice" &&
+                item.invoice_no?.toLowerCase() === data.data.invoice_no.toLowerCase() &&
+                (data.data.customer_name
+                  ? item.customer_name?.toLowerCase() === data.data.customer_name?.toLowerCase()
+                  : true)
+            ) ||
+            searchRes.data.find(
+              (item: any) =>
+                item.type === "invoice" &&
+                item.invoice_no?.toLowerCase() === data.data.invoice_no.toLowerCase()
+            );
           if (match && match.invoice_id) {
             data.data.invoice_id = match.invoice_id;
             console.log(`fetchShiftDetailsAction: Successfully injected invoice_id: ${match.invoice_id}`);
