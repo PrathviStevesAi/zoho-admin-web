@@ -22,6 +22,8 @@ interface ShiftCommentsTabProps {
   setPreviewFile: (file: PreviewFile | null) => void;
   hasLeadGuard?: boolean;
   hasStandbyGuard?: boolean;
+  leadGuardStatus?: string;
+  standbyGuardStatus?: string;
 }
 
 export function ShiftCommentsTab({
@@ -32,6 +34,8 @@ export function ShiftCommentsTab({
   setPreviewFile,
   hasLeadGuard = false,
   hasStandbyGuard = false,
+  leadGuardStatus,
+  standbyGuardStatus,
 }: ShiftCommentsTabProps) {
   const [commentType, setCommentType] = useState<"external" | "internal">("external");
   const [recipient, setRecipient] = useState<"lead" | "standby" | "both">(hasLeadGuard ? "lead" : "standby");
@@ -41,7 +45,20 @@ export function ShiftCommentsTab({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isInternal = commentType === "internal";
+  
+  const isLeadPlanned = leadGuardStatus?.toLowerCase() === "shift planned" || leadGuardStatus?.toLowerCase() === "shift_planned";
+  const isStandbyPlanned = standbyGuardStatus?.toLowerCase() === "shift planned" || standbyGuardStatus?.toLowerCase() === "shift_planned";
 
+  let isCommentDisabled = false;
+  if (!isInternal) {
+    if (recipient === "lead" && isLeadPlanned) {
+      isCommentDisabled = true;
+    } else if (recipient === "standby" && isStandbyPlanned) {
+      isCommentDisabled = true;
+    } else if (recipient === "both" && (isLeadPlanned || isStandbyPlanned)) {
+      isCommentDisabled = true;
+    }
+  }
   const handleSubmit = async () => {
     if (!commentText.trim() && !attachedFile) return;
     setIsSubmitting(true);
@@ -237,7 +254,13 @@ export function ShiftCommentsTab({
         </div>
       )}
 
-      <div className="pt-6 flex flex-col md:flex-row gap-3 items-start">
+      <div className="pt-6 flex flex-col gap-3 items-start">
+        {isCommentDisabled && (
+          <div className="w-full text-center text-[12px] font-medium text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-200">
+            You will be able to message the guards after they accept the shifts.
+          </div>
+        )}
+        <div className="flex flex-col md:flex-row gap-3 items-start w-full">
         <div className="w-full md:w-28 flex-shrink-0 relative">
           <span className="absolute -top-2 left-3 px-1.5 bg-white text-[10px] font-bold text-slate-700 uppercase z-10">
             Type
@@ -298,8 +321,8 @@ export function ShiftCommentsTab({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isSubmitting}
-                  className="p-2 rounded-full hover:bg-slate-50 text-[#0064cb] transition-colors cursor-pointer group disabled:opacity-50 flex-shrink-0 border-none bg-transparent"
+                  disabled={isSubmitting || isCommentDisabled}
+                  className="p-2 rounded-full hover:bg-slate-50 text-[#0064cb] transition-colors cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 border-none bg-transparent"
                   title="Attach file"
                 >
                   <Paperclip className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -311,7 +334,7 @@ export function ShiftCommentsTab({
                 rows={1}
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isCommentDisabled}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -321,8 +344,8 @@ export function ShiftCommentsTab({
               />
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || (!commentText.trim() && !attachedFile)}
-                className="bg-[#0064cb] hover:bg-[#0052ae] text-white h-10 w-10 rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-md shadow-blue-200/50 flex-shrink-0 p-0"
+                disabled={isSubmitting || (!commentText.trim() && !attachedFile) || isCommentDisabled}
+                className="bg-[#0064cb] hover:bg-[#0052ae] disabled:bg-[#0064cb]/50 text-white h-10 w-10 rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer disabled:cursor-not-allowed shadow-md shadow-blue-200/50 flex-shrink-0 p-0"
                 title="Send comment"
               >
                 {isSubmitting ? (
@@ -334,6 +357,7 @@ export function ShiftCommentsTab({
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

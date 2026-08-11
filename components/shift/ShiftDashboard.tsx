@@ -771,6 +771,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 isLoading={isLoading}
                 hasLeadGuard={!!(shift?.lead_guard && Object.keys(shift.lead_guard).length > 0)}
                 hasStandbyGuard={!!(shift?.standby_guard && Object.keys(shift.standby_guard).length > 0)}
+                leadGuardStatus={shift?.lead_guard?.shift_status}
+                standbyGuardStatus={shift?.standby_guard?.shift_status}
               />
             </div>
           </div>
@@ -802,6 +804,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               isLoading={isLoading}
               hasLeadGuard={!!(shift?.lead_guard && Object.keys(shift.lead_guard).length > 0)}
               hasStandbyGuard={!!(shift?.standby_guard && Object.keys(shift.standby_guard).length > 0)}
+              leadGuardStatus={shift?.lead_guard?.shift_status}
+              standbyGuardStatus={shift?.standby_guard?.shift_status}
             />
 
             {!isLoading && shift && (

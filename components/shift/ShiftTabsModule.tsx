@@ -25,6 +25,8 @@ interface ShiftTabsModuleProps {
   isLoading?: boolean;
   hasLeadGuard?: boolean;
   hasStandbyGuard?: boolean;
+  leadGuardStatus?: string;
+  standbyGuardStatus?: string;
 }
 
 export function ShiftTabsModule({
@@ -41,6 +43,8 @@ export function ShiftTabsModule({
   isLoading,
   hasLeadGuard = false,
   hasStandbyGuard = false,
+  leadGuardStatus,
+  standbyGuardStatus,
 }: ShiftTabsModuleProps) {
   const [activeTab, setActiveTab] = useState("");
 
@@ -130,6 +134,8 @@ export function ShiftTabsModule({
                       setPreviewFile={setPreviewFile}
                       hasLeadGuard={hasLeadGuard}
                       hasStandbyGuard={hasStandbyGuard}
+                      leadGuardStatus={leadGuardStatus}
+                      standbyGuardStatus={standbyGuardStatus}
                     />
                   )}
                   {tab.id === "dar" && (
