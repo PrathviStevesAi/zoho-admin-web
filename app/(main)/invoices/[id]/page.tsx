@@ -709,11 +709,14 @@ export default function InvoiceDetailsPage() {
     const standbyAssignments = Object.values(standbyGroups).map((group) => {
       const assignment: any = {
         guard_id: group.guard_id,
-        shift_ids: group.shift_ids,
-        per_hour_rate: 0,
-        travel_fee: 0,
-        qc_flat_rate: group.flatQcRate || 0
+        shift_ids: group.shift_ids
       };
+      
+      const parsedQcRate = Number(group.flatQcRate);
+      if (!isNaN(parsedQcRate) && parsedQcRate > 0) {
+        assignment.qc_flat_rate = parsedQcRate;
+      }
+      
       return assignment;
     });
 
