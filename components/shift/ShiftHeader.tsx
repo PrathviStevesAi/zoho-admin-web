@@ -185,7 +185,7 @@ export function ShiftHeader({
             }
             if (act.is_new_lead_assigned) {
               buttons.push({
-                label: "Lead Guard Assign",
+                label: "Assign New Lead Guard",
                 icon: UserPlus,
                 color: "blue" as const,
                 onClick: onAssignLeadGuard,
@@ -193,7 +193,7 @@ export function ShiftHeader({
             }
             if (act.is_new_standby_assigned) {
               buttons.push({
-                label: "Standby Guard Assign",
+                label: "Assign New Standby Guard",
                 icon: UserPlus,
                 color: "yellow" as const,
                 onClick: onAssignStandbyGuard,
