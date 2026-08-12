@@ -38,6 +38,8 @@ import { AssignmentModule } from "./_components/AssignmentModule";
 import { SelectUserDialog } from "./_components/SelectUserDialog";
 import { EditLocationDialog } from "./_components/EditLocationDialog";
 import { CancelServiceDialog } from "./_components/CancelServiceDialog";
+import { VerifyWarningDialog } from "./_components/VerifyWarningDialog";
+import { verifyGuardAssignmentAction } from "@/actions/dashboard.actions";
 import { ConfirmationDialog } from "./_components/ConfirmationDialog";
 import { AvailableGuardsModule } from "./_components/AvailableGuardsModule";
 import { EditShiftDialog } from "./_components/EditShiftDialog";
@@ -112,11 +114,23 @@ export default function InvoiceDetailsPage() {
     service: "",
     people: 1
   });
+
   const [rowSchedules, setRowSchedules] = useState<Record<string, any>>({});
   const [isSelectUserOpen, setIsSelectUserOpen] = useState(false);
   const [selectedShiftIds, setSelectedShiftIds] = useState<string[]>([]);
   const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number, type: "lead" | "standby", flatQcRate?: number }>>({});
   const [assignmentType, setAssignmentType] = useState<"lead" | "standby">("lead");
+  
+  const [verifyWarning, setVerifyWarning] = useState<{
+    isOpen: boolean;
+    warnings: string[];
+    pendingPayloads?: {
+      leadAssignments: any[];
+      standbyAssignments: any[];
+      clearSelection?: () => void;
+    };
+  }>({ isOpen: false, warnings: [] });
+
   const [isAssigning, setIsAssigning] = useState(false);
   const [availableGuards, setAvailableGuards] = useState<any[]>([]);
   const [isAvailableGuardsLoading, setIsAvailableGuardsLoading] = useState(false);
@@ -726,11 +740,59 @@ export default function InvoiceDetailsPage() {
     }
 
     setIsAssigning(true);
+
+    const allAssignmentsForVerify = [
+      ...leadAssignments.map((a: any) => ({ guard_id: a.guard_id, shift_ids: a.shift_ids })),
+      ...standbyAssignments.map((a: any) => ({ guard_id: a.guard_id, shift_ids: a.shift_ids }))
+    ];
+    const verifyGroups: Record<string, string[]> = {};
+    allAssignmentsForVerify.forEach((a: any) => {
+      if (!verifyGroups[a.guard_id]) verifyGroups[a.guard_id] = [];
+      verifyGroups[a.guard_id].push(...a.shift_ids);
+    });
+    
+    const verifyPayload = {
+      invoice_id: id,
+      assignments: Object.entries(verifyGroups).map(([guard_id, shift_ids]) => ({
+        guard_id,
+        shift_ids: Array.from(new Set(shift_ids))
+      }))
+    };
+
+    const verifyRes = await verifyGuardAssignmentAction(verifyPayload);
+    if (!verifyRes.success) {
+      setIsAssigning(false);
+      let warnings: string[] = [];
+      if (Array.isArray(verifyRes.data)) {
+        warnings = verifyRes.data.map(String);
+      } else if (verifyRes.error) {
+        warnings = [verifyRes.error];
+      } else {
+        warnings = ["There are scheduling conflicts for the selected guards."];
+      }
+
+      setVerifyWarning({
+        isOpen: true,
+        warnings,
+        pendingPayloads: {
+          leadAssignments,
+          standbyAssignments,
+          clearSelection
+        }
+      });
+      return;
+    }
+
+    await executeAssignments(leadAssignments, standbyAssignments, clearSelection);
+  };
+
+  const executeAssignments = async (leadAssignments: any[], standbyAssignments: any[], clearSelection?: () => void) => {
+    setIsAssigning(true);
     let success = true;
 
     if (leadAssignments.length > 0) {
       const payload: any = { invoice_id: id, assignments: leadAssignments };
-      console.log("[handleAssignGuards] Payload to assignGuardsAction:", JSON.stringify(payload, null, 2));
+      console.log("[executeAssignments] Payload to assignGuardsAction:", JSON.stringify(payload, null, 2));
       const res = await assignGuardsAction(payload);
       if (!res.success) {
         success = false;
@@ -740,7 +802,7 @@ export default function InvoiceDetailsPage() {
 
     if (standbyAssignments.length > 0) {
       const payload: any = { invoice_id: id, assignments: standbyAssignments };
-      console.log("[handleAssignGuards] Payload to assignStandbyGuardsAction:", JSON.stringify(payload, null, 2));
+      console.log("[executeAssignments] Payload to assignStandbyGuardsAction:", JSON.stringify(payload, null, 2));
       const res = await assignStandbyGuardsAction(payload);
       if (!res.success) {
         success = false;
@@ -966,6 +1028,22 @@ export default function InvoiceDetailsPage() {
         onClose={() => setIsCancelServiceOpen(false)}
         onConfirm={handleConfirmCancel}
         isSaving={isCancelling}
+      />
+
+      <VerifyWarningDialog
+        isOpen={verifyWarning.isOpen}
+        warnings={verifyWarning.warnings}
+        onClose={() => setVerifyWarning({ isOpen: false, warnings: [] })}
+        onConfirm={async () => {
+          setVerifyWarning(prev => ({ ...prev, isOpen: false }));
+          if (verifyWarning.pendingPayloads) {
+            await executeAssignments(
+              verifyWarning.pendingPayloads.leadAssignments,
+              verifyWarning.pendingPayloads.standbyAssignments,
+              verifyWarning.pendingPayloads.clearSelection
+            );
+          }
+        }}
       />
 
       <ConfirmationDialog

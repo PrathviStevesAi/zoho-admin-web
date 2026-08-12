@@ -21,10 +21,12 @@ import {
   assignStandbyGuardAction,
   reassignLeadGuardAction,
   reassignStandbyGuardAction,
+  verifyGuardAssignmentAction,
 } from "@/actions/dashboard.actions";
 import { generateUploadUrlAction } from "@/actions/profile.actions";
 import { fetchShiftReportsAction } from "@/actions/notification.actions";
 import { CancelServiceDialog } from "@/app/(main)/invoices/[id]/_components/CancelServiceDialog";
+import { VerifyWarningDialog } from "@/app/(main)/invoices/[id]/_components/VerifyWarningDialog";
 import { ShiftHeader } from "./ShiftHeader";
 import { ShiftDetailsCard } from "./ShiftDetailsCard";
 import { ShiftProgressStepper } from "./ShiftProgressStepper";
@@ -73,6 +75,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [isSavingLocation, setIsSavingLocation] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isAssigningGuard, setIsAssigningGuard] = useState<string | null>(null);
+  const [verifyWarning, setVerifyWarning] = useState<{
+    isOpen: boolean;
+    warnings: string[];
+    pendingArgs?: {
+      guard: any;
+      rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number };
+    };
+  }>({ isOpen: false, warnings: [] });
 
   const loadShiftDetails = useCallback(async () => {
     if (!shiftId) return;
@@ -132,11 +142,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   useEffect(() => {
     if (shift && shift.shift_id) {
-      const guardId = shift.lead_guard?.guard_id || 
+      const guardId = shift.lead_guard?.guard_id ||
         (shift.assigned_guard
           ? (typeof shift.assigned_guard === "object"
-              ? shift.assigned_guard.id || shift.assigned_guard.guard_id
-              : shift.assigned_guard)
+            ? shift.assigned_guard.id || shift.assigned_guard.guard_id
+            : shift.assigned_guard)
           : null);
 
       if (guardId) {
@@ -564,7 +574,6 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   const handleNewAssignSelect = async (guard: any, rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number }) => {
     const targetGuardId = guard.id || guard.guard_id;
-    console.log("[ShiftDashboard] New Assign Guard ID:", targetGuardId, "Rates:", rates);
     if (!shift) return;
     const invoiceId = shift.invoice_id;
     if (!invoiceId) {
@@ -573,16 +582,50 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     }
     setIsAssigningGuard(targetGuardId);
 
+    const verifyPayload = {
+      invoice_id: invoiceId,
+      assignments: [
+        {
+          guard_id: targetGuardId,
+          shift_ids: [shiftId]
+        }
+      ]
+    };
+
+    const verifyRes = await verifyGuardAssignmentAction(verifyPayload);
+    if (!verifyRes.success) {
+      setIsAssigningGuard(null);
+      let warnings: string[] = [];
+      if (Array.isArray(verifyRes.data)) {
+        warnings = verifyRes.data.map(String);
+      } else if (verifyRes.error) {
+        warnings = [verifyRes.error];
+      } else {
+        warnings = ["There are scheduling conflicts for the selected guards."];
+      }
+
+      setVerifyWarning({
+        isOpen: true,
+        warnings,
+        pendingArgs: { guard, rates }
+      });
+      return;
+    }
+
+    await executeAssignment(guard, rates);
+  };
+
+  const executeAssignment = async (guard: any, rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number }) => {
+    const targetGuardId = guard.id || guard.guard_id;
+    if (!shift || !shift.invoice_id) return;
+    const invoiceId = shift.invoice_id;
+    setIsAssigningGuard(targetGuardId);
+
     if (isReassign) {
       const payload = { shift_id: shiftId, guard_id: targetGuardId };
-      const apiEndpoint = assignRole === "standby_guard" ? "/api/v1/shift/reassign-standby-guard" : "/api/v1/shift/reassign-lead-guard";
-      console.log(`[ShiftDashboard] Triggering POST ${apiEndpoint} Payload:`, payload);
-
       const res = assignRole === "standby_guard"
         ? await reassignStandbyGuardAction(payload)
         : await reassignLeadGuardAction(payload);
-
-      console.log(`[ShiftDashboard] Response from POST ${apiEndpoint}:`, res);
 
       if (res.success) {
         toast.success(res.message || "Shift reassigned successfully");
@@ -601,14 +644,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (rates.travel_fee && rates.travel_fee > 0) actionPayload.travel_fee = rates.travel_fee;
       if (rates.qc_flat_rate && rates.qc_flat_rate > 0) actionPayload.qc_flat_rate = rates.qc_flat_rate;
 
-      const apiEndpoint = assignRole === "standby_guard" ? "/api/v1/shift/assign-standby-guard" : "/api/v1/shift/assign-lead-guard";
-      console.log(`[ShiftDashboard] Triggering POST ${apiEndpoint} Payload:`, actionPayload);
-
       const res = assignRole === "standby_guard"
         ? await assignStandbyGuardAction(actionPayload)
         : await assignLeadGuardAction(actionPayload);
-
-      console.log(`[ShiftDashboard] Response from POST ${apiEndpoint}:`, res);
 
       if (res.success) {
         toast.success(res.message || "Guard assigned successfully");
@@ -679,7 +717,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
         onStartVideoCall={() => {
-          const guardId = shift?.lead_guard?.guard_id || 
+          const guardId = shift?.lead_guard?.guard_id ||
             (typeof shift?.assigned_guard === 'object'
               ? shift?.assigned_guard?.id || shift?.assigned_guard?.guard_id
               : shift?.assigned_guard);
@@ -842,14 +880,27 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         isSaving={isCancellingService}
       />
 
+      <VerifyWarningDialog
+        isOpen={verifyWarning.isOpen}
+        warnings={verifyWarning.warnings}
+        onClose={() => setVerifyWarning({ isOpen: false, warnings: [] })}
+        onConfirm={() => {
+          setVerifyWarning(prev => ({ ...prev, isOpen: false }));
+          if (verifyWarning.pendingArgs) {
+            executeAssignment(
+              verifyWarning.pendingArgs.guard,
+              verifyWarning.pendingArgs.rates
+            );
+          }
+        }}
+      />
+
       <ManualStartShiftDialog
         isOpen={isManualStartOpen}
         onClose={() => setIsManualStartOpen(false)}
         onConfirm={handleManualStartShiftConfirm}
         isSaving={isStartingShift}
       />
-
-
     </div>
   );
 }

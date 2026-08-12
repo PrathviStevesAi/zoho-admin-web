@@ -575,6 +575,37 @@ export async function assignStandbyGuardsAction(payload: {
   }
 }
 
+export async function verifyGuardAssignmentAction(payload: {
+  invoice_id: string;
+  assignments: {
+    guard_id: string;
+    shift_ids: string[];
+  }[];
+}): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const res = await apiFetch<{ success: boolean; data?: any; message?: string }>(
+      `/api/v1/shift/verify-guard-assignment`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    // If the API returns success false but with data (the warnings), we should probably pass it back
+    if (res.success === false && res.data) {
+      return { success: false, data: res.data, error: res.message };
+    }
+    return { success: res.success !== false, data: res.data, error: res.message };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    // Usually 400 errors with warnings might be thrown by apiFetch if it checks response.ok
+    // So we need to handle the case where apiFetch throws but there is error data
+    if (error.data) {
+       return { success: false, data: error.data, error: message };
+    }
+    return { success: false, error: message };
+  }
+}
+
 export async function assignGuardToShiftAction(payload: {
   invoice_id: string;
   guard_id: string;
