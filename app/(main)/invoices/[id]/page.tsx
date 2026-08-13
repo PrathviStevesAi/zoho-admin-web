@@ -4,7 +4,7 @@ import {
   clientFetchInvoiceDetailsAction,
   clientFetchInvoiceShiftsAction,
   clientFetchSecurityServicesAction,
-  clientFetchAvailableGuardsAction
+  clientFetchAvailableGuardsAction,
 } from "@/lib/client-actions";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -23,7 +23,8 @@ import {
   unassignGuardAction,
   cancelInvoiceServiceAction,
   updateInvoiceDetailsAction,
-  updateShiftDetailsAction
+  updateShiftDetailsAction,
+  assignStandbyGuardsAction
 } from "@/actions/dashboard.actions";
 import { InvoiceData } from "@/types/dashboard.types";
 import { toast } from "sonner";
@@ -37,10 +38,13 @@ import { AssignmentModule } from "./_components/AssignmentModule";
 import { SelectUserDialog } from "./_components/SelectUserDialog";
 import { EditLocationDialog } from "./_components/EditLocationDialog";
 import { CancelServiceDialog } from "./_components/CancelServiceDialog";
+import { VerifyWarningDialog } from "./_components/VerifyWarningDialog";
+import { verifyGuardAssignmentAction } from "@/actions/dashboard.actions";
 import { ConfirmationDialog } from "./_components/ConfirmationDialog";
 import { AvailableGuardsModule } from "./_components/AvailableGuardsModule";
 import { EditShiftDialog } from "./_components/EditShiftDialog";
 import { ShippingAddress } from "@/types/dashboard.types";
+import { ActionErrorDialog } from "./_components/ActionErrorDialog";
 const formatDateKey = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -86,7 +90,7 @@ export default function InvoiceDetailsPage() {
   const [isEditShiftOpen, setIsEditShiftOpen] = useState(false);
   const [editingShift, setEditingShift] = useState<any | null>(null);
   const [isSavingShift, setIsSavingShift] = useState(false);
-  const [unassignConfirm, setUnassignConfirm] = useState<{ isOpen: boolean, shiftOfferId: string }>({ isOpen: false, shiftOfferId: "" });
+  const [unassignConfirm, setUnassignConfirm] = useState<{ isOpen: boolean, shiftOfferId: string, type: "lead_guard" | "standby_guard" }>({ isOpen: false, shiftOfferId: "", type: "lead_guard" });
   const [invoiceTimezone, setInvoiceTimezone] = useState<string>('America/Los_Angeles');
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
   const [paymentFormData, setPaymentFormData] = useState<{
@@ -111,14 +115,28 @@ export default function InvoiceDetailsPage() {
     service: "",
     people: 1
   });
+
   const [rowSchedules, setRowSchedules] = useState<Record<string, any>>({});
   const [isSelectUserOpen, setIsSelectUserOpen] = useState(false);
   const [selectedShiftIds, setSelectedShiftIds] = useState<string[]>([]);
-  const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string }>>({});
+  const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number, type: "lead" | "standby", flatQcRate?: number }>>({});
+  const [assignmentType, setAssignmentType] = useState<"lead" | "standby">("lead");
+  
+  const [verifyWarning, setVerifyWarning] = useState<{
+    isOpen: boolean;
+    warnings: string[];
+    pendingPayloads?: {
+      leadAssignments: any[];
+      standbyAssignments: any[];
+      clearSelection?: () => void;
+    };
+  }>({ isOpen: false, warnings: [] });
+
   const [isAssigning, setIsAssigning] = useState(false);
   const [availableGuards, setAvailableGuards] = useState<any[]>([]);
   const [isAvailableGuardsLoading, setIsAvailableGuardsLoading] = useState(false);
   const [totalAvailableGuards, setTotalAvailableGuards] = useState(0);
+  const [actionError, setActionError] = useState<{isOpen: boolean, message: string}>({isOpen: false, message: ""});
 
   const loadInvoice = async () => {
     setLoading(true);
@@ -593,7 +611,9 @@ export default function InvoiceDetailsPage() {
     setIsCreatingShift(false);
   };
 
-  const handleGuardSelect = (guard: any) => {
+  const handleGuardSelect = async (guard: any, rates: { hourlyRate?: number; travelFee?: number; flatQcRate?: number }) => {
+
+
     const currentBatchShifts = shifts.filter(s => selectedShiftIds.includes(s.shift_id));
     for (let i = 0; i < currentBatchShifts.length; i++) {
       for (let j = i + 1; j < currentBatchShifts.length; j++) {
@@ -639,7 +659,14 @@ export default function InvoiceDetailsPage() {
 
     const newAssignments = { ...pendingAssignments };
     selectedShiftIds.forEach(id => {
-      newAssignments[id] = { guard_id: guard.guard_id, guard_name: `${guard.first_name} ${guard.last_name}` };
+      newAssignments[id] = {
+        guard_id: guard.guard_id,
+        guard_name: `${guard.first_name} ${guard.last_name}`,
+        hourlyRate: rates.hourlyRate,
+        travelFee: rates.travelFee,
+        flatQcRate: rates.flatQcRate,
+        type: assignmentType
+      };
     });
     setPendingAssignments(newAssignments);
     setIsSelectUserOpen(false);
@@ -647,82 +674,167 @@ export default function InvoiceDetailsPage() {
     toast.success(`Guard ${guard.first_name} ${guard.last_name} selected for ${selectedShiftIds.length} shifts`);
   };
 
-  const handleAssignGuards = async (
-    shiftRates: Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>
-  ) => {
-    const groups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; perShiftRate?: number; travelFee?: number }> = {};
+  const handleAssignGuards = async (shiftRates?: any, clearSelection?: () => void) => {
+    const leadGroups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; travelFee?: number }> = {};
+    const standbyGroups: Record<string, { guard_id: string; shift_ids: string[]; flatQcRate?: number }> = {};
 
     Object.entries(pendingAssignments).forEach(([shiftId, data]) => {
-      const rates = shiftRates[shiftId] || {};
-      const key = `${data.guard_id}_${rates.hourlyRate ?? ""}_${rates.perShiftRate ?? ""}_${rates.travelFee ?? ""}`;
-
-      if (!groups[key]) {
-        groups[key] = {
-          guard_id: data.guard_id,
-          shift_ids: [],
-          hourlyRate: rates.hourlyRate,
-          perShiftRate: rates.perShiftRate,
-          travelFee: rates.travelFee
-        };
+      if (data.type === "standby") {
+        const key = `${data.guard_id}_${data.flatQcRate ?? ""}`;
+        if (!standbyGroups[key]) {
+          standbyGroups[key] = {
+            guard_id: data.guard_id,
+            shift_ids: [],
+            flatQcRate: data.flatQcRate
+          };
+        }
+        standbyGroups[key].shift_ids.push(shiftId);
+      } else {
+        const key = `${data.guard_id}_${data.hourlyRate ?? ""}_${data.travelFee ?? ""}`;
+        if (!leadGroups[key]) {
+          leadGroups[key] = {
+            guard_id: data.guard_id,
+            shift_ids: [],
+            hourlyRate: data.hourlyRate,
+            travelFee: data.travelFee
+          };
+        }
+        leadGroups[key].shift_ids.push(shiftId);
       }
-      groups[key].shift_ids.push(shiftId);
     });
 
-    const assignments = Object.values(groups).map((group) => {
-      const cleanValue = (val: any) => {
-        if (val === undefined || val === null || val === "" || val === 0) {
-          return null;
-        }
-        return val;
-      };
-
+    const leadAssignments = Object.values(leadGroups).map((group) => {
       const assignment: any = {
         guard_id: group.guard_id,
         shift_ids: group.shift_ids,
-        per_hour_rate: cleanValue(group.hourlyRate),
-        per_shift_rate: cleanValue(group.perShiftRate),
-        travel_fee: cleanValue(group.travelFee)
       };
+
+      const parsedHourly = Number(group.hourlyRate);
+      if (!isNaN(parsedHourly) && parsedHourly >= 1) {
+        assignment.per_hour_rate = parsedHourly;
+      }
+
+      const parsedTravel = Number(group.travelFee);
+      if (!isNaN(parsedTravel) && parsedTravel >= 1) {
+        assignment.travel_fee = parsedTravel;
+      }
+
       return assignment;
     });
 
-    if (assignments.length === 0) {
+    const standbyAssignments = Object.values(standbyGroups).map((group) => {
+      const assignment: any = {
+        guard_id: group.guard_id,
+        shift_ids: group.shift_ids
+      };
+      
+      const parsedQcRate = Number(group.flatQcRate);
+      if (!isNaN(parsedQcRate) && parsedQcRate > 0) {
+        assignment.qc_flat_rate = parsedQcRate;
+      }
+      
+      return assignment;
+    });
+
+    if (leadAssignments.length === 0 && standbyAssignments.length === 0) {
       toast.error("Please assign at least one guard");
       return;
     }
 
-    const payload: any = {
+    setIsAssigning(true);
+
+    const allAssignmentsForVerify = [
+      ...leadAssignments.map((a: any) => ({ guard_id: a.guard_id, shift_ids: a.shift_ids })),
+      ...standbyAssignments.map((a: any) => ({ guard_id: a.guard_id, shift_ids: a.shift_ids }))
+    ];
+    const verifyGroups: Record<string, string[]> = {};
+    allAssignmentsForVerify.forEach((a: any) => {
+      if (!verifyGroups[a.guard_id]) verifyGroups[a.guard_id] = [];
+      verifyGroups[a.guard_id].push(...a.shift_ids);
+    });
+    
+    const verifyPayload = {
       invoice_id: id,
-      assignments
+      assignments: Object.entries(verifyGroups).map(([guard_id, shift_ids]) => ({
+        guard_id,
+        shift_ids: Array.from(new Set(shift_ids))
+      }))
     };
 
-    console.log("[handleAssignGuards] Payload to assignGuardsAction:", JSON.stringify(payload, null, 2));
+    const verifyRes = await verifyGuardAssignmentAction(verifyPayload);
+    if (!verifyRes.success) {
+      setIsAssigning(false);
+      let warnings: string[] = [];
+      if (Array.isArray(verifyRes.data)) {
+        warnings = verifyRes.data.map(String);
+      } else if (verifyRes.error) {
+        warnings = [verifyRes.error];
+      } else {
+        warnings = ["There are scheduling conflicts for the selected guards."];
+      }
 
+      setVerifyWarning({
+        isOpen: true,
+        warnings,
+        pendingPayloads: {
+          leadAssignments,
+          standbyAssignments,
+          clearSelection
+        }
+      });
+      return;
+    }
+
+    await executeAssignments(leadAssignments, standbyAssignments, clearSelection);
+  };
+
+  const executeAssignments = async (leadAssignments: any[], standbyAssignments: any[], clearSelection?: () => void) => {
     setIsAssigning(true);
-    const res = await assignGuardsAction(payload);
+    let success = true;
 
-    console.log("[handleAssignGuards] API Response:", JSON.stringify(res, null, 2));
+    if (leadAssignments.length > 0) {
+      const payload: any = { invoice_id: id, assignments: leadAssignments };
+      console.log("[executeAssignments] Payload to assignGuardsAction:", JSON.stringify(payload, null, 2));
+      const res = await assignGuardsAction(payload);
+      if (!res.success) {
+        success = false;
+        setActionError({isOpen: true, message: res.error || "Failed to assign lead guards"});
+      }
+    }
 
-    if (res.success) {
+    if (standbyAssignments.length > 0) {
+      const payload: any = { invoice_id: id, assignments: standbyAssignments };
+      console.log("[executeAssignments] Payload to assignStandbyGuardsAction:", JSON.stringify(payload, null, 2));
+      const res = await assignStandbyGuardsAction(payload);
+      if (!res.success) {
+        success = false;
+        setActionError({isOpen: true, message: res.error || "Failed to assign standby guards"});
+      }
+    }
+
+    if (success) {
       toast.success("Guards assigned successfully");
       setPendingAssignments({});
+      if (typeof clearSelection === 'function') clearSelection();
       loadShifts("assign_guard");
-    } else {
-      toast.error(res.error || "Failed to assign guards");
     }
+    
     setIsAssigning(false);
   };
 
-  const handleUnassignGuard = (shiftOfferId: string) => setUnassignConfirm({ isOpen: true, shiftOfferId });
+  const handleUnassignGuard = (shiftOfferId: string, type: "lead_guard" | "standby_guard") => setUnassignConfirm({ isOpen: true, shiftOfferId, type });
 
   const handleConfirmUnassign = async () => {
     if (!unassignConfirm.shiftOfferId) return;
     setIsShiftsLoading(true);
-    const res = await unassignGuardAction(unassignConfirm.shiftOfferId);
+    const res = await unassignGuardAction(unassignConfirm.shiftOfferId, unassignConfirm.type);
     if (res.success) {
-      toast.success("Guard unassigned successfully");
-      loadShifts("assign_guard");
-      setUnassignConfirm({ isOpen: false, shiftOfferId: "" });
+      toast.success(res.message || "Guard unassigned successfully");
+      await Promise.all([
+        loadShifts("assign_guard"),
+        loadAvailableGuards()
+      ]);
+      setUnassignConfirm({ isOpen: false, shiftOfferId: "", type: "lead_guard" });
     } else {
       toast.error(res.error || "Failed to unassign guard");
     }
@@ -849,8 +961,9 @@ export default function InvoiceDetailsPage() {
           shifts={shifts}
           isLoading={isShiftsLoading}
           onDeleteShift={handleDeleteShift}
-          onOpenSelectUser={(ids) => {
+          onOpenSelectUser={(ids, type) => {
             setSelectedShiftIds(ids);
+            setAssignmentType(type);
             setIsSelectUserOpen(true);
           }}
           onBack={() => setIsAssignGuardOpen(false)}
@@ -901,6 +1014,7 @@ export default function InvoiceDetailsPage() {
         onClose={() => setIsSelectUserOpen(false)}
         onSelect={handleGuardSelect}
         selectedShiftIds={selectedShiftIds}
+        mode={assignmentType}
       />
 
       <EditLocationDialog
@@ -916,6 +1030,22 @@ export default function InvoiceDetailsPage() {
         onClose={() => setIsCancelServiceOpen(false)}
         onConfirm={handleConfirmCancel}
         isSaving={isCancelling}
+      />
+
+      <VerifyWarningDialog
+        isOpen={verifyWarning.isOpen}
+        warnings={verifyWarning.warnings}
+        onClose={() => setVerifyWarning({ isOpen: false, warnings: [] })}
+        onConfirm={async () => {
+          setVerifyWarning(prev => ({ ...prev, isOpen: false }));
+          if (verifyWarning.pendingPayloads) {
+            await executeAssignments(
+              verifyWarning.pendingPayloads.leadAssignments,
+              verifyWarning.pendingPayloads.standbyAssignments,
+              verifyWarning.pendingPayloads.clearSelection
+            );
+          }
+        }}
       />
 
       <ConfirmationDialog
@@ -942,7 +1072,7 @@ export default function InvoiceDetailsPage() {
 
       <ConfirmationDialog
         isOpen={unassignConfirm.isOpen}
-        onClose={() => setUnassignConfirm({ isOpen: false, shiftOfferId: "" })}
+        onClose={() => setUnassignConfirm({ isOpen: false, shiftOfferId: "", type: "lead_guard" })}
         onConfirm={handleConfirmUnassign}
         title="Unassign Guard?"
         description="This will remove the guard from this shift. Are you sure?"
@@ -965,6 +1095,12 @@ export default function InvoiceDetailsPage() {
           timezone={invoiceTimezone}
         />
       )}
+
+      <ActionErrorDialog 
+        isOpen={actionError.isOpen} 
+        onClose={() => setActionError({ isOpen: false, message: "" })} 
+        message={actionError.message} 
+      />
     </div>
   );
 }

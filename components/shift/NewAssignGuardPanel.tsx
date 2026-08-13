@@ -5,7 +5,7 @@ import {
 } from "@/lib/client-actions";
 
 import { useState, useEffect } from "react";
-import { XCircle, Loader2 } from "lucide-react";
+import { Search, X, XCircle, DollarSign, Loader2 } from "lucide-react";
 import { fetchLocationAction, } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -31,6 +32,7 @@ interface GuardRates {
   per_hour_rate?: number;
   per_shift_rate?: number;
   travel_fee?: number;
+  qc_flat_rate?: number;
 }
 
 interface NewAssignGuardPanelProps {
@@ -42,12 +44,15 @@ interface NewAssignGuardPanelProps {
     per_hour_rate?: number;
     per_shift_rate?: number;
     travel_fee?: number;
+    qc_flat_rate?: number;
   };
+  assignRole?: "lead_guard" | "standby_guard";
 }
 
-export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates }: NewAssignGuardPanelProps) {
-  const [hourlyRate, setHourlyRate] = useState(initialRates?.per_hour_rate ? String(initialRates.per_hour_rate) : "");
-  const [travelFee, setTravelFee] = useState(initialRates?.travel_fee ? String(initialRates.travel_fee) : "");
+export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates, assignRole }: NewAssignGuardPanelProps) {
+  const [hourlyRate, setHourlyRate] = useState("");
+  const [travelFee, setTravelFee] = useState("");
+  const [flatQcRate, setFlatQcRate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     country: "",
@@ -110,86 +115,174 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
     loadGuards();
   }, [currentPage, debouncedSearchQuery, filters]);
 
+  const resetFields = () => {
+    setHourlyRate("");
+    setTravelFee("");
+    setFlatQcRate("");
+    setSearchQuery("");
+  };
+
+  const handleClose = () => {
+    resetFields();
+    onClose();
+  };
+
+  useEffect(() => {
+    resetFields();
+  }, [assignRole, isReassign]);
+
   const handleSelectGuard = (guard: any) => {
     const rates: GuardRates = {};
     const hr = parseFloat(hourlyRate);
     const tf = parseFloat(travelFee);
+    const qc = parseFloat(flatQcRate);
 
     if (!isNaN(hr) && hr > 0) rates.per_hour_rate = hr;
     if (!isNaN(tf) && tf > 0) rates.travel_fee = tf;
+    if (!isNaN(qc) && qc > 0) rates.qc_flat_rate = qc;
 
+    resetFields();
     onSelect(guard, rates);
   };
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-blue-50/60 to-white">
-        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2.5">
-          {isReassign ? "Re-Assign Guard" : "Assign New Guard"}
+      <div className="px-6 py-5 flex justify-between items-center">
+        <h2 className="text-xl font-bold text-[#0f172a]">
+          {isReassign
+            ? (assignRole === "standby_guard" ? "Re-Assign Standby Guard" : "Re-Assign Lead Guard")
+            : (assignRole === "standby_guard" ? "Select Standby Guard" : "Select Lead Guard")}
         </h2>
-        <p className="text-[13px] text-slate-500 mt-1">Enter guard pay rates and select a guard to assign to this shift</p>
+        <button
+          onClick={handleClose}
+          className="p-1 text-slate-500 hover:text-slate-800 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
-      <div className="px-6 pt-5 pb-4 border-b border-slate-100">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-[13px] font-medium text-slate-700">Hourly Rate paid to Guard</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={hourlyRate}
-                onChange={(e) => setHourlyRate(e.target.value)}
-                placeholder="0.00"
-                className="h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
-              />
+      <div className="px-6 pb-4 border-b border-slate-100 space-y-3">
+        {isReassign ? (
+          <div className="w-full">
+            <div className="space-y-1.5">
+              <Label className="text-[13px] font-medium text-slate-700">Search</Label>
+              <div className="relative w-full">
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search name or email..."
+                  className="w-full h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-[13px] font-medium text-slate-700">Travel Fee paid to Guard</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={travelFee}
-                onChange={(e) => setTravelFee(e.target.value)}
-                placeholder="0.00"
-                className="h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
-              />
+        ) : assignRole === "standby_guard" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+            <div className="space-y-1.5">
+              <Label className="text-[13px] font-medium text-slate-700">Flat QC Rate to Guard</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={flatQcRate}
+                  onChange={(e) => setFlatQcRate(e.target.value)}
+                  placeholder="0.00"
+                  className="h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
+                />
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="px-6 pt-5 pb-4 space-y-3">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="space-y-1.5 flex-1">
-            <Label className="text-[13px] font-medium text-slate-700">Search</Label>
-            <div className="relative w-full">
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search name or email..."
-                className="w-full h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800"
-                >
-                  <XCircle className="w-4 h-4" />
-                </button>
-              )}
+            <div className="space-y-1.5">
+              <Label className="text-[13px] font-medium text-slate-700">Search</Label>
+              <div className="relative w-full">
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search name or email..."
+                  className="w-full h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div className="space-y-1.5">
+              <Label className="text-[13px] font-medium text-slate-700">Hourly Rate paid to Guard</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={hourlyRate}
+                  onChange={(e) => setHourlyRate(e.target.value)}
+                  placeholder="0.00"
+                  className="h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[13px] font-medium text-slate-700">Travel Fee paid to Guard</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={travelFee}
+                  onChange={(e) => setTravelFee(e.target.value)}
+                  placeholder="0.00"
+                  className="h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[13px] font-medium text-slate-700">Search</Label>
+              <div className="relative w-full">
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search name or email..."
+                  className="w-full h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end pt-1">
           <button
             type="button"
             onClick={() => setShowMobileFilters(prev => !prev)}
-            className="md:hidden self-end h-10 px-4 rounded-lg font-bold text-xs border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto"
+            className="md:hidden h-10 px-4 rounded-lg font-bold text-xs border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto"
           >
             <span>{showMobileFilters ? "Hide Filters" : "Show Filters"}</span>
             <span className={`transition-transform duration-200 text-[9px] ${showMobileFilters ? "rotate-180" : ""}`}>▼</span>
@@ -276,7 +369,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
       <div className="px-6 pb-4">
         <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col min-h-[300px] bg-white shadow-sm">
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto custom-scrollbar-visible">
-            <Table className="border-collapse min-w-[1200px]">
+            <Table className="border-collapse min-w-[1200px]" scrollbarClass="custom-scrollbar-visible">
               <TableHeader className="bg-white sticky top-0 z-20">
                 <TableRow className="hover:bg-transparent border-b border-slate-100">
                   <TableHead className="w-[140px] py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-100">ACTION</TableHead>
@@ -293,12 +386,40 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
               </TableHeader>
               <TableBody>
                 {isLoadingGuards ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="py-12 text-center">
-                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#0064cb]" />
-                      <p className="text-xs text-slate-700 mt-2">Loading guards...</p>
-                    </TableCell>
-                  </TableRow>
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={index} className="border-b border-slate-50">
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-6 w-24 rounded-lg" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                        <Skeleton className="h-4 w-6 mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-28" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-36" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                        <Skeleton className="h-4 w-10 mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                        <Skeleton className="h-4 w-10 mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-40" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6">
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                      </TableCell>
+                    </TableRow>
+                  ))
                 ) : guards.length > 0 ? (
                   guards.map((guard, index) => (
                     <TableRow key={guard.guard_id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
@@ -357,10 +478,10 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         </div>
       </div>
 
-      <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50/50">
+      <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 bg-white">
         <button
-          onClick={onClose}
-          className="cursor-pointer h-9 px-5 rounded-lg text-sm font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-all"
+          onClick={handleClose}
+          className="cursor-pointer h-9 px-5 rounded-lg text-[15px] font-bold text-[#0064cb] hover:bg-blue-50 transition-all"
         >
           Cancel
         </button>

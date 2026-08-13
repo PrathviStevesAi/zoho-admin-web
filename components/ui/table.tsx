@@ -4,11 +4,15 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+  className,
+  scrollbarClass = "custom-scrollbar",
+  ...props
+}: React.ComponentProps<"table"> & { scrollbarClass?: string }) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full flex-1 min-h-0 overflow-x-scroll overflow-y-auto custom-scrollbar"
+      className={cn("relative w-full flex-1 min-h-0 overflow-x-scroll overflow-y-auto", scrollbarClass)}
     >
       <table
         data-slot="table"

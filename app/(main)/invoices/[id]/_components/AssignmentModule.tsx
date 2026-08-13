@@ -1,11 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Loader2, Plus, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -15,16 +14,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AssignmentModuleProps {
   shifts: any[];
   isLoading: boolean;
   onDeleteShift: (id: string) => void;
-  onUnassignGuard: (shiftOfferId: string) => void;
-  onOpenSelectUser: (selectedIds: string[]) => void;
+  onUnassignGuard: (shiftOfferId: string, type: "lead_guard" | "standby_guard") => void;
+  onOpenSelectUser: (selectedIds: string[], type: "lead" | "standby") => void;
   onBack: () => void;
-  pendingAssignments: Record<string, { guard_id: string, guard_name: string }>;
-  onAdd: (shiftRates: Record<string, { hourlyRate?: number; travelFee?: number }>) => void;
+  pendingAssignments: Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number, type?: "lead" | "standby", flatQcRate?: number }>;
+  onAdd: (shiftRates: Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>, clearSelection?: () => void) => void;
   isAssigning: boolean;
   onRemovePendingAssignment?: (shiftId: string) => void;
 }
@@ -32,7 +32,6 @@ interface AssignmentModuleProps {
 export function AssignmentModule({
   shifts,
   isLoading,
-  onDeleteShift,
   onUnassignGuard,
   onOpenSelectUser,
   onBack,
@@ -84,7 +83,7 @@ export function AssignmentModule({
         return changed ? next : prev;
       });
     }
-  }, [pendingAssignments]);
+  }, [pendingAssignments, hourlyRate, travelFee]);
 
   const handleGlobalHourlyRateChange = (val: string) => {
     setHourlyRate(val);
@@ -95,21 +94,6 @@ export function AssignmentModule({
         next[shiftId] = {
           ...next[shiftId],
           hourlyRate: rateVal
-        };
-      });
-      return next;
-    });
-  };
-
-  const handleGlobalTravelFeeChange = (val: string) => {
-    setTravelFee(val);
-    const feeVal = val !== "" ? Number(val) : undefined;
-    setShiftRates(prev => {
-      const next = { ...prev };
-      Object.keys(pendingAssignments).forEach(shiftId => {
-        next[shiftId] = {
-          ...next[shiftId],
-          travelFee: feeVal
         };
       });
       return next;
@@ -134,226 +118,393 @@ export function AssignmentModule({
     }
   };
 
+  const hasPending = Object.keys(pendingAssignments).length > 0;
+  
+  const isLeadDisabled = selectedShifts.length === 0 || hasPending || selectedShifts.some(id => {
+    const s = shifts.find(x => x.shift_id === id);
+    return s && (s.lead_guard || s.guard);
+  });
+
+  const isStandbyDisabled = selectedShifts.length === 0 || hasPending || selectedShifts.some(id => {
+    const s = shifts.find(x => x.shift_id === id);
+    return s && (s.secondary_guard || s.standby_guard || s.qc_guard || (s.standby_guards && s.standby_guards.length > 0));
+  });
+
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-      <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white max-w-7xl mx-auto">
+      <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white w-full">
         <CardContent className="p-0">
           <div className="px-6 py-4 border-b border-slate-100 flex flex-col gap-1 bg-white">
             <h2 className="text-xl font-bold text-slate-900">Select guards for shifts</h2>
           </div>
 
-          <div className="p-6 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="hourly_rate" className="text-sm font-bold text-slate-700">Hourly Rate Paid to Guard</Label>
-                <div className="relative group">
-                  <Input
-                    id="hourly_rate"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={hourlyRate}
-                    onChange={(e) => handleGlobalHourlyRateChange(e.target.value)}
-                    placeholder="0.00"
-                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <div className="h-5 w-px bg-slate-200 mr-2" />
-                    <span className="text-slate-700 text-[11px] font-bold tracking-wider">USD</span>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="travel_fee" className="text-sm font-bold text-slate-700">Travel Fee Paid to Guard</Label>
-                <div className="relative group">
-                  <Input
-                    id="travel_fee"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={travelFee}
-                    onChange={(e) => handleGlobalTravelFeeChange(e.target.value)}
-                    placeholder="0.00"
-                    className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg pl-3 pr-14 text-sm transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <div className="h-5 w-px bg-slate-200 mr-2" />
-                    <span className="text-slate-700 text-[11px] font-bold tracking-wider">USD</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="border border-slate-100 rounded-lg overflow-hidden shadow-sm w-full">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h3 className="text-sm font-bold text-slate-700">Select guards for shifts</h3>
+          <div className="w-full bg-white">
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h3 className="text-sm font-bold text-slate-700">Select guards for shifts</h3>
+              <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   className={cn(
                     "text-[#0064cb] border-[#0064cb] hover:bg-blue-50 h-9 rounded-lg px-4 font-bold text-xs flex gap-2 transition-all cursor-pointer w-full sm:w-auto justify-center items-center shrink-0",
-                    selectedShifts.length === 0 && "opacity-50 pointer-events-none grayscale"
+                    isLeadDisabled && "opacity-50 pointer-events-none grayscale"
                   )}
-                  onClick={() => onOpenSelectUser(selectedShifts)}
-                  disabled={selectedShifts.length === 0}
+                  onClick={() => onOpenSelectUser(selectedShifts, "lead")}
+                  disabled={isLeadDisabled}
                 >
-                  Select Guard <Plus className="w-3.5 h-3.5" />
+                  Assign Lead Guard <Plus className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "text-amber-600 border-amber-600 hover:bg-amber-50 h-9 rounded-lg px-4 font-bold text-xs flex gap-2 transition-all cursor-pointer w-full sm:w-auto justify-center items-center shrink-0",
+                    isStandbyDisabled && "opacity-50 pointer-events-none grayscale"
+                  )}
+                  onClick={() => onOpenSelectUser(selectedShifts, "standby")}
+                  disabled={isStandbyDisabled}
+                >
+                  Assign Standby Guard <Plus className="w-3.5 h-3.5" />
                 </Button>
               </div>
-              <div className="overflow-x-auto custom-scrollbar w-full">
-                <Table className="min-w-[900px] md:min-w-full">
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="w-[60px] py-4 px-6 text-center">
-                        <input
-                          type="checkbox"
-                          className={cn(
-                            "w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer",
-                            selectableShifts.length === 0 && "opacity-50 cursor-not-allowed"
-                          )}
-                          checked={isAllSelected}
-                          onChange={(e) => handleSelectAll(e.target.checked)}
-                          disabled={selectableShifts.length === 0}
-                        />
-                      </TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Shift No.</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Service Name</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Start Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">End Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Guard</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Hourly Rate</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Travel Fee</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Is Seen</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={11} className="py-12 text-center">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#0064cb]" />
-                          <p className="text-xs text-slate-700 mt-2">Loading shifts...</p>
-                        </TableCell>
-                      </TableRow>
-                    ) : shifts.length > 0 ? (
-                      shifts.map((shift) => (
-                        <TableRow
-                          key={shift.shift_id}
-                          className={cn(
-                            "border-slate-50 transition-colors",
-                            (shift.guard || pendingAssignments[shift.shift_id]) ? "bg-slate-50/50" : "hover:bg-slate-50/30"
-                          )}
-                        >
-                          <TableCell className="py-4 px-6 text-center">
-                            <input
-                              type="checkbox"
-                              className={cn(
-                                "w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer",
-                                (shift.guard || pendingAssignments[shift.shift_id]) && "opacity-30 cursor-not-allowed"
-                              )}
-                              checked={selectedShifts.includes(shift.shift_id) || !!pendingAssignments[shift.shift_id]}
-                              onChange={(e) => handleSelectRow(shift.shift_id, e.target.checked)}
-                              disabled={!!shift.guard || !!pendingAssignments[shift.shift_id]}
-                            />
-                          </TableCell>
-                          <TableCell className="text-sm font-bold text-slate-700 py-4 px-6">{shift.shift_no}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">{shift.service_name}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">
-                            {new Date(shift.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br />
-                            <span className="text-[11px] text-slate-700">{new Date(shift.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">
-                            {new Date(shift.end_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br />
-                            <span className="text-[11px] text-slate-700">{new Date(shift.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">
-                            <div className="flex items-center gap-2">
-                              {shift.guard ? (
-                                <>
-                                  <span className="text-slate-700 font-semibold">
-                                    {typeof shift.guard === 'object' ? `${shift.guard.first_name} ${shift.guard.last_name}` : shift.guard}
-                                  </span>
-                                  <button
-                                    onClick={() => onUnassignGuard(shift.shift_offer_id)}
-                                    className="w-5 h-5 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer shadow-sm shadow-red-500/20 ml-auto"
-                                    title="Unassign Guard"
-                                  >
-                                    <X className="w-3 h-3 stroke-[3]" />
-                                  </button>
-                                </>
-                              ) : pendingAssignments[shift.shift_id] ? (
-                                <>
-                                  <span className="text-[#0064cb] font-semibold text-[13px] animate-pulse">
-                                    {pendingAssignments[shift.shift_id].guard_name}
-                                  </span>
-                                  <button
-                                    onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
-                                    className="w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition-all cursor-pointer ml-auto"
-                                    title="Remove Selection"
-                                  >
-                                    <X className="w-3 h-3 stroke-[3]" />
-                                  </button>
-                                </>
-                              ) : (
-                                <span className="text-slate-300 text-xs">Unassigned</span>
-                              )}
+            </div>
+            <div className="w-full">
+              <Table
+                className="w-full border-collapse text-xs [&_th]:whitespace-normal"
+                scrollbarClass="overflow-x-auto md:overflow-hidden custom-scrollbar-visible"
+              >
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent border-slate-100">
+                    <TableHead rowSpan={2} className="w-[40px] py-2 px-2 text-center border-b border-slate-100">
+                      <input
+                        type="checkbox"
+                        className={cn(
+                          "w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer",
+                          selectableShifts.length === 0 && "opacity-50 cursor-not-allowed"
+                        )}
+                        checked={isAllSelected}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        disabled={selectableShifts.length === 0}
+                      />
+                    </TableHead>
+                    <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 border-b border-slate-100">Shift No.</TableHead>
+                    <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 border-b border-slate-100">Service Name</TableHead>
+                    <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 border-b border-slate-100">Start Time</TableHead>
+                    <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 border-b border-slate-100">End Time</TableHead>
+                    <TableHead rowSpan={2} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 border-b border-slate-100">Hourly Rate</TableHead>
+                    <TableHead colSpan={3} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 text-center border-l border-r border-b border-slate-100 bg-slate-100/30">Lead Guard</TableHead>
+                    <TableHead colSpan={3} className="text-[11px] font-bold text-slate-800 uppercase py-2 px-2 text-center border-r border-b border-slate-100 bg-amber-50/10">Standby Guard (QC)</TableHead>
+                  </TableRow>
+                  <TableRow className="hover:bg-transparent border-slate-100">
+                    <TableHead className="text-[10px] font-bold text-slate-700 uppercase py-2 px-2 border-l border-slate-100 bg-slate-100/10 border-b">Guard</TableHead>
+                    <TableHead className="text-[10px] font-bold text-slate-700 uppercase py-2 px-2 bg-slate-100/10 border-b">Seen</TableHead>
+                    <TableHead className="text-[10px] font-bold text-slate-700 uppercase py-2 px-2 border-r border-slate-100 bg-slate-100/10 border-b">Status</TableHead>
+                    <TableHead className="text-[10px] font-bold text-slate-700 uppercase py-2 px-2 bg-amber-50/5 border-b">Guard</TableHead>
+                    <TableHead className="text-[10px] font-bold text-slate-700 uppercase py-2 px-2 bg-amber-50/5 border-b">Seen</TableHead>
+                    <TableHead className="text-[10px] font-bold text-slate-700 uppercase py-2 px-2 border-r border-slate-100 bg-amber-50/5 border-b">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={`skeleton-${i}`} className="border-b border-slate-50">
+                        <TableCell className="py-4 px-2 text-center"><Skeleton className="w-4 h-4 rounded mx-auto" /></TableCell>
+                        <TableCell className="py-4 px-2"><Skeleton className="h-4 w-10" /></TableCell>
+                        <TableCell className="py-4 px-2"><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell className="py-4 px-2 space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-16" /></TableCell>
+                        <TableCell className="py-4 px-2 space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-16" /></TableCell>
+                        <TableCell className="py-4 px-2"><Skeleton className="h-4 w-16" /></TableCell>
+
+
+                        <TableCell className="py-4 px-2 border-l border-slate-100">
+                          <div className="flex items-center gap-1.5">
+                            <Skeleton className="w-5 h-5 rounded-full shrink-0" />
+                            <div className="space-y-1">
+                              <Skeleton className="h-3 w-16" />
+                              <Skeleton className="h-2 w-12" />
                             </div>
-                          </TableCell>
-                          <TableCell className="py-4 px-6">
-                            <span className={cn(
-                              pendingAssignments[shift.shift_id]
-                                ? "text-[#0064cb] font-semibold text-[13px] animate-pulse"
-                                : "text-sm text-slate-800 font-medium"
-                            )}>
-                              {pendingAssignments[shift.shift_id]
-                                ? formatPrice(shiftRates[shift.shift_id]?.hourlyRate)
-                                : formatPrice(shift.per_hour_rate)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-4 px-6">
-                            <span className={cn(
-                              pendingAssignments[shift.shift_id]
-                                ? "text-[#0064cb] font-semibold text-[13px] animate-pulse"
-                                : "text-sm text-slate-800 font-medium"
-                            )}>
-                              {pendingAssignments[shift.shift_id]
-                                ? formatPrice(shiftRates[shift.shift_id]?.travelFee)
-                                : formatPrice(shift.travel_fee)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-4 px-6">
-                            <span className={cn(
-                              "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                              shift.is_seen === true ? "bg-green-50 text-green-600" :
-                                shift.is_seen === false ? "bg-amber-50 text-amber-600" : "bg-slate-50 text-slate-700"
-                            )}>
-                              {shift.is_seen === true ? "Seen" : shift.is_seen === false ? "Not Seen" : "----"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-4 px-6">
-                            <span className={cn(
-                              "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                              (shift.status?.toLowerCase().includes("abandon") ||
-                                shift.status?.toLowerCase().includes("rejected") ||
-                                shift.status?.toLowerCase().includes("refused") ||
-                                shift.status?.toLowerCase().includes("cancel"))
-                                ? "bg-red-50 text-red-600"
-                                : shift.status
-                                  ? "bg-green-50 text-green-600"
-                                  : "bg-slate-50 text-slate-700"
-                            )}>
-                              {shift.status || "----"}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={11} className="py-8 text-center text-slate-700">No shifts available to assign</TableCell>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4 px-2"><Skeleton className="h-3 w-6 mx-auto" /></TableCell>
+                        <TableCell className="py-4 px-2 border-r border-slate-100"><Skeleton className="h-4 w-14 mx-auto rounded" /></TableCell>
+
+                        <TableCell className="py-4 px-2">
+                          <div className="flex items-center gap-1.5">
+                            <Skeleton className="w-5 h-5 rounded-full shrink-0" />
+                            <div className="space-y-1">
+                              <Skeleton className="h-3 w-16" />
+                              <Skeleton className="h-2 w-12" />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4 px-2"><Skeleton className="h-3 w-6 mx-auto" /></TableCell>
+                        <TableCell className="py-4 px-2 border-r border-slate-100"><Skeleton className="h-4 w-14 mx-auto rounded" /></TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  ) : shifts.length > 0 ? (
+                    shifts.map((shift) => (
+                      <TableRow
+                        key={shift.shift_id}
+                        className={cn(
+                          "border-b border-slate-50 transition-colors",
+                          (shift.guard || pendingAssignments[shift.shift_id] || shift.secondary_guard || shift.standby_guard || shift.qc_guard || (shift.standby_guards && shift.standby_guards.length > 0)) ? "bg-slate-50/30" : "hover:bg-slate-50/10"
+                        )}
+                      >
+                        <TableCell className="py-3 px-2 text-center">
+                          <input
+                            type="checkbox"
+                            className={cn(
+                              "w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer",
+                              (shift.guard || pendingAssignments[shift.shift_id]) && "opacity-30 cursor-not-allowed"
+                            )}
+                            checked={selectedShifts.includes(shift.shift_id) || !!pendingAssignments[shift.shift_id]}
+                            onChange={(e) => handleSelectRow(shift.shift_id, e.target.checked)}
+                            disabled={!!shift.guard || !!pendingAssignments[shift.shift_id]}
+                          />
+                        </TableCell>
+                        <TableCell className="text-xs font-bold text-slate-700 py-3 px-2">
+                          <Link
+                            href={`/shift/view?shift_id=${shift.shift_id}`}
+                            className="text-[#0064cb] hover:text-[#0052ae] hover:underline cursor-pointer transition-all"
+                          >
+                            {shift.shift_no}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 min-w-[100px]">{shift.service_name}</TableCell>
+                        <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 whitespace-nowrap">
+                          {new Date(shift.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br />
+                          <span className="text-[11px] text-slate-700">{new Date(shift.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </TableCell>
+                        <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 whitespace-nowrap">
+                          {new Date(shift.end_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br />
+                          <span className="text-[11px] text-slate-700">{new Date(shift.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </TableCell>
+                        <TableCell className="py-3 px-2 text-xs text-slate-800 font-medium">
+                          <span className={cn(
+                            pendingAssignments[shift.shift_id]
+                              ? "text-[#0064cb] font-semibold text-[13px] animate-pulse"
+                              : ""
+                          )}>
+                            {pendingAssignments[shift.shift_id]
+                              ? formatPrice(shiftRates[shift.shift_id]?.hourlyRate ?? pendingAssignments[shift.shift_id]?.hourlyRate)
+                              : formatPrice(shift.per_hour_rate)}
+                            {((pendingAssignments[shift.shift_id]?.hourlyRate || shift.per_hour_rate) !== null) && " /hr"}
+                          </span>
+                        </TableCell>
+
+
+
+                        {(() => {
+                          const pending = pendingAssignments[shift.shift_id]?.type === "lead" ? pendingAssignments[shift.shift_id] : undefined;
+                          const leadData = shift.lead_guard || shift.guard;
+
+                          if (pending) {
+                            const name = pending.guard_name;
+                            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=dbeafe&color=1d4ed8`;
+
+                            return (
+                              <>
+                                <TableCell colSpan={3} className="py-2 px-2 border-l border-r border-slate-100">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <div className="w-5 h-5 rounded-full bg-blue-100 overflow-hidden shrink-0 flex items-center justify-center border border-blue-200">
+                                      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <span className="text-[11px] font-semibold text-[#0064cb] animate-pulse truncate max-w-[100px]">
+                                      {name}
+                                    </span>
+                                    <button
+                                      onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
+                                      className="w-4 h-4 flex items-center justify-center bg-slate-100 hover:bg-red-100 hover:text-red-500 text-slate-500 rounded-full transition-all cursor-pointer shrink-0"
+                                      title="Remove Selection"
+                                    >
+                                      <X className="w-2.5 h-2.5 stroke-[3]" />
+                                    </button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            );
+                          } else if (leadData) {
+                            const actualGuard = leadData?.guard || leadData;
+                            const name = typeof actualGuard === 'object' ? `${actualGuard?.first_name || ""} ${actualGuard?.last_name || ""}`.trim() || actualGuard?.name || "Unknown" : String(actualGuard);
+
+                            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f1f5f9&color=334155`;
+
+                            const isSeen = leadData?.is_seen === true;
+                            const status = (leadData?.status || "PENDING").toUpperCase();
+
+                            let statusColor = "bg-amber-50 text-amber-600 border-amber-100";
+                            if (status.includes("ACCEPT") || status.includes("ACTIVE")) {
+                              statusColor = "bg-green-50 text-green-600 border-green-100";
+                            } else if (status.includes("DECLINE") || status.includes("REJECT") || status.includes("CANCEL")) {
+                              statusColor = "bg-red-50 text-red-600 border-red-100";
+                            }
+
+                            return (
+                              <>
+                                <TableCell className="py-2 px-1 border-l border-slate-100">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-5 h-5 rounded-full bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center border border-slate-200">
+                                      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex flex-col min-w-0 max-w-[90px]">
+                                      <span className="text-[11px] font-semibold truncate text-slate-800">
+                                        {name}
+                                      </span>
+                                      {actualGuard?.phone_number && (
+                                        <span className="text-[10px] text-slate-500 truncate mt-0.5">
+                                          {actualGuard.phone_number}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={() => onUnassignGuard(leadData?.shift_offer_id || leadData?.offer_id || shift.shift_offer_id, "lead_guard")}
+                                      className="w-4 h-4 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer shadow-sm shadow-red-500/20 ml-auto"
+                                      title="Unassign Lead Guard"
+                                    >
+                                      <X className="w-2.5 h-2.5 stroke-[3]" />
+                                    </button>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-2 px-1 text-center">
+                                  <span className={cn(
+                                    "text-xs font-bold",
+                                    isSeen ? "text-green-600" : "text-red-500"
+                                  )}>
+                                    {isSeen ? "Yes" : "No"}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="py-2 px-1 border-r border-slate-100">
+                                  <span className={cn(
+                                    "px-2 py-0.5 rounded text-[10px] font-bold border block text-center uppercase tracking-wide",
+                                    statusColor
+                                  )}>
+                                    {status}
+                                  </span>
+                                </TableCell>
+                              </>
+                            );
+                          } else {
+                            return (
+                              <>
+                                <TableCell colSpan={3} className="py-1.5 px-1 border-l border-r border-slate-100 text-center">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-slate-200 bg-slate-50 text-slate-400 uppercase tracking-wide inline-flex items-center justify-center">
+                                    UNASSIGNED
+                                  </span>
+                                </TableCell>
+                              </>
+                            );
+                          }
+                        })()}
+
+                        {(() => {
+                          const pending = pendingAssignments[shift.shift_id]?.type === "standby" ? pendingAssignments[shift.shift_id] : undefined;
+                          const standbyData = shift.secondary_guard || shift.standby_guard || shift.qc_guard || (shift.standby_guards && shift.standby_guards[0]);
+
+                          if (pending) {
+                            const name = pending.guard_name;
+                            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=fef3c7&color=92400e`;
+
+                            return (
+                              <>
+                                <TableCell colSpan={3} className="py-2 px-2 border-r border-slate-100">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <div className="w-5 h-5 rounded-full bg-amber-100 overflow-hidden shrink-0 flex items-center justify-center border border-amber-200">
+                                      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <span className="text-[11px] font-semibold text-amber-700 animate-pulse truncate max-w-[100px]">
+                                      {name}
+                                    </span>
+                                    <button
+                                      onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
+                                      className="w-4 h-4 flex items-center justify-center bg-slate-100 hover:bg-red-100 hover:text-red-500 text-slate-500 rounded-full transition-all cursor-pointer shrink-0"
+                                      title="Remove Selection"
+                                    >
+                                      <X className="w-2.5 h-2.5 stroke-[3]" />
+                                    </button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            );
+                          } else if (standbyData) {
+                            const actualGuard = standbyData?.guard || standbyData;
+                            const name = actualGuard?.guard_name || `${actualGuard?.first_name || ""} ${actualGuard?.last_name || ""}`.trim() || actualGuard?.name || "Unknown";
+                            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f1f5f9&color=334155`;
+
+                            const isSeen = standbyData?.is_seen === true || standbyData?.notification_seen === true;
+                            const status = (standbyData?.status || "PENDING").toUpperCase();
+
+                            let statusColor = "bg-amber-50 text-amber-600 border-amber-100";
+                            if (status.includes("ACCEPT") || status.includes("ACTIVE") || status.includes("SITE") || status.includes("ARRIVED") || status.includes("WORKING")) {
+                              statusColor = "bg-purple-50 text-purple-600 border-purple-100";
+                            } else if (status.includes("DECLINE") || status.includes("REJECT") || status.includes("CANCEL")) {
+                              statusColor = "bg-red-50 text-red-600 border-red-100";
+                            }
+
+                            return (
+                              <>
+                                <TableCell className="py-2 px-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-5 h-5 rounded-full bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center border border-slate-200">
+                                      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex flex-col min-w-0 max-w-[90px]">
+                                      <span className="text-[11px] font-semibold truncate text-slate-800">
+                                        {name}
+                                      </span>
+                                      {actualGuard?.phone_number && (
+                                        <span className="text-[10px] text-slate-500 truncate mt-0.5">
+                                          {actualGuard.phone_number}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {(standbyData?.standby_id || standbyData?.offer_id) && (
+                                      <button
+                                        onClick={() => onUnassignGuard(standbyData.standby_id || standbyData.offer_id, "standby_guard")}
+                                        className="w-4 h-4 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer shadow-sm shadow-red-500/20 ml-auto"
+                                        title="Delete Standby Request"
+                                      >
+                                        <X className="w-2.5 h-2.5 stroke-[3]" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-2 px-1 text-center">
+                                  <span className={cn(
+                                    "text-xs font-bold",
+                                    isSeen ? "text-green-600" : "text-red-500"
+                                  )}>
+                                    {isSeen ? "Yes" : "No"}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="py-2 px-1 border-r border-slate-100">
+                                  <span className={cn(
+                                    "px-2 py-0.5 rounded text-[10px] font-bold border block text-center uppercase tracking-wide",
+                                    statusColor
+                                  )}>
+                                    {status}
+                                  </span>
+                                </TableCell>
+                              </>
+                            );
+                          } else {
+                            return (
+                              <>
+                                <TableCell colSpan={3} className="py-1.5 px-1 border-r border-slate-100 text-center">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-slate-200 bg-slate-50 text-slate-400 uppercase tracking-wide inline-flex items-center justify-center">
+                                    UNASSIGNED
+                                  </span>
+                                </TableCell>
+                              </>
+                            );
+                          }
+                        })()}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={12} className="py-8 text-center text-slate-700">No shifts available to assign</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </div>
 
@@ -366,7 +517,7 @@ export function AssignmentModule({
               Back
             </Button>
             <Button
-              onClick={() => onAdd(shiftRates)}
+              onClick={() => onAdd(shiftRates, () => setSelectedShifts([]))}
               disabled={isAssigning || Object.keys(pendingAssignments).length === 0}
               className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer min-w-[120px] w-full sm:w-auto flex justify-center items-center"
             >

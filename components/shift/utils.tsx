@@ -83,6 +83,22 @@ export const triggerFileDownload = async (url: string, fileName: string) => {
 };
 
 export const getCommentAuthorName = (comment: any) => {
+  if (!comment) return "User";
+
+  let sendBy = "";
+  if (typeof comment.send_by === "string" && comment.send_by.trim()) {
+    sendBy = comment.send_by.trim();
+  } else if (typeof comment.send_by === "object" && comment.send_by) {
+    sendBy = (comment.send_by.first_name || comment.send_by.name || comment.send_by.user_name || "").trim();
+  }
+
+  if (sendBy) {
+    if (sendBy === sendBy.toLowerCase()) {
+      return sendBy.charAt(0).toUpperCase() + sendBy.slice(1);
+    }
+    return sendBy;
+  }
+
   if (comment.first_name || comment.last_name) {
     return `${comment.first_name || ""} ${comment.last_name || ""}`.trim();
   }
@@ -97,17 +113,17 @@ export const getCommentAuthorName = (comment: any) => {
     if (comment.user.user_name) return comment.user.user_name;
   }
   if (comment.created_by) {
-    if (typeof comment.created_by === 'object') {
+    if (typeof comment.created_by === "object") {
       if (comment.created_by.first_name || comment.created_by.last_name) {
         return `${comment.created_by.first_name || ""} ${comment.created_by.last_name || ""}`.trim();
       }
       if (comment.created_by.name) return comment.created_by.name;
-    } else if (typeof comment.created_by === 'string') {
+    } else if (typeof comment.created_by === "string") {
       return comment.created_by;
     }
   }
   if (comment.guard) {
-    if (typeof comment.guard === 'object') {
+    if (typeof comment.guard === "object") {
       if (comment.guard.first_name || comment.guard.last_name) {
         return `${comment.guard.first_name || ""} ${comment.guard.last_name || ""}`.trim();
       }
@@ -115,17 +131,30 @@ export const getCommentAuthorName = (comment: any) => {
     }
   }
   if (comment.admin) {
-    if (typeof comment.admin === 'object') {
+    if (typeof comment.admin === "object") {
       if (comment.admin.first_name || comment.admin.last_name) {
         return `${comment.admin.first_name || ""} ${comment.admin.last_name || ""}`.trim();
       }
       if (comment.admin.name) return comment.admin.name;
     }
   }
+
   if (comment.user_role) {
     return comment.user_role.charAt(0).toUpperCase() + comment.user_role.slice(1);
   }
+
   return "User";
+};
+
+export const getSendByDisplay = (comment: any) => {
+  if (!comment) return null;
+  const raw = comment.sent_to || comment.send_to || comment.guard_role || comment.recipient;
+  if (!raw) return null;
+  const lower = String(raw).toLowerCase().trim();
+  if (lower === "lead_guard" || lower === "lead") return "Lead Guard";
+  if (lower === "standby_guard" || lower === "standby") return "Standby Guard";
+  if (lower === "both" || lower === "both_guards" || lower === "both guards") return "Both Guards";
+  return String(raw);
 };
 
 export const formatDescription = (text: string) => {

@@ -29,6 +29,10 @@ export interface ExecutionTime {
 export interface ShiftActions {
   is_reassigned?: boolean;
   is_new_assigned?: boolean;
+  is_lead_reassigned?: boolean;
+  is_standby_reassigned?: boolean;
+  is_new_lead_assigned?: boolean;
+  is_new_standby_assigned?: boolean;
   is_manual_start_shift?: boolean;
   is_config_settings?: boolean;
   is_cancel_service?: boolean;
@@ -40,6 +44,7 @@ export interface ShiftActions {
   is_execution_time_edit?: boolean;
   is_hourly_rate_edit?: boolean;
   is_flat_rate_edit?: boolean;
+  is_qc_flat_rate_edit?: boolean;
   is_travel_fee_edit?: boolean;
   is_join_vc_call?: boolean;
   is_find_standby_guard?: boolean;
@@ -52,6 +57,25 @@ export interface AssignedGuard {
   first_name?: string;
   last_name?: string;
   name?: string;
+}
+
+export interface LeadGuard {
+  guard_id?: string;
+  first_name?: string;
+  last_name?: string;
+  application_id?: string;
+  phone_no?: string;
+  shift_status?: string;
+  execution_time?: ExecutionTime | string | null;
+}
+
+export interface StandbyGuard {
+  guard_id?: string;
+  first_name?: string;
+  last_name?: string;
+  application_id?: string;
+  phone_no?: string;
+  shift_status?: string;
 }
 
 export interface Shift {
@@ -79,8 +103,11 @@ export interface Shift {
   per_hour_rate?: number | null;
   per_shift_rate?: number | null;
   travel_fee?: number | null;
+  qc_flat_rate?: number | null;
   security_service_id?: string | null;
   call_id?: string | null;
+  lead_guard?: LeadGuard;
+  standby_guard?: StandbyGuard;
 }
 
 export interface ShiftHistoryEvent {

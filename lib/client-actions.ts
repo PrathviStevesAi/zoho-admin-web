@@ -314,7 +314,7 @@ export async function clientFetchInvoiceShiftsAction(
   const url = `/api/v1/invoice/${invoiceId}/shifts?view=${view}`;
   console.log("Fetching invoice shifts from:", url);
   try {
-    const data = await clientApiFetch<{ success: boolean; data: any[] }>(url);
+    const data = await clientApiFetch<{ success: boolean; data: any[] }>(url, { cache: "no-store" });
     console.log("Invoice shifts response data:", data);
     return { success: true, data: data?.data || data };
   } catch (error: any) {
@@ -334,23 +334,32 @@ export async function clientFetchShiftDetailsAction(
       ? `/api/v1/shift/${shiftId}?notification_id=${notificationId}`
       : `/api/v1/shift/${shiftId}`;
     const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
-    console.log("fetchShiftDetailsAction: Requesting URL:", fullUrl);
+    console.log(`[API Call] GET ${endpoint} Request URL:`, fullUrl);
 
     const data = await clientApiFetch<{ success: boolean; data: any }>(endpoint);
-    console.log("fetchShiftDetailsAction: Response data:", data);
+    console.log(`[API Call] GET ${endpoint} Response:`, data);
 
-    if (data.success && data.data && data.data.invoice_no) {
+    if (data.success && data.data && !data.data.invoice_id && data.data.invoice_no) {
       try {
         console.log(`fetchShiftDetailsAction: Looking up invoice ID for ${data.data.invoice_no}`);
         const searchRes = await clientApiFetch<{ success: boolean; data: any[] }>(
           `/api/v1/invoice/global-search?search=${encodeURIComponent(data.data.invoice_no)}`
         );
         if (searchRes.success && searchRes.data) {
-          const match = searchRes.data.find(
-            (item: any) =>
-              item.type === "invoice" &&
-              item.invoice_no?.toLowerCase() === data.data.invoice_no.toLowerCase()
-          );
+          const match =
+            searchRes.data.find(
+              (item: any) =>
+                item.type === "invoice" &&
+                item.invoice_no?.toLowerCase() === data.data.invoice_no.toLowerCase() &&
+                (data.data.customer_name
+                  ? item.customer_name?.toLowerCase() === data.data.customer_name?.toLowerCase()
+                  : true)
+            ) ||
+            searchRes.data.find(
+              (item: any) =>
+                item.type === "invoice" &&
+                item.invoice_no?.toLowerCase() === data.data.invoice_no.toLowerCase()
+            );
           if (match && match.invoice_id) {
             data.data.invoice_id = match.invoice_id;
             console.log(`fetchShiftDetailsAction: Successfully injected invoice_id: ${match.invoice_id}`);
@@ -510,7 +519,8 @@ export async function clientFetchAvailableGuardsAction(
 ): Promise<{ success: boolean; data?: any[]; total_guards?: number; error?: string }> {
   try {
     const data = await clientApiFetch<{ success: boolean; data: any[]; total_guards: number }>(
-      `/api/v1/invoice/${invoiceId}/available-guards`
+      `/api/v1/invoice/${invoiceId}/available-guards`,
+      { cache: "no-store" }
     );
     return { success: true, data: data?.data || data, total_guards: data.total_guards };
   } catch (error: any) {

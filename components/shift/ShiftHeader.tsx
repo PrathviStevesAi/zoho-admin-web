@@ -19,6 +19,10 @@ interface ShiftHeaderProps {
   onManualStart: () => void;
   onAssignGuard: () => void;
   onNewAssignGuard: () => void;
+  onAssignLeadGuard: () => void;
+  onAssignStandbyGuard: () => void;
+  onReassignLeadGuard: () => void;
+  onReassignStandbyGuard: () => void;
   onFindStandbyGuard?: () => void;
   onCancelService: () => void;
   showSettingBtn: boolean;
@@ -42,6 +46,10 @@ export function ShiftHeader({
   onManualStart,
   onAssignGuard,
   onNewAssignGuard,
+  onAssignLeadGuard,
+  onAssignStandbyGuard,
+  onReassignLeadGuard,
+  onReassignStandbyGuard,
   onFindStandbyGuard,
   onCancelService,
   onStartVideoCall,
@@ -175,6 +183,38 @@ export function ShiftHeader({
                 onClick: onNewAssignGuard,
               });
             }
+            if (act.is_new_lead_assigned) {
+              buttons.push({
+                label: "Assign New Lead Guard",
+                icon: UserPlus,
+                color: "blue" as const,
+                onClick: onAssignLeadGuard,
+              });
+            }
+            if (act.is_new_standby_assigned) {
+              buttons.push({
+                label: "Assign New Standby Guard",
+                icon: UserPlus,
+                color: "yellow" as const,
+                onClick: onAssignStandbyGuard,
+              });
+            }
+            if (act.is_lead_reassigned) {
+              buttons.push({
+                label: "Re-Assign Lead Guard",
+                icon: UserPlus,
+                color: "indigo" as const,
+                onClick: onReassignLeadGuard,
+              });
+            }
+            if (act.is_standby_reassigned) {
+              buttons.push({
+                label: "Re-Assign Standby Guard",
+                icon: UserPlus,
+                color: "yellow" as const,
+                onClick: onReassignStandbyGuard,
+              });
+            }
             if (act.is_find_standby_guard) {
               buttons.push({
                 label: "Standby Guard",
@@ -246,6 +286,7 @@ export function ShiftHeader({
                   action.color === "orange" && "border-orange-500 text-orange-500 group-hover:bg-orange-50",
                   action.color === "indigo" && "border-indigo-500 text-indigo-500 group-hover:bg-indigo-50",
                   action.color === "teal" && "border-teal-500 text-teal-500 group-hover:bg-teal-50",
+                  action.color === "yellow" && "border-yellow-500 text-yellow-600 group-hover:bg-yellow-50",
                   action.color === "slate" && "border-slate-400 text-slate-800 group-hover:bg-slate-50",
                   action.color === "red" && "border-red-400 text-red-500 group-hover:bg-red-50"
                 )}

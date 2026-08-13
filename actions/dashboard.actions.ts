@@ -367,18 +367,27 @@ export async function fetchShiftDetailsAction(
     const data = await apiFetch<{ success: boolean; data: any }>(endpoint);
     console.log("fetchShiftDetailsAction: Response data:", data);
 
-    if (data.success && data.data && data.data.invoice_no) {
+    if (data.success && data.data && !data.data.invoice_id && data.data.invoice_no) {
       try {
         console.log(`fetchShiftDetailsAction: Looking up invoice ID for ${data.data.invoice_no}`);
         const searchRes = await apiFetch<{ success: boolean; data: any[] }>(
           `/api/v1/invoice/global-search?search=${encodeURIComponent(data.data.invoice_no)}`
         );
         if (searchRes.success && searchRes.data) {
-          const match = searchRes.data.find(
-            (item: any) =>
-              item.type === "invoice" &&
-              item.invoice_no?.toLowerCase() === data.data.invoice_no.toLowerCase()
-          );
+          const match =
+            searchRes.data.find(
+              (item: any) =>
+                item.type === "invoice" &&
+                item.invoice_no?.toLowerCase() === data.data.invoice_no.toLowerCase() &&
+                (data.data.customer_name
+                  ? item.customer_name?.toLowerCase() === data.data.customer_name?.toLowerCase()
+                  : true)
+            ) ||
+            searchRes.data.find(
+              (item: any) =>
+                item.type === "invoice" &&
+                item.invoice_no?.toLowerCase() === data.data.invoice_no.toLowerCase()
+            );
           if (match && match.invoice_id) {
             data.data.invoice_id = match.invoice_id;
             console.log(`fetchShiftDetailsAction: Successfully injected invoice_id: ${match.invoice_id}`);
@@ -518,19 +527,17 @@ export async function fetchGuardsAction(params: {
 
 export async function assignGuardsAction(payload: {
   invoice_id: string;
-  per_hour_rate?: number | null;
-  per_shift_rate?: number | null;
   assignments: {
     guard_id: string;
     shift_ids: string[];
     per_hour_rate?: number | null;
-    per_shift_rate?: number | null;
+    qc_flat_rate?: number | null;
     travel_fee?: number | null;
   }[];
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const res = await apiFetch<{ success: boolean; message?: string }>(
-      `/api/v1/shift/assign-guard`,
+      `/api/v1/shift/assign-lead-guard`,
       {
         method: "POST",
         body: JSON.stringify(payload),
@@ -543,6 +550,62 @@ export async function assignGuardsAction(payload: {
   }
 }
 
+export async function assignStandbyGuardsAction(payload: {
+  invoice_id: string;
+  assignments: {
+    guard_id: string;
+    shift_ids: string[];
+    per_hour_rate?: number | null;
+    qc_flat_rate?: number | null;
+    travel_fee?: number | null;
+  }[];
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/assign-standby-guard`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    return { success: true, message: res.message };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function verifyGuardAssignmentAction(payload: {
+  invoice_id: string;
+  assignments: {
+    guard_id: string;
+    shift_ids: string[];
+  }[];
+}): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const res = await apiFetch<{ success: boolean; data?: any; message?: string }>(
+      `/api/v1/shift/verify-guard-assignment`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    // If the API returns success false but with data (the warnings), we should probably pass it back
+    if (res.success === false && res.data) {
+      return { success: false, data: res.data, error: res.message };
+    }
+    return { success: res.success !== false, data: res.data, error: res.message };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    // Usually 400 errors with warnings might be thrown by apiFetch if it checks response.ok
+    // So we need to handle the case where apiFetch throws but there is error data
+    if (error.data) {
+       return { success: false, data: error.data, error: message };
+    }
+    return { success: false, error: message };
+  }
+}
+
 export async function assignGuardToShiftAction(payload: {
   invoice_id: string;
   guard_id: string;
@@ -550,6 +613,8 @@ export async function assignGuardToShiftAction(payload: {
   per_hour_rate?: number;
   per_shift_rate?: number;
   travel_fee?: number;
+  qc_flat_rate?: number;
+  guard_role?: "lead_guard" | "standby_guard" | "both";
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const body: any = {
@@ -558,6 +623,7 @@ export async function assignGuardToShiftAction(payload: {
         {
           guard_id: payload.guard_id,
           shift_ids: [payload.shift_id],
+          ...(payload.guard_role ? { guard_role: payload.guard_role } : {})
         },
       ],
     };
@@ -571,6 +637,9 @@ export async function assignGuardToShiftAction(payload: {
     }
     if (payload.travel_fee) {
       body.assignments[0].travel_fee = payload.travel_fee;
+    }
+    if (payload.qc_flat_rate) {
+      body.assignments[0].qc_flat_rate = payload.qc_flat_rate;
     }
     const res = await apiFetch<{ success: boolean; message?: string }>(
       `/api/v1/shift/assign-guard`,
@@ -586,9 +655,128 @@ export async function assignGuardToShiftAction(payload: {
   }
 }
 
+export async function assignLeadGuardAction(payload: {
+  invoice_id: string;
+  guard_id: string;
+  shift_id: string;
+  per_hour_rate?: number;
+  qc_flat_rate?: number;
+  travel_fee?: number;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const assignmentItem: any = {
+      guard_id: payload.guard_id,
+      shift_ids: [payload.shift_id],
+      ...(payload.per_hour_rate && payload.per_hour_rate > 0 ? { per_hour_rate: payload.per_hour_rate } : {}),
+      ...(payload.qc_flat_rate && payload.qc_flat_rate > 0 ? { qc_flat_rate: payload.qc_flat_rate } : {}),
+      ...(payload.travel_fee && payload.travel_fee > 0 ? { travel_fee: payload.travel_fee } : {}),
+    };
+    const body = {
+      invoice_id: payload.invoice_id,
+      assignments: [assignmentItem],
+    };
+    console.log("[API Request] POST /api/v1/shift/assign-lead-guard Payload:", body);
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/assign-lead-guard`,
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      }
+    );
+    console.log("[API Response] POST /api/v1/shift/assign-lead-guard Response:", res);
+    return { success: true, message: res.message };
+  } catch (error: any) {
+    console.error("[API Error] POST /api/v1/shift/assign-lead-guard Error:", error?.message || error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function assignStandbyGuardAction(payload: {
+  invoice_id: string;
+  guard_id: string;
+  shift_id: string;
+  per_hour_rate?: number;
+  qc_flat_rate?: number;
+  travel_fee?: number;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const assignmentItem: any = {
+      guard_id: payload.guard_id,
+      shift_ids: [payload.shift_id],
+      ...(payload.per_hour_rate && payload.per_hour_rate > 0 ? { per_hour_rate: payload.per_hour_rate } : {}),
+      ...(payload.qc_flat_rate && payload.qc_flat_rate > 0 ? { qc_flat_rate: payload.qc_flat_rate } : {}),
+      ...(payload.travel_fee && payload.travel_fee > 0 ? { travel_fee: payload.travel_fee } : {}),
+    };
+    const body = {
+      invoice_id: payload.invoice_id,
+      assignments: [assignmentItem],
+    };
+    console.log("[API Request] POST /api/v1/shift/assign-standby-guard Payload:", body);
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/assign-standby-guard`,
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      }
+    );
+    console.log("[API Response] POST /api/v1/shift/assign-standby-guard Response:", res);
+    return { success: true, message: res.message };
+  } catch (error: any) {
+    console.error("[API Error] POST /api/v1/shift/assign-standby-guard Error:", error?.message || error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function reassignLeadGuardAction(payload: {
+  shift_id: string;
+  guard_id: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    console.log("[API Request] POST /api/v1/shift/reassign-lead-guard Payload:", payload);
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/reassign-lead-guard`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    console.log("[API Response] POST /api/v1/shift/reassign-lead-guard Response:", res);
+    return { success: true, message: res.message };
+  } catch (error: any) {
+    console.error("[API Error] POST /api/v1/shift/reassign-lead-guard Error:", error?.message || error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function reassignStandbyGuardAction(payload: {
+  shift_id: string;
+  guard_id: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    console.log("[API Request] POST /api/v1/shift/reassign-standby-guard Payload:", payload);
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/reassign-standby-guard`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    console.log("[API Response] POST /api/v1/shift/reassign-standby-guard Response:", res);
+    return { success: true, message: res.message };
+  } catch (error: any) {
+    console.error("[API Error] POST /api/v1/shift/reassign-standby-guard Error:", error?.message || error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
 export async function reassignGuardToShiftAction(payload: {
   shift_id: string;
   guard_id: string;
+  guard_role?: "lead_guard" | "standby_guard" | "both";
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const res = await apiFetch<{ success: boolean; message?: string }>(
@@ -605,13 +793,14 @@ export async function reassignGuardToShiftAction(payload: {
   }
 }
 
-export async function unassignGuardAction(shift_offer_id: string): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function unassignGuardAction(shift_offer_id: string, offer_type: "lead_guard" | "standby_guard" = "lead_guard"): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
+    console.log("unassignGuardAction called with shift_offer_id:", shift_offer_id, "offer_type:", offer_type);
     const res = await apiFetch<{ success: boolean; message?: string }>(
       `/api/v1/shift/assign-guard`,
       {
         method: "DELETE",
-        body: JSON.stringify({ shift_offer_id }),
+        body: JSON.stringify({ shift_offer_id, offer_type }),
       }
     );
     return { success: true, message: res.message };
@@ -750,6 +939,11 @@ export interface Comment {
   user_message: string | null;
   attach_file_url: string | null;
   user_role?: string;
+  guard_role?: string;
+  send_by?: string;
+  send_to?: string;
+  recipient?: string;
+  sent_to?: string;
   created_at: string;
   updated_at: string;
 }
@@ -772,6 +966,7 @@ export async function addCommentAction(payload: {
   type: "internal" | "external";
   user_message: string | null;
   attach_file_url: string | null;
+  guard_role?: string;
 }): Promise<{ success: boolean; data?: unknown; error?: string }> {
   try {
     const data = await apiFetch<unknown>(`/api/v1/shift/comment`, {

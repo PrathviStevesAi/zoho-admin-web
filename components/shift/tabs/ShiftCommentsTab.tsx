@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { UserPlus, Paperclip, Loader2, Send, XCircle, Lock } from "lucide-react";
+import { UserPlus, Paperclip, Loader2, Send, XCircle, Lock, Users, User } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,14 +12,18 @@ import {
 import { cn } from "@/lib/utils";
 import { Comment, PreviewFile } from "../types";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { getCommentAuthorName, formatDateTime, FileAttachmentCard } from "../utils";
+import { getCommentAuthorName, getSendByDisplay, formatDateTime, FileAttachmentCard } from "../utils";
 
 interface ShiftCommentsTabProps {
   comments: Comment[];
   isCommentsLoading: boolean;
   commentsError: string | null;
-  onCommentSubmit: (text: string, type: "external" | "internal", file: File | null) => Promise<boolean>;
+  onCommentSubmit: (text: string, type: "external" | "internal", file: File | null, recipient?: string) => Promise<boolean>;
   setPreviewFile: (file: PreviewFile | null) => void;
+  hasLeadGuard?: boolean;
+  hasStandbyGuard?: boolean;
+  leadGuardStatus?: string;
+  standbyGuardStatus?: string;
 }
 
 export function ShiftCommentsTab({
@@ -28,17 +32,54 @@ export function ShiftCommentsTab({
   commentsError,
   onCommentSubmit,
   setPreviewFile,
+  hasLeadGuard = false,
+  hasStandbyGuard = false,
+  leadGuardStatus,
+  standbyGuardStatus,
 }: ShiftCommentsTabProps) {
   const [commentType, setCommentType] = useState<"external" | "internal">("external");
+  const [recipient, setRecipient] = useState<"lead" | "standby" | "both">(hasLeadGuard ? "lead" : "standby");
   const [commentText, setCommentText] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isInternal = commentType === "internal";
+
+  const isLeadPlanned = leadGuardStatus?.toLowerCase() === "shift planned" || leadGuardStatus?.toLowerCase() === "shift_planned";
+  const isStandbyPlanned = standbyGuardStatus?.toLowerCase() === "shift planned" || standbyGuardStatus?.toLowerCase() === "shift_planned";
+
+  let isCommentDisabled = false;
+  let disabledMessage = "You will be able to message the guards after they accept the shifts.";
+
+  if (!isInternal) {
+    if (recipient === "lead") {
+      if (!hasLeadGuard) {
+        isCommentDisabled = true;
+        disabledMessage = "No lead guard assigned yet.";
+      } else if (isLeadPlanned) {
+        isCommentDisabled = true;
+      }
+    } else if (recipient === "standby") {
+      if (!hasStandbyGuard) {
+        isCommentDisabled = true;
+        disabledMessage = "No standby guard assigned yet.";
+      } else if (isStandbyPlanned) {
+        isCommentDisabled = true;
+      }
+    } else if (recipient === "both") {
+      if (!hasLeadGuard || !hasStandbyGuard) {
+        isCommentDisabled = true;
+        disabledMessage = "Both guards must be assigned to use this option.";
+      } else if (isLeadPlanned || isStandbyPlanned) {
+        isCommentDisabled = true;
+      }
+    }
+  }
   const handleSubmit = async () => {
     if (!commentText.trim() && !attachedFile) return;
     setIsSubmitting(true);
-    const success = await onCommentSubmit(commentText, commentType, attachedFile);
+    const success = await onCommentSubmit(commentText, commentType, attachedFile, isInternal ? undefined : recipient);
     if (success) {
       setCommentText("");
       setAttachedFile(null);
@@ -48,7 +89,67 @@ export function ShiftCommentsTab({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between pb-2">
+      <div className={cn("space-y-4 transition-opacity", isInternal && "opacity-50 pointer-events-none")}>
+        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight">Select Recipient</h3>
+        <div className="flex items-center p-1 bg-white rounded-xl border border-slate-200 relative w-full">
+          <button
+            type="button"
+            disabled={isInternal}
+            onClick={() => setRecipient("lead")}
+            className={cn(
+              "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg flex-1",
+              isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
+              recipient === "lead" && !isInternal
+                ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
+                : "text-slate-500 border border-transparent",
+              !isInternal && recipient !== "lead" && "hover:text-slate-700 hover:bg-slate-50"
+            )}
+          >
+            <UserPlus className="w-[18px] h-[18px]" />
+            <span className="text-[13px]">Lead Guard</span>
+          </button>
+
+          <div className="w-[1px] h-6 bg-slate-200 mx-0.5" />
+
+          <button
+            type="button"
+            disabled={isInternal}
+            onClick={() => setRecipient("standby")}
+            className={cn(
+              "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg flex-1",
+              isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
+              recipient === "standby" && !isInternal
+                ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
+                : "text-slate-500 border border-transparent",
+              !isInternal && recipient !== "standby" && "hover:text-slate-700 hover:bg-slate-50"
+            )}
+          >
+            <User className="w-[18px] h-[18px]" />
+            <span className="text-[13px]">Standby Guard</span>
+          </button>
+
+          <div className="w-[1px] h-6 bg-slate-200 mx-0.5" />
+
+          <button
+            type="button"
+            disabled={isInternal}
+            onClick={() => setRecipient("both")}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg",
+              isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
+              recipient === "both" && !isInternal
+                ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
+                : "text-slate-500 border border-transparent",
+              !isInternal && recipient !== "both" && "hover:text-slate-700 hover:bg-slate-50"
+            )}
+          >
+            <Users className="w-[18px] h-[18px]" />
+            <span className="text-[13px]">Both Guards</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pb-2 pt-2">
         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight">General comments</h3>
       </div>
 
@@ -80,6 +181,7 @@ export function ShiftCommentsTab({
           {comments.map((comment: any) => {
             const authorName = getCommentAuthorName(comment);
             const isExternal = comment.type === "external";
+            const sendByDisplay = getSendByDisplay(comment);
             return (
               <div key={comment.id} className="flex gap-3">
                 <div
@@ -91,8 +193,23 @@ export function ShiftCommentsTab({
                   <UserPlus className="w-4 h-4" />
                 </div>
                 <div className="space-y-2 flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[13px] font-bold text-slate-800">{authorName}</span>
+                    {sendByDisplay && (
+                      <div className="flex items-center gap-1.5 text-[12px]">
+                        <span className="text-[#0064cb] font-semibold">Sent to :-</span>
+                        <div className="flex items-center gap-1 text-slate-700 font-semibold">
+                          {sendByDisplay === "Both Guards" ? (
+                            <Users className="w-3.5 h-3.5 text-slate-600" />
+                          ) : sendByDisplay === "Lead Guard" ? (
+                            <UserPlus className="w-3.5 h-3.5 text-slate-600" />
+                          ) : (
+                            <User className="w-3.5 h-3.5 text-slate-600" />
+                          )}
+                          <span>{sendByDisplay}</span>
+                        </div>
+                      </div>
+                    )}
                     <span className="text-[11px] text-slate-700">{formatDateTime(comment.created_at)}</span>
                     {!isExternal && (
                       <Tooltip>
@@ -127,100 +244,107 @@ export function ShiftCommentsTab({
         </div>
       )}
 
-      <div className="pt-6 flex flex-col md:flex-row gap-3 items-start">
-        <div className="w-full md:w-28 flex-shrink-0 relative">
-          <span className="absolute -top-2 left-3 px-1.5 bg-white text-[10px] font-bold text-slate-700 uppercase z-10">
-            Type
-          </span>
-          <Select value={commentType} onValueChange={(val: "internal" | "external") => setCommentType(val)}>
-            <SelectTrigger className="!h-14 bg-white border-slate-200 rounded-lg text-[13px] text-slate-600 focus:ring-[#0064cb]/10 focus:border-[#0064cb] cursor-pointer shadow-sm px-4">
-              <SelectValue placeholder="Select Type" />
-            </SelectTrigger>
-            <SelectContent className="min-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)] rounded-lg border-slate-200 shadow-lg p-1 bg-white">
-              <SelectItem value="internal" className="text-[13px] cursor-pointer rounded-md hover:bg-slate-50">
-                Internal
-              </SelectItem>
-              <SelectItem value="external" className="text-[13px] cursor-pointer rounded-md hover:bg-slate-50">
-                External
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="pt-4 flex flex-col gap-3 items-start">
+        {isCommentDisabled && (
+          <div className="mb-2 w-full text-center text-[12px] font-medium text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-200">
+            {disabledMessage}
+          </div>
+        )}
+        <div className="flex flex-col md:flex-row gap-3 items-start w-full">
+          <div className="w-full md:w-28 flex-shrink-0 relative">
+            <span className="absolute -top-2 left-3 px-1.5 bg-white text-[10px] font-bold text-slate-700 uppercase z-10">
+              Type
+            </span>
+            <Select value={commentType} onValueChange={(val: "internal" | "external") => setCommentType(val)}>
+              <SelectTrigger className="!h-14 bg-white border-slate-200 rounded-lg text-[13px] text-slate-600 focus:ring-[#0064cb]/10 focus:border-[#0064cb] cursor-pointer shadow-sm px-4">
+                <SelectValue placeholder="Select Type" />
+              </SelectTrigger>
+              <SelectContent className="min-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)] rounded-lg border-slate-200 shadow-lg p-1 bg-white">
+                <SelectItem value="internal" className="text-[13px] cursor-pointer rounded-md hover:bg-slate-50">
+                  Internal
+                </SelectItem>
+                <SelectItem value="external" className="text-[13px] cursor-pointer rounded-md hover:bg-slate-50">
+                  External
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="flex-1 min-w-0 relative w-full">
-          <span className="absolute -top-2 left-4 px-1.5 bg-white text-[10px] font-bold text-slate-700 uppercase z-10">
-            Comment
-          </span>
-          <div className="border border-slate-200 rounded-lg bg-white focus-within:border-[#0064cb] focus-within:ring-4 focus-within:ring-[#0064cb]/5 transition-all p-1.5 pl-3 flex flex-col gap-1.5 shadow-sm min-h-[56px] justify-center">
-            {attachedFile && (
-              <div className="flex items-center gap-2 px-2 py-1 bg-slate-50 border border-slate-100 rounded-xl w-fit max-w-full">
-                <span className="text-[11px] font-medium text-slate-700 truncate max-w-[180px]">
-                  {attachedFile.name}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setAttachedFile(null)}
-                  className="p-1 rounded-full hover:bg-slate-200 text-slate-700 hover:text-red-500 transition-colors border-none bg-transparent cursor-pointer"
-                  title="Remove file"
-                >
-                  <XCircle className="cursor-pointer w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-            <div className="flex items-center gap-2 w-full">
-              <div className="flex items-center">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      if (file.size > 50 * 1024 * 1024) {
-                        toast.error("File size must be less than 50MB");
-                        if (fileInputRef.current) fileInputRef.current.value = "";
-                        return;
+          <div className="flex-1 min-w-0 relative w-full">
+            <span className="absolute -top-2 left-4 px-1.5 bg-white text-[10px] font-bold text-slate-700 uppercase z-10">
+              Comment
+            </span>
+            <div className="border border-slate-200 rounded-lg bg-white focus-within:border-[#0064cb] focus-within:ring-4 focus-within:ring-[#0064cb]/5 transition-all p-1.5 pl-3 flex flex-col gap-1.5 shadow-sm min-h-[56px] justify-center">
+              {attachedFile && (
+                <div className="flex items-center gap-2 px-2 py-1 bg-slate-50 border border-slate-100 rounded-xl w-fit max-w-full">
+                  <span className="text-[11px] font-medium text-slate-700 truncate max-w-[180px]">
+                    {attachedFile.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAttachedFile(null)}
+                    className="p-1 rounded-full hover:bg-slate-200 text-slate-700 hover:text-red-500 transition-colors border-none bg-transparent cursor-pointer"
+                    title="Remove file"
+                  >
+                    <XCircle className="cursor-pointer w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center gap-2 w-full">
+                <div className="flex items-center">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 50 * 1024 * 1024) {
+                          toast.error("File size must be less than 50MB");
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                          return;
+                        }
+                        setAttachedFile(file);
                       }
-                      setAttachedFile(file);
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isSubmitting || isCommentDisabled}
+                    className="p-2 rounded-full hover:bg-slate-50 text-[#0064cb] transition-colors cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 border-none bg-transparent"
+                    title="Attach file"
+                  >
+                    <Paperclip className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  </button>
+                </div>
+                <textarea
+                  className="flex-1 bg-transparent border-none focus:outline-none outline-none focus:ring-0 p-1 text-[13px] text-slate-700 placeholder:text-slate-700 resize-none py-1.5 min-h-[36px] max-h-[120px] custom-scrollbar"
+                  placeholder="Write comment..."
+                  rows={1}
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  disabled={isSubmitting || isCommentDisabled}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit();
                     }
                   }}
-                  className="hidden"
                 />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isSubmitting}
-                  className="p-2 rounded-full hover:bg-slate-50 text-[#0064cb] transition-colors cursor-pointer group disabled:opacity-50 flex-shrink-0 border-none bg-transparent"
-                  title="Attach file"
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || (!commentText.trim() && !attachedFile) || isCommentDisabled}
+                  className="bg-[#0064cb] hover:bg-[#0052ae] disabled:bg-[#0064cb]/50 text-white h-10 w-10 rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer disabled:cursor-not-allowed shadow-md shadow-blue-200/50 flex-shrink-0 p-0"
+                  title="Send comment"
                 >
-                  <Paperclip className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                </button>
+                  {isSubmitting ? (
+                    <Loader2 className="w-4.5 h-4.5 animate-spin" />
+                  ) : (
+                    <Send className="w-4.5 h-4.5" />
+                  )}
+                </Button>
               </div>
-              <textarea
-                className="flex-1 bg-transparent border-none focus:outline-none outline-none focus:ring-0 p-1 text-[13px] text-slate-700 placeholder:text-slate-700 resize-none py-1.5 min-h-[36px] max-h-[120px] custom-scrollbar"
-                placeholder="Write comment..."
-                rows={1}
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                disabled={isSubmitting}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-              />
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting || (!commentText.trim() && !attachedFile)}
-                className="bg-[#0064cb] hover:bg-[#0052ae] text-white h-10 w-10 rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-md shadow-blue-200/50 flex-shrink-0 p-0"
-                title="Send comment"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-4.5 h-4.5 animate-spin" />
-                ) : (
-                  <Send className="w-4.5 h-4.5" />
-                )}
-              </Button>
             </div>
           </div>
         </div>
