@@ -152,8 +152,9 @@ export default function QuoteForm() {
 
   useEffect(() => {
     if (formData.is_per_day && formData.Start_Date && formData.End_Date) {
-      const start = new Date(formData.Start_Date);
-      const end = new Date(formData.End_Date);
+      // Append T00:00:00 to parse as local time and prevent timezone shift
+      const start = new Date(formData.Start_Date + 'T00:00:00');
+      const end = new Date(formData.End_Date + 'T00:00:00');
       if (start <= end) {
         const newSchedules: DailySchedule[] = [];
         const currentDate = new Date(start);
