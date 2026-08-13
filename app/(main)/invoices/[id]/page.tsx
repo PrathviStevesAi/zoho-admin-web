@@ -44,6 +44,7 @@ import { ConfirmationDialog } from "./_components/ConfirmationDialog";
 import { AvailableGuardsModule } from "./_components/AvailableGuardsModule";
 import { EditShiftDialog } from "./_components/EditShiftDialog";
 import { ShippingAddress } from "@/types/dashboard.types";
+import { ActionErrorDialog } from "./_components/ActionErrorDialog";
 const formatDateKey = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -135,6 +136,7 @@ export default function InvoiceDetailsPage() {
   const [availableGuards, setAvailableGuards] = useState<any[]>([]);
   const [isAvailableGuardsLoading, setIsAvailableGuardsLoading] = useState(false);
   const [totalAvailableGuards, setTotalAvailableGuards] = useState(0);
+  const [actionError, setActionError] = useState<{isOpen: boolean, message: string}>({isOpen: false, message: ""});
 
   const loadInvoice = async () => {
     setLoading(true);
@@ -796,7 +798,7 @@ export default function InvoiceDetailsPage() {
       const res = await assignGuardsAction(payload);
       if (!res.success) {
         success = false;
-        toast.error(res.error || "Failed to assign lead guards");
+        setActionError({isOpen: true, message: res.error || "Failed to assign lead guards"});
       }
     }
 
@@ -806,7 +808,7 @@ export default function InvoiceDetailsPage() {
       const res = await assignStandbyGuardsAction(payload);
       if (!res.success) {
         success = false;
-        toast.error(res.error || "Failed to assign standby guards");
+        setActionError({isOpen: true, message: res.error || "Failed to assign standby guards"});
       }
     }
 
@@ -1093,6 +1095,12 @@ export default function InvoiceDetailsPage() {
           timezone={invoiceTimezone}
         />
       )}
+
+      <ActionErrorDialog 
+        isOpen={actionError.isOpen} 
+        onClose={() => setActionError({ isOpen: false, message: "" })} 
+        message={actionError.message} 
+      />
     </div>
   );
 }

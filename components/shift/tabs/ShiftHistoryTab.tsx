@@ -89,10 +89,10 @@ export function ShiftHistoryTab({
                     {metaItems.map((item, mIdx) => (
                       <div
                         key={mIdx}
-                        className="flex justify-between items-center text-xs border-b border-[#e1f0ff]/50 pb-1.5 last:border-0 last:pb-0"
+                        className="flex justify-between items-start gap-4 text-xs border-b border-[#e1f0ff]/50 pb-1.5 last:border-0 last:pb-0"
                       >
-                        <span className="text-[10px] font-bold text-slate-900">{item.label}:</span>
-                        <span className="text-slate-800 font-medium text-[11px]">{item.value}</span>
+                        <span className="text-[10px] font-bold text-slate-900 leading-snug">{item.label}:</span>
+                        <span className="text-slate-800 font-medium text-[11px] text-right break-words">{item.value}</span>
                       </div>
                     ))}
                   </div>

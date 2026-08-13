@@ -27,6 +27,7 @@ import { generateUploadUrlAction } from "@/actions/profile.actions";
 import { fetchShiftReportsAction } from "@/actions/notification.actions";
 import { CancelServiceDialog } from "@/app/(main)/invoices/[id]/_components/CancelServiceDialog";
 import { VerifyWarningDialog } from "@/app/(main)/invoices/[id]/_components/VerifyWarningDialog";
+import { ActionErrorDialog } from "@/app/(main)/invoices/[id]/_components/ActionErrorDialog";
 import { ShiftHeader } from "./ShiftHeader";
 import { ShiftDetailsCard } from "./ShiftDetailsCard";
 import { ShiftProgressStepper } from "./ShiftProgressStepper";
@@ -83,6 +84,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number };
     };
   }>({ isOpen: false, warnings: [] });
+  const [actionError, setActionError] = useState<{isOpen: boolean, message: string}>({isOpen: false, message: ""});
 
   const loadShiftDetails = useCallback(async () => {
     if (!shiftId) return;
@@ -632,7 +634,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         setIsNewAssignOpen(false);
         loadShiftDetails();
       } else {
-        toast.error(res.error || "Failed to reassign guard");
+        setActionError({isOpen: true, message: res.error || "Failed to reassign guard"});
       }
     } else {
       const actionPayload: any = {
@@ -653,7 +655,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         setIsNewAssignOpen(false);
         loadShiftDetails();
       } else {
-        toast.error(res.error || "Failed to assign guard");
+        setActionError({isOpen: true, message: res.error || "Failed to assign guard"});
       }
     }
     setIsAssigningGuard(null);
@@ -900,6 +902,12 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onClose={() => setIsManualStartOpen(false)}
         onConfirm={handleManualStartShiftConfirm}
         isSaving={isStartingShift}
+      />
+
+      <ActionErrorDialog 
+        isOpen={actionError.isOpen} 
+        onClose={() => setActionError({ isOpen: false, message: "" })} 
+        message={actionError.message} 
       />
     </div>
   );
