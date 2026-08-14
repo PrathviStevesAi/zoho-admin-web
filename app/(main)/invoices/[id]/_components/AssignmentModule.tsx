@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { DateTime } from "luxon";
 import { Loader2, Plus, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -270,12 +271,12 @@ export function AssignmentModule({
                         </TableCell>
                         <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 min-w-[100px]">{shift.service_name}</TableCell>
                         <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 whitespace-nowrap">
-                          {new Date(shift.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br />
-                          <span className="text-[11px] text-slate-700">{new Date(shift.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          {DateTime.fromISO(shift.start_time).setZone(shift.timezone || 'UTC').toFormat("MMM d, yyyy")}<br />
+                          <span className="text-[11px] text-slate-700">{DateTime.fromISO(shift.start_time).setZone(shift.timezone || 'UTC').toFormat("hh:mm a")}</span>
                         </TableCell>
                         <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 whitespace-nowrap">
-                          {new Date(shift.end_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br />
-                          <span className="text-[11px] text-slate-700">{new Date(shift.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          {DateTime.fromISO(shift.end_time).setZone(shift.timezone || 'UTC').toFormat("MMM d, yyyy")}<br />
+                          <span className="text-[11px] text-slate-700">{DateTime.fromISO(shift.end_time).setZone(shift.timezone || 'UTC').toFormat("hh:mm a")}</span>
                         </TableCell>
                         <TableCell className="py-3 px-2 text-xs text-slate-800 font-medium">
                           <span className={cn(
