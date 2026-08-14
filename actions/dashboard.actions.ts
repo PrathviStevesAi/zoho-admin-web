@@ -867,6 +867,10 @@ export async function updateInvoiceDetailsAction(payload: {
   invoice_description?: string;
   shift_description?: string;
   shipping_address?: any;
+  checkpoint_create_interval?: number;
+  break_max_time?: number;
+  total_break_limit?: number;
+  geofence_radius?: number;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     console.log("[Server Action] Updating invoice details:", payload);
