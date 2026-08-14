@@ -422,6 +422,21 @@ export async function deleteShiftAction(
   }
 }
 
+export async function bulkDeleteShiftsAction(
+  shiftIds: string[],
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await apiFetch(`/api/v1/shift/`, {
+      method: "DELETE",
+      body: JSON.stringify({ shift_ids: shiftIds }),
+    });
+    return { success: true };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
 export async function fetchSecurityServicesAction(): Promise<{ success: boolean; data?: any[]; error?: string }> {
   const endpoint = `/api/v1/security-service`;
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || ""}${endpoint}`;
