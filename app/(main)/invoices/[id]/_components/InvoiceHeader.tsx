@@ -11,6 +11,7 @@ import {
   ExternalLink,
   XCircle,
   FileEdit,
+  Settings,
 } from "lucide-react";
 
 interface InvoiceHeaderProps {
@@ -24,6 +25,7 @@ interface InvoiceHeaderProps {
   onOpenShiftDetail?: () => void;
   onOpenAssignGuard: () => void;
   onOpenAvailableGuards: () => void;
+  onOpenSettings?: () => void;
   onResetView: () => void;
   onCancelService: () => void;
   currentView?: string;
@@ -35,6 +37,7 @@ interface InvoiceHeaderProps {
     is_assigned_guards?: boolean;
     is_open_crm?: boolean;
     is_cancel_service?: boolean;
+    is_config_settings?: boolean;
   };
   type?: string | null;
 }
@@ -50,6 +53,7 @@ export function InvoiceHeader({
   onOpenShiftDetail,
   onOpenAssignGuard,
   onOpenAvailableGuards,
+  onOpenSettings,
   onResetView,
   onCancelService,
   currentView,
@@ -254,6 +258,16 @@ export function InvoiceHeader({
                 </div>
                 <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Assign<br />Guard</span>
                 <span className="text-xs font-bold text-slate-900 mt-0.5">Step-4</span>
+              </div>
+            )}
+
+            {actions?.is_config_settings && onOpenSettings && (
+              <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onOpenSettings}>
+                <div className="w-12 h-12 rounded-full border-2 border-slate-500 flex items-center justify-center text-slate-500 group-hover:bg-slate-50 transition-colors shadow-sm">
+                  <Settings className="w-5.5 h-5.5" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Settings</span>
+                <span className="text-xs font-bold text-slate-900 mt-0.5">Step-5</span>
               </div>
             )}
 

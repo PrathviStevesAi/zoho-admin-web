@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Calendar, Clock, Loader2, Plus, Trash2, Pencil, Copy } from "lucide-react";
 import { DateTime } from "luxon";
@@ -129,6 +130,10 @@ export function ShiftModule({
   onCreateShifts,
   isCreating
 }: ShiftModuleProps) {
+  // const [isRepeating, setIsRepeating] = useState(false);
+  // const [repeatDays, setRepeatDays] = useState<number[]>([]);
+  // const [repeatEndDate, setRepeatEndDate] = useState("");
+
   if (!isAdding) {
     return (
       <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
@@ -213,8 +218,8 @@ export function ShiftModule({
                                         disabled={!isAllowed}
                                         onClick={() => isAllowed && onEdit(shift.shift_id)}
                                         className={`h-8 w-8 rounded-lg transition-all ${!isAllowed
-                                            ? "text-slate-400 pointer-events-none"
-                                            : "text-[#0064cb] hover:text-[#0052ae] hover:bg-blue-50 cursor-pointer"
+                                          ? "text-slate-400 pointer-events-none"
+                                          : "text-[#0064cb] hover:text-[#0052ae] hover:bg-blue-50 cursor-pointer"
                                           }`}
                                       >
                                         <Pencil className="w-4 h-4" />
@@ -233,8 +238,8 @@ export function ShiftModule({
                                         disabled={!isAllowed}
                                         onClick={() => isAllowed && onDuplicate(shift.shift_id)}
                                         className={`h-8 w-8 rounded-lg transition-all ${!isAllowed
-                                            ? "text-slate-400 pointer-events-none"
-                                            : "text-slate-600 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                                          ? "text-slate-400 pointer-events-none"
+                                          : "text-slate-600 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                                           }`}
                                       >
                                         <Copy className="w-4 h-4" />
@@ -253,8 +258,8 @@ export function ShiftModule({
                                         disabled={!isAllowed}
                                         onClick={() => isAllowed && onDelete(shift.shift_id)}
                                         className={`h-8 w-8 rounded-lg transition-all ${!isAllowed
-                                            ? "text-slate-400 pointer-events-none"
-                                            : "text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                                          ? "text-slate-400 pointer-events-none"
+                                          : "text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
                                           }`}
                                       >
                                         <Trash2 className="w-4 h-4" />
@@ -379,6 +384,67 @@ export function ShiftModule({
                 />
               </div>
             </div>
+
+            {/* Repeat Section */}
+            {/* <div className="bg-slate-50 border border-slate-100 rounded-lg p-6 space-y-6">
+              <div className="flex items-center gap-3">
+                <div
+                  onClick={() => setIsRepeating(!isRepeating)}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${isRepeating ? 'bg-[#0064cb]' : 'bg-slate-300'}`}
+                >
+                  <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${isRepeating ? 'translate-x-5' : ''}`}></div>
+                </div>
+                <span className="text-sm font-bold text-slate-900 cursor-pointer" onClick={() => setIsRepeating(!isRepeating)}>Repeat</span>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat on</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 1, label: "Monday" },
+                      { id: 2, label: "Tuesday" },
+                      { id: 3, label: "Wednesday" },
+                      { id: 4, label: "Thursday" },
+                      { id: 5, label: "Friday" },
+                      { id: 6, label: "Saturday" },
+                      { id: 0, label: "Sunday" },
+                    ].map((day) => (
+                      <button
+                        key={day.id}
+                        type="button"
+                        disabled={!isRepeating}
+                        onClick={() => {
+                          setRepeatDays(prev =>
+                            prev.includes(day.id) ? prev.filter(d => d !== day.id) : [...prev, day.id]
+                          );
+                        }}
+                        className={`h-9 px-4 rounded-md text-sm font-semibold transition-all ${!isRepeating
+                          ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                          : repeatDays.includes(day.id)
+                            ? "bg-[#0064cb] text-white shadow-sm shadow-[#0064cb]/20 cursor-pointer"
+                            : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                          }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2 max-w-sm">
+                  <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Date repeat end</Label>
+                  <Input
+                    type="date"
+                    disabled={!isRepeating}
+                    min={today}
+                    value={repeatEndDate}
+                    onChange={(e) => setRepeatEndDate(e.target.value)}
+                    className={`h-11 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                  />
+                </div>
+              </div>
+            </div> */}
 
             <div className="hidden md:block border border-slate-100 rounded-lg overflow-hidden w-full">
               <div className="overflow-x-auto custom-scrollbar">

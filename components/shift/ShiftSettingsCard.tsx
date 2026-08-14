@@ -82,11 +82,11 @@ export function ShiftSettingsCard({
               min={0}
               value={form.guard_break_max_duration}
               onKeyDown={(e) => {
-                if (e.key === "-" || e.key === "e") e.preventDefault();
+                if (e.key === "-" || e.key === "e" || e.key === ".") e.preventDefault();
               }}
               onChange={(e) => {
                 const val = e.target.value;
-                if (val.includes("-")) return;
+                if (val.includes("-") || val.includes(".")) return;
                 setForm(prev => ({ ...prev, guard_break_max_duration: val }));
               }}
               placeholder="e.g. 30"
@@ -102,11 +102,11 @@ export function ShiftSettingsCard({
             min={0}
             value={form.guard_break_limit}
             onKeyDown={(e) => {
-              if (e.key === "-" || e.key === "e") e.preventDefault();
+              if (e.key === "-" || e.key === "e" || e.key === ".") e.preventDefault();
             }}
             onChange={(e) => {
               const val = e.target.value;
-              if (val.includes("-")) return;
+              if (val.includes("-") || val.includes(".")) return;
               setForm(prev => ({ ...prev, guard_break_limit: val }));
             }}
             placeholder="e.g. 2"
@@ -120,11 +120,11 @@ export function ShiftSettingsCard({
             min={0}
             value={form.geofence_radius}
             onKeyDown={(e) => {
-              if (e.key === "-" || e.key === "e") e.preventDefault();
+              if (e.key === "-" || e.key === "e" || e.key === ".") e.preventDefault();
             }}
             onChange={(e) => {
               const val = e.target.value;
-              if (val.includes("-")) return;
+              if (val.includes("-") || val.includes(".")) return;
               setForm(prev => ({ ...prev, geofence_radius: val }));
             }}
             placeholder="e.g. 150"

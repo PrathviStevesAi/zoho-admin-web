@@ -45,11 +45,21 @@ import { AvailableGuardsModule } from "./_components/AvailableGuardsModule";
 import { EditShiftDialog } from "./_components/EditShiftDialog";
 import { ShippingAddress } from "@/types/dashboard.types";
 import { ActionErrorDialog } from "./_components/ActionErrorDialog";
+import { ShiftSettingsModule } from "./_components/ShiftSettingsModule";
 const formatDateKey = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+const formatDateTimeKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
 function InvoiceSkeleton() {
@@ -121,7 +131,7 @@ export default function InvoiceDetailsPage() {
   const [selectedShiftIds, setSelectedShiftIds] = useState<string[]>([]);
   const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number, type: "lead" | "standby", flatQcRate?: number }>>({});
   const [assignmentType, setAssignmentType] = useState<"lead" | "standby">("lead");
-  
+
   const [verifyWarning, setVerifyWarning] = useState<{
     isOpen: boolean;
     warnings: string[];
@@ -136,7 +146,8 @@ export default function InvoiceDetailsPage() {
   const [availableGuards, setAvailableGuards] = useState<any[]>([]);
   const [isAvailableGuardsLoading, setIsAvailableGuardsLoading] = useState(false);
   const [totalAvailableGuards, setTotalAvailableGuards] = useState(0);
-  const [actionError, setActionError] = useState<{isOpen: boolean, message: string}>({isOpen: false, message: ""});
+  const [actionError, setActionError] = useState<{ isOpen: boolean, message: string }>({ isOpen: false, message: "" });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const loadInvoice = async () => {
     setLoading(true);
@@ -537,8 +548,10 @@ export default function InvoiceDetailsPage() {
   const getDatesList = (startDate: string, endDate: string) => {
     if (!startDate || !endDate) return [];
     const dates = [];
-    const startParts = startDate.split('-').map(Number);
-    const endParts = endDate.split('-').map(Number);
+    const startStr = startDate.split('T')[0];
+    const endStr = endDate.split('T')[0];
+    const startParts = startStr.split('-').map(Number);
+    const endParts = endStr.split('-').map(Number);
     const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
     const end = new Date(endParts[0], endParts[1] - 1, endParts[2]);
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -727,12 +740,12 @@ export default function InvoiceDetailsPage() {
         guard_id: group.guard_id,
         shift_ids: group.shift_ids
       };
-      
+
       const parsedQcRate = Number(group.flatQcRate);
       if (!isNaN(parsedQcRate) && parsedQcRate > 0) {
         assignment.qc_flat_rate = parsedQcRate;
       }
-      
+
       return assignment;
     });
 
@@ -752,7 +765,7 @@ export default function InvoiceDetailsPage() {
       if (!verifyGroups[a.guard_id]) verifyGroups[a.guard_id] = [];
       verifyGroups[a.guard_id].push(...a.shift_ids);
     });
-    
+
     const verifyPayload = {
       invoice_id: id,
       assignments: Object.entries(verifyGroups).map(([guard_id, shift_ids]) => ({
@@ -798,7 +811,7 @@ export default function InvoiceDetailsPage() {
       const res = await assignGuardsAction(payload);
       if (!res.success) {
         success = false;
-        setActionError({isOpen: true, message: res.error || "Failed to assign lead guards"});
+        setActionError({ isOpen: true, message: res.error || "Failed to assign lead guards" });
       }
     }
 
@@ -808,7 +821,7 @@ export default function InvoiceDetailsPage() {
       const res = await assignStandbyGuardsAction(payload);
       if (!res.success) {
         success = false;
-        setActionError({isOpen: true, message: res.error || "Failed to assign standby guards"});
+        setActionError({ isOpen: true, message: res.error || "Failed to assign standby guards" });
       }
     }
 
@@ -818,7 +831,7 @@ export default function InvoiceDetailsPage() {
       if (typeof clearSelection === 'function') clearSelection();
       loadShifts("assign_guard");
     }
-    
+
     setIsAssigning(false);
   };
 
@@ -875,6 +888,7 @@ export default function InvoiceDetailsPage() {
     if (isScheduleOpen) return "Schedule Shift";
     if (isAssignGuardOpen) return "Assign Guard";
     if (isAvailableGuardsOpen) return "Available Guards";
+    if (isSettingsOpen) return "Shift Settings";
     return "";
   };
 
@@ -908,10 +922,18 @@ export default function InvoiceDetailsPage() {
           setIsAssignGuardOpen(false);
           setIsScheduleOpen(false);
           setIsPaymentOpen(false);
+          setIsSettingsOpen(false);
           loadAvailableGuards();
           loadShifts("assign_guard");
         }}
-        onResetView={() => { setIsScheduleOpen(false); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAvailableGuardsOpen(false); }}
+        onOpenSettings={() => {
+          setIsSettingsOpen(true);
+          setIsPaymentOpen(false);
+          setIsScheduleOpen(false);
+          setIsAssignGuardOpen(false);
+          setIsAvailableGuardsOpen(false);
+        }}
+        onResetView={() => { setIsScheduleOpen(false); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAvailableGuardsOpen(false); setIsSettingsOpen(false); }}
         onCancelService={handleCancelService}
         currentView={getCurrentViewName()}
         status={invoice.status}
@@ -988,6 +1010,31 @@ export default function InvoiceDetailsPage() {
           isLoading={isAvailableGuardsLoading}
           onBack={() => setIsAvailableGuardsOpen(false)}
           onRefresh={loadAvailableGuards}
+        />
+      ) : isSettingsOpen ? (
+        <ShiftSettingsModule
+          title="Invoice Settings"
+          description="Configure checkpoint intervals, break limits, and geofence settings. These settings will be applied to this invoice and all related shifts."
+          initialSettings={{
+            checkpoint_create_interval: invoice.default_checkpoint_create_interval,
+            break_max_time: invoice.default_break_max_time,
+            total_break_limit: invoice.default_total_break_limit,
+            geofence_radius: invoice.default_geofence_radius
+          }}
+          onCancel={() => setIsSettingsOpen(false)}
+          onSave={async (payload) => {
+            const res = await updateInvoiceDetailsAction({
+              invoice_id: id,
+              ...payload
+            });
+            if (res.success) {
+              toast.success("Settings saved successfully.");
+              setIsSettingsOpen(false);
+              loadInvoice();
+            } else {
+              toast.error(res.error || "Failed to save settings.");
+            }
+          }}
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
@@ -1096,10 +1143,10 @@ export default function InvoiceDetailsPage() {
         />
       )}
 
-      <ActionErrorDialog 
-        isOpen={actionError.isOpen} 
-        onClose={() => setActionError({ isOpen: false, message: "" })} 
-        message={actionError.message} 
+      <ActionErrorDialog
+        isOpen={actionError.isOpen}
+        onClose={() => setActionError({ isOpen: false, message: "" })}
+        message={actionError.message}
       />
     </div>
   );

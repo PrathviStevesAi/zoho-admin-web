@@ -47,6 +47,10 @@ export type InvoiceData = {
     is_invoice_details_edit?: boolean;
     is_shift_details_edit?: boolean;
   };
+  default_checkpoint_create_interval?: number | null;
+  default_break_max_time?: number | null;
+  default_total_break_limit?: number | null;
+  default_geofence_radius?: number | null;
 };
 
 export type Record = {
