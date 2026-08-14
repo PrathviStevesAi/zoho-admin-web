@@ -109,6 +109,10 @@ interface ShiftModuleProps {
   onCreateShifts: () => void;
   isCreating: boolean;
   timezone: string;
+  selectedShiftIds?: string[];
+  setSelectedShiftIds?: (ids: string[] | ((prev: string[]) => string[])) => void;
+  onBulkDelete?: () => void;
+  isDeletingBulk?: boolean;
 }
 
 export function ShiftModule({
@@ -128,7 +132,11 @@ export function ShiftModule({
   handleRowChange,
   getDatesList,
   onCreateShifts,
-  isCreating
+  isCreating,
+  selectedShiftIds,
+  setSelectedShiftIds,
+  onBulkDelete,
+  isDeletingBulk
 }: ShiftModuleProps) {
   // const [isRepeating, setIsRepeating] = useState(false);
   // const [repeatDays, setRepeatDays] = useState<number[]>([]);
@@ -145,20 +153,33 @@ export function ShiftModule({
                 <p className="text-slate-600 text-sm">View and manage all scheduled shifts for this invoice.</p>
               </div>
               <div className="flex items-center gap-3 justify-start sm:justify-end shrink-0">
-                <Button
-                  variant="outline"
-                  onClick={onBack}
-                  className="h-10 px-6 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={onAdd}
-                  className="h-10 px-6 rounded-lg font-bold text-white bg-[#0064cb] hover:bg-[#0052ae] shadow-md shadow-[#0064cb]/10 transition-all cursor-pointer flex gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add
-                </Button>
+                {selectedShiftIds && selectedShiftIds.length > 0 ? (
+                  <Button
+                    onClick={onBulkDelete}
+                    disabled={isDeletingBulk}
+                    className="h-10 px-6 rounded-lg font-bold text-white bg-red-600 hover:bg-red-700 shadow-md shadow-red-600/10 transition-all cursor-pointer flex gap-2 items-center"
+                  >
+                    {isDeletingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    Delete Selected ({selectedShiftIds.length})
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={onBack}
+                      className="h-10 px-6 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={onAdd}
+                      className="h-10 px-6 rounded-lg font-bold text-white bg-[#0064cb] hover:bg-[#0052ae] shadow-md shadow-[#0064cb]/10 transition-all cursor-pointer flex gap-2 items-center"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -168,6 +189,24 @@ export function ShiftModule({
                   <Table className="min-w-[650px] md:min-w-full">
                     <TableHeader className="bg-slate-50/50">
                       <TableRow className="hover:bg-transparent border-slate-100">
+                        <TableHead className="w-12 py-4 px-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={
+                              shifts.length > 0 &&
+                              shifts.filter(s => (s.actions ? s.actions.is_shift_delete : true)).length > 0 &&
+                              selectedShiftIds?.length === shifts.filter(s => (s.actions ? s.actions.is_shift_delete : true)).length
+                            }
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedShiftIds?.(shifts.filter(s => (s.actions ? s.actions.is_shift_delete : true)).map(s => s.shift_id));
+                              } else {
+                                setSelectedShiftIds?.([]);
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                          />
+                        </TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Shift No.</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Service Name</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-4 px-6">Start Time</TableHead>
@@ -180,7 +219,7 @@ export function ShiftModule({
                       {isLoading ? (
                         Array.from({ length: 3 }).map((_, i) => (
                           <TableRow key={i}>
-                            <TableCell colSpan={6} className="py-4 px-6">
+                            <TableCell colSpan={7} className="py-4 px-6">
                               <Skeleton className="h-4 w-full rounded" />
                             </TableCell>
                           </TableRow>
@@ -188,6 +227,28 @@ export function ShiftModule({
                       ) : shifts.length > 0 ? (
                         shifts.map((shift) => (
                           <TableRow key={shift.shift_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                            <TableCell className="py-4 px-4 text-center">
+                              {(() => {
+                                const isAllowed = shift.actions ? shift.actions.is_shift_delete : true;
+                                if (isAllowed) {
+                                  return (
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedShiftIds?.includes(shift.shift_id) || false}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedShiftIds?.(prev => [...(prev || []), shift.shift_id]);
+                                        } else {
+                                          setSelectedShiftIds?.(prev => (prev || []).filter(id => id !== shift.shift_id));
+                                        }
+                                      }}
+                                      className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                                    />
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </TableCell>
                             <TableCell className="text-sm font-bold text-slate-700 py-4 px-6">
                               <Link
                                 href={`/shift/view?shift_id=${shift.shift_id}`}
@@ -273,7 +334,7 @@ export function ShiftModule({
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="py-12 text-center">
+                          <TableCell colSpan={7} className="py-12 text-center">
                             <div className="flex flex-col items-center gap-2">
                               <Calendar className="w-8 h-8 text-slate-200" />
                               <p className="text-sm font-medium text-slate-700">No shift schedule yet</p>

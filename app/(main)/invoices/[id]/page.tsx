@@ -16,15 +16,16 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import {
-  updateInvoicePaymentStatusAction,
   deleteShiftAction,
+  bulkDeleteShiftsAction,
   createShiftAction,
   assignGuardsAction,
   unassignGuardAction,
   cancelInvoiceServiceAction,
   updateInvoiceDetailsAction,
   updateShiftDetailsAction,
-  assignStandbyGuardsAction
+  assignStandbyGuardsAction,
+  updateInvoicePaymentStatusAction
 } from "@/actions/dashboard.actions";
 import { InvoiceData } from "@/types/dashboard.types";
 import { toast } from "sonner";
@@ -148,6 +149,8 @@ export default function InvoiceDetailsPage() {
   const [totalAvailableGuards, setTotalAvailableGuards] = useState(0);
   const [actionError, setActionError] = useState<{ isOpen: boolean, message: string }>({ isOpen: false, message: "" });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const loadInvoice = async () => {
     setLoading(true);
@@ -854,6 +857,22 @@ export default function InvoiceDetailsPage() {
     setIsShiftsLoading(false);
   };
 
+  const handleBulkDeleteShifts = async () => {
+    if (selectedShiftIds.length === 0) return;
+    setIsBulkDeleting(true);
+    const res = await bulkDeleteShiftsAction(selectedShiftIds);
+    if (res.success) {
+      toast.success("Selected shifts deleted successfully");
+      setSelectedShiftIds([]);
+      setBulkDeleteConfirm(false);
+      loadInvoice();
+      loadShifts();
+    } else {
+      toast.error(res.error || "Failed to delete shifts");
+    }
+    setIsBulkDeleting(false);
+  };
+
   if (loading) return <InvoiceSkeleton />;
 
   if (!invoice) {
@@ -977,6 +996,10 @@ export default function InvoiceDetailsPage() {
           onCreateShifts={handleCreateShifts}
           isCreating={isCreatingShift}
           timezone={invoiceTimezone}
+          selectedShiftIds={selectedShiftIds}
+          setSelectedShiftIds={setSelectedShiftIds}
+          onBulkDelete={() => setBulkDeleteConfirm(true)}
+          isDeletingBulk={isBulkDeleting}
         />
       ) : isAssignGuardOpen ? (
         <AssignmentModule
@@ -1104,6 +1127,17 @@ export default function InvoiceDetailsPage() {
         confirmText="Yes, delete it"
         isDanger={true}
         isLoading={isShiftsLoading}
+      />
+
+      <ConfirmationDialog
+        isOpen={bulkDeleteConfirm}
+        onClose={() => setBulkDeleteConfirm(false)}
+        onConfirm={handleBulkDeleteShifts}
+        title="Delete Selected Shifts?"
+        description={`Are you sure you want to delete ${selectedShiftIds.length} selected shifts? This action cannot be undone.`}
+        confirmText="Yes, delete them"
+        isDanger={true}
+        isLoading={isBulkDeleting}
       />
 
       <ConfirmationDialog
