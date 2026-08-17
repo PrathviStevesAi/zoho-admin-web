@@ -23,6 +23,7 @@ interface ShiftSettingsModuleProps {
     break_max_time?: number | null;
     total_break_limit?: number | null;
     geofence_radius?: number | null;
+    customer_email?: string;
     customer_recepients?: string[];
   };
   onCancel: () => void;
@@ -40,12 +41,8 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
     geofence_radius: initialSettings?.geofence_radius?.toString() || "500",
   });
 
-  const initialPrimaryEmail = initialSettings?.customer_recepients && initialSettings.customer_recepients.length > 0
-    ? initialSettings.customer_recepients[0]
-    : "";
-  const initialCcEmails = initialSettings?.customer_recepients && initialSettings.customer_recepients.length > 1
-    ? initialSettings.customer_recepients.slice(1)
-    : [];
+  const initialPrimaryEmail = initialSettings?.customer_email || "";
+  const initialCcEmails = initialSettings?.customer_recepients || [];
 
   const [primaryEmail, setPrimaryEmail] = useState(initialPrimaryEmail);
   const [ccEmails, setCcEmails] = useState<string[]>(initialCcEmails);
@@ -110,17 +107,15 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
       payload.geofence_radius = parseInt(form.geofence_radius, 10);
     }
 
-    // Combine primary email and CC emails
-    const allRecipients: string[] = [];
     if (primaryEmail.trim()) {
       if (emailRegex.test(primaryEmail.trim())) {
-        allRecipients.push(primaryEmail.trim());
+        payload.customer_email = primaryEmail.trim();
       } else {
         toast.error("Primary email is invalid.");
         return;
       }
     }
-
+    
     // Add any valid emails that might be left in the CC input
     const finalCcInput = ccInput.trim();
     const emailsToAdd = [...ccEmails];
@@ -132,13 +127,9 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
         }
       }
     }
-
-    allRecipients.push(...emailsToAdd);
-
-    // Always include customer_recepients if they exist or were modified
-    // Only omit it if it was empty initially and remains empty
-    if (allRecipients.length > 0 || (initialSettings?.customer_recepients && initialSettings.customer_recepients.length > 0)) {
-      payload.customer_recepients = allRecipients;
+    
+    if (emailsToAdd.length > 0) {
+      payload.customer_recepients = emailsToAdd;
     }
 
     if (Object.keys(payload).length === 0) {
@@ -175,8 +166,8 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
                   <span className="font-bold">Note:</span> These settings will apply to all shifts related to this invoice that are
                   <span className="font-semibold"> Created, Planned, Accepted,</span> or <span className="font-semibold">Refused</span> by the guard.
                   Shifts that are already <span className="font-semibold">In Progress</span> or <span className="font-semibold">Completed</span> will continue using their existing settings.
+                  If you want to change the settings for a specific shift, you can update them directly from the Shift page.
                 </p>
-                <p className="text-slate-600">If you want to change the settings for a specific shift, you can update them directly from the Shift page.</p>
               </div>
             </div>
           </div>
@@ -260,7 +251,7 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
                     <Label className="text-sm font-bold text-slate-800">To (Primary Email)</Label>
                     <Info className="w-4 h-4 text-slate-400" />
                   </div>
-                  <p className="text-xs text-slate-500 pb-1">The DAR report will be sent to this email as the primary recipient.</p>
+                  <p className="text-xs text-slate-500 pb-1">The shift report will be sent to this email as the primary recipient.</p>
                 </div>
                 <div className="flex-[2] relative">
                   <Input
@@ -289,7 +280,7 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
                     <Label className="text-sm font-bold text-slate-800">CC (Additional Emails)</Label>
                     <Info className="w-4 h-4 text-slate-400" />
                   </div>
-                  <p className="text-xs text-slate-500 pb-1">Additional recipients will receive the DAR report in CC.</p>
+                  <p className="text-xs text-slate-500 pb-1">Additional recipients will receive the shift report in CC.</p>
                 </div>
                 <div className="flex-[2]">
                   <div className="min-h-[44px] bg-white border border-slate-200 rounded-lg p-2 flex flex-wrap gap-2 focus-within:ring-2 focus-within:ring-slate-400 focus-within:ring-offset-2 transition-all">

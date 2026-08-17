@@ -886,6 +886,7 @@ export async function updateInvoiceDetailsAction(payload: {
   break_max_time?: number;
   total_break_limit?: number;
   geofence_radius?: number;
+  customer_email?: string;
   customer_recepients?: string[];
 }): Promise<{ success: boolean; error?: string }> {
   try {

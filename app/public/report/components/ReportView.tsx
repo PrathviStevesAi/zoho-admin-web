@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
+import { toast } from "sonner";
 import { DateTime } from "luxon";
 import {
   User,
@@ -13,7 +13,7 @@ import {
   ClipboardList,
   AlertTriangle,
   History,
-  ShieldAlert
+  Copy
 } from "lucide-react";
 import Image from "next/image";
 import { DynamicShiftMap } from "@/components/map/DynamicShiftMap";
@@ -78,7 +78,18 @@ export default function ReportView({ data }: ReportViewProps) {
         <h2 className="text-2xl md:text-4xl font-bold tracking-tight mt-1 text-slate-900 dark:text-white">
           Shift {data.shift_no} Report
         </h2>
-        <div className="w-24 h-1 bg-amber-400 mt-2"></div>
+        <div className="w-24 h-1 bg-amber-400 mt-2 mb-2"></div>
+
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(window.location.href);
+            toast.success("Link copied to clipboard!");
+          }}
+          className="flex items-center gap-2 px-4 py-1.5 border border-blue-500 text-blue-500 bg-white rounded-md hover:bg-blue-50 transition-colors font-medium text-sm cursor-pointer"
+        >
+          <Copy className="w-4 h-4" />
+          <span>Copy link for sharing</span>
+        </button>
       </div>
 
       {/* Stats Card */}
@@ -177,30 +188,32 @@ export default function ReportView({ data }: ReportViewProps) {
         {/* Right: Reports & Actions */}
         <div className="lg:col-span-2 h-fit flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
           {/* Daily Activity Report */}
-          <div className="border-b border-slate-200 dark:border-slate-800">
-            <button 
-              onClick={() => setActiveTab(activeTab === 'dar' ? '' : 'dar')}
-              className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'dar' && "bg-slate-50 dark:bg-slate-800/50")}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                  <ClipboardList className={cn("size-5", activeTab === 'dar' ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")} />
+          {data?.dar_report && (
+            <div className="border-b border-slate-200 dark:border-slate-800">
+              <button
+                onClick={() => setActiveTab(activeTab === 'dar' ? '' : 'dar')}
+                className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'dar' && "bg-slate-50 dark:bg-slate-800/50")}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <ClipboardList className={cn("size-5", activeTab === 'dar' ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")} />
+                  </div>
+                  <span className={cn("font-bold text-sm uppercase tracking-wide", activeTab === 'dar' ? "text-blue-600 dark:text-blue-400" : "text-slate-800 dark:text-slate-200")}>Daily Activity Report</span>
                 </div>
-                <span className={cn("font-bold text-sm uppercase tracking-wide", activeTab === 'dar' ? "text-blue-600 dark:text-blue-400" : "text-slate-800 dark:text-slate-200")}>Daily Activity Report</span>
-              </div>
-              <ChevronRight className={cn("transition-transform duration-300", activeTab === 'dar' ? "rotate-90 text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200")} />
-            </button>
-            {activeTab === 'dar' && (
-              <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
-                <ShiftDARReportTab reports={data} isReportsLoading={false} reportsError={null} setPreviewFile={setPreviewFile} />
-              </div>
-            )}
-          </div>
+                <ChevronRight className={cn("transition-transform duration-300", activeTab === 'dar' ? "rotate-90 text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200")} />
+              </button>
+              {activeTab === 'dar' && (
+                <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
+                  <ShiftDARReportTab reports={data} isReportsLoading={false} reportsError={null} setPreviewFile={setPreviewFile} />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Incident Report */}
           {data?.incident_report && data.incident_report.length > 0 && (
             <div className="border-b border-slate-200 dark:border-slate-800">
-              <button 
+              <button
                 onClick={() => setActiveTab(activeTab === 'incident' ? '' : 'incident')}
                 className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'incident' && "bg-slate-50 dark:bg-slate-800/50")}
               >
@@ -222,7 +235,7 @@ export default function ReportView({ data }: ReportViewProps) {
 
           {/* Check Point */}
           <div className="border-b border-slate-200 dark:border-slate-800">
-            <button 
+            <button
               onClick={() => setActiveTab(activeTab === 'checkpoint' ? '' : 'checkpoint')}
               className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'checkpoint' && "bg-slate-50 dark:bg-slate-800/50")}
             >
@@ -243,7 +256,7 @@ export default function ReportView({ data }: ReportViewProps) {
 
           {/* History Of Changes */}
           <div>
-            <button 
+            <button
               onClick={() => setActiveTab(activeTab === 'history' ? '' : 'history')}
               className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'history' && "bg-slate-50 dark:bg-slate-800/50")}
             >

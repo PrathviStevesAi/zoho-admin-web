@@ -1043,6 +1043,7 @@ export default function InvoiceDetailsPage() {
             break_max_time: invoice.default_break_max_time,
             total_break_limit: invoice.default_total_break_limit,
             geofence_radius: invoice.default_geofence_radius,
+            customer_email: invoice.customer_email,
             customer_recepients: invoice.customer_recepients
           }}
           onCancel={() => setIsSettingsOpen(false)}
