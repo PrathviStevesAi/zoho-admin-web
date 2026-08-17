@@ -187,13 +187,17 @@ interface ShiftMapProps {
   radius?: number;
   checkpoints?: [number, number][];
   shiftLocation?: [number, number];
+  className?: string;
+  heightClass?: string;
 }
 
 export default function ShiftMap({
   center,
   radius = 150,
   checkpoints,
-  shiftLocation
+  shiftLocation,
+  className = "mt-6",
+  heightClass = "h-[400px]"
 }: ShiftMapProps) {
   const [zoomLevel, setZoomLevel] = useState(15);
 
@@ -217,8 +221,8 @@ export default function ShiftMap({
   const mapKey = `${shiftLocation ? "geocoded" : "no-loc"}-${isFallback ? "fallback" : "ready"}-${radius}`;
 
   return (
-    <Card className="border-slate-200 shadow-sm rounded-xl bg-white overflow-hidden p-1 mt-6 relative z-0">
-      <div className="h-[400px] w-full rounded-lg overflow-hidden relative z-0">
+    <Card className={`border-slate-200 shadow-sm rounded-xl bg-white overflow-hidden p-1 relative z-0 ${className}`}>
+      <div className={`${heightClass} w-full rounded-lg overflow-hidden relative z-0`}>
         <MapContainer
           key={mapKey}
           center={actualCenter}
