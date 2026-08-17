@@ -51,6 +51,7 @@ export type InvoiceData = {
   default_break_max_time?: number | null;
   default_total_break_limit?: number | null;
   default_geofence_radius?: number | null;
+  customer_recepients?: string[];
 };
 
 export type Record = {
