@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck } from "lucide-react";
+import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
@@ -12,9 +12,11 @@ interface ShiftHeaderProps {
   setIsSettingsOpen: (open: boolean) => void;
   isNewAssignOpen: boolean;
   isStandbyGuardsOpen?: boolean;
+  isSendReportOpen?: boolean;
   isReassign?: boolean;
   onCloseNewAssign: () => void;
   onCloseStandbyGuards?: () => void;
+  onCloseSendReport?: () => void;
   isStartingShift: boolean;
   onManualStart: () => void;
   onAssignGuard: () => void;
@@ -28,6 +30,7 @@ interface ShiftHeaderProps {
   showSettingBtn: boolean;
   onStartVideoCall: () => void;
   onJoinVideoCall: () => void;
+  onSendReport?: () => void;
   isLoading?: boolean;
 }
 
@@ -39,9 +42,11 @@ export function ShiftHeader({
   setIsSettingsOpen,
   isNewAssignOpen,
   isStandbyGuardsOpen,
+  isSendReportOpen,
   isReassign,
   onCloseNewAssign,
   onCloseStandbyGuards,
+  onCloseSendReport,
   isStartingShift,
   onManualStart,
   onAssignGuard,
@@ -54,6 +59,7 @@ export function ShiftHeader({
   onCancelService,
   onStartVideoCall,
   onJoinVideoCall,
+  onSendReport,
   isLoading,
 }: ShiftHeaderProps) {
   return (
@@ -72,10 +78,11 @@ export function ShiftHeader({
                 setIsSettingsOpen(false);
                 onCloseNewAssign();
                 if (onCloseStandbyGuards) onCloseStandbyGuards();
+                if (onCloseSendReport) onCloseSendReport();
               }}
               className={cn(
                 "transition-colors font-medium",
-                (isSettingsOpen || isNewAssignOpen || isStandbyGuardsOpen)
+                (isSettingsOpen || isNewAssignOpen || isStandbyGuardsOpen || isSendReportOpen)
                   ? "text-slate-500 hover:text-[#0064cb] cursor-pointer"
                   : "text-[#0064cb] font-bold cursor-default pointer-events-none"
               )}
@@ -98,6 +105,12 @@ export function ShiftHeader({
               <>
                 <ChevronRight className="w-3.5 h-3.5" />
                 <span className="text-[#0064cb] font-bold">Standby Guard</span>
+              </>
+            )}
+            {isSendReportOpen && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="text-[#0064cb] font-bold">Send Report</span>
               </>
             )}
           </div>
@@ -246,6 +259,14 @@ export function ShiftHeader({
                 icon: Video,
                 color: "orange" as const,
                 onClick: onStartVideoCall,
+              });
+            }
+            if (act.is_send_report) {
+              buttons.push({
+                label: "Send Report",
+                icon: Send,
+                color: "blue" as const,
+                onClick: onSendReport || (() => {}),
               });
             }
 

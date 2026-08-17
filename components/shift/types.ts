@@ -48,6 +48,7 @@ export interface ShiftActions {
   is_travel_fee_edit?: boolean;
   is_join_vc_call?: boolean;
   is_find_standby_guard?: boolean;
+  is_send_report?: boolean;
   call_id?: string;
 }
 
@@ -89,6 +90,10 @@ export interface Shift {
   shift_description?: string;
   status: string;
   payment_status?: string;
+  customer_email?: string;
+  customer_recepients?: string[];
+  report_token?: string;
+  is_report_send?: boolean;
   assigned_guard?: string | AssignedGuard;
   scheduled_for?: ShiftTime;
   execution_time?: ExecutionTime;

@@ -22,6 +22,7 @@ import {
   reassignLeadGuardAction,
   reassignStandbyGuardAction,
   verifyGuardAssignmentAction,
+  sendShiftReportAction,
 } from "@/actions/dashboard.actions";
 import { generateUploadUrlAction } from "@/actions/profile.actions";
 import { fetchShiftReportsAction } from "@/actions/notification.actions";
@@ -39,6 +40,7 @@ import { StandbyGuardsPanel } from "./StandbyGuardsPanel";
 import { EditShiftLocationDialog } from "./dialogs/EditShiftLocationDialog";
 import { ManualStartShiftDialog } from "./dialogs/ManualStartShiftDialog";
 import { FilePreviewDialog } from "./dialogs/FilePreviewDialog";
+import { SendReportCard } from "./SendReportCard";
 import { Shift, ShiftReports, PreviewFile, Address } from "./types";
 import { useVideoCall } from "@/context/VideoCallContext";
 
@@ -69,8 +71,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
   const [isManualStartOpen, setIsManualStartOpen] = useState(false);
+  const [isSendReportOpen, setIsSendReportOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [isStartingShift, setIsStartingShift] = useState(false);
+  const [isSendingReport, setIsSendingReport] = useState(false);
   const [isCancellingService, setIsCancellingService] = useState(false);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isSavingLocation, setIsSavingLocation] = useState(false);
@@ -701,12 +705,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         shiftId={shiftId}
         notificationId={notificationId}
         isSettingsOpen={isSettingsOpen}
-        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) { setIsNewAssignOpen(false); setIsStandbyGuardsOpen(false); } }}
+        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) { setIsNewAssignOpen(false); setIsStandbyGuardsOpen(false); setIsSendReportOpen(false); } }}
         isNewAssignOpen={isNewAssignOpen}
         isStandbyGuardsOpen={isStandbyGuardsOpen}
+        isSendReportOpen={isSendReportOpen}
         isReassign={isReassign}
         onCloseNewAssign={() => setIsNewAssignOpen(false)}
         onCloseStandbyGuards={() => setIsStandbyGuardsOpen(false)}
+        onCloseSendReport={() => setIsSendReportOpen(false)}
         isStartingShift={isStartingShift}
         onManualStart={() => setIsManualStartOpen(true)}
         onAssignGuard={handleAssignGuard}
@@ -733,6 +739,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onJoinVideoCall={async () => {
           toast.info("Incoming/Outgoing calls are now managed automatically.");
         }}
+        onSendReport={() => setIsSendReportOpen(true)}
         isLoading={isLoading}
       />
 
@@ -757,6 +764,32 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           onSave={handleSaveSettings}
           onClose={() => setIsSettingsOpen(false)}
           isSaving={isSavingSettings}
+        />
+      ) : isSendReportOpen ? (
+        <SendReportCard
+          isOpen={isSendReportOpen}
+          onClose={() => setIsSendReportOpen(false)}
+          shift={shift}
+          isSending={isSendingReport}
+          onSend={async () => {
+            setIsSendingReport(true);
+            try {
+              const res = await sendShiftReportAction(shift.shift_id);
+              if (res.success) {
+                toast.success(res.message || "Report email successfully sent");
+                
+                // Refresh shift details to get updated `is_report_send` status
+                await loadShiftDetails();
+              } else {
+                toast.error(res.error || "Failed to send report.");
+              }
+            } catch (error: any) {
+              toast.error(error?.message || "Failed to send report.");
+            } finally {
+              setIsSendingReport(false);
+              setIsSendReportOpen(false);
+            }
+          }}
         />
       ) : isStandbyGuardsOpen ? (
         <StandbyGuardsPanel shift={shift} onClose={() => setIsStandbyGuardsOpen(false)} />

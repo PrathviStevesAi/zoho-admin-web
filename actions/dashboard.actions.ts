@@ -1138,3 +1138,21 @@ export async function fetchDispatchViewShiftsAction(
     return { success: false, error: message };
   }
 }
+
+export async function sendShiftReportAction(shiftId: string): Promise<{ success: boolean; error?: string; message?: string }> {
+  try {
+    const data = await apiFetch<any>(
+      `/api/v1/shift/${shiftId}/send-report`,
+      { method: "POST" }
+    );
+    
+    // Note: revalidation may be required if we want to refresh the shift data (e.g. is_report_send flag)
+    revalidatePath(`/shift/view`);
+    revalidatePath(`/invoices/[id]`, 'page');
+    
+    return { success: true, message: data.message };
+  } catch (error: any) {
+    const message = error.message || "Failed to send report";
+    return { success: false, error: message };
+  }
+}
