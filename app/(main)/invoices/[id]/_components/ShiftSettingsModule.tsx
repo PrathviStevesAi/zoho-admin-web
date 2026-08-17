@@ -92,27 +92,39 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
   };
 
   const handleSave = async () => {
-    const payload: any = {};
+    const payload: Partial<{
+      checkpoint_create_interval: number;
+      break_max_time: number;
+      total_break_limit: number;
+      geofence_radius: number;
+      customer_email: string;
+      customer_recepients: string[];
+    }> = {};
 
-    if (form.checkpoint_create_interval) {
+    if (form.checkpoint_create_interval && form.checkpoint_create_interval !== initialSettings?.checkpoint_create_interval?.toString()) {
       payload.checkpoint_create_interval = parseInt(form.checkpoint_create_interval, 10);
     }
-    if (form.break_max_time) {
+    if (form.break_max_time && form.break_max_time !== initialSettings?.break_max_time?.toString()) {
       payload.break_max_time = parseInt(form.break_max_time, 10);
     }
-    if (form.total_break_limit) {
+    if (form.total_break_limit && form.total_break_limit !== initialSettings?.total_break_limit?.toString()) {
       payload.total_break_limit = parseInt(form.total_break_limit, 10);
     }
-    if (form.geofence_radius) {
+    if (form.geofence_radius && form.geofence_radius !== initialSettings?.geofence_radius?.toString()) {
       payload.geofence_radius = parseInt(form.geofence_radius, 10);
     }
 
-    if (primaryEmail.trim()) {
-      if (emailRegex.test(primaryEmail.trim())) {
-        payload.customer_email = primaryEmail.trim();
+    const trimmedPrimary = primaryEmail.trim();
+    if (trimmedPrimary !== (initialSettings?.customer_email || "")) {
+      if (trimmedPrimary) {
+        if (emailRegex.test(trimmedPrimary)) {
+          payload.customer_email = trimmedPrimary;
+        } else {
+          toast.error("Primary email is invalid.");
+          return;
+        }
       } else {
-        toast.error("Primary email is invalid.");
-        return;
+        payload.customer_email = "";
       }
     }
     
@@ -128,7 +140,11 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
       }
     }
     
-    if (emailsToAdd.length > 0) {
+    const initialCc = initialSettings?.customer_recepients || [];
+    const isCcChanged = emailsToAdd.length !== initialCc.length || 
+                       !emailsToAdd.every((val, index) => val === initialCc[index]);
+                       
+    if (isCcChanged) {
       payload.customer_recepients = emailsToAdd;
     }
 
