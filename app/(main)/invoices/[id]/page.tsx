@@ -1042,7 +1042,8 @@ export default function InvoiceDetailsPage() {
             checkpoint_create_interval: invoice.default_checkpoint_create_interval,
             break_max_time: invoice.default_break_max_time,
             total_break_limit: invoice.default_total_break_limit,
-            geofence_radius: invoice.default_geofence_radius
+            geofence_radius: invoice.default_geofence_radius,
+            customer_recepients: invoice.customer_recepients
           }}
           onCancel={() => setIsSettingsOpen(false)}
           onSave={async (payload) => {
