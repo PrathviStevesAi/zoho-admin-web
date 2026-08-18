@@ -105,7 +105,7 @@ export function ApproveShiftCard({
             ) : (
               <Send className="w-4 h-4" />
             )}
-            <span>{isApproving ? "Sending..." : "Send"}</span>
+            <span>{isApproving ? "Updating..." : "Update"}</span>
           </Button>
         </div>
       </div>

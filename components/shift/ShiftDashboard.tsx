@@ -825,7 +825,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               if (res.success) {
                 toast.success(res.message || "Shift approved successfully.");
                 setIsApproveShiftOpen(false);
-                await loadShiftDetails();
+                await Promise.all([
+                  loadShiftDetails(),
+                  loadReportsDetails(),
+                  loadComments()
+                ]);
               } else {
                 toast.error(res.error || "Failed to approve shift.");
               }
@@ -853,7 +857,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               if (res.success) {
                 toast.success(res.message || "Shift not approved.");
                 setIsNotApproveShiftOpen(false);
-                await loadShiftDetails();
+                await Promise.all([
+                  loadShiftDetails(),
+                  loadReportsDetails(),
+                  loadComments()
+                ]);
               } else {
                 toast.error(res.error || "Failed to submit not approved status.");
               }

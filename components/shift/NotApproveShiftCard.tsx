@@ -75,7 +75,7 @@ export function NotApproveShiftCard({
             ) : (
               <Send className="w-4 h-4" />
             )}
-            <span>{isNotApproving ? "Sending..." : "Send"}</span>
+            <span>{isNotApproving ? "Updating..." : "Update"}</span>
           </Button>
         </div>
       </div>
