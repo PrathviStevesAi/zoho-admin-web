@@ -23,6 +23,8 @@ import {
   reassignStandbyGuardAction,
   verifyGuardAssignmentAction,
   sendShiftReportAction,
+  approveShiftAction,
+  notApproveShiftAction,
 } from "@/actions/dashboard.actions";
 import { generateUploadUrlAction } from "@/actions/profile.actions";
 import { fetchShiftReportsAction } from "@/actions/notification.actions";
@@ -42,6 +44,8 @@ import { EditShiftLocationDialog } from "./dialogs/EditShiftLocationDialog";
 import { ManualStartShiftDialog } from "./dialogs/ManualStartShiftDialog";
 import { FilePreviewDialog } from "./dialogs/FilePreviewDialog";
 import { SendReportCard } from "./SendReportCard";
+import { ApproveShiftCard } from "./ApproveShiftCard";
+import { NotApproveShiftCard } from "./NotApproveShiftCard";
 import { Shift, ShiftReports, PreviewFile, Address } from "./types";
 import { useVideoCall } from "@/context/VideoCallContext";
 
@@ -73,9 +77,13 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
   const [isManualStartOpen, setIsManualStartOpen] = useState(false);
   const [isSendReportOpen, setIsSendReportOpen] = useState(false);
+  const [isApproveShiftOpen, setIsApproveShiftOpen] = useState(false);
+  const [isNotApproveShiftOpen, setIsNotApproveShiftOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [isStartingShift, setIsStartingShift] = useState(false);
   const [isSendingReport, setIsSendingReport] = useState(false);
+  const [isApprovingShift, setIsApprovingShift] = useState(false);
+  const [isNotApprovingShift, setIsNotApprovingShift] = useState(false);
   const [isCancellingService, setIsCancellingService] = useState(false);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isSavingLocation, setIsSavingLocation] = useState(false);
@@ -706,14 +714,18 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         shiftId={shiftId}
         notificationId={notificationId}
         isSettingsOpen={isSettingsOpen}
-        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) { setIsNewAssignOpen(false); setIsStandbyGuardsOpen(false); setIsSendReportOpen(false); } }}
+        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) { setIsNewAssignOpen(false); setIsStandbyGuardsOpen(false); setIsSendReportOpen(false); setIsApproveShiftOpen(false); setIsNotApproveShiftOpen(false); } }}
         isNewAssignOpen={isNewAssignOpen}
         isStandbyGuardsOpen={isStandbyGuardsOpen}
         isSendReportOpen={isSendReportOpen}
+        isApproveShiftOpen={isApproveShiftOpen}
+        isNotApproveShiftOpen={isNotApproveShiftOpen}
         isReassign={isReassign}
         onCloseNewAssign={() => setIsNewAssignOpen(false)}
         onCloseStandbyGuards={() => setIsStandbyGuardsOpen(false)}
         onCloseSendReport={() => setIsSendReportOpen(false)}
+        onCloseApproveShift={() => setIsApproveShiftOpen(false)}
+        onCloseNotApproveShift={() => setIsNotApproveShiftOpen(false)}
         isStartingShift={isStartingShift}
         onManualStart={() => setIsManualStartOpen(true)}
         onAssignGuard={handleAssignGuard}
@@ -741,6 +753,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           toast.info("Incoming/Outgoing calls are now managed automatically.");
         }}
         onSendReport={() => setIsSendReportOpen(true)}
+        onApproveShift={() => setIsApproveShiftOpen(true)}
+        onNotApproveShift={() => setIsNotApproveShiftOpen(true)}
         isLoading={isLoading}
       />
 
@@ -790,6 +804,63 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
             } finally {
               setIsSendingReport(false);
               setIsSendReportOpen(false);
+            }
+          }}
+        />
+      ) : isApproveShiftOpen ? (
+        <ApproveShiftCard
+          isOpen={isApproveShiftOpen}
+          onClose={() => setIsApproveShiftOpen(false)}
+          shift={shift}
+          isApproving={isApprovingShift}
+          onApprove={async (rating, comment) => {
+            if (!shift) return;
+            setIsApprovingShift(true);
+            try {
+              const res = await approveShiftAction({
+                shift_id: shift.shift_id,
+                guard_rating: rating,
+                guard_performance_comment: comment,
+              });
+              if (res.success) {
+                toast.success(res.message || "Shift approved successfully.");
+                setIsApproveShiftOpen(false);
+                await loadShiftDetails();
+              } else {
+                toast.error(res.error || "Failed to approve shift.");
+              }
+            } catch (error: any) {
+              toast.error(error?.message || "Failed to approve shift.");
+            } finally {
+              setIsApprovingShift(false);
+            }
+          }}
+        />
+      ) : isNotApproveShiftOpen ? (
+        <NotApproveShiftCard
+          isOpen={isNotApproveShiftOpen}
+          onClose={() => setIsNotApproveShiftOpen(false)}
+          shift={shift}
+          isNotApproving={isNotApprovingShift}
+          onNotApprove={async (comment) => {
+            if (!shift) return;
+            setIsNotApprovingShift(true);
+            try {
+              const res = await notApproveShiftAction({
+                shift_id: shift.shift_id,
+                comment: comment,
+              });
+              if (res.success) {
+                toast.success(res.message || "Shift not approved.");
+                setIsNotApproveShiftOpen(false);
+                await loadShiftDetails();
+              } else {
+                toast.error(res.error || "Failed to submit not approved status.");
+              }
+            } catch (error: any) {
+              toast.error(error?.message || "Failed to submit not approved status.");
+            } finally {
+              setIsNotApprovingShift(false);
             }
           }}
         />

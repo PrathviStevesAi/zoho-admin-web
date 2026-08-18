@@ -1156,3 +1156,48 @@ export async function sendShiftReportAction(shiftId: string): Promise<{ success:
     return { success: false, error: message };
   }
 }
+
+export async function approveShiftAction(payload: {
+  shift_id: string;
+  guard_rating: number;
+  guard_performance_comment: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/approved`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    revalidatePath(`/shift/view`);
+    revalidatePath(`/invoices/[id]`, 'page');
+    
+    return { success: true, message: res.message || "Shift approved successfully." };
+  } catch (error: any) {
+    const message = error.message || "Failed to approve shift";
+    return { success: false, error: message };
+  }
+}
+
+export async function notApproveShiftAction(payload: {
+  shift_id: string;
+  comment: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/not-approved`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    revalidatePath(`/shift/view`);
+    revalidatePath(`/invoices/[id]`, 'page');
+    
+    return { success: true, message: res.message || "Shift not approved." };
+  } catch (error: any) {
+    const message = error.message || "Failed to submit not approved status";
+    return { success: false, error: message };
+  }
+}

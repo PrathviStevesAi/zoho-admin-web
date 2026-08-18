@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send } from "lucide-react";
+import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
@@ -13,10 +13,14 @@ interface ShiftHeaderProps {
   isNewAssignOpen: boolean;
   isStandbyGuardsOpen?: boolean;
   isSendReportOpen?: boolean;
+  isApproveShiftOpen?: boolean;
+  isNotApproveShiftOpen?: boolean;
   isReassign?: boolean;
   onCloseNewAssign: () => void;
   onCloseStandbyGuards?: () => void;
   onCloseSendReport?: () => void;
+  onCloseApproveShift?: () => void;
+  onCloseNotApproveShift?: () => void;
   isStartingShift: boolean;
   onManualStart: () => void;
   onAssignGuard: () => void;
@@ -31,6 +35,8 @@ interface ShiftHeaderProps {
   onStartVideoCall: () => void;
   onJoinVideoCall: () => void;
   onSendReport?: () => void;
+  onApproveShift?: () => void;
+  onNotApproveShift?: () => void;
   isLoading?: boolean;
 }
 
@@ -43,10 +49,14 @@ export function ShiftHeader({
   isNewAssignOpen,
   isStandbyGuardsOpen,
   isSendReportOpen,
+  isApproveShiftOpen,
+  isNotApproveShiftOpen,
   isReassign,
   onCloseNewAssign,
   onCloseStandbyGuards,
   onCloseSendReport,
+  onCloseApproveShift,
+  onCloseNotApproveShift,
   isStartingShift,
   onManualStart,
   onAssignGuard,
@@ -60,6 +70,8 @@ export function ShiftHeader({
   onStartVideoCall,
   onJoinVideoCall,
   onSendReport,
+  onApproveShift,
+  onNotApproveShift,
   isLoading,
 }: ShiftHeaderProps) {
   return (
@@ -79,10 +91,12 @@ export function ShiftHeader({
                 onCloseNewAssign();
                 if (onCloseStandbyGuards) onCloseStandbyGuards();
                 if (onCloseSendReport) onCloseSendReport();
+                if (onCloseApproveShift) onCloseApproveShift();
+                if (onCloseNotApproveShift) onCloseNotApproveShift();
               }}
               className={cn(
                 "transition-colors font-medium",
-                (isSettingsOpen || isNewAssignOpen || isStandbyGuardsOpen || isSendReportOpen)
+                (isSettingsOpen || isNewAssignOpen || isStandbyGuardsOpen || isSendReportOpen || isApproveShiftOpen || isNotApproveShiftOpen)
                   ? "text-slate-500 hover:text-[#0064cb] cursor-pointer"
                   : "text-[#0064cb] font-bold cursor-default pointer-events-none"
               )}
@@ -111,6 +125,18 @@ export function ShiftHeader({
               <>
                 <ChevronRight className="w-3.5 h-3.5" />
                 <span className="text-[#0064cb] font-bold">Send Report</span>
+              </>
+            )}
+            {isApproveShiftOpen && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="text-[#0064cb] font-bold">Approved Shift</span>
+              </>
+            )}
+            {isNotApproveShiftOpen && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="text-[#0064cb] font-bold">Not Approved Shift</span>
               </>
             )}
           </div>
@@ -267,6 +293,22 @@ export function ShiftHeader({
                 icon: Send,
                 color: "blue" as const,
                 onClick: onSendReport || (() => {}),
+              });
+            }
+            if (act.is_approved) {
+              buttons.push({
+                label: "Approved Shift",
+                icon: BadgeCheck,
+                color: "emerald" as const,
+                onClick: onApproveShift || (() => {}),
+              });
+            }
+            if (act.is_not_approved) {
+              buttons.push({
+                label: "Not Approved Shift",
+                icon: XOctagon,
+                color: "red" as const,
+                onClick: onNotApproveShift || (() => {}),
               });
             }
 

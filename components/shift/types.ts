@@ -50,6 +50,8 @@ export interface ShiftActions {
   is_find_standby_guard?: boolean;
   is_send_report?: boolean;
   is_other_expenses_edit?: boolean;
+  is_approved?: boolean;
+  is_not_approved?: boolean;
   call_id?: string;
 }
 
