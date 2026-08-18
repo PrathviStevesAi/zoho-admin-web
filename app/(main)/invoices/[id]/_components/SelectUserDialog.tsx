@@ -65,13 +65,11 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
   const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [hourlyRate, setHourlyRate] = useState("");
-  const [travelFee, setTravelFee] = useState("");
   const [flatQcRate, setFlatQcRate] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       setHourlyRate("");
-      setTravelFee("");
       setFlatQcRate("");
     } else {
       setUserSearchQuery("");
@@ -92,9 +90,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
     const rates: { hourlyRate?: number; travelFee?: number; flatQcRate?: number } = {};
     if (mode === "lead") {
       const hr = parseFloat(hourlyRate);
-      const tf = parseFloat(travelFee);
       if (!isNaN(hr) && hr > 0) rates.hourlyRate = hr;
-      if (!isNaN(tf) && tf > 0) rates.travelFee = tf;
     } else {
       const fqr = parseFloat(flatQcRate);
       if (!isNaN(fqr) && fqr > 0) rates.flatQcRate = fqr;
@@ -176,7 +172,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
         <div className="p-6 pt-0 pb-0 space-y-6 flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="space-y-3">
             {mode === "lead" ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="hourly_rate" className="text-[13px] font-medium text-slate-700">Hourly Rate Paid to Guard</Label>
                   <div className="relative">
@@ -188,22 +184,6 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                       step="0.01"
                       value={hourlyRate}
                       onChange={(e) => setHourlyRate(e.target.value)}
-                      placeholder="0.00"
-                      className="h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="travel_fee" className="text-[13px] font-medium text-slate-700">Travel Fee Paid to Guard</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
-                    <Input
-                      id="travel_fee"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={travelFee}
-                      onChange={(e) => setTravelFee(e.target.value)}
                       placeholder="0.00"
                       className="h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
                     />

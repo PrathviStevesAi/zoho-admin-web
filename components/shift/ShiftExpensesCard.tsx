@@ -374,8 +374,7 @@ export function ShiftExpensesCard({
                   </span>
                   <div className="flex items-center gap-4">
                     <span className="text-sm font-bold text-slate-900">
-                      {formatPrice(shift.qc_flat_rate)}{" "}
-                      <span className="text-slate-500 font-medium">/ hour</span>
+                      {formatPrice(shift.qc_flat_rate)}
                     </span>
                     {renderEditIcon("qc_flat_rate", !!shift.action?.is_qc_flat_rate_edit)}
                   </div>

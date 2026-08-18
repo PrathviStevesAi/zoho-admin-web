@@ -51,7 +51,6 @@ interface NewAssignGuardPanelProps {
 
 export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates, assignRole }: NewAssignGuardPanelProps) {
   const [hourlyRate, setHourlyRate] = useState("");
-  const [travelFee, setTravelFee] = useState("");
   const [flatQcRate, setFlatQcRate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
@@ -117,7 +116,6 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
 
   const resetFields = () => {
     setHourlyRate("");
-    setTravelFee("");
     setFlatQcRate("");
     setSearchQuery("");
   };
@@ -134,11 +132,9 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
   const handleSelectGuard = (guard: any) => {
     const rates: GuardRates = {};
     const hr = parseFloat(hourlyRate);
-    const tf = parseFloat(travelFee);
     const qc = parseFloat(flatQcRate);
 
     if (!isNaN(hr) && hr > 0) rates.per_hour_rate = hr;
-    if (!isNaN(tf) && tf > 0) rates.travel_fee = tf;
     if (!isNaN(qc) && qc > 0) rates.qc_flat_rate = qc;
 
     resetFields();
@@ -223,7 +219,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
             <div className="space-y-1.5">
               <Label className="text-[13px] font-medium text-slate-700">Hourly Rate paid to Guard</Label>
               <div className="relative">
@@ -234,22 +230,6 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
                   step="0.01"
                   value={hourlyRate}
                   onChange={(e) => setHourlyRate(e.target.value)}
-                  placeholder="0.00"
-                  className="h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-slate-700">Travel Fee paid to Guard</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={travelFee}
-                  onChange={(e) => setTravelFee(e.target.value)}
                   placeholder="0.00"
                   className="h-10 pl-7 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
                 />
