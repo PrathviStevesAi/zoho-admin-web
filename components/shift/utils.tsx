@@ -195,18 +195,24 @@ export const formatDescription = (text: string) => {
 
 export const getStatusColor = (status: string) => {
   switch (status?.toLowerCase()) {
-    case 'shift_planned': return 'bg-blue-100 text-blue-700 border-blue-200';
-    case 'shift_accepted': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    case 'shift_in_progress': return 'bg-amber-100 text-amber-700 border-amber-200';
-    case 'shift_finished': return 'bg-slate-100 text-slate-700 border-slate-200';
-    case 'shift_approved': return 'bg-sky-100 text-sky-700 border-sky-200';
-    default: return 'bg-slate-100 text-slate-600 border-slate-200';
+    case 'shift_created': return 'bg-slate-100 text-slate-700 border-slate-200';
+    case 'shift_planned': return 'bg-amber-100 text-amber-700 border-amber-200';
+    case 'shift_accepted': return 'bg-blue-100 text-blue-700 border-blue-200';
+    case 'shift_pre_check_in': return 'bg-amber-100 text-amber-700 border-amber-200';
+    case 'shift_in_progress': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+    case 'shift_finished': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    case 'shift_approved': return 'bg-green-100 text-green-700 border-green-200';
+    case 'shift_not_approved': return 'bg-red-100 text-red-700 border-red-200';
+    case 'shift_refused': return 'bg-red-100 text-red-700 border-red-200';
+    case 'shift_abandon': return 'bg-orange-100 text-orange-700 border-orange-200';
+    case 'shift_arrival': return 'bg-cyan-100 text-cyan-700 border-cyan-200';
+    default: return 'bg-slate-100 text-slate-700 border-slate-200';
   }
 };
 
 export const formatStatus = (status: string) => {
   if (!status) return 'N/A';
-  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  return status.replace(/_/g, ' ').toUpperCase();
 };
 
 export const formatDateTime = (dateStr: string) => {

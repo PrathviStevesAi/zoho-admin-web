@@ -33,6 +33,14 @@ export function getStatusBadgeClass(status: string) {
     case "SHIFT_ABANDON":
       return `${base} bg-orange-100 text-orange-700 border border-orange-200`;
 
+    case "APPROVED":
+    case "SHIFT_APPROVED":
+      return `${base} bg-green-100 text-green-700 border border-green-200`;
+
+    case "NOT_APPROVED":
+    case "SHIFT_NOT_APPROVED":
+      return `${base} bg-red-100 text-red-700 border border-red-200`;
+
     default:
       return `${base} bg-slate-100 text-slate-700 border border-slate-200`;
   }
@@ -40,8 +48,5 @@ export function getStatusBadgeClass(status: string) {
 
 export function formatStatus(status: string) {
   if (!status) return "";
-  return status
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+  return status.replace(/_/g, ' ').toUpperCase();
 }

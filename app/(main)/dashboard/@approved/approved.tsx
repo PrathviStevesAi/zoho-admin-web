@@ -49,7 +49,7 @@ export default function Approved({ initialData, pagination }: { initialData: Rec
     <Card className="w-full h-[510px] border-border rounded-sm bg-card shadow-sm flex flex-col gap-2">
       <CardHeader className="flex flex-row items-center justify-between px-7 py-2">
         <div className="flex items-center gap-2">
-          <CardTitle className="text-[19px] font-bold shrink-0 text-green-500">Approved Shifts</CardTitle>
+          <CardTitle className="text-[19px] font-bold shrink-0 text-black-500">Approved Shifts</CardTitle>
           <span className="text-[19px] text-slate-900">
             [ {total} ]
           </span>

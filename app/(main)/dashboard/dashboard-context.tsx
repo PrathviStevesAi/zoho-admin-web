@@ -22,6 +22,8 @@ interface OperationDashboardData {
     shift_pre_check_in?: DashboardDataCategory;
     shift_in_progress?: DashboardDataCategory;
     shift_finished?: DashboardDataCategory;
+    shift_approved?: DashboardDataCategory;
+    shift_not_approved?: DashboardDataCategory;
 }
 
 interface DispatchDashboardData {

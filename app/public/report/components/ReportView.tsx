@@ -54,76 +54,60 @@ export default function ReportView({ data }: ReportViewProps) {
     }
   };
 
-  let statusLabel = "UNKNOWN";
+  let statusLabel = data.status ? data.status.replace(/_/g, ' ').toUpperCase() : "UNKNOWN";
   let statusColor = "text-slate-700 bg-slate-100 dark:text-slate-400 dark:bg-slate-800";
   let statusDot = "bg-slate-500";
 
   switch (data.status?.toLowerCase()) {
     case "shift_created":
-      statusLabel = "SHIFT CREATED";
       break;
     case "shift_planned":
-      statusLabel = "SHIFT PLANNED";
       statusColor = "text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/50";
       statusDot = "bg-amber-500";
       break;
     case "shift_accepted":
-      statusLabel = "SHIFT ACCEPTED";
       statusColor = "text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-950/50";
       statusDot = "bg-blue-500";
       break;
     case "shift_refused":
-      statusLabel = "SHIFT REFUSED";
       statusColor = "text-rose-700 bg-rose-100 dark:text-rose-400 dark:bg-rose-950/50";
       statusDot = "bg-rose-500";
       break;
     case "shift_abandon":
-      statusLabel = "SHIFT ABANDONED";
       statusColor = "text-orange-700 bg-orange-100 dark:text-orange-400 dark:bg-orange-950/50";
       statusDot = "bg-orange-500";
       break;
     case "shift_arrival":
-      statusLabel = "SHIFT ARRIVAL";
       statusColor = "text-cyan-700 bg-cyan-100 dark:text-cyan-400 dark:bg-cyan-950/50";
       statusDot = "bg-cyan-500";
       break;
     case "shift_pre_check_in":
-      statusLabel = "PRE-CHECK-IN";
       statusColor = "text-indigo-700 bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-950/50";
       statusDot = "bg-indigo-500";
       break;
     case "shift_in_progress":
-      statusLabel = "IN PROGRESS";
       statusColor = "text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-950/50";
       statusDot = "bg-emerald-500";
       break;
     case "shift_in_break":
-      statusLabel = "IN BREAK";
       statusColor = "text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/50";
       statusDot = "bg-amber-500";
       break;
     case "shift_finished":
-      statusLabel = "COMPLETED";
       statusColor = "text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-950/50";
       statusDot = "bg-emerald-500";
       break;
     case "shift_approved":
-      statusLabel = "SHIFT APPROVED";
       statusColor = "text-emerald-800 bg-emerald-200 dark:text-emerald-300 dark:bg-emerald-900/70";
       statusDot = "bg-emerald-600";
       break;
     case "shift_not_approved":
-      statusLabel = "NOT APPROVED";
       statusColor = "text-rose-800 bg-rose-200 dark:text-rose-300 dark:bg-rose-900/70";
       statusDot = "bg-rose-600";
       break;
     case "shift_cancelled":
-      statusLabel = "CANCELLED";
       break;
     default:
-      if (data.status) {
-        statusLabel = data.status.replace(/_/g, ' ').toUpperCase();
-      }
       break;
   }
 

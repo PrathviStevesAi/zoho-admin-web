@@ -56,6 +56,8 @@ export function DashboardView({
                         <div key="precheck">{precheck}</div>
                         <div key="inprogress">{inprogress}</div>
                         <div key="finished">{finished}</div>
+                        <div key="notapproved">{notapproved}</div>
+                        <div key="approved">{approved}</div>
                     </>
                 ) : (
                     <>
