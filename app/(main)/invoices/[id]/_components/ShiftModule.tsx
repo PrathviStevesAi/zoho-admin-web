@@ -308,26 +308,6 @@ export function ShiftModule({
                                     </div>
                                   );
                                 })()}
-
-                                {(() => {
-                                  const isAllowed = shift.actions ? shift.actions.is_shift_delete : true;
-                                  return (
-                                    <div title={!isAllowed ? "Once a shift is execute, it cannot be deleted." : "Delete Shift"} className={!isAllowed ? "cursor-not-allowed" : ""}>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        disabled={!isAllowed}
-                                        onClick={() => isAllowed && onDelete(shift.shift_id)}
-                                        className={`h-8 w-8 rounded-lg transition-all ${!isAllowed
-                                          ? "text-slate-400 pointer-events-none"
-                                          : "text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
-                                          }`}
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    </div>
-                                  );
-                                })()}
                               </div>
                             </TableCell>
                           </TableRow>

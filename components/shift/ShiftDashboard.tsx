@@ -31,6 +31,7 @@ import { VerifyWarningDialog } from "@/app/(main)/invoices/[id]/_components/Veri
 import { ActionErrorDialog } from "@/app/(main)/invoices/[id]/_components/ActionErrorDialog";
 import { ShiftHeader } from "./ShiftHeader";
 import { ShiftDetailsCard } from "./ShiftDetailsCard";
+import { ShiftExpensesCard } from "./ShiftExpensesCard";
 import { ShiftProgressStepper } from "./ShiftProgressStepper";
 import { ShiftMapCard } from "./ShiftMapCard";
 import { ShiftSettingsCard } from "./ShiftSettingsCard";
@@ -286,7 +287,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     const res = await updateShiftDetailsAction(detailsPayload);
     if (res.success) {
       toast.success("Details updated successfully");
-      loadShiftDetails();
+      await loadShiftDetails();
     } else {
       toast.error(res.error || "Failed to update details");
     }
@@ -772,6 +773,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           shift={shift}
           isSending={isSendingReport}
           onSend={async () => {
+            if (!shift) return;
             setIsSendingReport(true);
             try {
               const res = await sendShiftReportAction(shift.shift_id);
@@ -804,6 +806,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
             isAddressEditable={isAddressEditable}
             setIsEditLocationOpen={setIsEditLocationOpen}
           />
+          <ShiftExpensesCard
+            shift={shift}
+            isSavingDetails={isSavingDetails}
+            onSaveDetails={handleSaveDetails}
+          />
         </div>
       ) : (
         <>
@@ -817,6 +824,12 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 onSaveDetails={handleSaveDetails}
                 isAddressEditable={isAddressEditable}
                 setIsEditLocationOpen={setIsEditLocationOpen}
+              />
+              <ShiftExpensesCard
+                shift={shift}
+                isLoading={isLoading}
+                isSavingDetails={isSavingDetails}
+                onSaveDetails={handleSaveDetails}
               />
 
               {!isLoading && shift && (
@@ -859,6 +872,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               onSaveDetails={handleSaveDetails}
               isAddressEditable={isAddressEditable}
               setIsEditLocationOpen={setIsEditLocationOpen}
+            />
+            <ShiftExpensesCard
+              shift={shift}
+              isSavingDetails={isSavingDetails}
+              onSaveDetails={handleSaveDetails}
             />
 
             <ShiftTabsModule

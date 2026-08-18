@@ -49,6 +49,7 @@ export interface ShiftActions {
   is_join_vc_call?: boolean;
   is_find_standby_guard?: boolean;
   is_send_report?: boolean;
+  is_other_expenses_edit?: boolean;
   call_id?: string;
 }
 
