@@ -54,9 +54,78 @@ export default function ReportView({ data }: ReportViewProps) {
     }
   };
 
-  const statusLabel = data.status === "shift_finished" ? "COMPLETED" : data.status?.toUpperCase() || "UNKNOWN";
-  const statusColor = data.status === "shift_finished" ? "text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-950/50" : "text-slate-700 bg-slate-100 dark:text-slate-400 dark:bg-slate-800";
-  const statusDot = data.status === "shift_finished" ? "bg-emerald-500" : "bg-slate-500";
+  let statusLabel = "UNKNOWN";
+  let statusColor = "text-slate-700 bg-slate-100 dark:text-slate-400 dark:bg-slate-800";
+  let statusDot = "bg-slate-500";
+
+  switch (data.status?.toLowerCase()) {
+    case "shift_created":
+      statusLabel = "SHIFT CREATED";
+      break;
+    case "shift_planned":
+      statusLabel = "SHIFT PLANNED";
+      statusColor = "text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/50";
+      statusDot = "bg-amber-500";
+      break;
+    case "shift_accepted":
+      statusLabel = "SHIFT ACCEPTED";
+      statusColor = "text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-950/50";
+      statusDot = "bg-blue-500";
+      break;
+    case "shift_refused":
+      statusLabel = "SHIFT REFUSED";
+      statusColor = "text-rose-700 bg-rose-100 dark:text-rose-400 dark:bg-rose-950/50";
+      statusDot = "bg-rose-500";
+      break;
+    case "shift_abandon":
+      statusLabel = "SHIFT ABANDONED";
+      statusColor = "text-orange-700 bg-orange-100 dark:text-orange-400 dark:bg-orange-950/50";
+      statusDot = "bg-orange-500";
+      break;
+    case "shift_arrival":
+      statusLabel = "SHIFT ARRIVAL";
+      statusColor = "text-cyan-700 bg-cyan-100 dark:text-cyan-400 dark:bg-cyan-950/50";
+      statusDot = "bg-cyan-500";
+      break;
+    case "shift_pre_check_in":
+      statusLabel = "PRE-CHECK-IN";
+      statusColor = "text-indigo-700 bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-950/50";
+      statusDot = "bg-indigo-500";
+      break;
+    case "shift_in_progress":
+      statusLabel = "IN PROGRESS";
+      statusColor = "text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-950/50";
+      statusDot = "bg-emerald-500";
+      break;
+    case "shift_in_break":
+      statusLabel = "IN BREAK";
+      statusColor = "text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/50";
+      statusDot = "bg-amber-500";
+      break;
+    case "shift_finished":
+      statusLabel = "COMPLETED";
+      statusColor = "text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-950/50";
+      statusDot = "bg-emerald-500";
+      break;
+    case "shift_approved":
+      statusLabel = "SHIFT APPROVED";
+      statusColor = "text-emerald-800 bg-emerald-200 dark:text-emerald-300 dark:bg-emerald-900/70";
+      statusDot = "bg-emerald-600";
+      break;
+    case "shift_not_approved":
+      statusLabel = "NOT APPROVED";
+      statusColor = "text-rose-800 bg-rose-200 dark:text-rose-300 dark:bg-rose-900/70";
+      statusDot = "bg-rose-600";
+      break;
+    case "shift_cancelled":
+      statusLabel = "CANCELLED";
+      break;
+    default:
+      if (data.status) {
+        statusLabel = data.status.replace(/_/g, ' ').toUpperCase();
+      }
+      break;
+  }
 
   const checkpoints = data.guard_location
     ? data.guard_location.map((loc: any) => [loc.latitude, loc.longitude])
@@ -64,7 +133,6 @@ export default function ReportView({ data }: ReportViewProps) {
 
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-700">
-      {/* Header */}
       <div className="w-full flex flex-col items-center justify-center py-6 pb-2 gap-2">
         <Image
           src="/images/website-logo.png"
@@ -92,10 +160,8 @@ export default function ReportView({ data }: ReportViewProps) {
         </button>
       </div>
 
-      {/* Stats Card */}
       <div className="w-full bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-6 md:p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Customer Name */}
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
               <User className="text-slate-500 dark:text-slate-400" size={24} />
@@ -106,7 +172,6 @@ export default function ReportView({ data }: ReportViewProps) {
             </div>
           </div>
 
-          {/* Invoice No */}
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
               <FileText className="text-slate-500 dark:text-slate-400" size={24} />
@@ -117,7 +182,6 @@ export default function ReportView({ data }: ReportViewProps) {
             </div>
           </div>
 
-          {/* Assigned To */}
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
               <UserCheck className="text-slate-500 dark:text-slate-400" size={24} />
@@ -128,7 +192,6 @@ export default function ReportView({ data }: ReportViewProps) {
             </div>
           </div>
 
-          {/* Shift Location */}
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
               <MapPin className="text-slate-500 dark:text-slate-400" size={24} />
@@ -141,7 +204,6 @@ export default function ReportView({ data }: ReportViewProps) {
             </div>
           </div>
 
-          {/* Shift Time */}
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
               <Clock className="text-slate-500 dark:text-slate-400" size={24} />
@@ -159,7 +221,6 @@ export default function ReportView({ data }: ReportViewProps) {
             </div>
           </div>
 
-          {/* Status */}
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
               <div className={`w-3 h-3 rounded-full ${statusDot}`}></div>
@@ -176,18 +237,14 @@ export default function ReportView({ data }: ReportViewProps) {
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left: Map */}
         <div className="lg:col-span-3 lg:sticky lg:top-6 self-start">
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-2 overflow-hidden">
             <DynamicShiftMap checkpoints={checkpoints} className="mt-0 border-none shadow-none bg-transparent" heightClass="h-[290px]" />
           </div>
         </div>
 
-        {/* Right: Reports & Actions */}
         <div className="lg:col-span-2 h-fit flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-          {/* Daily Activity Report */}
           {data?.dar_report && (
             <div className="border-b border-slate-200 dark:border-slate-800">
               <button
@@ -210,7 +267,6 @@ export default function ReportView({ data }: ReportViewProps) {
             </div>
           )}
 
-          {/* Incident Report */}
           {data?.incident_report && data.incident_report.length > 0 && (
             <div className="border-b border-slate-200 dark:border-slate-800">
               <button
@@ -233,7 +289,6 @@ export default function ReportView({ data }: ReportViewProps) {
             </div>
           )}
 
-          {/* Check Point */}
           <div className="border-b border-slate-200 dark:border-slate-800">
             <button
               onClick={() => setActiveTab(activeTab === 'checkpoint' ? '' : 'checkpoint')}
@@ -254,7 +309,6 @@ export default function ReportView({ data }: ReportViewProps) {
             )}
           </div>
 
-          {/* History Of Changes */}
           <div>
             <button
               onClick={() => setActiveTab(activeTab === 'history' ? '' : 'history')}

@@ -44,6 +44,10 @@ const getStatusBadge = (status: string) => {
       label: "Shift Refused",
       className: "bg-rose-50 text-rose-700 border-rose-200/60"
     },
+    shift_abandon: {
+      label: "Shift Abandoned",
+      className: "bg-orange-50 text-orange-700 border-orange-200/60"
+    },
     shift_arrival: {
       label: "Shift Arrival",
       className: "bg-cyan-50 text-cyan-700 border-cyan-200/60"

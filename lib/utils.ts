@@ -29,6 +29,10 @@ export function getStatusBadgeClass(status: string) {
     case "SHIFT_REFUSED":
       return `${base} bg-red-100 text-red-700 border border-red-200`;
 
+    case "ABANDON":
+    case "SHIFT_ABANDON":
+      return `${base} bg-orange-100 text-orange-700 border border-orange-200`;
+
     default:
       return `${base} bg-slate-100 text-slate-700 border border-slate-200`;
   }

@@ -667,7 +667,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   };
 
   const showSettingBtn = shift
-    ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_arrival", "shift_pre_check_in"].includes(
+    ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_abandon", "shift_arrival", "shift_pre_check_in"].includes(
       shift.status?.toLowerCase()
     )
     : false;
@@ -675,7 +675,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const isAddressEditable = shift?.action
     ? !!shift.action.is_location_edit
     : (shift
-      ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused"].includes(shift.status?.toLowerCase())
+      ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_abandon"].includes(shift.status?.toLowerCase())
       : false);
 
   const settingsFormState = {
