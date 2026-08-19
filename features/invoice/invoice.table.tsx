@@ -2,6 +2,7 @@ import { TableColumn } from "@/types/table.types";
 import { InvoiceData } from "@/types/dashboard.types";
 import { getStatusBadgeClass, formatStatus } from "@/lib/utils";
 import Link from "next/link";
+import { FormattedDate } from "@/components/ui/formatted-date";
 
 export const invoiceTableColumns: TableColumn<InvoiceData>[] = [
     {
@@ -34,11 +35,7 @@ export const invoiceTableColumns: TableColumn<InvoiceData>[] = [
         align: "center",
         render: (row) => (
             <span className="text-[13px] text-foreground" >
-                {
-                    new Date(row.created_at).toLocaleDateString("en-US", {
-                        month: "short", day: "numeric", year: "numeric",
-                    })
-                }
+                <FormattedDate date={row.created_at} includeTime={false} />
             </span>
         ),
     },

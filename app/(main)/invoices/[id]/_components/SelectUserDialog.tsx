@@ -17,6 +17,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { FormattedDate } from "@/components/ui/formatted-date";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -434,7 +436,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                           {guard.address || "-"}
                         </TableCell>
                         <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
-                          {guard.last_active_at ? new Date(guard.last_active_at).toLocaleDateString() : "-"}
+                          {guard.last_active_at ? <FormattedDate date={guard.last_active_at} includeTime={false} /> : "-"}
                         </TableCell>
                         <TableCell className="py-5 px-6">
                           <span className={cn(

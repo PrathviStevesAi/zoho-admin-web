@@ -1,5 +1,6 @@
 import { Download, Maximize2, FileText } from "lucide-react";
 import { DateTime } from "luxon";
+import { formatDate } from "@/lib/utils";
 
 export const toUTCISO = (localDateTimeStr: string, timezone?: string) => {
   if (!localDateTimeStr) return null;
@@ -219,9 +220,7 @@ export const formatDateTime = (dateStr: string) => {
   if (!dateStr) return 'N/A';
   try {
     const isoString = dateStr.replace(' ', 'T');
-    const dt = DateTime.fromISO(isoString, { setZone: true });
-    if (!dt.isValid) return 'N/A';
-    return dt.toFormat('dd/MM/yyyy, HH:mm');
+    return formatDate(isoString, true);
   } catch {
     return 'N/A';
   }

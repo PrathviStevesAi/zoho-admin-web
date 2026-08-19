@@ -10,6 +10,7 @@ import { fetchLocationAction, } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { FormattedDate } from "@/components/ui/formatted-date";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -435,7 +436,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
                         {guard.address || "-"}
                       </TableCell>
                       <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
-                        {guard.last_active_at ? new Date(guard.last_active_at).toLocaleDateString() : "-"}
+                        {guard.last_active_at ? <FormattedDate date={guard.last_active_at} includeTime={false} /> : "-"}
                       </TableCell>
                       <TableCell className="py-5 px-6">
                         <span className={cn(

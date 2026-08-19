@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormattedDate } from "@/components/ui/formatted-date";
 
 interface AssignmentModuleProps {
   shifts: any[];
@@ -256,12 +257,10 @@ export function AssignmentModule({
                         </TableCell>
                         <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 min-w-[100px]">{shift.service_name}</TableCell>
                         <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 whitespace-nowrap">
-                          {DateTime.fromISO(shift.start_time).setZone(shift.timezone || 'UTC').toFormat("MMM d, yyyy")}<br />
-                          <span className="text-[11px] text-slate-700">{DateTime.fromISO(shift.start_time).setZone(shift.timezone || 'UTC').toFormat("hh:mm a")}</span>
+                          <FormattedDate date={shift.start_time} timezone={shift.timezone || 'UTC'} />
                         </TableCell>
                         <TableCell className="text-xs font-medium text-slate-800 py-3 px-2 whitespace-nowrap">
-                          {DateTime.fromISO(shift.end_time).setZone(shift.timezone || 'UTC').toFormat("MMM d, yyyy")}<br />
-                          <span className="text-[11px] text-slate-700">{DateTime.fromISO(shift.end_time).setZone(shift.timezone || 'UTC').toFormat("hh:mm a")}</span>
+                          <FormattedDate date={shift.end_time} timezone={shift.timezone || 'UTC'} />
                         </TableCell>
                         <TableCell className="py-3 px-2 text-xs text-slate-800 font-medium">
                           <span className={cn(

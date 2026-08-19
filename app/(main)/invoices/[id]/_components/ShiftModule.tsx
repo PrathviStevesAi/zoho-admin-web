@@ -2,8 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Calendar, Clock, Loader2, Plus, Trash2, Pencil, Copy } from "lucide-react";
-import { DateTime } from "luxon";
+import { 
+  Plus, 
+  Trash2, 
+  ChevronLeft, 
+  ChevronRight, 
+  Clock, 
+  CalendarDays,
+  Calendar,
+  X,
+  Loader2, 
+  Pencil, 
+  Copy 
+} from "lucide-react";
+import { formatDate } from "@/lib/utils";
+import { FormattedDate } from "@/components/ui/formatted-date";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -263,10 +276,10 @@ export function ShiftModule({
                             </TableCell>
                             <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">{shift.service_name}</TableCell>
                             <TableCell className="text-sm text-slate-800 py-4 px-6">
-                              {DateTime.fromISO(shift.start_time, { setZone: true }).toFormat("MMM d, yyyy, h:mm a")}
+                              <FormattedDate date={shift.start_time} />
                             </TableCell>
                             <TableCell className="text-sm text-slate-800 py-4 px-6">
-                              {DateTime.fromISO(shift.end_time, { setZone: true }).toFormat("MMM d, yyyy, h:mm a")}
+                              <FormattedDate date={shift.end_time} />
                             </TableCell>
                             <TableCell className="py-4 px-6">
                               {getStatusBadge(shift.status)}
@@ -519,7 +532,7 @@ export function ShiftModule({
                                 className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
                               />
                               <span className="text-sm font-bold text-slate-700">
-                                {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                {formatDate(date, false)}
                               </span>
                             </div>
                           </TableCell>
@@ -610,7 +623,7 @@ export function ShiftModule({
                           className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
                         />
                         <span className="text-sm font-bold text-slate-800">
-                          {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          {formatDate(date, false)}
                         </span>
                       </div>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${row.checked ? 'bg-blue-50 text-[#0064cb]' : 'bg-slate-200 text-slate-500'}`}>

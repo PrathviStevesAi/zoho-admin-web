@@ -11,6 +11,7 @@ import { useParams } from "next/navigation";
 import {
   AlertCircle,
 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -565,7 +566,7 @@ export default function InvoiceDetailsPage() {
       const dateKey = formatDateKey(date);
       const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
       if (row.checked) {
-        const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const formattedDate = formatDate(date, false);
         if (!row.startTime || !row.endTime) {
           toast.error(`Please select start and end times for ${formattedDate}`);
           return;

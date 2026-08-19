@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { FormattedDate } from "@/components/ui/formatted-date";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -492,12 +493,10 @@ export function AvailableGuardsModule({
                           </TableCell>
                           <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">{shift.service_name}</TableCell>
                           <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
-                            {DateTime.fromISO(shift.start_time).setZone(shift.timezone || 'UTC').toFormat("MMM d, yyyy")}<br />
-                            <span className="text-[11px] text-slate-700">{DateTime.fromISO(shift.start_time).setZone(shift.timezone || 'UTC').toFormat("hh:mm a")}</span>
+                            <FormattedDate date={shift.start_time} timezone={shift.timezone || 'UTC'} />
                           </TableCell>
                           <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
-                            {DateTime.fromISO(shift.end_time).setZone(shift.timezone || 'UTC').toFormat("MMM d, yyyy")}<br />
-                            <span className="text-[11px] text-slate-700">{DateTime.fromISO(shift.end_time).setZone(shift.timezone || 'UTC').toFormat("hh:mm a")}</span>
+                            <FormattedDate date={shift.end_time} timezone={shift.timezone || 'UTC'} />
                           </TableCell>
                         </TableRow>
                       ))

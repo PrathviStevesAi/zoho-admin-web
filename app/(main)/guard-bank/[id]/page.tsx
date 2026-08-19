@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { FormattedDate } from "@/components/ui/formatted-date";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmationDialog } from "../components/confirmation-dialog";
@@ -690,7 +692,7 @@ export default function GuardDetailPage() {
             <div className="space-y-1 p-3">
               <span className="text-xs text-slate-500 font-semibold block">License Expire Date</span>
               <p className="text-sm font-bold text-slate-800">
-                {guard.license_expiration_date ? new Date(guard.license_expiration_date).toLocaleDateString() : "N/A"}
+                {guard.license_expiration_date ? <FormattedDate date={guard.license_expiration_date} includeTime={false} /> : "N/A"}
               </p>
             </div>
           </div>
@@ -945,7 +947,7 @@ export default function GuardDetailPage() {
           <p className="font-semibold">Record touch by : <span className="text-slate-700">{guard.performed_by}</span></p>
         )}
         {guard.created_at && (
-          <p className="font-semibold">Form submit on : <span className="text-slate-700">{new Date(guard.created_at).toLocaleDateString()}</span></p>
+          <p className="font-semibold">Form submit on : <span className="text-slate-700"><FormattedDate date={guard.created_at} includeTime={false} /></span></p>
         )}
       </div>
 

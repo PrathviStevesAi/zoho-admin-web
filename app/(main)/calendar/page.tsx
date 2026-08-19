@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useRef, useState, useCallback } from "react";
+import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -326,7 +328,7 @@ export default function CalendarPage() {
             <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-[750px] max-w-[92vw] overflow-hidden animate-in zoom-in-95 duration-200">
               <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800">
-                  {showMoreModal.date.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {formatDate(showMoreModal.date, false)}
                 </h3>
                 <button onClick={() => setShowMoreModal(null)} className="text-slate-400 hover:text-slate-600 transition-colors">
                   <X className="w-5 h-5 cursor-pointer" />

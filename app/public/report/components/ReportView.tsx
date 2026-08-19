@@ -16,6 +16,7 @@ import {
   Copy
 } from "lucide-react";
 import Image from "next/image";
+import { formatDate } from "@/lib/utils";
 import { DynamicShiftMap } from "@/components/map/DynamicShiftMap";
 import { ShiftDARReportTab } from "@/components/shift/tabs/ShiftDARReportTab";
 import { ShiftIncidentReportsTab } from "@/components/shift/tabs/ShiftIncidentReportsTab";
@@ -36,7 +37,7 @@ export default function ReportView({ data }: ReportViewProps) {
   const formatTime = (timeString: string) => {
     if (!timeString) return "-";
     try {
-      return DateTime.fromISO(timeString).toFormat("MMM dd, yyyy hh:mm a");
+      return formatDate(timeString);
     } catch (e) {
       return timeString;
     }

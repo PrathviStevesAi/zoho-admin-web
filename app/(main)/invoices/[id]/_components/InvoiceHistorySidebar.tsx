@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { cn, formatStatus } from "@/lib/utils";
+import { cn, formatStatus, formatTitleCase, formatDate } from "@/lib/utils";
 
 interface HistoryItem {
   action_name: string;
@@ -39,14 +39,14 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
                 )}>
                   <div className="space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                      <h3 className="text-sm font-bold text-slate-700 ">{formatStatus(item.action_name)}</h3>
-                      <span className="text-[10px] text-slate-500 font-bold uppercase whitespace-nowrap">
-                        {new Date(item.created_at).toLocaleString()}
+                      <h3 className="text-sm font-bold text-slate-700 ">{formatTitleCase(item.action_name)}</h3>
+                      <span className="text-[10px] text-slate-500 font-bold whitespace-nowrap">
+                        {formatDate(item.created_at)}
                       </span>
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-[11px] text-slate-800 font-bold uppercase flex items-center gap-2">
+                      <p className="text-[11px] text-slate-900 font-bold leading-snug flex items-center gap-2">
                         Performed by: <span className="text-slate-800 font-medium normal-case">{item.performed_by || "System"}</span>
                       </p>
 
@@ -69,13 +69,13 @@ export function InvoiceHistorySidebar({ history }: InvoiceHistorySidebarProps) {
 
                           return (
                             <div key={key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 border-b border-slate-50/50 pb-1 last:border-0 last:pb-0">
-                              <p className="text-[10px] text-slate-800 font-bold uppercase shrink-0">
-                                {formatStatus(shortenKey(key))}:
+                              <p className="text-[10px] font-bold text-slate-900 leading-snug shrink-0">
+                                {formatTitleCase(shortenKey(key))}:
                               </p>
                               <span className="text-sm text-slate-800 font-medium break-all sm:text-right">
                                 {key.toLowerCase().includes('amount') || key.toLowerCase().includes('rate')
                                   ? `$${displayValue}`
-                                  : typeof displayValue === 'string' ? formatStatus(displayValue) : String(displayValue)}
+                                  : typeof displayValue === 'string' ? displayValue : String(displayValue)}
                               </span>
                             </div>
                           );

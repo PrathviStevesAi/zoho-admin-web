@@ -2,6 +2,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { FormattedDate } from "@/components/ui/formatted-date";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface GuardsTableProps {
@@ -56,7 +57,7 @@ export function GuardsTable({ guards, currentPage, pageSize, onView, loading }: 
                   <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{guard.city}</TableCell>
                   <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{guard.state}</TableCell>
                   <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{guard.country}</TableCell>
-                  <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{guard.created_at ? new Date(guard.created_at).toLocaleDateString() : ""}</TableCell>
+                  <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{guard.created_at ? <FormattedDate date={guard.created_at} includeTime={false} /> : ""}</TableCell>
                   <TableCell className="px-4 py-4">
                     <Button 
                       variant="outline" 

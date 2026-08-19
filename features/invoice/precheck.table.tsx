@@ -2,6 +2,7 @@ import { TableColumn } from "@/types/table.types";
 import { Record } from "@/types/dashboard.types";
 import { getStatusBadgeClass, formatStatus } from "@/lib/utils";
 import Link from "next/link";
+import { FormattedDate } from "@/components/ui/formatted-date";
 
 export const precheckTableColumns: TableColumn<Record>[] = [
     {
@@ -32,11 +33,7 @@ export const precheckTableColumns: TableColumn<Record>[] = [
         align: "center",
         render: (row) => (
             <span className="text-[13px] text-foreground" >
-                {
-                    new Date(row.start_time).toLocaleDateString("en-US", {
-                        month: "short", day: "numeric", year: "numeric",
-                    })
-                }
+                <FormattedDate date={row.start_time} includeTime={false} />
             </span>
         ),
     },
