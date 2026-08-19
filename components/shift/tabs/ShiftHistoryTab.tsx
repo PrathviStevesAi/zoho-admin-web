@@ -7,6 +7,7 @@ interface ShiftHistoryTabProps {
   isReportsLoading: boolean;
   reportsError: string | null;
   setPreviewFile: (file: PreviewFile | null) => void;
+  timezone?: string;
 }
 
 export function ShiftHistoryTab({
@@ -14,6 +15,7 @@ export function ShiftHistoryTab({
   isReportsLoading,
   reportsError,
   setPreviewFile,
+  timezone,
 }: ShiftHistoryTabProps) {
   if (isReportsLoading) {
     return (
@@ -81,7 +83,7 @@ export function ShiftHistoryTab({
               <div className="p-4 bg-[#f1f8ff] rounded-xl border border-[#e1f0ff] space-y-3">
                 <div className="flex justify-between items-start">
                   <h4 className="text-[12px] font-bold text-slate-800">{event.action_name}</h4>
-                  <span className="text-[10px] text-slate-700">{formatDateTime(event.created_at)}</span>
+                  <span className="text-[10px] text-slate-700">{formatDateTime(event.created_at, timezone)}</span>
                 </div>
 
                 {metaItems.length > 0 && (

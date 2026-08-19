@@ -8,6 +8,7 @@ interface ShiftCheckpointsTabProps {
   isReportsLoading: boolean;
   reportsError: string | null;
   setPreviewFile: (file: PreviewFile | null) => void;
+  timezone?: string;
 }
 
 export function ShiftCheckpointsTab({
@@ -15,6 +16,7 @@ export function ShiftCheckpointsTab({
   isReportsLoading,
   reportsError,
   setPreviewFile,
+  timezone,
 }: ShiftCheckpointsTabProps) {
   if (isReportsLoading) {
     return (
@@ -72,10 +74,10 @@ export function ShiftCheckpointsTab({
               });
             }
             if (cp.sent_at !== null && cp.sent_at !== undefined) {
-              items.push({ label: "Sent At", value: formatDateTime(cp.sent_at) });
+              items.push({ label: "Sent At", value: formatDateTime(cp.sent_at, timezone) });
             }
             if (cp.complete_at !== null && cp.complete_at !== undefined) {
-              items.push({ label: "Completed At", value: formatDateTime(cp.complete_at) });
+              items.push({ label: "Completed At", value: formatDateTime(cp.complete_at, timezone) });
             }
             if (cp.comment !== null && cp.comment !== undefined && cp.comment !== "") {
               items.push({ label: "Comment", value: cp.comment });

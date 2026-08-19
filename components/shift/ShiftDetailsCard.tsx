@@ -567,7 +567,7 @@ export function ShiftDetailsCard({
                           Start:
                         </span>
                         <span className="text-sm text-slate-800 font-medium">
-                          {formatDateTime(shift.scheduled_for.shift_start_time)}
+                          {formatDateTime(shift.scheduled_for.shift_start_time, shift.shipping_location?.timezone)}
                         </span>
                       </div>
                     )}
@@ -577,7 +577,7 @@ export function ShiftDetailsCard({
                           End:
                         </span>
                         <span className="text-sm text-slate-800 font-medium">
-                          {formatDateTime(shift.scheduled_for.shift_end_time)}
+                          {formatDateTime(shift.scheduled_for.shift_end_time, shift.shipping_location?.timezone)}
                         </span>
                       </div>
                     )}
@@ -711,7 +711,7 @@ export function ShiftDetailsCard({
                                     Start:
                                   </span>
                                   <span className="text-sm text-slate-800 font-medium">
-                                    {formatDateTime(execTime.guard_shift_started_at)}
+                                    {formatDateTime(execTime.guard_shift_started_at, shift.shipping_location?.timezone)}
                                   </span>
                                 </div>
                               )}
@@ -721,7 +721,7 @@ export function ShiftDetailsCard({
                                     End:
                                   </span>
                                   <span className="text-sm text-slate-800 font-medium">
-                                    {formatDateTime(execTime.guard_shift_ended_at)}
+                                    {formatDateTime(execTime.guard_shift_ended_at, shift.shipping_location?.timezone)}
                                   </span>
                                 </div>
                               )}

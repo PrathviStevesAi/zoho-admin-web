@@ -7,6 +7,7 @@ interface ShiftIncidentReportsTabProps {
   isReportsLoading: boolean;
   reportsError: string | null;
   setPreviewFile: (file: PreviewFile | null) => void;
+  timezone?: string;
 }
 
 export function ShiftIncidentReportsTab({
@@ -14,6 +15,7 @@ export function ShiftIncidentReportsTab({
   isReportsLoading,
   reportsError,
   setPreviewFile,
+  timezone,
 }: ShiftIncidentReportsTabProps) {
   if (isReportsLoading) {
     return (
@@ -58,7 +60,7 @@ export function ShiftIncidentReportsTab({
             <div key={idx} className="space-y-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-800">Incident #{idx + 1}</span>
-                <span className="text-[10px] text-slate-700">{formatDateTime(report.created_at)}</span>
+                <span className="text-[10px] text-slate-700">{formatDateTime(report.created_at, timezone)}</span>
               </div>
 
               <div className="space-y-2">

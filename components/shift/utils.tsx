@@ -216,11 +216,11 @@ export const formatStatus = (status: string) => {
   return status.replace(/_/g, ' ').toUpperCase();
 };
 
-export const formatDateTime = (dateStr: string) => {
+export const formatDateTime = (dateStr: string, timezone?: string) => {
   if (!dateStr) return 'N/A';
   try {
     const isoString = dateStr.replace(' ', 'T');
-    return formatDate(isoString, true);
+    return formatDate(isoString, true, timezone);
   } catch {
     return 'N/A';
   }

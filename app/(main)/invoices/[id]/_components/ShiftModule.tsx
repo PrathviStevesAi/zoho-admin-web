@@ -153,7 +153,8 @@ export function ShiftModule({
   selectedShiftIds,
   setSelectedShiftIds,
   onBulkDelete,
-  isDeletingBulk
+  isDeletingBulk,
+  timezone
 }: ShiftModuleProps) {
   // const [isRepeating, setIsRepeating] = useState(false);
   // const [repeatDays, setRepeatDays] = useState<number[]>([]);
@@ -276,10 +277,10 @@ export function ShiftModule({
                             </TableCell>
                             <TableCell className="text-sm font-medium text-slate-800 py-4 px-6">{shift.service_name}</TableCell>
                             <TableCell className="text-sm text-slate-800 py-4 px-6">
-                              <FormattedDate date={shift.start_time} />
+                              <FormattedDate date={shift.start_time} timezone={timezone} />
                             </TableCell>
                             <TableCell className="text-sm text-slate-800 py-4 px-6">
-                              <FormattedDate date={shift.end_time} />
+                              <FormattedDate date={shift.end_time} timezone={timezone} />
                             </TableCell>
                             <TableCell className="py-4 px-6">
                               {getStatusBadge(shift.status)}

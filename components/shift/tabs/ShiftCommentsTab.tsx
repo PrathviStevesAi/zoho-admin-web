@@ -24,6 +24,7 @@ interface ShiftCommentsTabProps {
   hasStandbyGuard?: boolean;
   leadGuardStatus?: string;
   standbyGuardStatus?: string;
+  timezone?: string;
 }
 
 export function ShiftCommentsTab({
@@ -36,6 +37,7 @@ export function ShiftCommentsTab({
   hasStandbyGuard = false,
   leadGuardStatus,
   standbyGuardStatus,
+  timezone,
 }: ShiftCommentsTabProps) {
   const [commentType, setCommentType] = useState<"external" | "internal">("external");
   const [recipient, setRecipient] = useState<"lead" | "standby" | "both">(hasLeadGuard ? "lead" : "standby");
@@ -210,7 +212,7 @@ export function ShiftCommentsTab({
                         </div>
                       </div>
                     )}
-                    <span className="text-[11px] text-slate-700">{formatDateTime(comment.created_at)}</span>
+                    <span className="text-[11px] text-slate-700">{formatDateTime(comment.created_at, timezone)}</span>
                     {!isExternal && (
                       <Tooltip>
                         <TooltipTrigger asChild>

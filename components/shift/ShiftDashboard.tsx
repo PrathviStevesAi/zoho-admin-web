@@ -938,6 +938,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 hasStandbyGuard={!!(shift?.standby_guard && Object.keys(shift.standby_guard).length > 0)}
                 leadGuardStatus={shift?.lead_guard?.shift_status}
                 standbyGuardStatus={shift?.standby_guard?.shift_status}
+                timezone={shift?.shipping_location?.timezone}
               />
             </div>
           </div>
@@ -976,6 +977,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               hasStandbyGuard={!!(shift?.standby_guard && Object.keys(shift.standby_guard).length > 0)}
               leadGuardStatus={shift?.lead_guard?.shift_status}
               standbyGuardStatus={shift?.standby_guard?.shift_status}
+              timezone={shift?.shipping_location?.timezone}
             />
 
             {!isLoading && shift && (

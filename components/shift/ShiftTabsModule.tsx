@@ -27,6 +27,7 @@ interface ShiftTabsModuleProps {
   hasStandbyGuard?: boolean;
   leadGuardStatus?: string;
   standbyGuardStatus?: string;
+  timezone?: string;
 }
 
 export function ShiftTabsModule({
@@ -45,6 +46,7 @@ export function ShiftTabsModule({
   hasStandbyGuard = false,
   leadGuardStatus,
   standbyGuardStatus,
+  timezone,
 }: ShiftTabsModuleProps) {
   const [activeTab, setActiveTab] = useState("");
 
@@ -136,6 +138,7 @@ export function ShiftTabsModule({
                       hasStandbyGuard={hasStandbyGuard}
                       leadGuardStatus={leadGuardStatus}
                       standbyGuardStatus={standbyGuardStatus}
+                      timezone={timezone}
                     />
                   )}
                   {tab.id === "dar" && (
@@ -153,6 +156,7 @@ export function ShiftTabsModule({
                       isReportsLoading={isReportsLoading}
                       reportsError={reportsError}
                       setPreviewFile={setPreviewFile}
+                      timezone={timezone}
                     />
                   )}
                   {tab.id === "checkpoint" && (
@@ -161,6 +165,7 @@ export function ShiftTabsModule({
                       isReportsLoading={isReportsLoading}
                       reportsError={reportsError}
                       setPreviewFile={setPreviewFile}
+                      timezone={timezone}
                     />
                   )}
                   {tab.id === "history" && (
@@ -169,6 +174,7 @@ export function ShiftTabsModule({
                       isReportsLoading={isReportsLoading}
                       reportsError={reportsError}
                       setPreviewFile={setPreviewFile}
+                      timezone={timezone}
                     />
                   )}
                 </div>
