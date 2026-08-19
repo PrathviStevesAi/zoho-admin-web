@@ -12,17 +12,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "next-auth/react";
 import { Notification } from "@/types/notification.types";
 import { markNotificationAsReadAction } from "@/actions/notification.actions";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
+import { FormattedDate } from "@/components/ui/formatted-date";
 import Link from "next/link";
 import { onMessageListener } from "@/lib/firebase";
 
 const formatHeaderDate = (dateStr: string) => {
   try {
-    const date = new Date(dateStr);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+    return formatDate(dateStr, false).replace(/\//g, '-');
   } catch (e) {
     return dateStr;
   }
@@ -235,15 +232,7 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
                                     isUnread ? "text-slate-700" : "text-slate-400"
                                   )}
                                 >
-                                  {new Date(notification.created_at)
-                                    .toLocaleString("en-GB", {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })
-                                    .replace(",", "")}
+                                  <FormattedDate date={notification.created_at} includeTime={true} />
                                 </span>
                               </div>
                             </div>

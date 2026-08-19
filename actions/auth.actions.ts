@@ -118,10 +118,11 @@ export async function registerGuardAction(guardData: any) {
             return { success: true, data: result };
         } else {
             console.error("Guard Registration API Failure Body:", result);
-            const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.error || result.message || result.msg || "Guard registration failed";
+            const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.error || result.message || result.msg || JSON.stringify(result) || "Guard registration failed";
             return {
                 success: false,
-                error: errorMsg
+                error: errorMsg,
+                details: result
             };
         }
     } catch (error) {
