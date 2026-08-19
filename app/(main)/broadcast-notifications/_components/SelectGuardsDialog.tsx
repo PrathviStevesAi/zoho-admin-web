@@ -4,7 +4,7 @@ import {
   clientFetchGuardsAction
 } from "@/lib/client-actions";
 import { useState, useEffect } from "react";
-import { Loader2, XCircle } from "lucide-react";
+import { XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchLocationAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";

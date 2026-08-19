@@ -39,8 +39,6 @@ export default function LoginPage() {
     const [canResend, setCanResend] = useState(false);
 
     useEffect(() => {
-        // If the user lands here but already has an active session, redirect to dashboard.
-        // This helps resolve cases where the login page was cached but the user has a valid cookie.
         import("next-auth/react").then(({ getSession }) => {
             getSession().then((session) => {
                 if (session?.user) {
@@ -123,16 +121,12 @@ export default function LoginPage() {
         setIsLoggingIn(true);
 
         try {
-            // 1. Manually check the credentials first to get the EXACT backend error message if it fails
             const preCheck = await preCheckLoginAction({ email, password });
-
             if (!preCheck.success) {
                 toast.error(preCheck.error);
                 setIsLoggingIn(false);
                 return;
             }
-
-            // 2. If backend succeeds, use client-side signIn to set the session cookies without triggering Server Action bugs
             const result = await signIn("credentials", {
                 email,
                 password,

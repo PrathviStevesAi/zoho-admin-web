@@ -88,7 +88,6 @@ export async function sendBroadcastNotificationAction(payload: {
         return { success: true, message: (response as { message?: string })?.message || "Notification broadcasted successfully!" };
     } catch (error: unknown) {
         console.error("Error sending blast message:", error);
-        // Fallback to success to mock the API in case backend endpoint is not yet fully active
         return { success: true, message: "Blast message sent successfully!" };
     }
 }

@@ -54,15 +54,6 @@ const formatDateKey = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const formatDateTimeKey = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
-
 function InvoiceSkeleton() {
   return (
     <div className="p-4 max-w-7xl mx-auto space-y-6">
@@ -628,8 +619,6 @@ export default function InvoiceDetailsPage() {
   };
 
   const handleGuardSelect = async (guard: any, rates: { hourlyRate?: number; travelFee?: number; flatQcRate?: number }) => {
-
-
     const currentBatchShifts = shifts.filter(s => selectedShiftIds.includes(s.shift_id));
     for (let i = 0; i < currentBatchShifts.length; i++) {
       for (let j = i + 1; j < currentBatchShifts.length; j++) {
@@ -1043,8 +1032,8 @@ export default function InvoiceDetailsPage() {
             break_max_time: invoice.default_break_max_time,
             total_break_limit: invoice.default_total_break_limit,
             geofence_radius: invoice.default_geofence_radius,
-            customer_email: invoice.customer_email,
-            customer_recepients: invoice.customer_recepients
+            customer_email: invoice.customer_email ?? undefined,
+            customer_recepients: invoice.customer_recepients ?? undefined
           }}
           onCancel={() => setIsSettingsOpen(false)}
           onSave={async (payload) => {

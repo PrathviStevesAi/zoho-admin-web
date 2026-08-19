@@ -6,7 +6,7 @@ import {
 } from "@/lib/client-actions";
 import { useState, useEffect } from "react";
 import { DateTime } from "luxon";
-import { Loader2, Check, ChevronRight, Search, XCircle, UserCheck, CalendarDays } from "lucide-react";
+import { Loader2, ChevronRight, XCircle, UserCheck, CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {

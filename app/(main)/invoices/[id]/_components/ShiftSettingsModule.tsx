@@ -127,8 +127,7 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
         payload.customer_email = "";
       }
     }
-    
-    // Add any valid emails that might be left in the CC input
+
     const finalCcInput = ccInput.trim();
     const emailsToAdd = [...ccEmails];
     if (finalCcInput) {
@@ -139,11 +138,11 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
         }
       }
     }
-    
+
     const initialCc = initialSettings?.customer_recepients || [];
-    const isCcChanged = emailsToAdd.length !== initialCc.length || 
-                       !emailsToAdd.every((val, index) => val === initialCc[index]);
-                       
+    const isCcChanged = emailsToAdd.length !== initialCc.length ||
+      !emailsToAdd.every((val, index) => val === initialCc[index]);
+
     if (isCcChanged) {
       payload.customer_recepients = emailsToAdd;
     }
@@ -174,7 +173,6 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
             <h2 className="text-xl font-bold text-slate-900">{title}</h2>
             <p className="text-slate-600 text-sm">{description}</p>
 
-            {/* Info Note (Moved here from bottom) */}
             <div className="mt-3 text-blue-800 flex gap-2 text-xs">
               <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
               <div className="space-y-1">
@@ -250,14 +248,12 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
               </div>
             </div>
 
-            {/* DAR Report Email Recipients Section */}
             <div className="pt-4 space-y-4">
               <div className="flex flex-col gap-1 mb-4">
                 <h3 className="text-sm font-bold text-slate-800 uppercase">REPORT EMAIL RECIPIENTS</h3>
                 <p className="text-xs text-slate-500">Reports will be sent to the email addresses below.</p>
               </div>
 
-              {/* To (Primary Email) */}
               <div className="flex flex-col md:flex-row md:items-start gap-4 p-4 border border-slate-100 rounded-xl bg-slate-50/50">
                 <div className="flex-none flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-xl">
                   <Mail className="w-5 h-5" />
@@ -286,7 +282,6 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
                 </div>
               </div>
 
-              {/* CC (Additional Emails) */}
               <div className="flex flex-col md:flex-row md:items-start gap-4 p-4 border border-slate-100 rounded-xl bg-slate-50/50">
                 <div className="flex-none flex items-center justify-center w-12 h-12 bg-purple-50 text-purple-600 rounded-xl">
                   <Users className="w-5 h-5" />

@@ -86,21 +86,6 @@ export function AssignmentModule({
     }
   }, [pendingAssignments, hourlyRate, travelFee]);
 
-  const handleGlobalHourlyRateChange = (val: string) => {
-    setHourlyRate(val);
-    const rateVal = val !== "" ? Number(val) : undefined;
-    setShiftRates(prev => {
-      const next = { ...prev };
-      Object.keys(pendingAssignments).forEach(shiftId => {
-        next[shiftId] = {
-          ...next[shiftId],
-          hourlyRate: rateVal
-        };
-      });
-      return next;
-    });
-  };
-
   const selectableShifts = shifts.filter(s => !s.guard && !pendingAssignments[s.shift_id]);
   const isAllSelected = selectableShifts.length > 0 && selectableShifts.every(s => selectedShifts.includes(s.shift_id));
   const handleSelectAll = (checked: boolean) => {
@@ -120,7 +105,7 @@ export function AssignmentModule({
   };
 
   const hasPending = Object.keys(pendingAssignments).length > 0;
-  
+
   const isLeadDisabled = selectedShifts.length === 0 || hasPending || selectedShifts.some(id => {
     const s = shifts.find(x => x.shift_id === id);
     return s && (s.lead_guard || s.guard);

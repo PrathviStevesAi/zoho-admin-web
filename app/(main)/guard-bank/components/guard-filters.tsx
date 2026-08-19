@@ -1,7 +1,6 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface GuardFiltersProps {
@@ -35,8 +34,8 @@ export function GuardFilters({
   mounted,
   isHomeTab = false
 }: GuardFiltersProps) {
-  const labelClass = isHomeTab 
-    ? "text-sm text-slate-600" 
+  const labelClass = isHomeTab
+    ? "text-sm text-slate-600"
     : "text-[13px] text-slate-600 font-medium";
 
   const searchLabel = isHomeTab ? "Search by name or email" : "Search";
@@ -71,9 +70,9 @@ export function GuardFilters({
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div className="space-y-1.5">
         <label className={labelClass}>{searchLabel}</label>
-        <Input 
-          placeholder={searchPlaceholder} 
-          className="h-10 bg-slate-50 border-slate-200" 
+        <Input
+          placeholder={searchPlaceholder}
+          className="h-10 bg-slate-50 border-slate-200"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

@@ -36,7 +36,6 @@ export default function GuardDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
-
   const [guard, setGuard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);

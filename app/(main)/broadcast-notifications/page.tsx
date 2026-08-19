@@ -73,7 +73,6 @@ export default function BroadcastNotificationsPage() {
       <div className="bg-white border border-slate-100 rounded-[16px] shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden">
         <div className="p-6 md:p-8 space-y-8">
 
-          {/* Message Section */}
           <div className="space-y-2.5">
             <label
               htmlFor="notification-message"
@@ -100,19 +99,17 @@ export default function BroadcastNotificationsPage() {
             </div>
           </div>
 
-          {/* Send Via Section */}
           <div className="space-y-3">
             <label className="text-[14px] font-bold text-[#0f172a] block flex items-center gap-2">
               Send Via <span className="text-[13px] text-slate-500 font-medium font-normal">(Select one or both)</span>
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              {/* In-App Card */}
               <div
                 onClick={() => setSendViaInApp(!sendViaInApp)}
                 className={`relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer ${sendViaInApp
-                    ? "border-[#0064cb] shadow-[0_2px_8px_rgba(0,100,203,0.04)]"
-                    : "border-slate-200 bg-white hover:border-slate-300"
+                  ? "border-[#0064cb] shadow-[0_2px_8px_rgba(0,100,203,0.04)]"
+                  : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
               >
                 <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-50/50 flex items-center justify-center">
@@ -137,12 +134,11 @@ export default function BroadcastNotificationsPage() {
                 </div>
               </div>
 
-              {/* SMS Card */}
               <div
                 onClick={() => setSendViaSms(!sendViaSms)}
                 className={`relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer ${sendViaSms
-                    ? "border-emerald-500 shadow-[0_2px_8px_rgba(16,185,129,0.04)]"
-                    : "border-slate-200 bg-white hover:border-slate-300"
+                  ? "border-emerald-500 shadow-[0_2px_8px_rgba(16,185,129,0.04)]"
+                  : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
               >
                 <div className="w-12 h-12 shrink-0 rounded-xl bg-emerald-50/50 flex items-center justify-center">
@@ -165,19 +161,17 @@ export default function BroadcastNotificationsPage() {
             </div>
           </div>
 
-          {/* Recipient Selection Section */}
           <div className="space-y-3">
             <label className="text-[14px] font-bold text-[#0f172a] block">
               Recipient Selection
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              {/* All Guards Card */}
               <div
                 onClick={() => setRecipientType("all")}
                 className={`relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer ${recipientType === "all"
-                    ? "border-[#0064cb] shadow-[0_2px_8px_rgba(0,100,203,0.04)]"
-                    : "border-slate-200 bg-white hover:border-slate-300"
+                  ? "border-[#0064cb] shadow-[0_2px_8px_rgba(0,100,203,0.04)]"
+                  : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
               >
                 <div className="w-10 h-10 shrink-0 rounded-full bg-blue-50 flex items-center justify-center">
@@ -199,15 +193,14 @@ export default function BroadcastNotificationsPage() {
                 </div>
               </div>
 
-              {/* Filter Guards Card */}
               <div
                 onClick={() => {
                   setRecipientType("filter");
                   setIsSelectGuardsDialogOpen(true);
                 }}
                 className={`relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer ${recipientType === "filter"
-                    ? "border-[#0064cb] shadow-[0_2px_8px_rgba(0,100,203,0.04)]"
-                    : "border-slate-200 bg-white hover:border-slate-300"
+                  ? "border-[#0064cb] shadow-[0_2px_8px_rgba(0,100,203,0.04)]"
+                  : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
               >
                 <div className="w-10 h-10 shrink-0 rounded-full border border-slate-100 flex items-center justify-center">
@@ -250,7 +243,6 @@ export default function BroadcastNotificationsPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="bg-[#f8fafc]/50 border-t border-slate-100 p-5 md:px-8 flex items-center justify-end gap-3.5">
           <Button
             type="button"

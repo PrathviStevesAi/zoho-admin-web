@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, RefreshCcw, XCircle, Clock, Star, Edit2, Plus, Zap, Paperclip, CheckSquare, X } from "lucide-react";
+import { Calendar, RefreshCcw, Clock, Star, Edit2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

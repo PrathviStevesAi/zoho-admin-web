@@ -612,10 +612,8 @@ export async function verifyGuardAssignmentAction(payload: {
     return { success: res.success !== false, data: res.data, error: res.message };
   } catch (error: any) {
     const message = error.message || "Something went wrong";
-    // Usually 400 errors with warnings might be thrown by apiFetch if it checks response.ok
-    // So we need to handle the case where apiFetch throws but there is error data
     if (error.data) {
-       return { success: false, data: error.data, error: message };
+      return { success: false, data: error.data, error: message };
     }
     return { success: false, error: message };
   }
@@ -1096,7 +1094,6 @@ export async function createManualInvoiceAction(payload: {
       body: JSON.stringify(payload),
     });
     console.log("[Server Action] createManualInvoiceAction POST Response:", result);
-    // Support nested or direct structures:
     const invoice_id = result?.invoice_id || result?.data?.invoice_id || result?.data?.id || result?.id;
     return { success: true, invoice_id };
   } catch (error: any) {
@@ -1145,11 +1142,10 @@ export async function sendShiftReportAction(shiftId: string): Promise<{ success:
       `/api/v1/shift/${shiftId}/send-report`,
       { method: "POST" }
     );
-    
-    // Note: revalidation may be required if we want to refresh the shift data (e.g. is_report_send flag)
+
     revalidatePath(`/shift/view`);
     revalidatePath(`/invoices/[id]`, 'page');
-    
+
     return { success: true, message: data.message };
   } catch (error: any) {
     const message = error.message || "Failed to send report";
@@ -1172,7 +1168,7 @@ export async function approveShiftAction(payload: {
     );
     revalidatePath(`/shift/view`);
     revalidatePath(`/invoices/[id]`, 'page');
-    
+
     return { success: true, message: res.message || "Shift approved successfully." };
   } catch (error: any) {
     const message = error.message || "Failed to approve shift";
@@ -1194,7 +1190,7 @@ export async function notApproveShiftAction(payload: {
     );
     revalidatePath(`/shift/view`);
     revalidatePath(`/invoices/[id]`, 'page');
-    
+
     return { success: true, message: res.message || "Shift not approved." };
   } catch (error: any) {
     const message = error.message || "Failed to submit not approved status";

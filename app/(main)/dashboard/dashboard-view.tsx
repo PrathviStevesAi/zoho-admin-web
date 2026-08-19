@@ -1,7 +1,6 @@
 "use client";
 
 import { useSearchParams, usePathname } from "next/navigation";
-import { useDashboard } from "./dashboard-context";
 import { DispatchSummary } from "./_components/dispatch-summary";
 
 interface DashboardViewProps {
@@ -30,14 +29,12 @@ export function DashboardView({
     created,
     accepted,
     refused,
-    abandon,
     approved,
     notapproved,
     completeinvoice,
 }: DashboardViewProps) {
     const searchParams = useSearchParams();
     const pathname = usePathname();
-    const { isPending, isFetching, loadingMessage } = useDashboard();
     const currentView = searchParams.get("view") || "guard-management";
 
     if (pathname !== "/dashboard") return null;
@@ -63,8 +60,6 @@ export function DashboardView({
                     <>
                         <div key="refused">{refused}</div>
                         <div key="accepted">{accepted}</div>
-                        {/* <div key="approved">{approved}</div> */}
-                        {/* <div key="notapproved">{notapproved}</div> */}
                         <div key="completeinvoice">{completeinvoice}</div>
                     </>
                 )}

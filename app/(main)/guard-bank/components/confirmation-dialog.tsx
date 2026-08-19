@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
