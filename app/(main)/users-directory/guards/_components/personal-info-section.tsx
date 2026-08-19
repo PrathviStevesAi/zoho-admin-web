@@ -308,6 +308,25 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
             className="h-11 bg-slate-50/50"
           />
         </div>
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Driving License No.</label>
+          <Input
+            placeholder="Enter license number"
+            value={formData.licenseNumber}
+            onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value.replace(/[^a-zA-Z0-9]/g, "") })}
+            className="h-11 bg-slate-50/50"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Expiration Date</label>
+          <Input
+            type="date"
+            value={formData.licenseExpirationDate}
+            onChange={(e) => setFormData({ ...formData, licenseExpirationDate: e.target.value })}
+            className="h-11 bg-slate-50/50"
+          />
+        </div>
       </div>
     </div>
   );
