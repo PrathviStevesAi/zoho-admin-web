@@ -73,12 +73,12 @@ export default function CalendarPage() {
             id: shift.shift_id,
             title: `${shift.customer_name} [${shift.invoice_no}] - ${shift.service_address}`,
             start: start,
-            end: end,
             backgroundColor: bgColor,
             borderColor: "transparent",
             textColor: "#ffffff",
             extendedProps: {
-              shift_no: shift.shift_no
+              shift_no: shift.shift_no,
+              end_str: end
             }
           };
         });
@@ -217,7 +217,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className={`relative bg-white p-2 sm:p-4 rounded-xl shadow-lg border border-slate-100 min-h-[600px] h-[calc(100vh-240px)] flex flex-col calendar-wrapper ${!showFullDuration ? 'truncate-events' : ''}`}>
+      <div className={`relative bg-white p-2 sm:p-4 rounded-xl shadow-lg border border-slate-100 min-h-[600px] flex flex-col calendar-wrapper ${!showFullDuration ? 'truncate-events' : ''}`}>
 
         {(selectedEvent || showMoreModal) && (
           <div className="absolute inset-0 z-50 bg-slate-900/10 backdrop-blur-[2px] rounded-xl transition-all duration-300"></div>
@@ -355,7 +355,7 @@ export default function CalendarPage() {
                           shift_no: event.extendedProps?.shift_no,
                           title: event.title,
                           start: event.start,
-                          end: event.end,
+                          end: event.extendedProps?.end_str ? new Date(event.extendedProps.end_str) : event.end,
                           backgroundColor: event.backgroundColor
                         });
                       }}
@@ -393,7 +393,7 @@ export default function CalendarPage() {
             initialView="dayGridMonth"
             events={fetchEvents}
             headerToolbar={false}
-            height="100%"
+            height="auto"
             dayMaxEvents={2}
             displayEventEnd={showFullDuration}
             moreLinkContent={(args) => "+" + args.num + " more"}
@@ -415,11 +415,25 @@ export default function CalendarPage() {
             eventContent={(eventInfo) => {
               const isListView = eventInfo.view.type.startsWith("list");
               const shiftNo = eventInfo.event.extendedProps?.shift_no;
+              const endStr = eventInfo.event.extendedProps?.end_str;
+              
+              let formattedEnd = "";
+              if (showFullDuration && endStr) {
+                const endObj = new Date(endStr);
+                formattedEnd = endObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(' AM', 'am').replace(' PM', 'pm').replace(' am', 'am').replace(' pm', 'pm');
+              }
 
               if (isListView) {
                 return (
                   <div className="flex flex-col w-full">
-                    <span className="fc-event-title leading-normal">{eventInfo.event.title}</span>
+                    <span className="fc-event-title leading-normal">
+                      {formattedEnd && (
+                        <span className="font-semibold text-[#0064cb] mr-2 text-[11px] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 whitespace-nowrap">
+                          Till {formattedEnd}
+                        </span>
+                      )}
+                      {eventInfo.event.title}
+                    </span>
                     {shiftNo && (
                       <span className="self-end text-[11px] font-extrabold tracking-wider mt-1 opacity-90 select-none">
                         #SH-{shiftNo}
@@ -429,9 +443,14 @@ export default function CalendarPage() {
                 );
               }
 
+              let customTimeText = eventInfo.timeText;
+              if (formattedEnd) {
+                 customTimeText = `${eventInfo.timeText} - ${formattedEnd}`;
+              }
+
               return (
                 <>
-                  {eventInfo.timeText && <span className="fc-event-time">{eventInfo.timeText}</span>}
+                  {customTimeText && <span className="fc-event-time">{customTimeText}</span>}
                   <span className="fc-event-title">{eventInfo.event.title}</span>
                 </>
               );
@@ -442,7 +461,7 @@ export default function CalendarPage() {
                 shift_no: info.event.extendedProps?.shift_no,
                 title: info.event.title,
                 start: info.event.start,
-                end: info.event.end,
+                end: info.event.extendedProps?.end_str ? new Date(info.event.extendedProps.end_str) : info.event.end,
                 backgroundColor: info.event.backgroundColor || info.el.style.getPropertyValue('--event-color')
               });
             }}
