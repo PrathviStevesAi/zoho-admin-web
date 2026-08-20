@@ -513,8 +513,8 @@ export function ShiftModule({
               </div>
             </div>
 
-            <div className="bg-slate-50 border border-slate-100 rounded-lg p-6 space-y-6">
-              <div className="flex items-center gap-3">
+            <div className={`bg-slate-50 border border-slate-100 rounded-lg transition-all ${isRepeating ? "p-6 space-y-6" : "py-4 px-6 w-fit"}`}>
+              <div className="flex items-center gap-4">
                 <div
                   onClick={() => {
                     setIsRepeating(!isRepeating);
@@ -524,14 +524,22 @@ export function ShiftModule({
                 >
                   <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${isRepeating ? 'translate-x-5' : ''}`}></div>
                 </div>
-                <span className="text-sm font-bold text-slate-900 cursor-pointer" onClick={() => {
-                  setIsRepeating(!isRepeating);
-                  if (setRowSchedules) setRowSchedules({});
-                }}>Repeat</span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-slate-900 cursor-pointer" onClick={() => {
+                    setIsRepeating(!isRepeating);
+                    if (setRowSchedules) setRowSchedules({});
+                  }}>Repeat Shifts</span>
+                  <span className="text-xs text-slate-500 mt-0.5">
+                    {isRepeating 
+                      ? `Recurring shifts enabled from ${repeatStartDate} to ${repeatEndDate}` 
+                      : "Turn on to configure recurring shifts for multiple days."}
+                  </span>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
+              {isRepeating && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
                   <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat on</Label>
                   <div className="flex flex-wrap gap-2">
                     {[
@@ -631,7 +639,8 @@ export function ShiftModule({
                     </div>
                   </div>
                 </div>
-              </div>
+                </div>
+              )}
             </div>
 
             <div className="hidden md:block border border-slate-100 rounded-lg overflow-hidden w-full relative">
