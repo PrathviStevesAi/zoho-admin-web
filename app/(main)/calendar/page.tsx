@@ -64,13 +64,16 @@ export default function CalendarPage() {
       const res = await fetchCalendarShiftsAction(from_date, to_date);
       console.log("[Calendar Page] fetchCalendarShiftsAction response:", res);
       if (res.success && res.data) {
-        const events = res.data.map((shift) => {
+        const events = res.data.map((shift: any) => {
           let bgColor = shift.color || "#9ca3af";
+          const start = shift.start_time ? shift.start_time.substring(0, 19) : shift.start_time;
+          const end = shift.end_time ? shift.end_time.substring(0, 19) : shift.end_time;
+
           return {
             id: shift.shift_id,
             title: `${shift.customer_name} [${shift.invoice_no}] - ${shift.service_address}`,
-            start: shift.start_time,
-            end: shift.end_time,
+            start: start,
+            end: end,
             backgroundColor: bgColor,
             borderColor: "transparent",
             textColor: "#ffffff",
