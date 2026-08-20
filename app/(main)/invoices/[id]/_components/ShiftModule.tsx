@@ -8,7 +8,8 @@ import {
   Calendar,
   Loader2,
   Pencil,
-  Copy
+  Copy,
+  Clock
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { FormattedDate } from "@/components/ui/formatted-date";
@@ -116,9 +117,10 @@ interface ShiftModuleProps {
   addShiftData: any;
   setAddShiftData: (data: any) => void;
   rowSchedules: any;
+  setRowSchedules?: (schedules: any) => void;
   handleRowChange: (date: string, field: string, val: any) => void;
   getDatesList: (start: string, end: string) => Date[];
-  onCreateShifts: () => void;
+  onCreateShifts: (validDateKeys: string[]) => void;
   isCreating: boolean;
   timezone: string;
   selectedShiftIds?: string[];
@@ -141,6 +143,7 @@ export function ShiftModule({
   addShiftData,
   setAddShiftData,
   rowSchedules,
+  setRowSchedules,
   handleRowChange,
   getDatesList,
   onCreateShifts,
@@ -151,16 +154,6 @@ export function ShiftModule({
   isDeletingBulk,
   timezone
 }: ShiftModuleProps) {
-  const getInitialTime = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  };
-
-  const [isRepeating, setIsRepeating] = useState(false);
-  const [repeatDays, setRepeatDays] = useState<number[]>([]);
-  const [repeatStartDate, setRepeatStartDate] = useState(getInitialTime());
-  const [repeatEndDate, setRepeatEndDate] = useState(getInitialTime());
-
   const getLocalDateString = (date: Date = new Date()) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -177,6 +170,12 @@ export function ShiftModule({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
+  const getCurrentTimeOnly = (date: Date = new Date()) => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
   const formatDateKey = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -184,25 +183,30 @@ export function ShiftModule({
     return `${year}-${month}-${day}`;
   };
 
+  const [isRepeating, setIsRepeating] = useState(false);
+  const [repeatDays, setRepeatDays] = useState<number[]>([]);
+  const [repeatStartDate, setRepeatStartDate] = useState(getLocalDateString());
+  const [repeatEndDate, setRepeatEndDate] = useState(getLocalDateString());
+  const [repeatStartTime, setRepeatStartTime] = useState(getCurrentTimeOnly());
+  const [repeatEndTime, setRepeatEndTime] = useState(getCurrentTimeOnly());
   const today = getLocalDateString();
   const now = getLocalTimeString();
+  const activeStartDate = isRepeating ? repeatStartDate : addShiftData?.dateFrom;
+  const activeEndDate = isRepeating ? repeatEndDate : addShiftData?.dateTo;
 
   useEffect(() => {
-    if (isRepeating && repeatStartDate && repeatEndDate && addShiftData?.dateFrom && addShiftData?.dateTo) {
-      const startObj = new Date(repeatStartDate);
-      const endObj = new Date(repeatEndDate);
-
-      const startHoursInt = startObj.getHours();
-      const startMinsInt = startObj.getMinutes();
-      const endHoursInt = endObj.getHours();
-      const endMinsInt = endObj.getMinutes();
+    if (isRepeating && repeatStartDate && repeatEndDate && repeatStartTime && repeatEndTime && activeStartDate && activeEndDate) {
+      const startParts = repeatStartTime.split(':');
+      const endParts = repeatEndTime.split(':');
+      const startHoursInt = parseInt(startParts[0], 10) || 0;
+      const startMinsInt = parseInt(startParts[1], 10) || 0;
+      const endHoursInt = parseInt(endParts[0], 10) || 0;
+      const endMinsInt = parseInt(endParts[1], 10) || 0;
 
       let diffMinutes = (endHoursInt * 60 + endMinsInt) - (startHoursInt * 60 + startMinsInt);
 
       if (diffMinutes < 0) {
         diffMinutes += 24 * 60;
-      } else if (diffMinutes === 0 && endObj.getTime() > startObj.getTime()) {
-        diffMinutes = 24 * 60;
       }
 
       const hoursInt = Math.floor(diffMinutes / 60);
@@ -210,7 +214,7 @@ export function ShiftModule({
       const hoursStr = `${hoursInt}:${String(minsInt).padStart(2, '0')}`;
       const startHours = String(startHoursInt).padStart(2, '0');
       const startMins = String(startMinsInt).padStart(2, '0');
-      const dates = getDatesList(addShiftData.dateFrom, addShiftData.dateTo);
+      const dates = getDatesList(activeStartDate, activeEndDate);
       dates.forEach(date => {
         const dateKey = formatDateKey(date);
         const rowStart = `${dateKey}T${startHours}:${startMins}`;
@@ -231,14 +235,16 @@ export function ShiftModule({
         }
       });
     }
-  }, [repeatStartDate, repeatEndDate, isRepeating, repeatDays, addShiftData?.dateFrom, addShiftData?.dateTo]);
+  }, [repeatStartDate, repeatEndDate, repeatStartTime, repeatEndTime, isRepeating, repeatDays, activeStartDate, activeEndDate]);
 
   useEffect(() => {
     if (!isAdding) {
       setIsRepeating(false);
       setRepeatDays([]);
-      setRepeatStartDate(getInitialTime());
-      setRepeatEndDate(getInitialTime());
+      setRepeatStartDate(getLocalDateString());
+      setRepeatEndDate(getLocalDateString());
+      setRepeatStartTime(getCurrentTimeOnly());
+      setRepeatEndTime(getCurrentTimeOnly());
     }
   }, [isAdding]);
 
@@ -433,6 +439,11 @@ export function ShiftModule({
     );
   }
 
+  const baseDatesList = getDatesList(activeStartDate, activeEndDate);
+  const filteredDatesList = isRepeating && repeatDays.length > 0
+    ? baseDatesList.filter(date => repeatDays.includes(date.getDay()))
+    : baseDatesList;
+
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
       <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white max-w-7xl mx-auto">
@@ -505,12 +516,18 @@ export function ShiftModule({
             <div className="bg-slate-50 border border-slate-100 rounded-lg p-6 space-y-6">
               <div className="flex items-center gap-3">
                 <div
-                  onClick={() => setIsRepeating(!isRepeating)}
+                  onClick={() => {
+                    setIsRepeating(!isRepeating);
+                    if (setRowSchedules) setRowSchedules({});
+                  }}
                   className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${isRepeating ? 'bg-[#0064cb]' : 'bg-slate-300'}`}
                 >
                   <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${isRepeating ? 'translate-x-5' : ''}`}></div>
                 </div>
-                <span className="text-sm font-bold text-slate-900 cursor-pointer" onClick={() => setIsRepeating(!isRepeating)}>Repeat</span>
+                <span className="text-sm font-bold text-slate-900 cursor-pointer" onClick={() => {
+                  setIsRepeating(!isRepeating);
+                  if (setRowSchedules) setRowSchedules({});
+                }}>Repeat</span>
               </div>
 
               <div className="space-y-4">
@@ -552,19 +569,13 @@ export function ShiftModule({
                   <div className="space-y-2">
                     <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat Date From</Label>
                     <Input
-                      type="datetime-local"
+                      type="date"
                       disabled={!isRepeating}
-                      min={now}
+                      min={today}
                       value={repeatStartDate}
                       onChange={(e) => {
                         const val = e.target.value;
                         setRepeatStartDate(val);
-                        if (val) {
-                          const d = new Date(val);
-                          if (!isNaN(d.getTime())) {
-                            setAddShiftData((prev: any) => ({ ...prev, dateFrom: formatDateKey(d) }));
-                          }
-                        }
                       }}
                       className={`w-full h-11 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
                     />
@@ -572,22 +583,52 @@ export function ShiftModule({
                   <div className="space-y-2">
                     <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat Date To</Label>
                     <Input
-                      type="datetime-local"
+                      type="date"
                       disabled={!isRepeating}
-                      min={repeatStartDate || now}
+                      min={repeatStartDate || today}
                       value={repeatEndDate}
                       onChange={(e) => {
                         const val = e.target.value;
                         setRepeatEndDate(val);
-                        if (val) {
-                          const d = new Date(val);
-                          if (!isNaN(d.getTime())) {
-                            setAddShiftData((prev: any) => ({ ...prev, dateTo: formatDateKey(d) }));
-                          }
-                        }
                       }}
                       className={`w-full h-11 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <div className="space-y-1">
+                    <Label className="text-[14px] font-bold text-slate-900 uppercase tracking-wider">Time for each day</Label>
+                    <p className="text-sm text-slate-500">Set the time for one day. It will be the same for all selected dates.</p>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center max-w-xl">
+                    <div className="space-y-2">
+                      <Label className={`text-[10px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Start Time</Label>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          type="time"
+                          disabled={!isRepeating}
+                          value={repeatStartTime}
+                          onChange={(e) => setRepeatStartTime(e.target.value)}
+                          className={`w-full h-11 pl-10 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-slate-400 mt-6 font-bold">-</div>
+                    <div className="space-y-2">
+                      <Label className={`text-[10px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>End Time</Label>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          type="time"
+                          disabled={!isRepeating}
+                          value={repeatEndTime}
+                          onChange={(e) => setRepeatEndTime(e.target.value)}
+                          className={`w-full h-11 pl-10 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -605,7 +646,7 @@ export function ShiftModule({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {getDatesList(addShiftData.dateFrom, addShiftData.dateTo).map((date, i) => {
+                    {filteredDatesList.map((date, i) => {
                       const dateKey = formatDateKey(date);
                       const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
                       const rowMin = dateKey === today ? now : `${dateKey}T00:00`;
@@ -621,7 +662,7 @@ export function ShiftModule({
                                 className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
                               />
                               <span className="text-sm font-bold text-slate-700">
-                                {formatDate(date, false)}
+                                {formatDate(date, false)} <span className="text-slate-400 font-semibold text-[11px] ml-1">( {date.toLocaleDateString('en-US', { weekday: 'short' })} )</span>
                               </span>
                             </div>
                           </TableCell>
@@ -696,7 +737,7 @@ export function ShiftModule({
             </div>
 
             <div className="block md:hidden space-y-4 w-full overflow-auto max-h-[600px] custom-scrollbar pr-1">
-              {getDatesList(addShiftData.dateFrom, addShiftData.dateTo).map((date, i) => {
+              {filteredDatesList.map((date, i) => {
                 const dateKey = formatDateKey(date);
                 const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
                 const rowMin = dateKey === today ? now : `${dateKey}T00:00`;
@@ -712,7 +753,7 @@ export function ShiftModule({
                           className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
                         />
                         <span className="text-sm font-bold text-slate-800">
-                          {formatDate(date, false)}
+                          {formatDate(date, false)} <span className="text-slate-400 font-semibold text-[11px] ml-1">( {date.toLocaleDateString('en-US', { weekday: 'short' })} )</span>
                         </span>
                       </div>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${row.checked ? 'bg-blue-50 text-[#0064cb]' : 'bg-slate-200 text-slate-500'}`}>
@@ -804,7 +845,10 @@ export function ShiftModule({
               Back
             </Button>
             <Button
-              onClick={onCreateShifts}
+              onClick={() => {
+                const validKeys = filteredDatesList.map(d => formatDateKey(d));
+                onCreateShifts(validKeys);
+              }}
               disabled={isCreating}
               className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-10 rounded-lg font-bold shadow-md shadow-[#0064cb]/10 transition-all min-w-[120px] cursor-pointer w-full sm:w-auto flex justify-center items-center"
             >

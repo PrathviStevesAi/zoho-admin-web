@@ -555,18 +555,18 @@ export default function InvoiceDetailsPage() {
     return dates;
   };
 
-  const handleCreateShifts = async () => {
+  const handleCreateShifts = async (validDateKeys: string[]) => {
     if (!addShiftData.service) {
       toast.error("Please select a service");
       return;
     }
     const schedule = [];
-    const dates = getDatesList(addShiftData.dateFrom, addShiftData.dateTo);
-    for (const date of dates) {
-      const dateKey = formatDateKey(date);
+    for (const dateKey of validDateKeys) {
       const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
       if (row.checked) {
-        const formattedDate = formatDate(date, false);
+        const [y, m, d] = dateKey.split('-');
+        const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        const formattedDate = formatDate(dateObj, false);
         if (!row.startTime || !row.endTime) {
           toast.error(`Please select start and end times for ${formattedDate}`);
           return;
@@ -987,6 +987,7 @@ export default function InvoiceDetailsPage() {
           addShiftData={addShiftData}
           setAddShiftData={setAddShiftData}
           rowSchedules={rowSchedules}
+          setRowSchedules={setRowSchedules}
           handleRowChange={handleRowChange}
           getDatesList={getDatesList}
           onCreateShifts={handleCreateShifts}
