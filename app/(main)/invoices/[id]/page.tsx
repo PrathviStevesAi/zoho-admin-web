@@ -555,18 +555,18 @@ export default function InvoiceDetailsPage() {
     return dates;
   };
 
-  const handleCreateShifts = async () => {
+  const handleCreateShifts = async (validDateKeys: string[]) => {
     if (!addShiftData.service) {
       toast.error("Please select a service");
       return;
     }
     const schedule = [];
-    const dates = getDatesList(addShiftData.dateFrom, addShiftData.dateTo);
-    for (const date of dates) {
-      const dateKey = formatDateKey(date);
+    for (const dateKey of validDateKeys) {
       const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
       if (row.checked) {
-        const formattedDate = formatDate(date, false);
+        const [y, m, d] = dateKey.split('-');
+        const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        const formattedDate = formatDate(dateObj, false);
         if (!row.startTime || !row.endTime) {
           toast.error(`Please select start and end times for ${formattedDate}`);
           return;
@@ -596,27 +596,33 @@ export default function InvoiceDetailsPage() {
       return;
     }
     setIsCreatingShift(true);
-    const payload = { invoice_id: id, service_id: addShiftData.service, schedule };
-    console.log("[ShiftModule] Creating shifts with payload:", payload);
+    try {
+      const payload = { invoice_id: id, service_id: addShiftData.service, schedule };
+      console.log("[ShiftModule] Creating shifts with payload:", payload);
 
-    const result = await createShiftAction(payload);
-    console.log("[ShiftModule] Create shifts response:", result);
+      const result = await createShiftAction(payload);
+      console.log("[ShiftModule] Create shifts response:", result);
 
-    if (result.success) {
-      toast.success("Shifts created successfully");
-      setIsAddingShift(false);
-      setAddShiftData({
-        dateFrom: formatDateKey(new Date()),
-        dateTo: formatDateKey(new Date()),
-        service: "",
-        people: 1
-      });
-      setRowSchedules({});
-      loadShifts();
-    } else {
-      toast.error(result.error || "Failed to create shifts");
+      if (result.success) {
+        toast.success("Shifts created successfully");
+        setIsAddingShift(false);
+        setAddShiftData({
+          dateFrom: formatDateKey(new Date()),
+          dateTo: formatDateKey(new Date()),
+          service: "",
+          people: 1
+        });
+        setRowSchedules({});
+        loadShifts();
+      } else {
+        toast.error(result.error || "Failed to create shifts");
+      }
+    } catch (error: any) {
+      console.error("[handleCreateShifts] Error:", error);
+      toast.error(error.message || "An unexpected error occurred while creating shifts");
+    } finally {
+      setIsCreatingShift(false);
     }
-    setIsCreatingShift(false);
   };
 
   const handleGuardSelect = async (guard: any, rates: { hourlyRate?: number; travelFee?: number; flatQcRate?: number }) => {
@@ -981,6 +987,7 @@ export default function InvoiceDetailsPage() {
           addShiftData={addShiftData}
           setAddShiftData={setAddShiftData}
           rowSchedules={rowSchedules}
+          setRowSchedules={setRowSchedules}
           handleRowChange={handleRowChange}
           getDatesList={getDatesList}
           onCreateShifts={handleCreateShifts}

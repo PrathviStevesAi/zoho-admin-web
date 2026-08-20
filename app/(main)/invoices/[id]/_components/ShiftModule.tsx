@@ -1,19 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
-  Plus, 
-  Trash2, 
-  ChevronLeft, 
-  ChevronRight, 
-  Clock, 
-  CalendarDays,
+import {
+  Plus,
+  Trash2,
   Calendar,
-  X,
-  Loader2, 
-  Pencil, 
-  Copy 
+  Loader2,
+  Pencil,
+  Copy,
+  Clock
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { FormattedDate } from "@/components/ui/formatted-date";
@@ -121,9 +117,10 @@ interface ShiftModuleProps {
   addShiftData: any;
   setAddShiftData: (data: any) => void;
   rowSchedules: any;
+  setRowSchedules?: (schedules: any) => void;
   handleRowChange: (date: string, field: string, val: any) => void;
   getDatesList: (start: string, end: string) => Date[];
-  onCreateShifts: () => void;
+  onCreateShifts: (validDateKeys: string[]) => void;
   isCreating: boolean;
   timezone: string;
   selectedShiftIds?: string[];
@@ -146,6 +143,7 @@ export function ShiftModule({
   addShiftData,
   setAddShiftData,
   rowSchedules,
+  setRowSchedules,
   handleRowChange,
   getDatesList,
   onCreateShifts,
@@ -156,9 +154,99 @@ export function ShiftModule({
   isDeletingBulk,
   timezone
 }: ShiftModuleProps) {
-  // const [isRepeating, setIsRepeating] = useState(false);
-  // const [repeatDays, setRepeatDays] = useState<number[]>([]);
-  // const [repeatEndDate, setRepeatEndDate] = useState("");
+  const getLocalDateString = (date: Date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getLocalTimeString = (date: Date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const getCurrentTimeOnly = (date: Date = new Date()) => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const formatDateKey = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [isRepeating, setIsRepeating] = useState(false);
+  const [repeatDays, setRepeatDays] = useState<number[]>([]);
+  const [repeatStartDate, setRepeatStartDate] = useState(getLocalDateString());
+  const [repeatEndDate, setRepeatEndDate] = useState(getLocalDateString());
+  const [repeatStartTime, setRepeatStartTime] = useState(getCurrentTimeOnly());
+  const [repeatEndTime, setRepeatEndTime] = useState(getCurrentTimeOnly());
+  const today = getLocalDateString();
+  const now = getLocalTimeString();
+  const activeStartDate = isRepeating ? repeatStartDate : addShiftData?.dateFrom;
+  const activeEndDate = isRepeating ? repeatEndDate : addShiftData?.dateTo;
+
+  useEffect(() => {
+    if (isRepeating && repeatStartDate && repeatEndDate && repeatStartTime && repeatEndTime && activeStartDate && activeEndDate) {
+      const startParts = repeatStartTime.split(':');
+      const endParts = repeatEndTime.split(':');
+      const startHoursInt = parseInt(startParts[0], 10) || 0;
+      const startMinsInt = parseInt(startParts[1], 10) || 0;
+      const endHoursInt = parseInt(endParts[0], 10) || 0;
+      const endMinsInt = parseInt(endParts[1], 10) || 0;
+
+      let diffMinutes = (endHoursInt * 60 + endMinsInt) - (startHoursInt * 60 + startMinsInt);
+
+      if (diffMinutes < 0) {
+        diffMinutes += 24 * 60;
+      }
+
+      const hoursInt = Math.floor(diffMinutes / 60);
+      const minsInt = diffMinutes % 60;
+      const hoursStr = `${hoursInt}:${String(minsInt).padStart(2, '0')}`;
+      const startHours = String(startHoursInt).padStart(2, '0');
+      const startMins = String(startMinsInt).padStart(2, '0');
+      const dates = getDatesList(activeStartDate, activeEndDate);
+      dates.forEach(date => {
+        const dateKey = formatDateKey(date);
+        const rowStart = `${dateKey}T${startHours}:${startMins}`;
+        const rowStartObj = new Date(rowStart);
+        const rowEndObj = new Date(rowStartObj.getTime() + diffMinutes * 60000);
+        const rowEndKey = formatDateKey(rowEndObj);
+        const rEndHours = String(rowEndObj.getHours()).padStart(2, '0');
+        const rEndMins = String(rowEndObj.getMinutes()).padStart(2, '0');
+        const rowEnd = `${rowEndKey}T${rEndHours}:${rEndMins}`;
+
+        handleRowChange(dateKey, 'startTime', rowStart);
+        handleRowChange(dateKey, 'endTime', rowEnd);
+        handleRowChange(dateKey, 'hours', hoursStr);
+
+        if (repeatDays.length > 0) {
+          const dayOfWeek = date.getDay();
+          handleRowChange(dateKey, 'checked', repeatDays.includes(dayOfWeek));
+        }
+      });
+    }
+  }, [repeatStartDate, repeatEndDate, repeatStartTime, repeatEndTime, isRepeating, repeatDays, activeStartDate, activeEndDate]);
+
+  useEffect(() => {
+    if (!isAdding) {
+      setIsRepeating(false);
+      setRepeatDays([]);
+      setRepeatStartDate(getLocalDateString());
+      setRepeatEndDate(getLocalDateString());
+      setRepeatStartTime(getCurrentTimeOnly());
+      setRepeatEndTime(getCurrentTimeOnly());
+    }
+  }, [isAdding]);
 
   if (!isAdding) {
     return (
@@ -351,31 +439,10 @@ export function ShiftModule({
     );
   }
 
-  const getLocalDateString = (date: Date = new Date()) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const getLocalTimeString = (date: Date = new Date()) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
-  const formatDateKey = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const today = getLocalDateString();
-  const now = getLocalTimeString();
+  const baseDatesList = getDatesList(activeStartDate, activeEndDate);
+  const filteredDatesList = isRepeating && repeatDays.length > 0
+    ? baseDatesList.filter(date => repeatDays.includes(date.getDay()))
+    : baseDatesList;
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
@@ -386,7 +453,7 @@ export function ShiftModule({
             <p className="text-slate-600 text-sm">Create and schedule new shifts for this invoice.</p>
           </div>
 
-          <div className="p-6 space-y-8">
+          <div className="p-6 pb-0 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
               <div className="space-y-2">
                 <Label className="text-[11px] font-bold text-slate-800 uppercase">Select Service</Label>
@@ -413,21 +480,23 @@ export function ShiftModule({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-bold text-slate-800 uppercase">Date from</Label>
+                <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-400" : "text-slate-800"}`}>Date from</Label>
                 <Input
                   type="date"
                   min={today}
-                  className="w-full h-11 bg-white border-slate-200 rounded-lg"
+                  disabled={isRepeating}
+                  className={`w-full h-11 bg-white border-slate-200 rounded-lg ${isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
                   value={addShiftData.dateFrom}
                   onChange={(e) => setAddShiftData((prev: any) => ({ ...prev, dateFrom: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-bold text-slate-800 uppercase">Date to</Label>
+                <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-400" : "text-slate-800"}`}>Date to</Label>
                 <Input
                   type="date"
                   min={addShiftData.dateFrom || today}
-                  className="w-full h-11 bg-white border-slate-200 rounded-lg"
+                  disabled={isRepeating}
+                  className={`w-full h-11 bg-white border-slate-200 rounded-lg ${isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
                   value={addShiftData.dateTo}
                   onChange={(e) => setAddShiftData((prev: any) => ({ ...prev, dateTo: e.target.value }))}
                 />
@@ -444,20 +513,33 @@ export function ShiftModule({
               </div>
             </div>
 
-            {/* Repeat Section */}
-            {/* <div className="bg-slate-50 border border-slate-100 rounded-lg p-6 space-y-6">
-              <div className="flex items-center gap-3">
+            <div className={`bg-slate-50 border border-slate-100 rounded-lg transition-all ${isRepeating ? "p-6 space-y-6" : "py-4 px-6 w-fit"}`}>
+              <div className="flex items-center gap-4">
                 <div
-                  onClick={() => setIsRepeating(!isRepeating)}
+                  onClick={() => {
+                    setIsRepeating(!isRepeating);
+                    if (setRowSchedules) setRowSchedules({});
+                  }}
                   className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${isRepeating ? 'bg-[#0064cb]' : 'bg-slate-300'}`}
                 >
                   <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${isRepeating ? 'translate-x-5' : ''}`}></div>
                 </div>
-                <span className="text-sm font-bold text-slate-900 cursor-pointer" onClick={() => setIsRepeating(!isRepeating)}>Repeat</span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-slate-900 cursor-pointer" onClick={() => {
+                    setIsRepeating(!isRepeating);
+                    if (setRowSchedules) setRowSchedules({});
+                  }}>Repeat Shifts</span>
+                  <span className="text-xs text-slate-500 mt-0.5">
+                    {isRepeating 
+                      ? `Recurring shifts enabled from ${repeatStartDate} to ${repeatEndDate}` 
+                      : "Turn on to configure recurring shifts for multiple days."}
+                  </span>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
+              {isRepeating && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
                   <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat on</Label>
                   <div className="flex flex-wrap gap-2">
                     {[
@@ -491,24 +573,80 @@ export function ShiftModule({
                   </div>
                 </div>
 
-                <div className="space-y-2 max-w-sm">
-                  <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Date repeat end</Label>
-                  <Input
-                    type="date"
-                    disabled={!isRepeating}
-                    min={today}
-                    value={repeatEndDate}
-                    onChange={(e) => setRepeatEndDate(e.target.value)}
-                    className={`h-11 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+                  <div className="space-y-2">
+                    <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat Date From</Label>
+                    <Input
+                      type="date"
+                      disabled={!isRepeating}
+                      min={today}
+                      value={repeatStartDate}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setRepeatStartDate(val);
+                      }}
+                      className={`w-full h-11 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat Date To</Label>
+                    <Input
+                      type="date"
+                      disabled={!isRepeating}
+                      min={repeatStartDate || today}
+                      value={repeatEndDate}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setRepeatEndDate(val);
+                      }}
+                      className={`w-full h-11 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                    />
+                  </div>
                 </div>
-              </div>
-            </div> */}
 
-            <div className="hidden md:block border border-slate-100 rounded-lg overflow-hidden w-full">
-              <div className="overflow-x-auto custom-scrollbar">
+                <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <div className="space-y-1">
+                    <Label className="text-[14px] font-bold text-slate-900 uppercase tracking-wider">Time for each day</Label>
+                    <p className="text-sm text-slate-500">Set the time for one day. It will be the same for all selected dates.</p>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center max-w-xl">
+                    <div className="space-y-2">
+                      <Label className={`text-[10px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Start Time</Label>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          type="time"
+                          disabled={!isRepeating}
+                          value={repeatStartTime}
+                          onChange={(e) => setRepeatStartTime(e.target.value)}
+                          className={`w-full h-11 pl-10 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-slate-400 mt-6 font-bold">-</div>
+                    <div className="space-y-2">
+                      <Label className={`text-[10px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>End Time</Label>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          type="time"
+                          disabled={!isRepeating}
+                          value={repeatEndTime}
+                          onChange={(e) => setRepeatEndTime(e.target.value)}
+                          className={`w-full h-11 pl-10 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                </div>
+              )}
+            </div>
+
+            <div className="hidden md:block border border-slate-100 rounded-lg overflow-hidden w-full relative">
+              <div className="overflow-auto max-h-[600px] custom-scrollbar">
                 <Table className="min-w-[650px] md:min-w-full">
-                  <TableHeader className="bg-slate-50/50">
+                  <TableHeader className="bg-slate-50/90 sticky top-0 z-10 backdrop-blur-sm outline outline-1 outline-slate-100/50">
                     <TableRow className="hover:bg-transparent border-slate-100">
                       <TableHead className="text-sm font-bold text-slate-900 py-4 px-6 w-[200px]">Date</TableHead>
                       <TableHead className="text-sm font-bold text-slate-900 py-4 px-6">Hours per Day</TableHead>
@@ -517,7 +655,7 @@ export function ShiftModule({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {getDatesList(addShiftData.dateFrom, addShiftData.dateTo).map((date, i) => {
+                    {filteredDatesList.map((date, i) => {
                       const dateKey = formatDateKey(date);
                       const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
                       const rowMin = dateKey === today ? now : `${dateKey}T00:00`;
@@ -533,7 +671,7 @@ export function ShiftModule({
                                 className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
                               />
                               <span className="text-sm font-bold text-slate-700">
-                                {formatDate(date, false)}
+                                {formatDate(date, false)} <span className="text-slate-400 font-semibold text-[11px] ml-1">( {date.toLocaleDateString('en-US', { weekday: 'short' })} )</span>
                               </span>
                             </div>
                           </TableCell>
@@ -607,8 +745,8 @@ export function ShiftModule({
               </div>
             </div>
 
-            <div className="block md:hidden space-y-4 w-full">
-              {getDatesList(addShiftData.dateFrom, addShiftData.dateTo).map((date, i) => {
+            <div className="block md:hidden space-y-4 w-full overflow-auto max-h-[600px] custom-scrollbar pr-1">
+              {filteredDatesList.map((date, i) => {
                 const dateKey = formatDateKey(date);
                 const row = rowSchedules[dateKey] || { checked: true, hours: "", startTime: "", endTime: "" };
                 const rowMin = dateKey === today ? now : `${dateKey}T00:00`;
@@ -624,7 +762,7 @@ export function ShiftModule({
                           className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
                         />
                         <span className="text-sm font-bold text-slate-800">
-                          {formatDate(date, false)}
+                          {formatDate(date, false)} <span className="text-slate-400 font-semibold text-[11px] ml-1">( {date.toLocaleDateString('en-US', { weekday: 'short' })} )</span>
                         </span>
                       </div>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${row.checked ? 'bg-blue-50 text-[#0064cb]' : 'bg-slate-200 text-slate-500'}`}>
@@ -707,7 +845,7 @@ export function ShiftModule({
             </div>
           </div>
 
-          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
+          <div className="sticky bottom-0 z-20 px-6 py-4 bg-white/95 backdrop-blur-sm border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] rounded-b-xl">
             <Button
               variant="outline"
               onClick={onCancelAdd}
@@ -716,7 +854,10 @@ export function ShiftModule({
               Back
             </Button>
             <Button
-              onClick={onCreateShifts}
+              onClick={() => {
+                const validKeys = filteredDatesList.map(d => formatDateKey(d));
+                onCreateShifts(validKeys);
+              }}
               disabled={isCreating}
               className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-10 rounded-lg font-bold shadow-md shadow-[#0064cb]/10 transition-all min-w-[120px] cursor-pointer w-full sm:w-auto flex justify-center items-center"
             >
