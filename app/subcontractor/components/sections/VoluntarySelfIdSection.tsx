@@ -221,28 +221,77 @@ export function VoluntarySelfIdSection() {
         </CardContent>
       </Card>
 
-      <Dialog>
-        <DialogTrigger asChild>
-          <button type="button" className="text-sm text-blue-600 hover:underline block pt-2 text-left w-fit focus:outline-none cursor-pointer">
-            Disclaimer - On-Call Job Policy
-          </button>
-        </DialogTrigger>
-        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto custom-scrollbar p-6">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-medium text-slate-800 dark:text-slate-200 border-b pb-4">Disclaimer &ndash; On-Call Job Policy</DialogTitle>
-          </DialogHeader>
-          <div className="text-sm text-slate-700 dark:text-slate-300 space-y-4 pt-2">
-            <p className="font-semibold text-slate-900 dark:text-white">An on-call job means:</p>
-            <ul className="list-disc pl-5 space-y-2 text-slate-600 dark:text-slate-400">
-              <li>You are not scheduled for fixed, regular hours like a full-time or part-time employee.</li>
-              <li>The company may contact you only when work is needed (for example, to cover a shift, handle an event, or fill in for someone).</li>
-              <li>Work hours may be irregular and unpredictable &mdash; some weeks you may be offered several shifts, while other weeks you may not be offered any.</li>
-              <li>You are expected to be available and ready on short notice, though the amount of notice depends on the employer's needs.</li>
-              <li>In security work, this often includes being called for special events, emergency coverage, or last-minute posts.</li>
-            </ul>
+      <div className="pt-2 pb-2">
+        <h3 className="text-base font-bold text-slate-800 mb-2">Privacy Policy</h3>
+        <p className="text-sm text-slate-700 mb-2">
+          By clicking the checkbox below, you agree to the terms of our privacy policy.
+        </p>
+        <a href="https://fastguardservice.com/privacy-policy-fast-guard-service/" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline block mb-4 w-fit">
+          Click here to read our Privacy Policy
+        </a>
+        <div className="flex items-start space-x-2">
+          <input
+            type="checkbox"
+            id="privacyAccepted"
+            {...register("privacyAccepted")}
+            className="w-4 h-4 mt-0.5 border-slate-300 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+          />
+          <div>
+            <Label htmlFor="privacyAccepted" className="text-sm font-normal text-slate-700 leading-tight cursor-pointer">
+              I have read the terms of the privacy policy and consent to the processing of my information.
+            </Label>
+            {errors.privacyAccepted && <p className="text-xs text-red-500 mt-1">{errors.privacyAccepted.message}</p>}
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
+
+      <div className="pt-2 pb-2 mt-1">
+        <h3 className="text-base font-bold text-slate-800 mb-2">SMS Notifications</h3>
+        <div className="flex items-start space-x-2">
+          <input
+            type="checkbox"
+            id="smsNotifications"
+            {...register("smsNotifications")}
+            className="w-4 h-4 mt-0.5 border-slate-300 rounded text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+          />
+          <Label htmlFor="smsNotifications" className="text-sm font-normal text-slate-700 leading-tight cursor-pointer">
+            I agree to receive SMS messages from Fast Guard Service regarding my assigned security shifts, including shift reminders and attendance confirmation requests. Message frequency varies. Message and data rates may apply. Reply STOP to opt out and HELP for help. Consent is not a condition of employment.
+          </Label>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 pt-3 text-sm text-blue-600">
+        <a href="https://fastguardservice.com/privacy-policy-fast-guard-service/" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
+          Privacy Policy
+        </a>
+        <span className="text-slate-300">|</span>
+        <a href="https://fastguardservice.com/security-services-we-provide-in-palm-beach" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
+          Terms & Conditions
+        </a>
+        <span className="text-slate-300">|</span>
+        <Dialog>
+          <DialogTrigger asChild>
+            <button type="button" className="hover:underline focus:outline-none cursor-pointer">
+              Disclaimer - On-Call Job Policy
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto custom-scrollbar p-6">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-medium text-slate-800 dark:text-slate-200 border-b pb-4">Disclaimer &ndash; On-Call Job Policy</DialogTitle>
+            </DialogHeader>
+            <div className="text-sm text-slate-700 dark:text-slate-300 space-y-4 pt-2">
+              <p className="font-semibold text-slate-900 dark:text-white">An on-call job means:</p>
+              <ul className="list-disc pl-5 space-y-2 text-slate-600 dark:text-slate-400">
+                <li>You are not scheduled for fixed, regular hours like a full-time or part-time employee.</li>
+                <li>The company may contact you only when work is needed (for example, to cover a shift, handle an event, or fill in for someone).</li>
+                <li>Work hours may be irregular and unpredictable &mdash; some weeks you may be offered several shifts, while other weeks you may not be offered any.</li>
+                <li>You are expected to be available and ready on short notice, though the amount of notice depends on the employer's needs.</li>
+                <li>In security work, this often includes being called for special events, emergency coverage, or last-minute posts.</li>
+              </ul>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </>
   );
 }

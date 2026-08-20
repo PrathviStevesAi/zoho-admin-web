@@ -15,7 +15,6 @@ import { LicenseExpirationSection } from "./sections/LicenseExpirationSection";
 import { DocumentsCredentialsSection } from "./sections/DocumentsCredentialsSection";
 import { ReferralInformationSection } from "./sections/ReferralInformationSection";
 import { AdditionalInformationSection } from "./sections/AdditionalInformationSection";
-import { PrivacyPolicySection } from "./sections/PrivacyPolicySection";
 import { VoluntarySelfIdSection } from "./sections/VoluntarySelfIdSection";
 
 const formSchema = z.object({
@@ -49,6 +48,7 @@ const formSchema = z.object({
   armed: z.string().min(1, "This field is required"),
   english_language: z.string().min(1, "This field is required"),
   privacyAccepted: z.boolean().refine(val => val === true, { message: "You must accept the privacy policy" }),
+  smsNotifications: z.boolean().optional(),
   gender: z.string().min(1, "This field is required"),
   race: z.string().min(1, "This field is required"),
   veteranStatus: z.string().min(1, "This field is required"),
@@ -91,6 +91,7 @@ const getPayload = (data: FormValues) => {
     ethnicity: data.race,
     veteran_status: data.veteranStatus,
     disability_status: data.disabilityStatus,
+    sms_notifications: data.smsNotifications || false,
   };
 };
 
@@ -103,6 +104,7 @@ export default function SubcontractorForm() {
       securityLicenseOptional: false,
       phoneCode: "+1",
       privacyAccepted: false,
+      smsNotifications: false,
       resume: "",
       headshot_image: "",
       security_guard_license: "",
@@ -201,7 +203,6 @@ export default function SubcontractorForm() {
             <ContactInformationSection />
             <ReferralInformationSection />
             <AdditionalInformationSection />
-            <PrivacyPolicySection />
             <VoluntarySelfIdSection />
             <div className="flex justify-center space-x-4 pt-6 pb-8">
               <Button
