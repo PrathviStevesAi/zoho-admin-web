@@ -1,0 +1,153 @@
+import React from "react";
+import { FileText, Eye, Download, Trash, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileUpload } from "@/components/ui/file-upload";
+import { ImagePreview } from "./image-preview";
+
+interface GuardDocumentsProps {
+  guard: any;
+  isEditing: boolean;
+  editForm: any;
+  handleEditChange: (field: string, value: any, localFile?: File) => void;
+  localPreviews: Record<string, string>;
+  localFileNames: Record<string, string>;
+  deletingDocs: Record<string, boolean>;
+  handleDeleteDocument: (documentKey: string, field: string) => void;
+}
+
+export function GuardDocuments({
+  guard,
+  isEditing,
+  editForm,
+  handleEditChange,
+  localPreviews,
+  localFileNames,
+  deletingDocs,
+  handleDeleteDocument
+}: GuardDocumentsProps) {
+
+  const getDocumentFilename = (url?: string) => {
+    if (!url) return "Document";
+    const parts = url.split("/");
+    const last = parts[parts.length - 1];
+    return decodeURIComponent(last).substring(0, 30) + (last.length > 30 ? "..." : "");
+  };
+
+  const renderDocumentCard = (
+    title: string,
+    field: string,
+    accept: string,
+    documentKey: string,
+    previewRenderer: (url: string) => React.ReactNode
+  ) => {
+    const currentUrl = isEditing ? editForm[field] as string : guard[field] as string;
+    const isUploaded = !!currentUrl;
+    const previewUrl = localPreviews[field] || currentUrl;
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col h-full relative space-y-4 min-h-[350px]">
+        <div className="flex items-center justify-center relative">
+          <h3 className="font-bold text-slate-800 text-[14px] text-center">{title}</h3>
+          {isUploaded && (
+            <span className="absolute right-0 bg-green-50 text-green-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider border border-green-100">
+              Uploaded
+            </span>
+          )}
+        </div>
+
+        <div className="flex-1 flex flex-col justify-center items-center rounded-xl overflow-hidden min-h-[160px] w-full relative">
+          {isUploaded ? (
+            previewRenderer(previewUrl)
+          ) : (
+            <div className="text-slate-400 font-medium text-xs flex flex-col items-center gap-2 justify-center w-full h-full border border-dashed border-slate-200 rounded-xl bg-slate-50/50 min-h-[160px]">
+              <span className="text-xs">No File Uploaded</span>
+            </div>
+          )}
+        </div>
+
+        {isUploaded && !localPreviews[field] && (
+          <div className="space-y-1">
+            <p className="text-[13px] font-bold text-slate-800 truncate" title={currentUrl}>{getDocumentFilename(currentUrl)}</p>
+          </div>
+        )}
+        {isUploaded && localPreviews[field] && (
+          <div className="space-y-1">
+            <p className="text-[13px] font-bold text-green-600 truncate" title={localFileNames[field]}>{localFileNames[field]}</p>
+          </div>
+        )}
+
+        {isEditing && (
+          <div className="flex flex-col xl:flex-row items-center gap-3 pt-2 mt-auto w-full">
+            <div className="flex-1 w-full">
+              <FileUpload
+                onFileSelect={(url, localFile) => handleEditChange(field, url, localFile)}
+                variant="button"
+                buttonText={isUploaded ? "Replace" : "Upload New"}
+                buttonClassName="border-blue-200 text-blue-600 hover:bg-blue-50 font-semibold shadow-sm w-full justify-center h-10 px-0 rounded-lg text-[13px]"
+                uploadType={documentKey}
+                guardEmail={guard.email}
+                guardPhone={guard.phone_number}
+                accept={accept}
+                hideSelectedState={true}
+              />
+            </div>
+            {isUploaded && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDeleteDocument(documentKey, field)}
+                disabled={deletingDocs[documentKey]}
+                className="flex-1 w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold shadow-sm h-10 rounded-lg text-[13px]"
+              >
+                {deletingDocs[documentKey] ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash className="w-4 h-4 mr-2" />} Delete
+              </Button>
+            )}
+          </div>
+        )}
+
+        {!isEditing && isUploaded && (
+          <div className="flex items-center gap-3 pt-2 mt-auto w-full">
+            <Button variant="outline" size="sm" asChild className="flex-1 border-slate-200 hover:bg-slate-100 font-semibold text-xs cursor-pointer text-[#0064cb] h-10">
+              <a href={currentUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1.5"><Eye className="w-4 h-4" /> Preview</a>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="flex-1 border-slate-200 hover:bg-slate-100 font-semibold text-xs cursor-pointer text-[#0064cb] h-10">
+              <a href={currentUrl} download className="flex items-center justify-center gap-1.5"><Download className="w-4 h-4" /> Download</a>
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5 lg:col-span-3">
+        <div className="flex items-center gap-2 text-[#0064cb]">
+          <FileText className="w-4 h-4" />
+          <h3 className="font-bold text-slate-800 text-[14px]">Uploaded Credentials Images</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {renderDocumentCard("Driver License", "driver_license_url", "image/*", "driver-license", (url) => <ImagePreview url={url} alt="Driver License" />)}
+          {renderDocumentCard("Security License", "security_guard_license_url", "image/*", "security-guard-license", (url) => <ImagePreview url={url} alt="Security License" />)}
+          {renderDocumentCard("Headshot Image", "headshot_image_url", "image/*", "headshot-image", (url) => <ImagePreview url={url} alt="Headshot Image" />)}
+        </div>
+      </div>
+
+      <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {renderDocumentCard("Verification Video", "verification_video_url", "video/*", "verification-video", (url) => (
+          <div className="rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-black flex items-center justify-center h-full w-full max-h-[220px]">
+            <video src={url} controls className="w-full h-full object-contain" />
+          </div>
+        ))}
+        {renderDocumentCard("Resume Document", "resume_url", ".pdf,.doc,.docx", "resume", (url) => (
+          <div className="w-full h-full flex flex-col items-center justify-center p-5 bg-slate-50/70 border border-slate-200 border-dashed gap-3 flex-1 rounded-xl">
+            <div className="w-14 h-14 bg-blue-50 text-[#0064cb] rounded-2xl flex items-center justify-center shrink-0 border border-blue-100 shadow-sm">
+              <FileText className="w-7 h-7" />
+            </div>
+            <span className="text-[11px] text-slate-500 font-semibold block uppercase tracking-wider mt-2">PDF Document</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}

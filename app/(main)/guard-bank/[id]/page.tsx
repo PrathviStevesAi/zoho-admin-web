@@ -5,35 +5,50 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter, useParams } from "next/navigation";
 import {
-  ArrowLeft,
-  ChevronRight,
-  Trash2,
-  User,
-  MapPin,
-  Mail,
-  Phone,
-  FileText,
-  Video,
   CheckCircle2,
   XCircle,
   Eye,
   Loader2,
-  Shield,
-  NotebookText,
   Download,
+  Trash
 } from "lucide-react";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { FormattedDate } from "@/components/ui/formatted-date";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { FileUpload } from "@/components/ui/file-upload";
 import { ConfirmationDialog } from "../components/confirmation-dialog";
-import { Plus } from "lucide-react";
 import { BadgeCreateDialog } from "../components/badge-create-dialog";
+import { Country, State, City } from "country-state-city";
+import { US_STATE_CITY_DATA } from "../../../subcontractor/components/StaticData";
+
+const ALLOWED_COUNTRIES = ["US", "CA", "AR", "BO", "BR", "CL", "CO", "EC", "GY", "PY", "PE", "SR", "UY", "VE"];
 import { BadgeViewDialog } from "../components/badge-view-dialog";
-import { ImagePreview } from "../components/image-preview";
 import { ApproveGuardDialog } from "../components/approve-guard-dialog";
 import { DeclineGuardDialog } from "../components/decline-guard-dialog";
+import { GuardPageSkeleton } from "../components/guard-page-skeleton";
+import { GuardHeader } from "../components/guard-header";
+import { GuardProfileSummary } from "../components/guard-profile-summary";
+import { GuardPersonalDetails, GuardContactInfo, GuardPreferences } from "../components/guard-information";
+import { GuardAddress } from "../components/guard-address";
+import { GuardDocuments } from "../components/guard-documents";
+import { GuardNotesAndBadge } from "../components/guard-notes-and-badge";
+
+const phoneCountries = [
+  { name: "Argentina", code: "ar", dialCode: "+54" },
+  { name: "Bolivia", code: "bo", dialCode: "+591" },
+  { name: "Brazil", code: "br", dialCode: "+55" },
+  { name: "Canada", code: "ca", dialCode: "+1" },
+  { name: "Chile", code: "cl", dialCode: "+56" },
+  { name: "Colombia", code: "co", dialCode: "+57" },
+  { name: "Ecuador", code: "ec", dialCode: "+593" },
+  { name: "Guyana", code: "gy", dialCode: "+592" },
+  { name: "Paraguay", code: "py", dialCode: "+595" },
+  { name: "Peru", code: "pe", dialCode: "+51" },
+  { name: "Suriname", code: "sr", dialCode: "+597" },
+  { name: "United States", code: "us", dialCode: "+1" },
+  { name: "Uruguay", code: "uy", dialCode: "+598" },
+  { name: "Venezuela", code: "ve", dialCode: "+58" }
+];
 
 export default function GuardDetailPage() {
   const router = useRouter();
@@ -51,7 +66,138 @@ export default function GuardDetailPage() {
   const [isGeneratingBadge, setIsGeneratingBadge] = useState(false);
   const [isDeletingBadge, setIsDeletingBadge] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [isUpdateLevelModalOpen, setIsUpdateLevelModalOpen] = useState(false);
+  const [isUpdatingLevel, setIsUpdatingLevel] = useState(false);
   const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>({});
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [deletingDocs, setDeletingDocs] = useState<Record<string, boolean>>({});
+  const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
+  const [localFileNames, setLocalFileNames] = useState<Record<string, string>>({});
+
+  const [countries, setCountries] = useState<any[]>([]);
+  const [states, setStates] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
+
+  useEffect(() => {
+    const allCountries = Country.getAllCountries().filter(c => ALLOWED_COUNTRIES.includes(c.isoCode));
+    setCountries(allCountries);
+  }, []);
+
+  useEffect(() => {
+    if (editForm.country === "US") {
+      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
+        isoCode: data.short_code,
+        name: name,
+      }));
+      setStates(usStates);
+    } else if (editForm.country) {
+      setStates(State.getStatesOfCountry(editForm.country));
+    } else {
+      setStates([]);
+    }
+  }, [editForm.country]);
+
+  useEffect(() => {
+    if (editForm.country === "US" && editForm.state) {
+      const stateData = Object.values(US_STATE_CITY_DATA).find(s => s.short_code === editForm.state);
+      if (stateData) {
+        const usCities = stateData.cities.map(city => ({ name: city }));
+        setCities(usCities);
+      } else {
+        setCities([]);
+      }
+    } else if (editForm.country && editForm.state) {
+      setCities(City.getCitiesOfState(editForm.country, editForm.state));
+    } else {
+      setCities([]);
+    }
+  }, [editForm.state, editForm.country]);
+
+  const [selectedPhoneCountry, setSelectedPhoneCountry] = useState(phoneCountries[11]); // Default to US
+  const [isPhoneDropdownOpen, setIsPhoneDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (guard?.phone_number) {
+      const matchingCountry = phoneCountries.find(c => guard.phone_number.startsWith(c.dialCode));
+      if (matchingCountry) {
+        setSelectedPhoneCountry(matchingCountry);
+      }
+    }
+  }, [guard]);
+
+  const handleEditChange = (field: string, value: any, localFile?: File) => {
+    setEditForm((prev: any) => ({ ...prev, [field]: value }));
+    if (localFile) {
+      setLocalPreviews(prev => ({ ...prev, [field]: URL.createObjectURL(localFile) }));
+      setLocalFileNames(prev => ({ ...prev, [field]: localFile.name }));
+    } else if (value === null) {
+      setLocalPreviews(prev => ({ ...prev, [field]: "" }));
+      setLocalFileNames(prev => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    const allowedKeys = [
+      "phone_number", "guard_level", "license_number", "license_expiration_date",
+      "resume_url", "headshot_image_url", "security_guard_license_url", "driver_license_url",
+      "firewatch_certificate_url", "verification_video_url", "first_name", "last_name",
+      "street_address", "country", "state", "city", "zip_code", "referral", "on_call",
+      "smartphone", "job_alerts", "license", "background", "transport", "unarmed", "armed",
+      "english_language", "gender", "ethnicity", "veteran_status", "disability_status", "notes"
+    ];
+
+    const payload: any = {};
+    Object.keys(editForm).forEach(key => {
+      if (editForm[key] !== guard[key] && allowedKeys.includes(key)) {
+        if (key === "phone_number" && typeof editForm[key] === "string") {
+          payload[key] = editForm[key].replace(/\s/g, "");
+        } else {
+          payload[key] = editForm[key];
+        }
+      }
+    });
+    if (Object.keys(payload).length === 0) {
+      setIsEditing(false);
+      return;
+    }
+
+    console.log("PATCH Payload:", payload);
+
+    setIsSavingEdit(true);
+    try {
+      const session = await getSession() as any;
+      const token = session?.accessToken;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const url = `${baseUrl}/api/v1/guard/bank/application/${guard.id}`;
+
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const responseData = await res.json().catch(() => ({}));
+        console.log("PATCH Response Success:", responseData);
+        toast.success(responseData.message || "Application updated successfully");
+        setIsEditing(false);
+        fetchGuardDetails();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        console.log("PATCH Response Error:", data);
+        toast.error(getErrorMessage(data, "Failed to update application"));
+      }
+    } catch (error) {
+      toast.error("An error occurred while updating the application");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
 
   const fetchGuardDetails = async () => {
     setLoading(true);
@@ -99,7 +245,7 @@ export default function GuardDetailPage() {
       const token = session?.accessToken;
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
       let url = `${baseUrl}/api/v1/guard/bank/application/${id}/status/${newStatus}`;
-      
+
       const payload: any = {};
       if (newStatus === "approved" && level) {
         url += `?guard_level=${level}`;
@@ -131,6 +277,71 @@ export default function GuardDetailPage() {
       return false;
     } finally {
       setIsUpdatingStatus(null);
+    }
+  };
+
+  const handleUpdateLevel = async (level: number) => {
+    setIsUpdatingLevel(true);
+    try {
+      const session = await getSession() as any;
+      const token = session?.accessToken;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const url = `${baseUrl}/api/v1/guard/bank/application/${guard.id}`;
+
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({ guard_level: level })
+      });
+
+      if (res.ok) {
+        const responseData = await res.json().catch(() => ({}));
+        toast.success(responseData.message || "Guard level updated successfully");
+        setIsUpdateLevelModalOpen(false);
+        fetchGuardDetails();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(getErrorMessage(data, "Failed to update guard level"));
+      }
+    } catch (error) {
+      toast.error("An error occurred while updating the guard level");
+    } finally {
+      setIsUpdatingLevel(false);
+    }
+  };
+
+  const handleDeleteDocument = async (documentKey: string, field: string) => {
+    try {
+      setDeletingDocs(prev => ({ ...prev, [documentKey]: true }));
+      const session = await getSession() as any;
+      const token = session?.accessToken;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+
+      const res = await fetch(`${baseUrl}/api/v1/guard/${id}/${documentKey}`, {
+        method: "DELETE",
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` })
+        }
+      });
+
+      if (res.ok) {
+        toast.success("Document deleted successfully");
+        setGuard((prev: any) => ({ ...prev, [field]: null }));
+        setEditForm((prev: any) => ({ ...prev, [field]: null }));
+        setLocalPreviews((prev: any) => ({ ...prev, [field]: "" }));
+        setLocalFileNames((prev: any) => ({ ...prev, [field]: "" }));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.detail || data.message || "Failed to delete document");
+      }
+    } catch (err) {
+      toast.error("An error occurred while deleting document");
+    } finally {
+      setDeletingDocs(prev => ({ ...prev, [documentKey]: false }));
     }
   };
 
@@ -288,164 +499,7 @@ export default function GuardDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-3 w-3 rounded-full" />
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-3 w-3 rounded-full" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
-              <Skeleton className="h-8 w-44" />
-            </div>
-            <Skeleton className="h-10 w-10 rounded-lg" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden divide-y divide-slate-100">
-          <div className="px-6 py-5 flex items-center gap-3">
-            <Skeleton className="h-5 w-5 rounded" />
-            <Skeleton className="h-6 w-48" />
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-2 pb-2">
-              <Skeleton className="h-4 w-4 rounded" />
-              <Skeleton className="h-5 w-36" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="space-y-1.5">
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-5 w-32" />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-2 pb-2">
-              <Skeleton className="h-4 w-4 rounded" />
-              <Skeleton className="h-5 w-28" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
-                  <div className="space-y-1.5 flex-1">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-5 w-36" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-2 pb-2">
-              <Skeleton className="h-4 w-4 rounded" />
-              <Skeleton className="h-5 w-20" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              <div className="space-y-1.5 sm:col-span-2 md:col-span-3">
-                <Skeleton className="h-3 w-28" />
-                <Skeleton className="h-5 w-64" />
-              </div>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="space-y-1.5">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-5 w-28" />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-2 pb-2">
-              <Skeleton className="h-4 w-4 rounded" />
-              <Skeleton className="h-5 w-28" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-6 w-10 rounded-full" />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-2 pb-2">
-              <Skeleton className="h-4 w-4 rounded" />
-              <Skeleton className="h-5 w-52" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 space-y-3">
-                  <Skeleton className="h-4 w-32 mx-auto" />
-                  <Skeleton className="w-full aspect-video rounded-xl" />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-2 pb-2">
-              <Skeleton className="h-4 w-4 rounded" />
-              <Skeleton className="h-5 w-40" />
-            </div>
-            <Skeleton className="max-w-2xl mx-auto w-full aspect-video rounded-2xl" />
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-2 pb-2">
-              <Skeleton className="h-4 w-4 rounded" />
-              <Skeleton className="h-5 w-40" />
-            </div>
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200/70">
-              <div className="flex items-center gap-3">
-                <Skeleton className="w-10 h-10 rounded-lg" />
-                <div className="space-y-1.5">
-                  <Skeleton className="h-4 w-40" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-9 w-24 rounded-lg" />
-                <Skeleton className="h-9 w-28 rounded-lg" />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-2 pb-2">
-              <Skeleton className="h-4 w-4 rounded" />
-              <Skeleton className="h-5 w-28" />
-            </div>
-            <Skeleton className="w-full h-32 rounded-xl" />
-            <div className="flex justify-end">
-              <Skeleton className="h-9 w-28 rounded-lg" />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xs mx-auto">
-          <Skeleton className="w-full h-12 rounded-xl" />
-          <Skeleton className="w-full h-12 rounded-xl" />
-        </div>
-
-        <div className="text-center space-y-2 pt-4 border-t border-slate-100">
-          <Skeleton className="h-3.5 w-56 mx-auto" />
-          <Skeleton className="h-3.5 w-44 mx-auto" />
-        </div>
-      </div>
-    );
+    return <GuardPageSkeleton />;
   }
 
   if (!guard) return null;
@@ -510,452 +564,131 @@ export default function GuardDetailPage() {
     }
   };
 
+  const getLevelBadge = (level: number) => {
+    let config = { bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-700", color: "#64748b", label: "Unknown Level" };
+    if (level === 1) config = { bg: "bg-green-50/70", border: "border-green-200", text: "text-green-700", color: "#22c55e", label: "Entry Level" };
+    else if (level === 2) config = { bg: "bg-orange-50/70", border: "border-orange-200", text: "text-amber-600", color: "#f59e0b", label: "Intermediate Level" };
+    else if (level === 3) config = { bg: "bg-purple-50/70", border: "border-purple-200", text: "text-purple-700", color: "#8b5cf6", label: "Senior Level" };
+
+    return (
+      <div className={`inline-flex items-center gap-3 ${config.bg} border ${config.border} px-4 py-2 rounded-xl`}>
+        <div className="relative flex items-center justify-center w-[28px] h-[28px]">
+          <svg className="absolute w-[28px] h-[28px]" viewBox="0 0 24 24" fill={config.color} xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <svg className="relative z-10 w-[14px] h-[14px] text-white" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>
+        </div>
+        <div className="flex flex-col">
+          <span className={`text-[13px] ${config.text} font-bold leading-tight tracking-wide`}>LEVEL {level}</span>
+          <span className="text-[12px] text-slate-500 font-medium leading-tight">{config.label}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const hasChanges = Object.keys(editForm).some((key) => editForm[key] !== guard[key]);
+
   return (
-    <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
-      <div className="space-y-1">
-        <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
-          <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <Link href="/guard-bank" className="hover:text-[#0064cb] transition-colors">Guard Bank</Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <Link href={`/guard-bank?tab=${getTabParam()}`} className="hover:text-[#0064cb] transition-colors">{getStatusBreadcrumb()}</Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-slate-600 font-medium">Guard Details</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href={`/guard-bank?tab=${getTabParam()}`} className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-900">Guard Details</h1>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden divide-y divide-slate-100">
-        <div className="px-6 py-5 bg-slate-50/50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <User className="w-5 h-5 text-[#0064cb]" />
-            <h2 className="text-lg font-bold text-slate-800 tracking-tight">
-              {`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "Guard Application"}
-            </h2>
-          </div>
-          <div className="flex items-center gap-4">
-            {guard.action?.is_open_crm && (
-              <Button
-                size="sm"
-                onClick={() => window.open(`https://crm.zoho.com/crm/org677245190/tab/Vendors/${guard.vendor_id}`, "_blank")}
-                className="bg-[#0064cb] hover:bg-[#0064cb]/90 text-white text-xs px-4 h-8 rounded-md min-w-[110px] cursor-pointer"
-              >
-                Open CRM
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setDeleteConfirmOpen(true)}
-              className="text-red-500 hover:text-red-600 hover:bg-red-50 h-9 w-9 rounded-lg cursor-pointer"
-            >
-              <Trash2 className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-            <User className="w-4 h-4 text-[#0064cb]" />
-            <h3 className="font-bold text-slate-800 text-[14px]">Personal Details</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">First Name</span>
-              <p className="text-sm font-bold text-slate-800">{guard.first_name || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">Last Name</span>
-              <p className="text-sm font-bold text-slate-800">{guard.last_name || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">Full Name</span>
-              <p className="text-sm font-bold text-slate-800">{`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">Gender</span>
-              <p className="text-sm font-bold text-slate-800 capitalize">{guard.gender || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">Ethnicity</span>
-              <p className="text-sm font-bold text-slate-800 capitalize">{guard.ethnicity || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">Veteran Status</span>
-              <p className="text-sm font-bold text-slate-800 capitalize">{guard.veteran_status || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">Disability Status</span>
-              <p className="text-sm font-bold text-slate-800 capitalize">{guard.disability_status || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">Background Check consent?</span>
-              <p className="text-sm font-bold text-slate-800">{guard.background === true || guard.background === "yes" ? "Yes" : "No"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">Has Security License?</span>
-              <p className="text-sm font-bold text-slate-800">{guard.license === true || guard.license === "yes" ? "Yes" : "No"}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-            <Mail className="w-4 h-4 text-[#0064cb]" />
-            <h3 className="font-bold text-slate-800 text-[14px]">Contact Info</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#0064cb] flex items-center justify-center shrink-0">
-                <Mail className="w-5 h-5" />
-              </div>
-              <div className="space-y-0.5 min-w-0">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Email Address</span>
-                <a href={`mailto:${guard.email}`} className="text-sm font-bold text-slate-850 hover:text-[#0064cb] block truncate">{guard.email || "N/A"}</a>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-              <div className="w-10 h-10 rounded-lg bg-[#0064cb]/10 text-[#0064cb] flex items-center justify-center shrink-0">
-                <Phone className="w-5 h-5" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Cell Phone</span>
-                <a href={`tel:${guard.phone_number?.replace(/\s/g, '')}`} className="text-sm font-bold text-slate-850 hover:text-[#0064cb] block">{guard.phone_number || "N/A"}</a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-            <MapPin className="w-4 h-4 text-[#0064cb]" />
-            <h3 className="font-bold text-slate-800 text-[14px]">Address</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            <div className="space-y-1 sm:col-span-2 md:col-span-3">
-              <span className="text-xs text-slate-500 font-semibold">Street Address</span>
-              <p className="text-sm font-bold text-slate-800 leading-relaxed">{guard.street_address || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">City</span>
-              <p className="text-sm font-bold text-slate-800">{guard.city || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">State</span>
-              <p className="text-sm font-bold text-slate-800">{guard.state || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">Zip Code</span>
-              <p className="text-sm font-bold text-slate-800">{guard.zip_code || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-semibold">Country</span>
-              <p className="text-sm font-bold text-slate-800">{guard.country || "N/A"}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-            <Shield className="w-4 h-4 text-[#0064cb]" />
-            <h3 className="font-bold text-slate-800 text-[14px]">Preferences</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-xs text-slate-600 font-semibold">On Call</span>
-              {getBadgeValue(guard.on_call)}
-            </div>
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-xs text-slate-600 font-semibold">Job Alerts</span>
-              {getBadgeValue(guard.job_alerts)}
-            </div>
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-xs text-slate-600 font-semibold">Smartphone</span>
-              {getBadgeValue(guard.smartphone)}
-            </div>
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-xs text-slate-600 font-semibold">Transport</span>
-              {getBadgeValue(guard.transport)}
-            </div>
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-xs text-slate-600 font-semibold">Armed Security</span>
-              {getBadgeValue(guard.armed)}
-            </div>
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-xs text-slate-600 font-semibold">Unarmed Security</span>
-              {getBadgeValue(guard.unarmed)}
-            </div>
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-xs text-slate-600 font-semibold">Speaking English</span>
-              {getBadgeValue(guard.english_language)}
-            </div>
-            <div className="space-y-1 p-3">
-              <span className="text-xs text-slate-500 font-semibold block">Referral</span>
-              <p className="text-sm font-bold text-slate-800">{guard.referral || "N/A"}</p>
-            </div>
-            <div className="space-y-1 p-3">
-              <span className="text-xs text-slate-500 font-semibold block">Driving License no.</span>
-              <p className="text-sm font-bold text-slate-800">{guard.license_number || "N/A"}</p>
-            </div>
-            <div className="space-y-1 p-3">
-              <span className="text-xs text-slate-500 font-semibold block">License Expire Date</span>
-              <p className="text-sm font-bold text-slate-800">
-                {guard.license_expiration_date ? <FormattedDate date={guard.license_expiration_date} includeTime={false} /> : "N/A"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-            <FileText className="w-4 h-4 text-[#0064cb]" />
-            <h3 className="font-bold text-slate-800 text-[14px]">Uploaded Credentials Images</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 flex flex-col items-center justify-center space-y-3">
-              <span className="text-xs text-slate-600 font-bold block text-center">Driver License</span>
-              {guard.driver_license_url ? (
-                <ImagePreview url={guard.driver_license_url} alt="Driver License" />
-              ) : (
-                <div className="w-full aspect-video rounded-xl border border-dashed border-slate-350 bg-slate-100 flex items-center justify-center text-slate-400 font-medium text-sm">
-                  Not Provided
-                </div>
-              )}
-            </div>
-            <div className="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 flex flex-col items-center justify-center space-y-3">
-              <span className="text-xs text-slate-600 font-bold block text-center">Security Guard License</span>
-              {guard.security_guard_license_url ? (
-                <ImagePreview url={guard.security_guard_license_url} alt="Security Guard License" />
-              ) : (
-                <div className="w-full aspect-video rounded-xl border border-dashed border-slate-350 bg-slate-100 flex items-center justify-center text-slate-400 font-medium text-sm">
-                  Not Provided
-                </div>
-              )}
-            </div>
-            <div className="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 flex flex-col items-center justify-center space-y-3">
-              <span className="text-xs text-slate-600 font-bold block text-center">Headshot Image</span>
-              {guard.headshot_image_url ? (
-                <ImagePreview url={guard.headshot_image_url} alt="Headshot Image" />
-              ) : (
-                <div className="w-full aspect-video rounded-xl border border-dashed border-slate-350 bg-slate-100 flex items-center justify-center text-slate-400 font-medium text-sm">
-                  Not Provided
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-            <Video className="w-4 h-4 text-[#0064cb]" />
-            <h3 className="font-bold text-slate-800 text-[14px]">Verification Video</h3>
-          </div>
-          {guard.verification_video_url ? (
-            <div className="max-w-2xl mx-auto rounded-2xl overflow-hidden shadow-md border border-slate-200 bg-black">
-              <video
-                src={guard.verification_video_url}
-                controls
-                className="w-full h-auto aspect-video object-contain"
-              />
-            </div>
-          ) : (
-            <div className="h-40 rounded-xl border border-dashed border-slate-350 bg-slate-50 flex flex-col items-center justify-center text-slate-400 space-y-2">
-              <Video className="w-8 h-8 text-slate-300 animate-pulse" />
-              <span className="text-sm font-medium">No Verification Video Uploaded</span>
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-            <FileText className="w-4 h-4 text-[#0064cb]" />
-            <h3 className="font-bold text-slate-800 text-[14px]">Resume Document</h3>
-          </div>
-          {guard.resume_url ? (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200/70">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 bg-blue-50 text-[#0064cb] rounded-lg flex items-center justify-center shrink-0">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate" title={guard.resume_url}>
-                    {getDocumentFilename(guard.resume_url)}
-                  </p>
-                  <span className="text-xs text-slate-500 font-semibold block">PDF/Word Document</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                  className="flex-1 sm:flex-none h-9 rounded-lg border-slate-200 hover:bg-slate-100 font-semibold text-xs transition-colors cursor-pointer"
-                >
-                  <a href={guard.resume_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5">
-                    <Eye className="w-3.5 h-3.5" /> Preview
-                  </a>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                  className="flex-1 sm:flex-none h-9 rounded-lg border-slate-200 hover:bg-slate-100 font-semibold text-xs transition-colors cursor-pointer"
-                >
-                  <a href={guard.resume_url} download className="flex items-center gap-1.5">
-                    <Download className="w-3.5 h-3.5" /> Download
-                  </a>
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="h-24 rounded-xl border border-dashed border-slate-350 bg-slate-50 flex items-center justify-center text-slate-400 text-sm font-medium">
-              No Resume Uploaded
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-            <NotebookText className="w-4 h-4 text-[#0064cb]" />
-            <h3 className="font-bold text-slate-800 text-[14px]">Admin Notes</h3>
-          </div>
-          <div className="space-y-4">
-            <textarea
-              placeholder="Write your notes here..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="min-h-[120px] w-full rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0064cb]/20 p-4 text-sm font-medium bg-white"
-            />
-            <div className="flex justify-end">
-              <Button
-                onClick={handleSaveNotes}
-                disabled={isSavingNotes}
-                className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-5 rounded-lg h-9 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-200/50 cursor-pointer"
-              >
-                {isSavingNotes ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Saving Note
-                  </>
-                ) : (
-                  <>
-                    <NotebookText className="w-3.5 h-3.5" />
-                    Save Note
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {(guard.action?.is_generate_badge_id || guard.guard_badge_url) && (
-          <div className="p-6 space-y-4 font-sans">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-[#0064cb]" />
-                <h3 className="font-bold text-slate-800 text-[14px]">FAST GUARD BADGE ID</h3>
-              </div>
-              {!guard.guard_badge_url && (
-                <Button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="bg-[#0064cb] hover:bg-[#0052ae] text-white text-xs font-bold py-1.5 px-3 rounded flex items-center gap-1.5 cursor-pointer h-8 border-none"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Create Badge ID
-                </Button>
-              )}
-            </div>
-
-            {!guard.guard_badge_url ? (
-              <div className="text-center py-6 text-slate-500 font-medium text-sm">
-                Badge ID not available
-              </div>
-            ) : (
-              <div className="flex flex-col items-center py-4">
-                <div
-                  onClick={() => setIsViewModalOpen(true)}
-                  className="cursor-pointer border border-slate-200 rounded-lg p-2 bg-slate-50 hover:shadow-md transition-shadow"
-                >
-                  <img
-                    src={guard.guard_badge_url}
-                    alt="Guard Badge ID"
-                    className="w-48 h-auto rounded object-contain border border-slate-200"
-                  />
-                </div>
-
-                <Button
-                  onClick={handleDeleteBadge}
-                  variant="outline"
-                  className="mt-4 border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 text-xs font-bold h-9 px-6 rounded-lg flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <BadgeCreateDialog
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        defaultName={`${guard.first_name || ""} ${guard.last_name || ""}`.trim()}
-        defaultEmail={guard.email || ""}
-        defaultHeadshotUrl={guard.headshot_image_url || ""}
-        onSubmit={handleCreateBadgeSubmit}
-        isSubmitting={isGeneratingBadge}
+    <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
+      <GuardHeader
+        guard={guard}
+        isEditing={isEditing}
+        isSavingEdit={isSavingEdit}
+        hasChanges={hasChanges}
+        setIsEditing={setIsEditing}
+        handleSaveEdit={handleSaveEdit}
+        setIsUpdateLevelModalOpen={setIsUpdateLevelModalOpen}
+        setDeleteConfirmOpen={setDeleteConfirmOpen}
+        setEditForm={setEditForm}
+        getTabParam={getTabParam}
+        getStatusBreadcrumb={getStatusBreadcrumb}
       />
 
-      <BadgeViewDialog
-        isOpen={isViewModalOpen}
-        onClose={() => setIsViewModalOpen(false)}
-        badgeUrl={guard.guard_badge_url || ""}
-        onDownload={handleDownloadBadge}
-        onDelete={handleDeleteBadge}
-        isDeleting={isDeletingBadge}
+      <GuardProfileSummary
+        guard={guard}
+        isEditing={isEditing}
+        editForm={editForm}
+        handleEditChange={handleEditChange}
+        phoneCountries={phoneCountries}
+        selectedPhoneCountry={selectedPhoneCountry}
+        setSelectedPhoneCountry={setSelectedPhoneCountry}
+        isPhoneDropdownOpen={isPhoneDropdownOpen}
+        setIsPhoneDropdownOpen={setIsPhoneDropdownOpen}
+        getLevelBadge={getLevelBadge}
       />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <GuardPersonalDetails
+          guard={guard}
+          isEditing={isEditing}
+          editForm={editForm}
+          handleEditChange={handleEditChange}
+        />
+
+        <GuardContactInfo guard={guard} />
+
+        <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <GuardAddress
+            guard={guard}
+            isEditing={isEditing}
+            editForm={editForm}
+            handleEditChange={handleEditChange}
+            countries={countries}
+            states={states}
+            cities={cities}
+          />
+
+          <GuardPreferences
+            guard={guard}
+            isEditing={isEditing}
+            editForm={editForm}
+            handleEditChange={handleEditChange}
+          />
+        </div>
+
+        <GuardDocuments
+          guard={guard}
+          isEditing={isEditing}
+          editForm={editForm}
+          handleEditChange={handleEditChange}
+          localPreviews={localPreviews}
+          localFileNames={localFileNames}
+          deletingDocs={deletingDocs}
+          handleDeleteDocument={handleDeleteDocument}
+        />
+
+        <GuardNotesAndBadge
+          guard={guard}
+          notes={notes}
+          setNotes={setNotes}
+          handleSaveNotes={handleSaveNotes}
+          isSavingNotes={isSavingNotes}
+          setIsCreateModalOpen={setIsCreateModalOpen}
+          setIsViewModalOpen={setIsViewModalOpen}
+          handleDeleteBadge={handleDeleteBadge}
+        />
+      </div>
 
       {(guard.action?.is_approved || guard.action?.is_disqualified) && (
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mx-auto pt-0">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 pb-2">
           {guard.action?.is_approved && (
-            <Button
-              onClick={() => setIsApproveModalOpen(true)}
-              disabled={isUpdatingStatus !== null}
-              className="w-[180px] max-w-[200px] h-12 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-100 cursor-pointer transition-all hover:scale-[1.01] active:scale-95 border-none"
-            >
-              {isUpdatingStatus === "approved" ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <CheckCircle2 className="w-5 h-5" />
-              )}
+            <Button onClick={() => setIsApproveModalOpen(true)} disabled={isUpdatingStatus !== null} className="w-full sm:w-[160px] h-12 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-transform hover:scale-[1.02] shadow-md shadow-green-100 border-none">
+              {isUpdatingStatus === "approved" ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
               Approve
             </Button>
           )}
-
           {guard.action?.is_disqualified && (
-            <Button
-              onClick={() => setIsDeclineModalOpen(true)}
-              disabled={isUpdatingStatus !== null}
-              className="w-[160px] h-12 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-100 cursor-pointer transition-all hover:scale-[1.01] active:scale-95 border-none"
-            >
-              {isUpdatingStatus === "disqualified" ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <XCircle className="w-5 h-5" />
-              )}
+            <Button onClick={() => setIsDeclineModalOpen(true)} disabled={isUpdatingStatus !== null} className="w-full sm:w-[160px] h-12 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-transform hover:scale-[1.02] shadow-md shadow-red-100 border-none">
+              {isUpdatingStatus === "disqualified" ? <Loader2 className="w-5 h-5 animate-spin" /> : <XCircle className="w-5 h-5" />}
               Decline
             </Button>
           )}
         </div>
       )}
 
-      <div className="text-center text-xs text-slate-500 space-y-1 pt-0 border-t border-slate-100">
+      <div className="text-center text-[12px] text-slate-500 space-y-1 pt-6 border-t border-slate-100/50 mt-8">
         {guard.performed_by && (
           <p className="font-semibold">Record touch by : <span className="text-slate-700">{guard.performed_by}</span></p>
         )}
@@ -964,42 +697,12 @@ export default function GuardDetailPage() {
         )}
       </div>
 
-      <ApproveGuardDialog
-        isOpen={isApproveModalOpen}
-        onClose={() => setIsApproveModalOpen(false)}
-        onConfirm={async (level) => {
-          const success = await handleUpdateStatus("approved", level);
-          if (success) {
-            setIsApproveModalOpen(false);
-          }
-        }}
-        guard={guard}
-        isLoading={isUpdatingStatus === "approved"}
-      />
-
-      <DeclineGuardDialog
-        isOpen={isDeclineModalOpen}
-        onClose={() => setIsDeclineModalOpen(false)}
-        onConfirm={async () => {
-          const success = await handleUpdateStatus("disqualified");
-          if (success) {
-            setIsDeclineModalOpen(false);
-          }
-        }}
-        guard={guard}
-        isLoading={isUpdatingStatus === "disqualified"}
-      />
-
-      <ConfirmationDialog
-        isOpen={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        onConfirm={handleDeleteApplication}
-        title="Delete Guard Application?"
-        description="Are you sure you want to delete this guard application? This action cannot be undone."
-        confirmText="Yes, delete it"
-        isDanger={true}
-        isLoading={isDeleting}
-      />
+      <ApproveGuardDialog isOpen={isApproveModalOpen} onClose={() => setIsApproveModalOpen(false)} onConfirm={async (level) => { const success = await handleUpdateStatus("approved", level); if (success) { setIsApproveModalOpen(false); } }} guard={guard} isLoading={isUpdatingStatus === "approved"} />
+      <ApproveGuardDialog isOpen={isUpdateLevelModalOpen} onClose={() => setIsUpdateLevelModalOpen(false)} onConfirm={handleUpdateLevel} guard={guard} isLoading={isUpdatingLevel} isUpdateMode={true} />
+      <DeclineGuardDialog isOpen={isDeclineModalOpen} onClose={() => setIsDeclineModalOpen(false)} onConfirm={async () => { const success = await handleUpdateStatus("disqualified"); if (success) { setIsDeclineModalOpen(false); } }} guard={guard} isLoading={isUpdatingStatus === "disqualified"} />
+      <ConfirmationDialog isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} onConfirm={handleDeleteApplication} title="Delete Guard Application?" description="Are you sure you want to delete this guard application? This action cannot be undone." confirmText="Yes, delete it" isDanger={true} isLoading={isDeleting} />
+      <BadgeCreateDialog isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} defaultName={`${guard.first_name || ""} ${guard.last_name || ""}`.trim()} defaultEmail={guard.email || ""} defaultHeadshotUrl={guard.headshot_image_url || ""} onSubmit={handleCreateBadgeSubmit} isSubmitting={isGeneratingBadge} />
+      <BadgeViewDialog isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} badgeUrl={guard.guard_badge_url || ""} onDownload={handleDownloadBadge} onDelete={handleDeleteBadge} isDeleting={isDeletingBadge} />
     </div>
   );
 }

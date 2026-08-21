@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import imageCompression from 'browser-image-compression';
 
 interface FileUploadProps {
-  onFileSelect: (file: File | null) => void;
+  onFileSelect: (fileOrUrl: any, localFile?: File) => void;
   accept?: string;
   maxSizeMB?: number;
   label?: string;
@@ -21,6 +21,8 @@ interface FileUploadProps {
   guardEmail?: string;
   guardPhone?: string;
   slotRight?: React.ReactNode;
+  buttonClassName?: string;
+  hideSelectedState?: boolean;
 }
 
 export function FileUpload({
@@ -37,6 +39,8 @@ export function FileUpload({
   guardEmail,
   guardPhone,
   slotRight,
+  buttonClassName,
+  hideSelectedState = false,
 }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -151,8 +155,8 @@ export function FileUpload({
             setIsUploading(false);
             if (xhr.status >= 200 && xhr.status < 300) {
               console.log(`[Upload API] Upload completed successfully!`);
-              setSelectedFile(file);
-              onFileSelect(res.data.file_path);
+              if (!hideSelectedState) setSelectedFile(file);
+              onFileSelect(res.data.file_path || res.data.signed_url?.split('?')[0], file);
             } else {
               toast.error("Failed to upload file to storage.");
               if (inputRef.current) inputRef.current.value = "";
@@ -196,12 +200,12 @@ export function FileUpload({
           onChange={handleChange}
         />
 
-        {!selectedFile ? (
+        {!selectedFile || hideSelectedState ? (
           <>
             <Button
               type="button"
               variant="outline"
-              className="border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-normal shadow-sm w-full justify-start"
+              className={buttonClassName || "border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-normal shadow-sm w-full justify-start"}
               onClick={() => inputRef.current?.click()}
               disabled={isUploading}
             >
@@ -277,9 +281,9 @@ export function FileUpload({
           {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
         </div>
 
-        {(selectedFile || slotRight) && (
+        {((selectedFile && !hideSelectedState) || slotRight) && (
           <div className="flex flex-col gap-1 justify-center">
-            {selectedFile && (
+            {selectedFile && !hideSelectedState && (
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-green-600 flex items-center">
                   <CheckCircle2 className="h-4 w-4 mr-1 shrink-0" />

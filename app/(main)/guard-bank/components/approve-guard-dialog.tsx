@@ -16,6 +16,7 @@ interface GuardInfo {
   last_name: string;
   email: string;
   phone_number: string;
+  guard_level?: number;
 }
 
 interface ApproveGuardDialogProps {
@@ -24,6 +25,7 @@ interface ApproveGuardDialogProps {
   onConfirm: (level: number) => Promise<void>;
   guard: GuardInfo | null;
   isLoading?: boolean;
+  isUpdateMode?: boolean;
 }
 
 const levels = [
@@ -58,16 +60,23 @@ export function ApproveGuardDialog({
   onClose,
   onConfirm,
   guard,
-  isLoading = false
+  isLoading = false,
+  isUpdateMode = false
 }: ApproveGuardDialogProps) {
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      if (isUpdateMode && guard?.guard_level) {
+        setSelectedLevel(guard.guard_level);
+      } else {
+        setSelectedLevel(null);
+      }
+    } else {
       const timer = setTimeout(() => setSelectedLevel(null), 300);
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, isUpdateMode, guard]);
 
   const handleConfirm = () => {
     if (selectedLevel !== null) {
@@ -101,14 +110,15 @@ export function ApproveGuardDialog({
                 <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <DialogTitle className="text-xl font-bold text-slate-800 tracking-tight">Approve Guard</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-slate-800 tracking-tight">{isUpdateMode ? "Update Guard Level" : "Approve Guard"}</DialogTitle>
           </div>
           <DialogDescription className="text-[13px] text-slate-500 font-medium ml-[30px] leading-relaxed pr-4">
-            Please confirm the approval and assign a level to this guard.
+            {isUpdateMode ? "Choose the appropriate level to update this guard's qualifications." : "Please confirm the approval and assign a level to this guard."}
           </DialogDescription>
         </div>
 
         <div className="px-6 py-4 space-y-6 flex-1 overflow-y-auto">
+          {!isUpdateMode && (
           <div className="space-y-2.5">
             <div className="flex items-center gap-2 text-[#0064cb]">
               <User className="w-[15px] h-[15px] stroke-[2.5]" />
@@ -136,6 +146,7 @@ export function ApproveGuardDialog({
               </div>
             </div>
           </div>
+          )}
 
           <div className="space-y-3">
             <div className="flex flex-col gap-1">
@@ -212,17 +223,19 @@ export function ApproveGuardDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={isLoading || selectedLevel === null}
+            disabled={isLoading || selectedLevel === null || (isUpdateMode && selectedLevel === guard?.guard_level)}
             className="flex-1 h-11 rounded-xl font-bold text-white bg-[#22c55e] hover:bg-[#16a34a] transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-sm shadow-green-600/20"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Confirm & Approve
+                {!isUpdateMode && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+                {isUpdateMode ? "Update Level" : "Confirm & Approve"}
               </>
             )}
           </Button>
