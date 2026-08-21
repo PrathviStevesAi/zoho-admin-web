@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
 import { FormattedDate } from "@/components/ui/formatted-date";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,6 +32,8 @@ import { Plus } from "lucide-react";
 import { BadgeCreateDialog } from "../components/badge-create-dialog";
 import { BadgeViewDialog } from "../components/badge-view-dialog";
 import { ImagePreview } from "../components/image-preview";
+import { ApproveGuardDialog } from "../components/approve-guard-dialog";
+import { DeclineGuardDialog } from "../components/decline-guard-dialog";
 
 export default function GuardDetailPage() {
   const router = useRouter();
@@ -49,6 +50,8 @@ export default function GuardDetailPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isGeneratingBadge, setIsGeneratingBadge] = useState(false);
   const [isDeletingBadge, setIsDeletingBadge] = useState(false);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
 
   const fetchGuardDetails = async () => {
     setLoading(true);
@@ -89,13 +92,19 @@ export default function GuardDetailPage() {
     }
   }, [id]);
 
-  const handleUpdateStatus = async (newStatus: "approved" | "disqualified") => {
+  const handleUpdateStatus = async (newStatus: "approved" | "disqualified", level?: number): Promise<boolean> => {
     setIsUpdatingStatus(newStatus);
     try {
       const session = await getSession() as any;
       const token = session?.accessToken;
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const url = `${baseUrl}/api/v1/guard/bank/application/${id}/status/${newStatus}`;
+      let url = `${baseUrl}/api/v1/guard/bank/application/${id}/status/${newStatus}`;
+      
+      const payload: any = {};
+      if (newStatus === "approved" && level) {
+        url += `?guard_level=${level}`;
+        payload.guard_level = level;
+      }
 
       const res = await fetch(url, {
         method: "PUT",
@@ -103,19 +112,23 @@ export default function GuardDetailPage() {
           "ngrok-skip-browser-warning": "true",
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` })
-        }
+        },
+        body: Object.keys(payload).length > 0 ? JSON.stringify(payload) : undefined
       });
 
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         toast.success(`Application ${newStatus === "approved" ? "Approved" : "Declined"} successfully`);
         router.push(`/guard-bank?tab=${getTabParam()}`);
+        return true;
       } else {
         toast.error(getErrorMessage(data, `Failed to update status to ${newStatus}`));
+        return false;
       }
     } catch (error) {
       console.error("Failed to update status:", error);
       toast.error("An error occurred while updating status");
+      return false;
     } finally {
       setIsUpdatingStatus(null);
     }
@@ -912,7 +925,7 @@ export default function GuardDetailPage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mx-auto pt-0">
           {guard.action?.is_approved && (
             <Button
-              onClick={() => handleUpdateStatus("approved")}
+              onClick={() => setIsApproveModalOpen(true)}
               disabled={isUpdatingStatus !== null}
               className="w-[180px] max-w-[200px] h-12 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-100 cursor-pointer transition-all hover:scale-[1.01] active:scale-95 border-none"
             >
@@ -927,7 +940,7 @@ export default function GuardDetailPage() {
 
           {guard.action?.is_disqualified && (
             <Button
-              onClick={() => handleUpdateStatus("disqualified")}
+              onClick={() => setIsDeclineModalOpen(true)}
               disabled={isUpdatingStatus !== null}
               className="w-[160px] h-12 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-100 cursor-pointer transition-all hover:scale-[1.01] active:scale-95 border-none"
             >
@@ -950,6 +963,32 @@ export default function GuardDetailPage() {
           <p className="font-semibold">Form submit on : <span className="text-slate-700"><FormattedDate date={guard.created_at} includeTime={false} /></span></p>
         )}
       </div>
+
+      <ApproveGuardDialog
+        isOpen={isApproveModalOpen}
+        onClose={() => setIsApproveModalOpen(false)}
+        onConfirm={async (level) => {
+          const success = await handleUpdateStatus("approved", level);
+          if (success) {
+            setIsApproveModalOpen(false);
+          }
+        }}
+        guard={guard}
+        isLoading={isUpdatingStatus === "approved"}
+      />
+
+      <DeclineGuardDialog
+        isOpen={isDeclineModalOpen}
+        onClose={() => setIsDeclineModalOpen(false)}
+        onConfirm={async () => {
+          const success = await handleUpdateStatus("disqualified");
+          if (success) {
+            setIsDeclineModalOpen(false);
+          }
+        }}
+        guard={guard}
+        isLoading={isUpdatingStatus === "disqualified"}
+      />
 
       <ConfirmationDialog
         isOpen={deleteConfirmOpen}
