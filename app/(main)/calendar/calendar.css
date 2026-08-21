@@ -214,7 +214,7 @@
 
 .fc-view-dayGridMonth .fc-scroller,
 .fc-dayGridMonth-view .fc-scroller {
-  overflow: hidden !important;
+  overflow-y: auto !important;
 }
 
 @media (max-width: 640px) {
