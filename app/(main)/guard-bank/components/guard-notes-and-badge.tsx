@@ -29,14 +29,14 @@ export function GuardNotesAndBadge({
           <NotebookText className="w-4 h-4" />
           <h3 className="font-bold text-slate-800 text-[14px]">Admin Notes</h3>
         </div>
-        <div className="space-y-4">
+        <div className="flex flex-col flex-1 gap-4">
           <textarea
             placeholder="Write your notes here..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="min-h-[120px] w-full rounded-xl border border-slate-200 focus:outline-none focus:border-[#0064cb] p-4 text-[13px] font-medium bg-slate-50"
+            className="flex-1 min-h-[120px] w-full rounded-xl border border-slate-200 focus:outline-none focus:border-[#0064cb] p-4 text-[13px] font-medium bg-slate-50 resize-none"
           />
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mt-auto">
             <span className="text-[11px] text-slate-400">Notes are visible only to admins</span>
             <Button
               onClick={handleSaveNotes}
