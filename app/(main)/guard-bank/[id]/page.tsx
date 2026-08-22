@@ -120,7 +120,20 @@ export default function GuardDetailPage() {
 
   useEffect(() => {
     if (guard?.phone_number) {
-      const matchingCountry = phoneCountries.find(c => guard.phone_number.startsWith(c.dialCode));
+      let matchingCountry;
+      
+      if (guard.country) {
+        matchingCountry = phoneCountries.find(c => 
+          c.code.toLowerCase() === guard.country.toLowerCase() && 
+          guard.phone_number.startsWith(c.dialCode)
+        );
+      }
+      
+      if (!matchingCountry) {
+        matchingCountry = phoneCountries.find(c => c.code === "us" && guard.phone_number.startsWith(c.dialCode)) 
+          || phoneCountries.find(c => guard.phone_number.startsWith(c.dialCode));
+      }
+      
       if (matchingCountry) {
         setSelectedPhoneCountry(matchingCountry);
       }
