@@ -27,28 +27,28 @@ export function GuardProfileSummary({
   getLevelBadge
 }: GuardProfileSummaryProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col lg:flex-row lg:items-center gap-6 justify-between">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-        <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden p-3">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center gap-5 sm:gap-6 justify-between">
+      <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 w-full lg:w-auto overflow-hidden">
+        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-50 flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden p-2.5 sm:p-3">
           <img src="/guard-placeholder.png" alt="Guard Avatar" className="w-full h-full object-contain opacity-80" />
         </div>
 
-        <div className="space-y-4 pt-1">
-          <div className="flex items-center gap-4">
-            <h2 className="text-[22px] font-bold text-slate-900">
-              {`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "Guard Name"}
-            </h2>
+        <div className="space-y-3 sm:space-y-4 flex-1 min-w-0 flex flex-col items-center sm:items-start text-center sm:text-left w-full">
+          <h2 className="text-xl sm:text-[22px] font-bold text-slate-900 truncate w-full">
+            {`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "Guard Name"}
+          </h2>
+
+          <div>
+            {guard.guard_level && getLevelBadge(guard.guard_level)}
           </div>
 
-          {guard.guard_level && getLevelBadge(guard.guard_level)}
-
-          <div className="flex flex-wrap items-center gap-3 text-[13px] font-medium text-slate-600">
-            <div className="flex items-center gap-1.5">
-              <Mail className="w-4 h-4 text-[#0064cb]" />
-              <a href={`mailto:${guard.email}`} className="hover:text-[#0064cb] transition-colors">{guard.email || "N/A"}</a>
+          <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3 text-[13px] font-medium text-slate-600 w-full">
+            <div className="flex items-center justify-center sm:justify-start gap-1.5 min-w-0 w-full sm:w-auto">
+              <Mail className="w-4 h-4 text-[#0064cb] shrink-0" />
+              <a href={`mailto:${guard.email}`} className="hover:text-[#0064cb] transition-colors truncate block max-w-full sm:max-w-none">{guard.email || "N/A"}</a>
             </div>
             <div className="hidden sm:block w-px h-4 bg-slate-200"></div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-center sm:justify-start gap-1.5 w-full sm:w-auto">
               <Phone className="w-4 h-4 text-[#0064cb]" />
               {isEditing ? (
                 <div className="relative flex items-center h-10 bg-white border border-slate-200 rounded-md focus-within:ring-2 focus-within:ring-slate-900 focus-within:ring-offset-2 transition-all w-full max-w-[300px]">
@@ -129,9 +129,9 @@ export function GuardProfileSummary({
         </div>
       </div>
 
-      <div className="flex items-center gap-12 lg:pl-10 lg:border-l lg:border-slate-100 pt-6 lg:pt-0 border-t lg:border-t-0 border-slate-100 w-full lg:w-auto mt-2 lg:mt-0">
-        <div className="space-y-2">
-          <span className="text-[12px] text-slate-500 font-medium">Status</span>
+      <div className="flex flex-row items-center justify-between lg:justify-start gap-4 sm:gap-12 lg:pl-10 lg:border-l lg:border-slate-100 pt-4 sm:pt-6 lg:pt-0 border-t lg:border-t-0 border-slate-100 w-full lg:w-auto mt-2 lg:mt-0">
+        <div className="space-y-1 sm:space-y-2">
+          <span className="text-[11px] sm:text-[12px] text-slate-500 font-medium">Status</span>
           <div className="flex items-center gap-1.5">
             {guard.status === 'approved' ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : guard.status === 'disqualified' ? <XCircle className="w-4 h-4 text-red-600" /> : <div className="w-4 h-4 rounded-full border-2 border-amber-500" />}
             <span className={`text-[13px] font-bold capitalize ${guard.status === 'approved' ? 'text-green-600' : guard.status === 'disqualified' ? 'text-red-600' : 'text-amber-600'}`}>
@@ -139,12 +139,12 @@ export function GuardProfileSummary({
             </span>
           </div>
         </div>
-        <div className="space-y-2">
-          <span className="text-[12px] text-slate-500 font-medium">Form Submit - Date</span>
-          <div className="flex items-center gap-1.5 text-slate-700">
+        <div className="space-y-1 sm:space-y-2 text-right lg:text-left">
+          <span className="text-[11px] sm:text-[12px] text-slate-500 font-medium">Form Submit - Date</span>
+          <div className="flex items-center justify-end lg:justify-start gap-1.5 text-slate-700">
             <Calendar className="w-4 h-4" />
             <span className="text-[13px] font-bold">
-              {guard.created_at ? <FormattedDate date={guard.created_at} includeTime={true} /> : "N/A"}
+              {guard.created_at ? <FormattedDate date={guard.created_at} includeTime={false} /> : "N/A"}
             </span>
           </div>
         </div>

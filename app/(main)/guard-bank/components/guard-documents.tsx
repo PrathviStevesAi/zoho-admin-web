@@ -150,7 +150,7 @@ export function GuardDocuments({
                 size="sm"
                 onClick={() => handleDeleteDocument(documentKey, field)}
                 disabled={deletingDocs[documentKey]}
-                className="flex-1 w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold shadow-sm h-10 rounded-lg text-[13px]"
+                className="flex-1 w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold shadow-sm h-10 py-2 sm:py-0 rounded-lg text-[13px]"
               >
                 {deletingDocs[documentKey] ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash className="w-4 h-4 mr-2" />} Delete
               </Button>

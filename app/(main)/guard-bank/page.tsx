@@ -347,7 +347,7 @@ function GuardBankContent() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-xl border-none overflow-hidden">
-        <div className="flex justify-center overflow-x-auto p-5 border-b border-slate-100 bg-slate-50/50 space-x-2 no-scrollbar">
+        <div className="flex justify-start md:justify-center overflow-x-auto p-5 border-b border-slate-100 bg-slate-50/50 space-x-2 no-scrollbar">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
