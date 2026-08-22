@@ -75,6 +75,10 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
       newErrors.phoneError = "Phone number is required";
       hasRequiredError = true;
     }
+    if (!formData.addressCountry) {
+      newErrors.countryError = "Country is required";
+      hasRequiredError = true;
+    }
 
     if (hasRequiredError) {
       setFormData((prev: any) => ({ ...prev, ...newErrors }));
