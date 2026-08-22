@@ -21,6 +21,7 @@ export function DocumentsSection({ formData, setFormData }: any) {
           uploadType="resume"
           guardEmail={formData.email}
           guardPhone={formData.phone}
+          accept=".doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf"
         />
         <FileUploadItem
           title="Upload Headshot Image"
@@ -30,6 +31,7 @@ export function DocumentsSection({ formData, setFormData }: any) {
           uploadType="headshot-image"
           guardEmail={formData.email}
           guardPhone={formData.phone}
+          accept=".png,.jpg,.jpeg,.heic,image/png,image/jpeg,image/heic"
         />
         <FileUploadItem
           title="Upload Guard License"
@@ -39,6 +41,7 @@ export function DocumentsSection({ formData, setFormData }: any) {
           uploadType="security-guard-license-image"
           guardEmail={formData.email}
           guardPhone={formData.phone}
+          accept=".png,.jpg,.jpeg,.heic,image/png,image/jpeg,image/heic"
         />
         <FileUploadItem
           title="Upload Driving License"
@@ -48,6 +51,7 @@ export function DocumentsSection({ formData, setFormData }: any) {
           uploadType="driver-license-image"
           guardEmail={formData.email}
           guardPhone={formData.phone}
+          accept=".png,.jpg,.jpeg,.heic,image/png,image/jpeg,image/heic"
         />
         <FileUploadItem
           title="Upload Firewatch Certificate"
@@ -57,6 +61,7 @@ export function DocumentsSection({ formData, setFormData }: any) {
           uploadType="firewatch-certificate-image"
           guardEmail={formData.email}
           guardPhone={formData.phone}
+          accept=".png,.jpg,.jpeg,.heic,image/png,image/jpeg,image/heic"
         />
         <FileUploadItem
           title="Upload Verification Video"
@@ -66,13 +71,14 @@ export function DocumentsSection({ formData, setFormData }: any) {
           uploadType="verification_video"
           guardEmail={formData.email}
           guardPhone={formData.phone}
+          accept=".mp4,.mov,.avi,.webm,video/mp4,video/quicktime,video/x-msvideo,video/webm"
         />
       </div>
     </div>
   );
 }
 
-function FileUploadItem({ title, required, icon, file, onFileSelect, note, uploadType, guardEmail, guardPhone }: any) {
+function FileUploadItem({ title, required, icon, file, onFileSelect, note, uploadType, guardEmail, guardPhone, accept }: any) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -81,6 +87,30 @@ function FileUploadItem({ title, required, icon, file, onFileSelect, note, uploa
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       let selected = e.target.files[0];
+
+      if (accept) {
+        const allowedTypes = accept.split(',').map((t: string) => t.trim().toLowerCase());
+        const fileExt = '.' + selected.name.split('.').pop()?.toLowerCase();
+        const fileType = selected.type.toLowerCase();
+
+        const isValid = allowedTypes.some((type: string) => {
+          if (type.startsWith('.')) {
+            return type === fileExt;
+          }
+          if (type.endsWith('/*')) {
+            const baseType = type.split('/')[0];
+            return fileType.startsWith(baseType + '/');
+          }
+          return type === fileType;
+        });
+
+        if (!isValid) {
+          toast.error(`Invalid file format. Allowed formats: ${allowedTypes.filter((t: string) => t.startsWith('.')).join(', ')}`);
+          if (inputRef.current) inputRef.current.value = "";
+          return;
+        }
+      }
+
       setLocalFileName(selected.name);
 
       if (!guardEmail || !guardPhone) {
@@ -146,8 +176,8 @@ function FileUploadItem({ title, required, icon, file, onFileSelect, note, uploa
   const isUploadedUrl = typeof file === "string" && file.length > 0;
 
   return (
-    <div className="flex items-center justify-between py-2 px-3 border border-slate-200 rounded-xl hover:border-slate-300 transition-colors bg-slate-50/30">
-      <div className="flex items-center gap-3 w-full">
+    <div className="flex items-center justify-between py-2 px-3 border border-slate-200 rounded-xl hover:border-slate-300 transition-colors bg-slate-50/30 gap-3">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0">
           {icon}
         </div>
@@ -167,10 +197,12 @@ function FileUploadItem({ title, required, icon, file, onFileSelect, note, uploa
             </div>
           )}
           {!isUploading && isUploadedUrl && (
-            <span className="text-[10px] text-green-600 font-medium flex items-center mt-0.5 truncate pr-2">
-              <CheckCircle2 className="w-3 h-3 mr-1 shrink-0" />
-              {localFileName || "File uploaded"}
-            </span>
+            <div className="flex items-center mt-0.5 pr-2 min-w-0">
+              <CheckCircle2 className="w-3 h-3 text-green-600 mr-1 shrink-0" />
+              <span className="text-[10px] text-green-600 font-medium truncate block">
+                {localFileName || "File uploaded"}
+              </span>
+            </div>
           )}
           {note && <span className="text-[9px] text-slate-400 mt-0.5">{note}</span>}
         </div>
@@ -181,6 +213,7 @@ function FileUploadItem({ title, required, icon, file, onFileSelect, note, uploa
         className="hidden"
         ref={inputRef}
         onChange={handleFileChange}
+        accept={accept}
       />
 
       <Button

@@ -224,7 +224,7 @@ export function BadgeCreateDialog({
                     Upload Headshot Image
                     <input
                       type="file"
-                      accept="image/*"
+                      accept=".png,.jpg,.jpeg,.heic,image/png,image/jpeg,image/heic"
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
@@ -285,6 +285,7 @@ export function BadgeCreateDialog({
                 <input
                   type="date"
                   value={issueDate}
+                  min={new Date().toISOString().split("T")[0]}
                   onChange={(e) => handleIssueDateChange(e.target.value)}
                   className={cn(
                     "w-full text-sm font-semibold p-2 border rounded focus:outline-none focus:ring-2 transition-all",
@@ -301,6 +302,7 @@ export function BadgeCreateDialog({
                 <input
                   type="date"
                   value={expiryDate}
+                  min={issueDate || new Date().toISOString().split("T")[0]}
                   onChange={(e) => handleExpiryDateChange(e.target.value)}
                   className={cn(
                     "w-full text-sm font-semibold p-2 border rounded focus:outline-none focus:ring-2 transition-all",
