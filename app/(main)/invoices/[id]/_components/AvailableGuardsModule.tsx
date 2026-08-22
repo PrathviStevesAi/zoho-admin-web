@@ -5,8 +5,7 @@ import {
   clientFetchGuardsAction
 } from "@/lib/client-actions";
 import { useState, useEffect } from "react";
-import { DateTime } from "luxon";
-import { Loader2, ChevronRight, XCircle, UserCheck, CalendarDays } from "lucide-react";
+import { Loader2, ChevronRight, XCircle, UserCheck, CalendarDays, Star, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,7 +60,8 @@ export function AvailableGuardsModule({
   const [guardFilters, setGuardFilters] = useState({
     radiusMiles: "all",
     status: "all",
-    service: "All"
+    service: "All",
+    level: "All"
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
@@ -94,7 +94,8 @@ export function AvailableGuardsModule({
       armed,
       unarmed,
       invoice_id: guardFilters.radiusMiles === "all" ? undefined : invoiceId,
-      radius_miles: guardFilters.radiusMiles === "all" ? "" : guardFilters.radiusMiles
+      radius_miles: guardFilters.radiusMiles === "all" ? "" : guardFilters.radiusMiles,
+      level: guardFilters.level === "All" ? "" : guardFilters.level
     });
 
     if (res.success) {
@@ -175,7 +176,8 @@ export function AvailableGuardsModule({
     setGuardFilters({
       radiusMiles: "20",
       status: "all",
-      service: "All"
+      service: "All",
+      level: "All"
     });
     setCurrentPage(1);
   };
@@ -273,7 +275,7 @@ export function AvailableGuardsModule({
   );
 
   const renderFilters = () => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100">
       <div className="space-y-1.5 w-full">
         <Label className="text-[13px] font-medium text-slate-700">Search</Label>
         <div className="relative w-full">
@@ -341,6 +343,21 @@ export function AvailableGuardsModule({
             <SelectItem value="both" className="cursor-pointer">Both</SelectItem>
             <SelectItem value="armed" className="cursor-pointer">Armed</SelectItem>
             <SelectItem value="unarmed" className="cursor-pointer">Unarmed</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1.5 w-full">
+        <Label className="text-[13px] font-medium text-slate-700">Guard Level</Label>
+        <Select value={guardFilters.level} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, level: val }))}>
+          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
+            <SelectItem value="All" className="cursor-pointer">All</SelectItem>
+            <SelectItem value="1" className="cursor-pointer">1 Star</SelectItem>
+            <SelectItem value="2" className="cursor-pointer">2 Stars</SelectItem>
+            <SelectItem value="3" className="cursor-pointer">3 Stars</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -511,77 +528,103 @@ export function AvailableGuardsModule({
                 </Table>
               </div>
             ) : activeStep === 2 ? (
-              <div className="overflow-x-auto custom-scrollbar w-full">
-                <Table className="min-w-[1200px] md:min-w-full">
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="w-[60px] py-2.5 px-4 text-center">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                          checked={allGuards.length > 0 && selectedGuardIds.length === allGuards.length}
-                          onChange={(e) => handleSelectAllGuards(e.target.checked)}
-                        />
-                      </TableHead>
-                      <TableHead className="w-[60px] text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">#</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">NAME</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">EMAIL</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">PHONE NO.</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">ADDRESS</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">AWAY DISTANCE (Miles)</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">STATUS</TableHead>
+              <Table className="min-w-[1200px] md:min-w-full">
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent border-slate-100">
+                    <TableHead className="w-[60px] py-2.5 px-4 text-center">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                        checked={allGuards.length > 0 && selectedGuardIds.length === allGuards.length}
+                        onChange={(e) => handleSelectAllGuards(e.target.checked)}
+                      />
+                    </TableHead>
+                    <TableHead className="w-[60px] text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">#</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">NAME</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">EMAIL</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">PHONE NO.</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">
+                      <div className="flex items-center gap-1">
+                        GUARD LEVEL
+                        <Info className="w-3.5 h-3.5 text-slate-400" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">ADDRESS</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">AWAY DISTANCE (Miles)</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">STATUS</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isGuardsLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={11} className="py-10 text-center">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isGuardsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={10} className="py-10 text-center">
-                          <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
+                  ) : allGuards.length > 0 ? (
+                    allGuards.map((guard, index) => (
+                      <TableRow key={guard.guard_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                        <TableCell className="py-2.5 px-4 text-center">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                            checked={selectedGuardIds.includes(guard.guard_id)}
+                            onChange={(e) => handleSelectGuard(guard.guard_id, e.target.checked)}
+                          />
+                        </TableCell>
+                        <TableCell className="text-[13px] text-slate-800 py-2.5 px-4 text-center">
+                          {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
+                        </TableCell>
+                        <TableCell className="text-[13px] font-bold text-slate-700 py-2.5 px-4">
+                          {guard.first_name} {guard.last_name}
+                        </TableCell>
+                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.email}</TableCell>
+                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.phone_number || "-"}</TableCell>
+                        <TableCell className="py-2.5 px-4">
+                          <div className="flex items-center gap-1">
+                            {guard.guard_level === 3 ? (
+                              <>
+                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                              </>
+                            ) : guard.guard_level === 2 ? (
+                              <>
+                                <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                                <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                              </>
+                            ) : guard.guard_level === 1 ? (
+                              <>
+                                <Star className="w-4 h-4 fill-green-600 text-green-600" />
+                              </>
+                            ) : (
+                              <span className="text-slate-400 text-xs font-medium">---</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.armed ? "Yes" : "No"}</TableCell>
+                        <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.unarmed ? "Yes" : "No"}</TableCell>
+                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4 max-w-[200px] truncate">{guard.address || "--"}</TableCell>
+                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.distance_miles ?? "--"}</TableCell>
+                        <TableCell className="py-2.5 px-4">
+                          <span className={cn(
+                            "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
+                            guard.status ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+                          )}>
+                            {guard.status ? "Active" : "Inactive"}
+                          </span>
                         </TableCell>
                       </TableRow>
-                    ) : allGuards.length > 0 ? (
-                      allGuards.map((guard, index) => (
-                        <TableRow key={guard.guard_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                              checked={selectedGuardIds.includes(guard.guard_id)}
-                              onChange={(e) => handleSelectGuard(guard.guard_id, e.target.checked)}
-                            />
-                          </TableCell>
-                          <TableCell className="text-[13px] text-slate-800 py-2.5 px-4 text-center">
-                            {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
-                          </TableCell>
-                          <TableCell className="text-[13px] font-bold text-slate-700 py-2.5 px-4">
-                            {guard.first_name} {guard.last_name}
-                          </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.email}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.phone_number || "-"}</TableCell>
-                          <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.armed ? "Yes" : "No"}</TableCell>
-                          <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.unarmed ? "Yes" : "No"}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4 max-w-[200px] truncate">{guard.address || "--"}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.distance_miles ?? "--"}</TableCell>
-                          <TableCell className="py-2.5 px-4">
-                            <span className={cn(
-                              "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                              guard.status ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
-                            )}>
-                              {guard.status ? "Active" : "Inactive"}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={10} className="py-6 text-center text-slate-700 font-medium">No guards found matching filters.</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={11} className="py-6 text-center text-slate-700 font-medium">No guards found matching filters.</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             ) : (
               <div className="p-8 text-center space-y-8 animate-in fade-in duration-500">
                 <div className="max-w-2xl mx-auto space-y-6">

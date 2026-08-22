@@ -4,7 +4,7 @@ import {
   clientFetchGuardsAction
 } from "@/lib/client-actions";
 import { useState, useEffect } from "react";
-import { X, XCircle } from "lucide-react";
+import { X, XCircle, Star, Info } from "lucide-react";
 import { fetchLocationAction, } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { Loader2 } from "lucide-react";
@@ -17,7 +17,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { FormattedDate } from "@/components/ui/formatted-date";
 import { Label } from "@/components/ui/label";
 import {
@@ -52,7 +51,8 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
     state: "All State",
     city: "All City",
     status: "all",
-    service: "All"
+    service: "All",
+    level: "All"
   });
   const [locations, setLocations] = useState<{ countries: string[], states: string[], cities: string[] }>({
     countries: [],
@@ -80,7 +80,8 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
         state: "All State",
         city: "All City",
         status: "all",
-        service: "All"
+        service: "All",
+        level: "All"
       });
       setCurrentPage(1);
       setShowMobileFilters(false);
@@ -138,6 +139,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
           city: userFilters.city,
           state: userFilters.state,
           country: userFilters.country,
+          level: userFilters.level === "All" ? "" : userFilters.level,
           armed,
           unarmed
         });
@@ -272,7 +274,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
             )}
 
             <div className={cn(
-              "grid grid-cols-1 md:grid-cols-5 gap-4 md:grid",
+              "grid grid-cols-1 md:grid-cols-6 gap-4 md:grid",
               showMobileFilters ? "grid" : "hidden"
             )}>
               <div className="space-y-1.5 w-full">
@@ -345,19 +347,39 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-1.5 w-full">
+                <Label className="text-[13px] font-medium text-slate-700">Guard Level</Label>
+                <Select value={userFilters.level} onValueChange={(val) => setUserFilters(prev => ({ ...prev, level: val }))}>
+                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
+                    <SelectItem value="All">All</SelectItem>
+                    <SelectItem value="1">1 Star</SelectItem>
+                    <SelectItem value="2">2 Stars</SelectItem>
+                    <SelectItem value="3">3 Stars</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
           <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col flex-1 min-h-[150px] bg-white shadow-sm">
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto custom-scrollbar-visible">
-              <Table className="border-collapse min-w-[1200px]" scrollbarClass="custom-scrollbar-visible">
-                <TableHeader className="bg-white sticky top-0 z-20">
+            <Table className="border-collapse min-w-[1200px]" scrollbarClass="custom-scrollbar-visible">
+              <TableHeader className="bg-white sticky top-0 z-20">
                   <TableRow className="hover:bg-transparent border-b border-slate-100">
                     <TableHead className="w-[140px] py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-100">ACTION</TableHead>
                     <TableHead className="w-[80px] text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">#</TableHead>
                     <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">NAME</TableHead>
                     <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">EMAIL</TableHead>
                     <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">PHONE NO.</TableHead>
+                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">
+                      <div className="flex items-center gap-1">
+                        GUARD LEVEL
+                        <Info className="w-3.5 h-3.5 text-slate-400" />
+                      </div>
+                    </TableHead>
                     <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">ARMED</TableHead>
                     <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">UNARMED</TableHead>
                     <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">ADDRESS</TableHead>
@@ -383,6 +405,9 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                         </TableCell>
                         <TableCell className="py-4 px-6 border-r border-slate-50/50">
                           <Skeleton className="h-4 w-24 rounded" />
+                        </TableCell>
+                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                          <Skeleton className="h-4 w-16 rounded" />
                         </TableCell>
                         <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
                           <Skeleton className="h-4 w-8 rounded mx-auto" />
@@ -426,6 +451,28 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                         <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
                           {guard.phone_number || "-"}
                         </TableCell>
+                        <TableCell className="py-5 px-6 border-r border-slate-50/50">
+                          <div className="flex items-center gap-1">
+                            {guard.guard_level === 3 ? (
+                              <>
+                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                              </>
+                            ) : guard.guard_level === 2 ? (
+                              <>
+                                <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                                <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                              </>
+                            ) : guard.guard_level === 1 ? (
+                              <>
+                                <Star className="w-4 h-4 fill-green-600 text-green-600" />
+                              </>
+                            ) : (
+                              <span className="text-slate-400 text-xs font-medium">---</span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50 text-center">
                           {guard.armed ? "Yes" : "No"}
                         </TableCell>
@@ -450,12 +497,11 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={10} className="py-8 text-center text-slate-700">No guards found</TableCell>
+                      <TableCell colSpan={11} className="py-8 text-center text-slate-700">No guards found</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
-            </div>
           </div>
         </div>
 

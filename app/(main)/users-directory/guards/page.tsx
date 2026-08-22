@@ -14,6 +14,8 @@ import {
   ArrowLeft,
   User,
   UserPlus,
+  Star,
+  Info
 } from "lucide-react";
 import { GuardRegistrationForm } from "./_components/guard-registration-form";
 import Link from "next/link";
@@ -177,6 +179,12 @@ export default function GuardDirectoryPage() {
                         <TableHead className="py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Name</TableHead>
                         <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Email</TableHead>
                         <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Phone</TableHead>
+                        <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                          <div className="flex items-center gap-1">
+                            Guard Level
+                            <Info className="w-3.5 h-3.5 text-slate-400" />
+                          </div>
+                        </TableHead>
                         <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider text-center">Armed</TableHead>
                         <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider text-center">Unarmed</TableHead>
                         <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Address</TableHead>
@@ -196,6 +204,7 @@ export default function GuardDirectoryPage() {
                             </TableCell>
                             <TableCell className="py-4 px-4"><Skeleton className="h-4 w-36 bg-slate-100" /></TableCell>
                             <TableCell className="py-4 px-4"><Skeleton className="h-4 w-24 bg-slate-100" /></TableCell>
+                            <TableCell className="py-4 px-4"><Skeleton className="h-4 w-16 bg-slate-100" /></TableCell>
                             <TableCell className="py-4 px-4"><Skeleton className="h-4 w-8 mx-auto bg-slate-100" /></TableCell>
                             <TableCell className="py-4 px-4"><Skeleton className="h-4 w-8 mx-auto bg-slate-100" /></TableCell>
                             <TableCell className="py-4 px-4"><Skeleton className="h-4 w-32 bg-slate-100" /></TableCell>
@@ -205,7 +214,7 @@ export default function GuardDirectoryPage() {
                         ))
                       ) : guards.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="h-96 text-center">
+                          <TableCell colSpan={9} className="h-96 text-center">
                             <div className="flex flex-col items-center justify-center gap-2">
                               <Shield className="w-12 h-12 text-slate-200" />
                               <p className="text-sm font-medium text-slate-700">No guards found</p>
@@ -238,6 +247,28 @@ export default function GuardDirectoryPage() {
                             </TableCell>
                             <TableCell className="py-4 px-4">
                               <span className="text-xs text-slate-800 font-medium whitespace-nowrap">{guard.phone_number || "---"}</span>
+                            </TableCell>
+                            <TableCell className="py-4 px-4">
+                              <div className="flex items-center gap-1">
+                                {guard.guard_level === 3 ? (
+                                  <>
+                                    <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                                    <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                                    <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                                  </>
+                                ) : guard.guard_level === 2 ? (
+                                  <>
+                                    <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                                    <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                                  </>
+                                ) : guard.guard_level === 1 ? (
+                                  <>
+                                    <Star className="w-4 h-4 fill-green-600 text-green-600" />
+                                  </>
+                                ) : (
+                                  <span className="text-slate-400 text-xs font-medium">---</span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="py-4 px-4 text-center">
                               <span className={cn(

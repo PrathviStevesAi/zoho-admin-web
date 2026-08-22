@@ -427,6 +427,7 @@ export async function clientFetchGuardsAction(params: {
   unarmed?: string;
   invoice_id?: string;
   radius_miles?: string | number;
+  level?: string;
 }): Promise<FetchResponse<any>> {
   const {
     page = 1,
@@ -438,7 +439,8 @@ export async function clientFetchGuardsAction(params: {
     armed = "",
     unarmed = "",
     invoice_id = "",
-    radius_miles = ""
+    radius_miles = "",
+    level = ""
   } = params;
   const query = new URLSearchParams();
   if (page !== null) {
@@ -453,6 +455,7 @@ export async function clientFetchGuardsAction(params: {
   if (unarmed) query.append("unarmed", unarmed);
   if (invoice_id) query.append("invoice_id", invoice_id);
   if (radius_miles) query.append("radius_miles", radius_miles.toString());
+  if (level) query.append("level", level);
 
   try {
     const data = await clientApiFetch<any>(
