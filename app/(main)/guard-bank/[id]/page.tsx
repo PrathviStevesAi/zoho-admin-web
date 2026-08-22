@@ -7,15 +7,11 @@ import { useRouter, useParams } from "next/navigation";
 import {
   CheckCircle2,
   XCircle,
-  Eye,
   Loader2,
-  Download,
-  Trash
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FormattedDate } from "@/components/ui/formatted-date";
 import { Button } from "@/components/ui/button";
-import { FileUpload } from "@/components/ui/file-upload";
 import { ConfirmationDialog } from "../components/confirmation-dialog";
 import { BadgeCreateDialog } from "../components/badge-create-dialog";
 import { Country, State, City } from "country-state-city";
@@ -115,25 +111,25 @@ export default function GuardDetailPage() {
     }
   }, [editForm.state, editForm.country]);
 
-  const [selectedPhoneCountry, setSelectedPhoneCountry] = useState(phoneCountries[11]); // Default to US
+  const [selectedPhoneCountry, setSelectedPhoneCountry] = useState(phoneCountries[11]);
   const [isPhoneDropdownOpen, setIsPhoneDropdownOpen] = useState(false);
 
   useEffect(() => {
     if (guard?.phone_number) {
       let matchingCountry;
-      
+
       if (guard.country) {
-        matchingCountry = phoneCountries.find(c => 
-          c.code.toLowerCase() === guard.country.toLowerCase() && 
+        matchingCountry = phoneCountries.find(c =>
+          c.code.toLowerCase() === guard.country.toLowerCase() &&
           guard.phone_number.startsWith(c.dialCode)
         );
       }
-      
+
       if (!matchingCountry) {
-        matchingCountry = phoneCountries.find(c => c.code === "us" && guard.phone_number.startsWith(c.dialCode)) 
+        matchingCountry = phoneCountries.find(c => c.code === "us" && guard.phone_number.startsWith(c.dialCode))
           || phoneCountries.find(c => guard.phone_number.startsWith(c.dialCode));
       }
-      
+
       if (matchingCountry) {
         setSelectedPhoneCountry(matchingCountry);
       }

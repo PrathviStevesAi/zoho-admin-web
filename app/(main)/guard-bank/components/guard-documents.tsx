@@ -3,6 +3,7 @@ import { FileText, Eye, Download, Trash, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload";
 import { ImagePreview } from "./image-preview";
+import { toast } from "sonner";
 
 interface GuardDocumentsProps {
   guard: any;
@@ -28,9 +29,61 @@ export function GuardDocuments({
 
   const getDocumentFilename = (url?: string) => {
     if (!url) return "Document";
-    const parts = url.split("/");
-    const last = parts[parts.length - 1];
-    return decodeURIComponent(last).substring(0, 30) + (last.length > 30 ? "..." : "");
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const parts = pathname.split("/");
+      let filename = parts[parts.length - 1];
+
+      if (!filename) return "Document";
+      filename = decodeURIComponent(filename);
+
+      const lastDotIndex = filename.lastIndexOf(".");
+      if (lastDotIndex !== -1 && lastDotIndex > 0) {
+        const name = filename.substring(0, lastDotIndex);
+        const ext = filename.substring(lastDotIndex);
+        const truncatedName = name.length > 25 ? name.substring(0, 25) + "..." : name;
+        return `${truncatedName}${ext}`;
+      } else {
+        return filename.length > 30 ? filename.substring(0, 30) + "..." : filename;
+      }
+    } catch (e) {
+      const parts = url.split("/");
+      let last = parts[parts.length - 1] || "Document";
+      last = last.split("?")[0];
+      const decoded = decodeURIComponent(last);
+      const lastDotIndex = decoded.lastIndexOf(".");
+      if (lastDotIndex !== -1 && lastDotIndex > 0) {
+        const name = decoded.substring(0, lastDotIndex);
+        const ext = decoded.substring(lastDotIndex);
+        const truncatedName = name.length > 25 ? name.substring(0, 25) + "..." : name;
+        return `${truncatedName}${ext}`;
+      }
+      return decoded.length > 30 ? decoded.substring(0, 30) + "..." : decoded;
+    }
+  };
+
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      toast.loading(`Downloading ${filename}...`, { id: 'downloading' });
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.dismiss('downloading');
+      toast.success("Downloaded successfully!");
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.dismiss('downloading');
+      toast.error("Failed to download directly. Opening in new tab...");
+      window.open(url, "_blank");
+    }
   };
 
   const renderDocumentCard = (
@@ -110,8 +163,13 @@ export function GuardDocuments({
             <Button variant="outline" size="sm" asChild className="flex-1 border-slate-200 hover:bg-slate-100 font-semibold text-xs cursor-pointer text-[#0064cb] h-10">
               <a href={currentUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1.5"><Eye className="w-4 h-4" /> Preview</a>
             </Button>
-            <Button variant="outline" size="sm" asChild className="flex-1 border-slate-200 hover:bg-slate-100 font-semibold text-xs cursor-pointer text-[#0064cb] h-10">
-              <a href={currentUrl} download className="flex items-center justify-center gap-1.5"><Download className="w-4 h-4" /> Download</a>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDownload(currentUrl, getDocumentFilename(currentUrl))}
+              className="flex-1 border-slate-200 hover:bg-slate-100 font-semibold text-xs cursor-pointer text-[#0064cb] h-10 flex items-center justify-center gap-1.5"
+            >
+              <Download className="w-4 h-4" /> Download
             </Button>
           </div>
         )}
