@@ -87,11 +87,13 @@ export function GuardHeader({
                 Open in CRM
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={() => { setEditForm({ ...guard }); setIsEditing(true); }} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
-              <Edit2 className="w-4 h-4" />
-              Edit Application
-            </DropdownMenuItem>
-            {(guard.action?.is_approved || guard.status === 'approved') && (
+            {guard.action?.is_edit_application && (
+              <DropdownMenuItem onClick={() => { setEditForm({ ...guard }); setIsEditing(true); }} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
+                <Edit2 className="w-4 h-4" />
+                Edit Application
+              </DropdownMenuItem>
+            )}
+            {guard.action?.is_edit_guard_level && (
               <DropdownMenuItem onClick={() => setIsUpdateLevelModalOpen(true)} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                 <Shield className="w-4 h-4" />
                 Update Level
