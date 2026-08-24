@@ -31,7 +31,7 @@ export function GuardProfileSummary({
 }: GuardProfileSummaryProps) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center gap-5 sm:gap-6 justify-between">
-      <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 w-full lg:w-auto overflow-hidden">
+      <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-50 flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden p-2.5 sm:p-3">
           <img src="/guard-placeholder.png" alt="Guard Avatar" className="w-full h-full object-contain opacity-80" />
         </div>
@@ -51,8 +51,8 @@ export function GuardProfileSummary({
               <a href={`mailto:${guard.email}`} className="hover:text-[#0064cb] transition-colors truncate block max-w-full sm:max-w-none">{guard.email || "N/A"}</a>
             </div>
             <div className="hidden sm:block w-px h-4 bg-slate-200"></div>
-            <div className="flex items-center justify-center sm:justify-start gap-1.5 w-full sm:w-auto">
-              <Phone className="w-4 h-4 text-[#0064cb]" />
+            <div className="flex items-center justify-center sm:justify-start gap-1.5 min-w-0 w-full sm:w-auto">
+              <Phone className="w-4 h-4 text-[#0064cb] shrink-0" />
               {isEditing && <span className="text-red-500 font-bold -ml-0.5">*</span>}
               {isEditing ? (
                 <div className="flex flex-col w-full max-w-[300px]">
