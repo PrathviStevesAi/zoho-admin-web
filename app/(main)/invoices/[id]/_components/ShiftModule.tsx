@@ -78,11 +78,11 @@ const getStatusBadge = (status: string) => {
       className: "bg-purple-50 text-purple-700 border-purple-200/60"
     },
     shift_approved: {
-      label: "Shift Completed",
+      label: "Shift Approved",
       className: "bg-emerald-800 text-emerald-100 border-emerald-900"
     },
     shift_not_approved: {
-      label: "Not Approved",
+      label: "Shift Not Approved",
       className: "bg-rose-100 text-rose-800 border-rose-200"
     },
     shift_cancelled: {
