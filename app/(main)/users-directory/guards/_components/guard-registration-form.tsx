@@ -79,6 +79,10 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
       newErrors.countryError = "Country is required";
       hasRequiredError = true;
     }
+    if (!formData.addressState) {
+      newErrors.stateError = "State is required";
+      hasRequiredError = true;
+    }
 
     if (hasRequiredError) {
       setFormData((prev: any) => ({ ...prev, ...newErrors }));

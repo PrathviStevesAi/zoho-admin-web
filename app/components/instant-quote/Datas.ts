@@ -6,7 +6,7 @@ export const securityTypes = [
   { value: "Body Guard Unarmed", label: "Body Guard Unarmed" },
   { value: "Body Guard Armed", label: "Body Guard Armed" },
   { value: "Body Guard with Suit", label: "Body Guard with Suit" },
-  { value: "Employee Termination", label: "Employee Termination" },
+  { value: "Employee Termination / Work Place Separation Security", label: "Employee Termination / Work Place Separation Security" },
 ];
 
 export const StateList = [

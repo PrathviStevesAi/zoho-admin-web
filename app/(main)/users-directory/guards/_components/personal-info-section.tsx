@@ -264,13 +264,13 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">State</label>
+          <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">State <span className="text-red-500">*</span></label>
           <Select
             value={formData.addressState}
-            onValueChange={(val) => setFormData({ ...formData, addressState: val, city: "" })}
+            onValueChange={(val) => setFormData({ ...formData, addressState: val, city: "", stateError: "" })}
             disabled={!formData.addressCountry}
           >
-            <SelectTrigger className="h-11 bg-slate-50/50"><SelectValue placeholder="Select State" /></SelectTrigger>
+            <SelectTrigger className={`h-11 bg-slate-50/50 ${formData.stateError ? "border-red-500 ring-1 ring-red-500" : ""}`}><SelectValue placeholder="Select State" /></SelectTrigger>
             <SelectContent>
               {stateOptions.map((s) => (
                 <SelectItem key={s.isoCode} value={s.isoCode}>
@@ -279,6 +279,7 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
               ))}
             </SelectContent>
           </Select>
+          {formData.stateError && <p className="text-xs text-red-500 font-medium mt-1">{formData.stateError}</p>}
         </div>
 
         <div className="space-y-1.5">
