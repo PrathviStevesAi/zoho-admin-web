@@ -141,7 +141,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   useEffect(() => {
     loadShiftDetails();
     loadReportsDetails();
-  }, [loadShiftDetails, loadReportsDetails]);
+    loadComments();
+  }, [loadShiftDetails, loadReportsDetails, loadComments]);
 
   useEffect(() => {
     const handleCallEnded = (e: any) => {

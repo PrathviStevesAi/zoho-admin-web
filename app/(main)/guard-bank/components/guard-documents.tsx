@@ -98,21 +98,21 @@ export function GuardDocuments({
     const previewUrl = localPreviews[field] || currentUrl;
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col h-full relative space-y-4 min-h-[350px]">
-        <div className="flex items-center justify-center relative">
-          <h3 className="font-bold text-slate-800 text-[14px] text-center">{title}</h3>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col h-full relative gap-2 min-h-[350px]">
+        <div className="flex items-center justify-between gap-2 w-full">
+          <h3 className="font-bold text-slate-800 text-[13px] xl:text-[14px] truncate flex-1" title={title}>{title}</h3>
           {isUploaded && (
-            <span className="absolute right-0 bg-green-50 text-green-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider border border-green-100">
+            <span className="shrink-0 bg-green-50 text-green-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider border border-green-100">
               Uploaded
             </span>
           )}
         </div>
 
-        <div className="flex-1 flex flex-col justify-center items-center rounded-xl overflow-hidden min-h-[160px] w-full relative">
+        <div className="flex-1 flex flex-col justify-center items-center rounded-md overflow-hidden min-h-[160px] w-full relative">
           {isUploaded ? (
             previewRenderer(previewUrl)
           ) : (
-            <div className="text-slate-400 font-medium text-xs flex flex-col items-center gap-2 justify-center w-full h-full border border-dashed border-slate-200 rounded-xl bg-slate-50/50 min-h-[160px]">
+            <div className="text-slate-400 font-medium text-xs flex flex-col items-center gap-2 justify-center w-full h-full border border-dashed border-slate-200 rounded-md bg-slate-50/50 min-h-[160px]">
               <span className="text-xs">No File Uploaded</span>
             </div>
           )}
@@ -184,10 +184,11 @@ export function GuardDocuments({
           <FileText className="w-4 h-4" />
           <h3 className="font-bold text-slate-800 text-[14px]">Uploaded Credentials Images</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {renderDocumentCard("Driver License", "driver_license_url", "image/*", "driver-license", (url) => <ImagePreview url={url} alt="Driver License" />)}
           {renderDocumentCard("Security License", "security_guard_license_url", "image/*", "security-guard-license", (url) => <ImagePreview url={url} alt="Security License" />)}
           {renderDocumentCard("Headshot Image", "headshot_image_url", "image/*", "headshot-image", (url) => <ImagePreview url={url} alt="Headshot Image" />)}
+          {renderDocumentCard("Firewatch Certificate", "firewatch_certificate_url", "image/*", "firewatch-certificate-image", (url) => <ImagePreview url={url} alt="Firewatch Certificate" />)}
         </div>
       </div>
 
