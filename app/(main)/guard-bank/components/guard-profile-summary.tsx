@@ -1,5 +1,6 @@
 import { Mail, Phone, ChevronDown, CheckCircle2, XCircle, Calendar } from "lucide-react";
 import { FormattedDate } from "@/components/ui/formatted-date";
+import { cn } from "@/lib/utils";
 
 interface GuardProfileSummaryProps {
   guard: any;
@@ -12,6 +13,7 @@ interface GuardProfileSummaryProps {
   isPhoneDropdownOpen: boolean;
   setIsPhoneDropdownOpen: (isOpen: boolean) => void;
   getLevelBadge: (level: number) => React.ReactNode;
+  formErrors?: Record<string, string>;
 }
 
 export function GuardProfileSummary({
@@ -24,7 +26,8 @@ export function GuardProfileSummary({
   setSelectedPhoneCountry,
   isPhoneDropdownOpen,
   setIsPhoneDropdownOpen,
-  getLevelBadge
+  getLevelBadge,
+  formErrors
 }: GuardProfileSummaryProps) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center gap-5 sm:gap-6 justify-between">
@@ -50,76 +53,80 @@ export function GuardProfileSummary({
             <div className="hidden sm:block w-px h-4 bg-slate-200"></div>
             <div className="flex items-center justify-center sm:justify-start gap-1.5 w-full sm:w-auto">
               <Phone className="w-4 h-4 text-[#0064cb]" />
+              {isEditing && <span className="text-red-500 font-bold -ml-0.5">*</span>}
               {isEditing ? (
-                <div className="relative flex items-center h-10 bg-white border border-slate-200 rounded-md focus-within:ring-2 focus-within:ring-slate-900 focus-within:ring-offset-2 transition-all w-full max-w-[300px]">
-                  <button
-                    type="button"
-                    onClick={() => setIsPhoneDropdownOpen(!isPhoneDropdownOpen)}
-                    className="flex items-center gap-1.5 px-3 h-full rounded-l-md hover:bg-slate-50 border-r border-slate-200 transition-colors focus:outline-none cursor-pointer"
-                  >
-                    <img
-                      src={`https://flagcdn.com/w20/${selectedPhoneCountry.code}.png`}
-                      alt={selectedPhoneCountry.name}
-                      className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
-                    />
-                    <span className="text-sm font-semibold text-slate-700">{selectedPhoneCountry.dialCode}</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-                  </button>
+                <div className="flex flex-col w-full max-w-[300px]">
+                  <div className={cn("relative flex items-center h-10 bg-white border rounded-md focus-within:ring-2 focus-within:ring-slate-900 focus-within:ring-offset-2 transition-all w-full", formErrors?.phone_number ? "border-red-500 ring-1 ring-red-500" : "border-slate-200")}>
+                    <button
+                      type="button"
+                      onClick={() => setIsPhoneDropdownOpen(!isPhoneDropdownOpen)}
+                      className="flex items-center gap-1.5 px-3 h-full rounded-l-md hover:bg-slate-50 border-r border-slate-200 transition-colors focus:outline-none cursor-pointer"
+                    >
+                      <img
+                        src={`https://flagcdn.com/w20/${selectedPhoneCountry.code}.png`}
+                        alt={selectedPhoneCountry.name}
+                        className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
+                      />
+                      <span className="text-sm font-semibold text-slate-700">{selectedPhoneCountry.dialCode}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
 
-                  <div className="relative flex-1 h-full flex items-center">
-                    <input
-                      type="text"
-                      placeholder="Phone number"
-                      value={(() => {
-                        const val = editForm.phone_number || "";
-                        if (val.startsWith(selectedPhoneCountry.dialCode)) {
-                          return val.substring(selectedPhoneCountry.dialCode.length).trim();
-                        }
-                        return val;
-                      })()}
-                      onChange={(e) => {
-                        const digits = e.target.value.replace(/\D/g, "").slice(0, 15);
-                        handleEditChange("phone_number", selectedPhoneCountry.dialCode + " " + digits);
-                      }}
-                      className="w-full h-full bg-transparent outline-none border-none px-3 text-slate-900 font-medium placeholder:text-slate-400 placeholder:font-normal text-sm"
-                    />
-                  </div>
-
-                  {isPhoneDropdownOpen && (
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setIsPhoneDropdownOpen(false)}
-                    />
-                  )}
-
-                  {isPhoneDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-full max-h-[220px] overflow-y-auto bg-white border border-slate-200 rounded-md shadow-lg z-50">
-                      {phoneCountries.map((country) => (
-                        <button
-                          key={country.code}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPhoneCountry(country);
-                            const currentVal = editForm.phone_number || "";
-                            const valWithoutCode = currentVal.startsWith(selectedPhoneCountry.dialCode)
-                              ? currentVal.substring(selectedPhoneCountry.dialCode.length).trim()
-                              : currentVal;
-                            handleEditChange("phone_number", country.dialCode + " " + valWithoutCode);
-                            setIsPhoneDropdownOpen(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${selectedPhoneCountry.code === country.code ? "bg-slate-50 font-semibold" : "text-slate-700"}`}
-                        >
-                          <img
-                            src={`https://flagcdn.com/w20/${country.code}.png`}
-                            alt={country.name}
-                            className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
-                          />
-                          <span className="flex-1">{country.name}</span>
-                          <span className="text-slate-500 font-medium">{country.dialCode}</span>
-                        </button>
-                      ))}
+                    <div className="relative flex-1 h-full flex items-center">
+                      <input
+                        type="text"
+                        placeholder="Phone number"
+                        value={(() => {
+                          const val = editForm.phone_number || "";
+                          if (val.startsWith(selectedPhoneCountry.dialCode)) {
+                            return val.substring(selectedPhoneCountry.dialCode.length).trim();
+                          }
+                          return val;
+                        })()}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, "").slice(0, 15);
+                          handleEditChange("phone_number", selectedPhoneCountry.dialCode + " " + digits);
+                        }}
+                        className="w-full h-full bg-transparent outline-none border-none px-3 text-slate-900 font-medium placeholder:text-slate-400 placeholder:font-normal text-sm"
+                      />
                     </div>
-                  )}
+
+                    {isPhoneDropdownOpen && (
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsPhoneDropdownOpen(false)}
+                      />
+                    )}
+
+                    {isPhoneDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-full max-h-[220px] overflow-y-auto bg-white border border-slate-200 rounded-md shadow-lg z-50">
+                        {phoneCountries.map((country) => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            onClick={() => {
+                              setSelectedPhoneCountry(country);
+                              const currentVal = editForm.phone_number || "";
+                              const valWithoutCode = currentVal.startsWith(selectedPhoneCountry.dialCode)
+                                ? currentVal.substring(selectedPhoneCountry.dialCode.length).trim()
+                                : currentVal;
+                              handleEditChange("phone_number", country.dialCode + " " + valWithoutCode);
+                              setIsPhoneDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors cursor-pointer ${selectedPhoneCountry.code === country.code ? "bg-slate-50 font-semibold" : "text-slate-700"}`}
+                          >
+                            <img
+                              src={`https://flagcdn.com/w20/${country.code}.png`}
+                              alt={country.name}
+                              className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
+                            />
+                            <span className="flex-1">{country.name}</span>
+                            <span className="text-slate-500 font-medium">{country.dialCode}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {formErrors?.phone_number && <p className="text-xs text-red-500 font-medium mt-1">{formErrors.phone_number}</p>}
                 </div>
               ) : (
                 <a href={`tel:${guard.phone_number?.replace(/\s/g, '')}`} className="hover:text-[#0064cb] transition-colors">{guard.phone_number || "N/A"}</a>

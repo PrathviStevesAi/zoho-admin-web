@@ -72,6 +72,7 @@ export default function GuardDetailPage() {
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
   const [localFileNames, setLocalFileNames] = useState<Record<string, string>>({});
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [countries, setCountries] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
@@ -138,6 +139,7 @@ export default function GuardDetailPage() {
 
   const handleEditChange = (field: string, value: any, localFile?: File) => {
     setEditForm((prev: any) => ({ ...prev, [field]: value }));
+    setFormErrors((prev: any) => ({ ...prev, [field]: "" }));
     if (localFile) {
       setLocalPreviews(prev => ({ ...prev, [field]: URL.createObjectURL(localFile) }));
       setLocalFileNames(prev => ({ ...prev, [field]: localFile.name }));
@@ -148,6 +150,19 @@ export default function GuardDetailPage() {
   };
 
   const handleSaveEdit = async () => {
+    const errors: Record<string, string> = {};
+    if (!editForm.first_name) errors.first_name = "First name is required";
+    if (!editForm.last_name) errors.last_name = "Last name is required";
+    if (!editForm.phone_number) errors.phone_number = "Phone number is required";
+    if (!editForm.country) errors.country = "Country is required";
+    if (!editForm.state) errors.state = "State is required";
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill all required fields");
+      return;
+    }
+
     const allowedKeys = [
       "phone_number", "guard_level", "license_number", "license_expiration_date",
       "resume_url", "headshot_image_url", "security_guard_license_url", "driver_license_url",
@@ -626,6 +641,7 @@ export default function GuardDetailPage() {
         isPhoneDropdownOpen={isPhoneDropdownOpen}
         setIsPhoneDropdownOpen={setIsPhoneDropdownOpen}
         getLevelBadge={getLevelBadge}
+        formErrors={formErrors}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -634,6 +650,7 @@ export default function GuardDetailPage() {
           isEditing={isEditing}
           editForm={editForm}
           handleEditChange={handleEditChange}
+          formErrors={formErrors}
         />
 
         <GuardContactInfo guard={guard} />
@@ -647,6 +664,7 @@ export default function GuardDetailPage() {
             countries={countries}
             states={states}
             cities={cities}
+            formErrors={formErrors}
           />
 
           <GuardPreferences

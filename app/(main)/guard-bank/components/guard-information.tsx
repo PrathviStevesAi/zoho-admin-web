@@ -15,9 +15,10 @@ interface GuardInfoProps {
   isEditing?: boolean;
   editForm?: any;
   handleEditChange?: (field: string, value: any) => void;
+  formErrors?: Record<string, string>;
 }
 
-export function GuardPersonalDetails({ guard, isEditing, editForm, handleEditChange }: GuardInfoProps) {
+export function GuardPersonalDetails({ guard, isEditing, editForm, handleEditChange, formErrors }: GuardInfoProps) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5 lg:col-span-2">
       <div className="flex items-center gap-2 text-[#0064cb]">
@@ -26,12 +27,22 @@ export function GuardPersonalDetails({ guard, isEditing, editForm, handleEditCha
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
         <div className="space-y-1">
-          <span className="text-[11px] text-slate-500 font-semibold block">First Name</span>
-          {isEditing && handleEditChange ? <Input value={editForm.first_name || ""} onChange={e => handleEditChange("first_name", e.target.value)} className="h-10 text-sm mt-1" /> : <p className="text-[13px] font-bold text-slate-800">{guard.first_name || "N/A"}</p>}
+          <span className="text-[11px] text-slate-500 font-semibold block">First Name {isEditing && <span className="text-red-500">*</span>}</span>
+          {isEditing && handleEditChange ? (
+            <>
+              <Input value={editForm.first_name || ""} onChange={e => handleEditChange("first_name", e.target.value)} className={cn("h-10 text-sm mt-1", formErrors?.first_name && "border-red-500 focus-visible:ring-red-500")} />
+              {formErrors?.first_name && <p className="text-xs text-red-500 font-medium mt-1">{formErrors.first_name}</p>}
+            </>
+          ) : <p className="text-[13px] font-bold text-slate-800">{guard.first_name || "N/A"}</p>}
         </div>
         <div className="space-y-1">
-          <span className="text-[11px] text-slate-500 font-semibold block">Last Name</span>
-          {isEditing && handleEditChange ? <Input value={editForm.last_name || ""} onChange={e => handleEditChange("last_name", e.target.value)} className="h-10 text-sm mt-1" /> : <p className="text-[13px] font-bold text-slate-800">{guard.last_name || "N/A"}</p>}
+          <span className="text-[11px] text-slate-500 font-semibold block">Last Name {isEditing && <span className="text-red-500">*</span>}</span>
+          {isEditing && handleEditChange ? (
+            <>
+              <Input value={editForm.last_name || ""} onChange={e => handleEditChange("last_name", e.target.value)} className={cn("h-10 text-sm mt-1", formErrors?.last_name && "border-red-500 focus-visible:ring-red-500")} />
+              {formErrors?.last_name && <p className="text-xs text-red-500 font-medium mt-1">{formErrors.last_name}</p>}
+            </>
+          ) : <p className="text-[13px] font-bold text-slate-800">{guard.last_name || "N/A"}</p>}
         </div>
         <div className="space-y-1">
           <span className="text-[11px] text-slate-500 font-semibold block">Full Name</span>
