@@ -188,7 +188,7 @@ export function GuardDocuments({
           {renderDocumentCard("Driver License", "driver_license_url", "image/*", "driver-license", (url) => <ImagePreview url={url} alt="Driver License" />)}
           {renderDocumentCard("Security License", "security_guard_license_url", "image/*", "security-guard-license", (url) => <ImagePreview url={url} alt="Security License" />)}
           {renderDocumentCard("Headshot Image", "headshot_image_url", "image/*", "headshot-image", (url) => <ImagePreview url={url} alt="Headshot Image" />)}
-          {renderDocumentCard("Firewatch Certificate", "firewatch_certificate_url", "image/*", "firewatch-certificate-image", (url) => <ImagePreview url={url} alt="Firewatch Certificate" />)}
+          {renderDocumentCard("Firewatch Certificate", "firewatch_certificate_url", "image/*", "firewatch-certificate", (url) => <ImagePreview url={url} alt="Firewatch Certificate" />)}
         </div>
       </div>
 

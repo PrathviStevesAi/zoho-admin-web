@@ -345,7 +345,7 @@ export default function GuardDetailPage() {
         setLocalFileNames((prev: any) => ({ ...prev, [field]: "" }));
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.detail || data.message || "Failed to delete document");
+        toast.error(getErrorMessage(data, "Failed to delete document"));
       }
     } catch (err) {
       toast.error("An error occurred while deleting document");
