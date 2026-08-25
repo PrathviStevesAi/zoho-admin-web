@@ -1,4 +1,4 @@
-import { getSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
 
 export async function clientApiFetch<T>(
   endpoint: string,
@@ -27,13 +27,10 @@ export async function clientApiFetch<T>(
 
       if (!response.ok) {
         if (response.status === 401) {
-          if (i < retries - 1) {
-            const delay = (i + 1) * 1000 + Math.random() * 500;
-            await new Promise(resolve => setTimeout(resolve, delay));
-            continue;
-          } else {
-             window.location.href = "/admin-login";
+          if (typeof window !== "undefined") {
+            signOut({ callbackUrl: "/admin-login" });
           }
+          throw new Error("Unauthorized");
         }
 
         const errorText = await response.text().catch(() => "");
