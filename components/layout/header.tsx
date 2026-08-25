@@ -371,6 +371,7 @@ export function Header() {
         >
           <Search className="size-[20px] sm:size-[22px] stroke-[1.5px]" />
         </Button>
+        <NotificationsNav priority="red_alert" />
         <NotificationsNav priority="normal" />
         <NotificationsNav priority="critical" />
         <UserNav session={session} dynamicProfile={profile} />

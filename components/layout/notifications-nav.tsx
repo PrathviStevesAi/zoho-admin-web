@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Bell, ChevronLeft, ChevronRight, AlertTriangle, Trash2, X, Loader2 } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, AlertTriangle, Trash2, X, Loader2, Siren } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +26,7 @@ const formatHeaderDate = (dateStr: string) => {
   }
 };
 
-export function NotificationsNav({ priority = "normal" }: { priority?: "normal" | "critical" }) {
+export function NotificationsNav({ priority = "normal" }: { priority?: "normal" | "critical" | "red_alert" }) {
   const { status } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,7 +45,11 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
       const response = await fetch(`/api/notifications?count_only=true`);
       const res = await response.json();
       if (res.success && res.data) {
-        setUnreadCount(priority === "normal" ? res.data.normal : res.data.critical);
+        setUnreadCount(
+          priority === "normal" ? res.data.normal :
+            priority === "critical" ? res.data.critical :
+              res.data.red_alert || 0
+        );
       }
     } catch (error) {
       console.error("Error loading notification count:", error);
@@ -175,13 +179,15 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
         >
           {priority === "normal" ? (
             <Bell className="size-[18px] sm:size-[20px] stroke-[2px] text-[#0064cb]" />
-          ) : (
+          ) : priority === "critical" ? (
             <AlertTriangle className="size-[18px] sm:size-[20px] stroke-[2px] text-[#e11d48]" />
+          ) : (
+            <Siren className="size-[20px] sm:size-[22px] stroke-[2px] text-[#dc2626]" />
           )}
           {unreadCount > 0 && (
             <span className={cn(
               "absolute -top-2 -right-1 sm:-right-2 flex items-center justify-center min-w-[18px] sm:min-w-[20px] px-1 h-[18px] sm:h-[20px] text-white text-[10px] sm:text-[11px] font-bold rounded-full shadow-sm z-10",
-              priority === "normal" ? "bg-[#0064cb]" : "bg-[#e11d48]"
+              priority === "normal" ? "bg-[#0064cb]" : priority === "critical" ? "bg-[#e11d48]" : "bg-[#dc2626]"
             )}>
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
@@ -196,7 +202,7 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
       >
         <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/50 gap-2">
           <h3 className="font-semibold text-slate-700 whitespace-nowrap text-xs sm:text-sm">
-            {priority === "normal" ? "Normal Notifications" : "Critical Notifications"}
+            {priority === "normal" ? "Normal Notifications" : priority === "critical" ? "Critical Notifications" : "Red Alerts"}
           </h3>
           {notifications.length > 0 && (
             <div className="flex items-center gap-3 ml-auto">
@@ -278,7 +284,7 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
                             <div className={cn(
                               "w-1 rounded-full shrink-0",
                               isUnread
-                                ? priority === "normal" ? "bg-[#0064cb]" : "bg-[#e11d48]"
+                                ? priority === "normal" ? "bg-[#0064cb]" : priority === "critical" ? "bg-[#e11d48]" : "bg-[#dc2626]"
                                 : "bg-transparent"
                             )} />
 
@@ -288,7 +294,7 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
                                   className={cn(
                                     "text-[14px] leading-tight cursor-pointer hover:underline",
                                     isUnread
-                                      ? priority === "normal" ? "font-bold text-[#0064cb]" : "font-bold text-[#e11d48]"
+                                      ? priority === "normal" ? "font-bold text-[#0064cb]" : priority === "critical" ? "font-bold text-[#e11d48]" : "font-bold text-[#dc2626]"
                                       : "font-medium text-slate-400"
                                   )}
                                 >
