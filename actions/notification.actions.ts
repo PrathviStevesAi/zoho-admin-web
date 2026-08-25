@@ -92,4 +92,17 @@ export async function sendBroadcastNotificationAction(payload: {
     }
 }
 
+export async function deleteNotificationsAction(notificationIds: string[]): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+        const response = await apiFetch<any>(`/api/v1/notification/`, {
+            method: "DELETE",
+            body: JSON.stringify({ notification_ids: notificationIds }),
+        });
+        return { success: true, message: response?.message || "Notifications removed" };
+    } catch (error: any) {
+        console.error(`Error deleting notifications:`, error);
+        return { success: false, error: error.message || "Failed to delete notifications" };
+    }
+}
+
 

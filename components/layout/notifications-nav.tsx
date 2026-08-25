@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Bell, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, AlertTriangle, Trash2, X, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "next-auth/react";
 import { Notification } from "@/types/notification.types";
-import { markNotificationAsReadAction } from "@/actions/notification.actions";
+import { markNotificationAsReadAction, deleteNotificationsAction } from "@/actions/notification.actions";
 import { cn, formatDate } from "@/lib/utils";
 import { FormattedDate } from "@/components/ui/formatted-date";
 import Link from "next/link";
 import { onMessageListener } from "@/lib/firebase";
+import { toast } from "sonner";
 
 const formatHeaderDate = (dateStr: string) => {
   try {
@@ -33,7 +34,9 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalNotifications, setTotalNotifications] = useState(0);
   const [open, setOpen] = useState(false);
-  const limit = 10;
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [limit, setLimit] = useState(10);
   const loadRef = useRef<((page: number) => Promise<void>) | null>(null);
 
   const fetchCount = useCallback(async () => {
@@ -59,6 +62,11 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
       const response = await fetch(`/api/notifications?page=${page}&priority=${priority}&count_only=false`);
       const res = await response.json();
       if (res.success) {
+        if (res.data.length === 0 && page > 1) {
+          loadNotifications(page - 1);
+          return;
+        }
+
         const sorted = [...res.data].sort((a, b) => {
           if (a.is_seen === b.is_seen) return 0;
           return a.is_seen ? 1 : -1;
@@ -67,6 +75,9 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
         setUnreadCount(res.unread_count);
         setTotalNotifications(res.pagination.total);
         setCurrentPage(res.pagination.page);
+        if (res.pagination.limit) {
+          setLimit(res.pagination.limit);
+        }
       }
     } catch (error) {
       console.error("Error loading notifications:", error);
@@ -98,7 +109,7 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
     };
   }, []);
 
-  const hasMore = currentPage * limit < totalNotifications;
+  const hasMore = (currentPage * limit < totalNotifications) && (notifications.length === limit);
   const hasPrevious = currentPage > 1;
 
   const handleNextPage = () => {
@@ -109,7 +120,50 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
     if (hasPrevious) loadNotifications(currentPage - 1);
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    const currentVisibleIds = notifications.map(n => n.id);
+    if (checked) {
+      setSelectedIds(prev => Array.from(new Set([...prev, ...currentVisibleIds])));
+    } else {
+      setSelectedIds(prev => prev.filter(id => !currentVisibleIds.includes(id)));
+    }
+  };
+
+  const handleSelect = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    setIsDeleting(true);
+    try {
+      const res = await deleteNotificationsAction(selectedIds);
+      if (res.success) {
+        toast.success(res.message || "Notifications removed");
+        setSelectedIds([]);
+        loadNotifications(currentPage);
+        fetchCount();
+      } else {
+        toast.error(res.error || "Failed to delete notifications");
+        console.error("Failed to delete notifications", res.error);
+      }
+    } catch (error) {
+      toast.error("An error occurred while deleting notifications");
+      console.error("Error deleting notifications:", error);
+    }
+    setIsDeleting(false);
+  };
+
+  useEffect(() => {
+    if (!open) setSelectedIds([]);
+  }, [open]);
+
   const dates = Array.from(new Set(notifications.map((n) => formatHeaderDate(n.created_at))));
+  const isAllCurrentSelected = notifications.length > 0 && notifications.every(n => selectedIds.includes(n.id));
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
@@ -138,12 +192,41 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
       <DropdownMenuContent
         align="center"
         collisionPadding={16}
-        className="w-[calc(100vw-32px)] sm:w-[380px] p-0 mt-2 bg-card border-border shadow-xl rounded-sm animate-in fade-in-0 zoom-in-95"
+        className="w-[calc(100vw-32px)] sm:w-[500px] p-0 mt-2 bg-card border-border shadow-xl rounded-sm animate-in fade-in-0 zoom-in-95"
       >
-        <div className="flex items-center justify-between p-4 border-b border-border/50">
-          <h3 className="font-semibold text-slate-700">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/50 gap-2">
+          <h3 className="font-semibold text-slate-700 whitespace-nowrap text-xs sm:text-sm">
             {priority === "normal" ? "Normal Notifications" : "Critical Notifications"}
           </h3>
+          {notifications.length > 0 && (
+            <div className="flex items-center gap-3 ml-auto">
+              <label className="flex items-center gap-1.5 cursor-pointer select-none mt-[2px]">
+                <input
+                  type="checkbox"
+                  checked={isAllCurrentSelected}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer shrink-0"
+                />
+                <span className="text-[11px] sm:text-xs font-bold text-slate-700 whitespace-nowrap leading-none mt-[1px]">Select All</span>
+              </label>
+              {selectedIds.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDeleteSelected}
+                  disabled={isDeleting}
+                  className="cursor-pointer text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 h-7 px-2 sm:px-2.5 rounded-md font-semibold bg-white shrink-0"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" />
+                  )}
+                  <span className="text-[11px] sm:text-xs whitespace-nowrap">Delete Selected ({selectedIds.length})</span>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="max-h-[400px] overflow-y-auto custom-scrollbar bg-[#f8fafc] p-3">
@@ -181,14 +264,25 @@ export function NotificationsNav({ priority = "normal" }: { priority?: "normal" 
                         return (
                           <div
                             key={notification.id}
-                            className={cn(
-                              "bg-white rounded-l-lg rounded-r-none border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-3 flex gap-3 relative transition-all duration-200 overflow-hidden",
-                              isUnread
-                                ? priority === "normal" ? "border-l-[4px] border-l-[#0064cb]" : "border-l-[4px] border-l-[#e11d48]"
-                                : "border-l-[4px] border-l-transparent"
-                            )}
+                            className="bg-white rounded-lg border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-3 flex gap-3 relative transition-all duration-200 overflow-hidden items-stretch"
                           >
-                            <div className="flex-1 space-y-1">
+                            <div className="flex flex-col items-center justify-start pt-1 shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.includes(notification.id)}
+                                onChange={(e) => handleSelect(notification.id, e.target.checked)}
+                                className="w-[16px] h-[16px] rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                              />
+                            </div>
+
+                            <div className={cn(
+                              "w-1 rounded-full shrink-0",
+                              isUnread
+                                ? priority === "normal" ? "bg-[#0064cb]" : "bg-[#e11d48]"
+                                : "bg-transparent"
+                            )} />
+
+                            <div className="flex-1 space-y-1 py-0.5">
                               <div className="flex items-start justify-between gap-2">
                                 <h4
                                   className={cn(
