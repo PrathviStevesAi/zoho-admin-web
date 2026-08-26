@@ -28,7 +28,9 @@ export async function clientApiFetch<T>(
       if (!response.ok) {
         if (response.status === 401) {
           if (typeof window !== "undefined") {
-            signOut({ callbackUrl: "/admin-login" });
+            signOut({ redirect: false }).then(() => {
+              window.location.href = "/admin-login";
+            });
           }
           throw new Error("Unauthorized");
         }

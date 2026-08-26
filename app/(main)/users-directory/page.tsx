@@ -1,22 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Users,
   UserPlus,
-  Mail,
-  Phone,
-  Lock,
   Trash2,
   Search,
   ChevronRight,
   ArrowLeft,
   User,
-  Loader2,
-  Eye,
-  EyeOff
 } from "lucide-react";
-import { useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,32 +23,19 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { registerUserAction, fetchMembersAction, deleteMemberAction } from "@/actions/auth.actions";
+import { fetchMembersAction, deleteMemberAction } from "@/actions/auth.actions";
 import Swal from "sweetalert2";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface Member {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-}
+import { Pagination } from "@/components/table/pagination";
+import { MemberRegistrationForm } from "./_components/member-registration-form";
 
 export default function MemberDirectoryPage() {
   const [members, setMembers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [view, setView] = useState<"list" | "register">("list");
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    password: ""
-  });
-
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     loadMembers();
@@ -70,49 +50,6 @@ export default function MemberDirectoryPage() {
       toast.error(res.error || "Failed to load members");
     }
     setIsLoading(false);
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    if (formData.phone) {
-      const digitCount = formData.phone.replace(/\D/g, "").length;
-      if (digitCount < 7 || digitCount > 15) {
-        toast.error("Phone number must be between 7 and 15 digits");
-        return;
-      }
-    }
-
-    setIsRegistering(true);
-    const res = await registerUserAction({
-      email: formData.email,
-      password: formData.password,
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      phone_number: formData.phone
-    });
-
-    console.log("Register Action Response:", res);
-
-    if (res.success) {
-      toast.success("Member registered successfully");
-      setFormData({ firstName: "", lastName: "", email: "", phone: "", password: "" });
-      setShowPassword(false);
-      loadMembers();
-    } else {
-      toast.error(res.error || "Registration failed");
-    }
-    setIsRegistering(false);
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -149,8 +86,29 @@ export default function MemberDirectoryPage() {
     }
   };
 
+  const filteredMembers = members.filter(member => {
+    const search = searchQuery.toLowerCase();
+    const fullName = `${member.first_name || ""} ${member.last_name || ""}`.toLowerCase();
+    return (
+      fullName.includes(search) ||
+      (member.email || "").toLowerCase().includes(search)
+    );
+  });
+
+  const limit = 10;
+  const total = filteredMembers.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [searchQuery, totalPages, currentPage]);
+
+  const paginatedMembers = filteredMembers.slice((currentPage - 1) * limit, currentPage * limit);
+
   return (
-    <div className="p-0 sm:p-4 md:p-6 max-w-[1400px] mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-0 sm:p-4 md:p-6 max-w-[1500px] mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
           <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
@@ -165,210 +123,127 @@ export default function MemberDirectoryPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-5">
-          <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#0064cb]/10 flex items-center justify-center text-[#0064cb]">
-                  <UserPlus className="w-5 h-5" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-bold text-slate-800">Register New Member</CardTitle>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-8">
-              <form onSubmit={handleRegister} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">First Name</label>
-                    <Input
-                      placeholder="Enter first name"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value.replace(/\d/g, "") })}
-                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
-                    />
+      <div className="w-full">
+        {view === "register" ? (
+          <MemberRegistrationForm onBack={() => { setView("list"); loadMembers(); }} />
+        ) : (
+          <div>
+            <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white min-h-[600px] flex flex-col !gap-0 !py-0">
+              <CardHeader className="p-4 sm:p-6 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
+                    <Users className="w-5 h-5 text-[#0064cb]" />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Last Name</label>
-                    <Input
-                      placeholder="Enter last name"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value.replace(/\d/g, "") })}
-                      className="h-12 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
-                    />
+                  <div>
+                    <CardTitle className="text-lg font-bold text-slate-800">Members List</CardTitle>
+                    <p className="text-xs text-slate-800 font-medium mt-0.5">
+                      {total} Registered Members
+                    </p>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
+                <div className="flex items-center gap-4 w-full sm:w-auto mt-4 sm:mt-0">
+                  <div className="relative w-full sm:w-[260px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
                     <Input
-                      type="email"
-                      placeholder="Enter email address"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="h-12 pl-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
+                      placeholder="Search name or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="h-10 pl-9 pr-4 bg-slate-50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all text-xs font-medium text-slate-800"
                     />
                   </div>
+                  <Button
+                    onClick={() => setView("register")}
+                    className="h-10 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 px-4 whitespace-nowrap cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" /> Add New Member
+                  </Button>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1 flex justify-between items-center">
-                    <span>Phone Number</span>
-                    <span className="text-[10px] lowercase text-slate-700 font-normal">(Optional)</span>
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
-                    <Input
-                      placeholder="Enter phone number"
-                      value={formData.phone}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const hasPlus = val.startsWith("+");
-                        const digits = val.replace(/\D/g, "").slice(0, 15);
-                        setFormData({ ...formData, phone: (hasPlus ? "+" : "") + digits });
-                      }}
-                      className="h-12 pl-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Access Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value.replace(/\s/g, "") })}
-                      onKeyDown={(e) => {
-                        if (e.key === " ") e.preventDefault();
-                      }}
-                      className="h-12 pl-11 pr-11 bg-slate-50/50 border-slate-200 rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isRegistering}
-                  className="cursor-pointer w-full h-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 mt-2 disabled:opacity-70"
-                >
-                  {isRegistering ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Registering...</span>
-                    </div>
-                  ) : "Register Member"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-7">
-          <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white min-h-[600px]">
-            <CardHeader className="p-4 sm:p-8 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-bold text-slate-800">Members List</CardTitle>
-                  <p className="text-xs text-slate-800 font-medium mt-0.5">{members.length} Registered Members</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table className="min-w-[600px]">
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="w-[200px] h-12 px-4 sm:px-8 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Name</TableHead>
-                      <TableHead className="h-12 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Email</TableHead>
-                      <TableHead className="h-12 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Phone Number</TableHead>
-                      <TableHead className="h-12 text-right px-4 sm:px-8 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i} className="hover:bg-transparent border-slate-50">
-                          <TableCell className="px-4 sm:px-8 py-4">
-                            <div className="flex items-center gap-3">
-                              <Skeleton className="w-9 h-9 rounded-full bg-slate-100" />
-                              <Skeleton className="h-4 w-32 bg-slate-100" />
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <Skeleton className="h-4 w-48 bg-slate-100" />
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <Skeleton className="h-4 w-32 bg-slate-100" />
-                          </TableCell>
-                          <TableCell className="px-4 sm:px-8 py-4 text-right">
-                            <Skeleton className="w-9 h-9 rounded-lg ml-auto bg-slate-50" />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : members.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="h-64 text-center">
-                          <div className="flex flex-col items-center justify-center gap-2">
-                            <Users className="w-10 h-10 text-slate-200" />
-                            <p className="text-sm font-medium text-slate-700">No members found</p>
-                          </div>
-                        </TableCell>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+                <div className="overflow-x-auto flex-1">
+                  <Table className="min-w-[800px]">
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent border-slate-100">
+                        <TableHead className="py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Name</TableHead>
+                        <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Email</TableHead>
+                        <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Phone Number</TableHead>
+                        <TableHead className="py-4 px-6 text-right text-[11px] font-bold text-slate-700 uppercase tracking-wider">Action</TableHead>
                       </TableRow>
-                    ) : (
-                      members.map((member) => (
-                        <TableRow key={member.id} className="group hover:bg-slate-50/50 border-slate-50 transition-colors">
-                          <TableCell className="px-4 sm:px-8 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
-                                <User className="w-5 h-5" />
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                          <TableRow key={i} className="hover:bg-transparent border-slate-50">
+                            <TableCell className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <Skeleton className="w-8 h-8 rounded-full bg-slate-100" />
+                                <Skeleton className="h-4 w-24 bg-slate-100" />
                               </div>
-                              <span className="text-sm font-bold text-slate-700">
-                                {member.first_name || "---"} {member.last_name || "---"}
-                              </span>
+                            </TableCell>
+                            <TableCell className="py-4 px-4"><Skeleton className="h-4 w-36 bg-slate-100" /></TableCell>
+                            <TableCell className="py-4 px-4"><Skeleton className="h-4 w-24 bg-slate-100" /></TableCell>
+                            <TableCell className="px-6 py-4 text-right"><Skeleton className="w-9 h-9 rounded-lg ml-auto bg-slate-50" /></TableCell>
+                          </TableRow>
+                        ))
+                      ) : paginatedMembers.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="h-96 text-center">
+                            <div className="flex flex-col items-center justify-center gap-2">
+                              <Users className="w-12 h-12 text-slate-200" />
+                              <p className="text-sm font-medium text-slate-700">No members found</p>
                             </div>
                           </TableCell>
-                          <TableCell className="py-4">
-                            <span className="text-sm text-slate-800 font-medium">{member.email}</span>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <span className="text-sm text-slate-800 font-medium">{member.phone_number || "---"}</span>
-                          </TableCell>
-                          <TableCell className="px-4 sm:px-8 py-4 text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(member.id, `${member.first_name || "---"} ${member.last_name || "---"}`)}
-                              className="cursor-pointer w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 transition-all"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                      ) : (
+                        paginatedMembers.map((member) => (
+                          <TableRow key={member.id} className="group hover:bg-slate-50/50 border-slate-50 transition-colors">
+                            <TableCell className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+                                  <User className="w-4 h-4" />
+                                </div>
+                                <span className="text-sm font-bold text-slate-700">
+                                  {member.first_name || "---"} {member.last_name || "---"}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4 px-4">
+                              <span className="text-xs text-slate-800 font-medium">{member.email}</span>
+                            </TableCell>
+                            <TableCell className="py-4 px-4">
+                              <span className="text-xs text-slate-800 font-medium">{member.phone_number || "---"}</span>
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(member.id, `${member.first_name || "---"} ${member.last_name || "---"}`)}
+                                className="cursor-pointer w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 transition-all"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+              {totalPages > 0 && !isLoading && (
+                <Pagination
+                  page={currentPage}
+                  totalPages={totalPages}
+                  totalItems={total}
+                  limit={limit}
+                  onPageChange={setCurrentPage}
+                  isPending={isLoading}
+                />
+              )}
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
