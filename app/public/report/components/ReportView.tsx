@@ -195,14 +195,18 @@ export default function ReportView({ data }: ReportViewProps) {
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Shift Time</span>
-              <div className="flex flex-col mt-1">
-                <span className="text-sm font-bold text-slate-900 dark:text-white">{formatTime(data.start_time)}</span>
-                <span className="text-sm text-slate-500 my-0.5">-</span>
-                <span className="text-sm font-bold text-slate-900 dark:text-white">{formatTime(data.end_time)}</span>
-                <span className="text-xs font-medium text-slate-500 mt-1">
-                  ( {getDuration(data.start_time, data.end_time)} )
-                </span>
-              </div>
+              {!data.start_time && !data.end_time ? (
+                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1">-</span>
+              ) : (
+                <div className="flex flex-col mt-1">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{formatTime(data.start_time)}</span>
+                  <span className="text-sm text-slate-500 my-0.5">-</span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{formatTime(data.end_time)}</span>
+                  <span className="text-xs font-medium text-slate-500 mt-1">
+                    ( {getDuration(data.start_time, data.end_time)} )
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
