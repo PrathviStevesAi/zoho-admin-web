@@ -21,7 +21,7 @@ export async function getPublicShiftReportAction(shiftId: string, reportToken: s
     }
 
     const data = await res.json();
-    return data;
+    return { success: true, data: data?.data || data };
   } catch (error: any) {
     return { success: false, error: error.message || "Network error" };
   }
