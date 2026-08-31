@@ -29,7 +29,7 @@ export function ApproveShiftCard({
   if (!isOpen || !shift) return null;
 
   const handleSend = async () => {
-    if (rating === 0) return;
+    if (rating === 0 || comment.trim() === "") return;
     await onApprove(rating, comment);
   };
 
@@ -39,7 +39,7 @@ export function ApproveShiftCard({
         <div className="flex flex-col gap-1">
           <h2 className="text-xl font-bold text-slate-600">Approve the shift completion</h2>
         </div>
-        <button 
+        <button
           onClick={onClose}
           className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
         >
@@ -74,7 +74,7 @@ export function ApproveShiftCard({
         </div>
 
         <div className="flex flex-col gap-3">
-          <h4 className="text-sm font-bold text-slate-500">Comments about guard's performance</h4>
+          <h4 className="text-sm font-bold text-slate-500">Comments about guard's performance <span className="text-red-400">*</span></h4>
           <textarea
             className="w-full min-h-[120px] p-3 text-sm text-slate-700 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all resize-y placeholder:text-slate-400"
             placeholder="Comments about guard's performance"
@@ -97,7 +97,7 @@ export function ApproveShiftCard({
           <Button
             type="button"
             onClick={handleSend}
-            disabled={isApproving || rating === 0}
+            disabled={isApproving || rating === 0 || comment.trim() === ""}
             className="px-6 h-11 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer border-none"
           >
             {isApproving ? (
