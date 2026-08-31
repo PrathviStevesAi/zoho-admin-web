@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
 import {
@@ -13,7 +13,9 @@ import {
   ClipboardList,
   AlertTriangle,
   History,
-  Copy
+  Copy,
+  ArrowLeft,
+  MessageSquarePlus
 } from "lucide-react";
 import Image from "next/image";
 import { formatDate } from "@/lib/utils";
@@ -25,14 +27,24 @@ import { ShiftHistoryTab } from "@/components/shift/tabs/ShiftHistoryTab";
 import { FilePreviewDialog } from "@/components/shift/dialogs/FilePreviewDialog";
 import { PreviewFile } from "@/components/shift/types";
 import { cn } from "@/lib/utils";
+import { FeedbackForm } from "@/app/public/report/components/FeedbackForm";
+import { PublicReportSkeleton } from "@/app/public/report/components/PublicReportSkeleton";
 
 interface ReportViewProps {
   data: any;
+  reportToken?: string;
+  shiftId?: string;
 }
 
-export default function ReportView({ data }: ReportViewProps) {
+export default function ReportView({ data, reportToken, shiftId }: ReportViewProps) {
   const [activeTab, setActiveTab] = useState<string>("");
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    setIsRefreshing(false);
+  }, [data]);
 
   const formatTime = (timeString: string) => {
     if (!timeString) return "-";
@@ -116,6 +128,10 @@ export default function ReportView({ data }: ReportViewProps) {
     ? data.guard_location.map((loc: any) => [loc.latitude, loc.longitude])
     : undefined;
 
+  if (isRefreshing) {
+    return <PublicReportSkeleton />;
+  }
+
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-700">
       <div className="w-full flex flex-col items-center justify-center py-6 pb-2 gap-2">
@@ -133,16 +149,40 @@ export default function ReportView({ data }: ReportViewProps) {
         </h2>
         <div className="w-24 h-1 bg-amber-400 mt-2 mb-2"></div>
 
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(window.location.href);
-            toast.success("Link copied to clipboard!");
-          }}
-          className="flex items-center gap-2 px-4 py-1.5 border border-blue-500 text-blue-500 bg-white rounded-md hover:bg-blue-50 transition-colors font-medium text-sm cursor-pointer"
-        >
-          <Copy className="w-4 h-4" />
-          <span>Copy link for sharing</span>
-        </button>
+        <div className="w-full relative flex flex-col sm:flex-row items-center justify-center min-h-[40px] gap-3 sm:gap-0 mt-2 sm:mt-0">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              toast.success("Link copied to clipboard!");
+            }}
+            className="flex items-center gap-2 px-4 py-1.5 border border-blue-500 text-blue-500 bg-white rounded-md hover:bg-blue-50 transition-colors font-medium text-sm cursor-pointer"
+          >
+            <Copy className="w-4 h-4" />
+            <span>Copy link for sharing</span>
+          </button>
+
+          {data?.action?.is_submit_review === true && (
+            <div className="sm:absolute sm:right-0 sm:top-0 sm:bottom-0 flex items-center">
+              {isReviewMode ? (
+                <button
+                  onClick={() => setIsReviewMode(false)}
+                  className="flex items-center gap-2 px-4 py-1.5 border border-slate-300 text-slate-700 dark:border-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium text-sm cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back to Report</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsReviewMode(true)}
+                  className="flex items-center gap-2 px-4 py-1.5 border border-indigo-500 text-indigo-500 bg-white rounded-md hover:bg-indigo-50 transition-colors font-medium text-sm cursor-pointer"
+                >
+                  <MessageSquarePlus className="w-4 h-4" />
+                  <span>Give Your Feedback</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="w-full bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-6 md:p-8">
@@ -226,99 +266,103 @@ export default function ReportView({ data }: ReportViewProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3 lg:sticky lg:top-6 self-start">
-          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-2 overflow-hidden">
-            <DynamicShiftMap checkpoints={checkpoints} className="mt-0 border-none shadow-none bg-transparent" heightClass="h-[290px]" />
+      {isReviewMode ? (
+        <FeedbackForm shiftId={shiftId} reportToken={reportToken} onClose={() => setIsReviewMode(false)} onRefreshStart={() => setIsRefreshing(true)} />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-3 lg:sticky lg:top-6 self-start">
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-2 overflow-hidden">
+              <DynamicShiftMap checkpoints={checkpoints} className="mt-0 border-none shadow-none bg-transparent" heightClass="h-[290px]" />
+            </div>
           </div>
-        </div>
 
-        <div className="lg:col-span-2 h-fit flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-          {data?.dar_report && (
+          <div className="lg:col-span-2 h-fit flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+            {data?.dar_report && (
+              <div className="border-b border-slate-200 dark:border-slate-800">
+                <button
+                  onClick={() => setActiveTab(activeTab === 'dar' ? '' : 'dar')}
+                  className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'dar' && "bg-slate-50 dark:bg-slate-800/50")}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                      <ClipboardList className={cn("size-5", activeTab === 'dar' ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")} />
+                    </div>
+                    <span className={cn("font-bold text-sm uppercase tracking-wide", activeTab === 'dar' ? "text-blue-600 dark:text-blue-400" : "text-slate-800 dark:text-slate-200")}>Daily Activity Report</span>
+                  </div>
+                  <ChevronRight className={cn("transition-transform duration-300", activeTab === 'dar' ? "rotate-90 text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200")} />
+                </button>
+                {activeTab === 'dar' && (
+                  <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
+                    <ShiftDARReportTab reports={data} isReportsLoading={false} reportsError={null} setPreviewFile={setPreviewFile} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {data?.incident_report && data.incident_report.length > 0 && (
+              <div className="border-b border-slate-200 dark:border-slate-800">
+                <button
+                  onClick={() => setActiveTab(activeTab === 'incident' ? '' : 'incident')}
+                  className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'incident' && "bg-slate-50 dark:bg-slate-800/50")}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                      <AlertTriangle className={cn("size-5", activeTab === 'incident' ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")} />
+                    </div>
+                    <span className={cn("font-bold text-sm uppercase tracking-wide", activeTab === 'incident' ? "text-blue-600 dark:text-blue-400" : "text-slate-800 dark:text-slate-200")}>Incident Report</span>
+                  </div>
+                  <ChevronRight className={cn("transition-transform duration-300", activeTab === 'incident' ? "rotate-90 text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200")} />
+                </button>
+                {activeTab === 'incident' && (
+                  <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
+                    <ShiftIncidentReportsTab reports={data} isReportsLoading={false} reportsError={null} setPreviewFile={setPreviewFile} />
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="border-b border-slate-200 dark:border-slate-800">
               <button
-                onClick={() => setActiveTab(activeTab === 'dar' ? '' : 'dar')}
-                className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'dar' && "bg-slate-50 dark:bg-slate-800/50")}
+                onClick={() => setActiveTab(activeTab === 'checkpoint' ? '' : 'checkpoint')}
+                className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'checkpoint' && "bg-slate-50 dark:bg-slate-800/50")}
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                    <ClipboardList className={cn("size-5", activeTab === 'dar' ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")} />
+                    <MapPin className={cn("size-5", activeTab === 'checkpoint' ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")} />
                   </div>
-                  <span className={cn("font-bold text-sm uppercase tracking-wide", activeTab === 'dar' ? "text-blue-600 dark:text-blue-400" : "text-slate-800 dark:text-slate-200")}>Daily Activity Report</span>
+                  <span className={cn("font-bold text-sm uppercase tracking-wide", activeTab === 'checkpoint' ? "text-blue-600 dark:text-blue-400" : "text-slate-800 dark:text-slate-200")}>Check Point</span>
                 </div>
-                <ChevronRight className={cn("transition-transform duration-300", activeTab === 'dar' ? "rotate-90 text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200")} />
+                <ChevronRight className={cn("transition-transform duration-300", activeTab === 'checkpoint' ? "rotate-90 text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200")} />
               </button>
-              {activeTab === 'dar' && (
+              {activeTab === 'checkpoint' && (
                 <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
-                  <ShiftDARReportTab reports={data} isReportsLoading={false} reportsError={null} setPreviewFile={setPreviewFile} />
+                  <ShiftCheckpointsTab reports={data} isReportsLoading={false} reportsError={null} setPreviewFile={setPreviewFile} />
                 </div>
               )}
             </div>
-          )}
 
-          {data?.incident_report && data.incident_report.length > 0 && (
-            <div className="border-b border-slate-200 dark:border-slate-800">
+            <div>
               <button
-                onClick={() => setActiveTab(activeTab === 'incident' ? '' : 'incident')}
-                className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'incident' && "bg-slate-50 dark:bg-slate-800/50")}
+                onClick={() => setActiveTab(activeTab === 'history' ? '' : 'history')}
+                className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'history' && "bg-slate-50 dark:bg-slate-800/50")}
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                    <AlertTriangle className={cn("size-5", activeTab === 'incident' ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")} />
+                    <History className={cn("size-5", activeTab === 'history' ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")} />
                   </div>
-                  <span className={cn("font-bold text-sm uppercase tracking-wide", activeTab === 'incident' ? "text-blue-600 dark:text-blue-400" : "text-slate-800 dark:text-slate-200")}>Incident Report</span>
+                  <span className={cn("font-bold text-sm uppercase tracking-wide", activeTab === 'history' ? "text-blue-600 dark:text-blue-400" : "text-slate-800 dark:text-slate-200")}>History Of Changes</span>
                 </div>
-                <ChevronRight className={cn("transition-transform duration-300", activeTab === 'incident' ? "rotate-90 text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200")} />
+                <ChevronRight className={cn("transition-transform duration-300", activeTab === 'history' ? "rotate-90 text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200")} />
               </button>
-              {activeTab === 'incident' && (
+              {activeTab === 'history' && (
                 <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
-                  <ShiftIncidentReportsTab reports={data} isReportsLoading={false} reportsError={null} setPreviewFile={setPreviewFile} />
+                  <ShiftHistoryTab reports={data} isReportsLoading={false} reportsError={null} setPreviewFile={setPreviewFile} />
                 </div>
               )}
             </div>
-          )}
-
-          <div className="border-b border-slate-200 dark:border-slate-800">
-            <button
-              onClick={() => setActiveTab(activeTab === 'checkpoint' ? '' : 'checkpoint')}
-              className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'checkpoint' && "bg-slate-50 dark:bg-slate-800/50")}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                  <MapPin className={cn("size-5", activeTab === 'checkpoint' ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")} />
-                </div>
-                <span className={cn("font-bold text-sm uppercase tracking-wide", activeTab === 'checkpoint' ? "text-blue-600 dark:text-blue-400" : "text-slate-800 dark:text-slate-200")}>Check Point</span>
-              </div>
-              <ChevronRight className={cn("transition-transform duration-300", activeTab === 'checkpoint' ? "rotate-90 text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200")} />
-            </button>
-            {activeTab === 'checkpoint' && (
-              <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
-                <ShiftCheckpointsTab reports={data} isReportsLoading={false} reportsError={null} setPreviewFile={setPreviewFile} />
-              </div>
-            )}
-          </div>
-
-          <div>
-            <button
-              onClick={() => setActiveTab(activeTab === 'history' ? '' : 'history')}
-              className={cn("w-full flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group", activeTab === 'history' && "bg-slate-50 dark:bg-slate-800/50")}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                  <History className={cn("size-5", activeTab === 'history' ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")} />
-                </div>
-                <span className={cn("font-bold text-sm uppercase tracking-wide", activeTab === 'history' ? "text-blue-600 dark:text-blue-400" : "text-slate-800 dark:text-slate-200")}>History Of Changes</span>
-              </div>
-              <ChevronRight className={cn("transition-transform duration-300", activeTab === 'history' ? "rotate-90 text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200")} />
-            </button>
-            {activeTab === 'history' && (
-              <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
-                <ShiftHistoryTab reports={data} isReportsLoading={false} reportsError={null} setPreviewFile={setPreviewFile} />
-              </div>
-            )}
           </div>
         </div>
-      </div>
+      )}
       <FilePreviewDialog previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </div>
   );

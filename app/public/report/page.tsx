@@ -40,7 +40,7 @@ export default async function PublicReportPage(props: {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-6 overflow-x-hidden w-full max-w-full font-sans">
       <div className="w-[94%] max-w-7xl mx-auto sm:w-full sm:px-6">
-        <ReportView data={response.data} />
+        <ReportView data={response.data} reportToken={report_token} shiftId={shift_id} />
       </div>
     </div>
   );
