@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { UserPlus, User, ClipboardList, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Country, State, City as CityLib } from "country-state-city";
 import { securityTypes } from "./Datas";
 import { submitQuoteAction } from "@/actions/quote.actions";
+import { verifyCustomerEmailAction } from "@/actions/customer.public.actions";
 import Loader from "../Loader";
 import Autocomplete from "react-google-autocomplete";
 
@@ -107,6 +109,9 @@ const CityAutocomplete = ({ name, value, onChange, options, disabled, placeholde
 
 export default function QuoteForm() {
   const [loading, setLoading] = useState(false);
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [verifyEmailError, setVerifyEmailError] = useState<string | null>(null);
+  const [customerType, setCustomerType] = useState<"new" | "existing" | "">("");
   const [sameAsBilling, setSameAsBilling] = useState(false);
   const [formErrors, setFormErrors] = useState<any>({});
   const [countries, setCountries] = useState<any[]>([]);
@@ -684,6 +689,73 @@ export default function QuoteForm() {
     }
   };
 
+  const handleVerifyEmail = async () => {
+    if (!formData.Email) return;
+    setIsVerifyingEmail(true);
+    const res = await verifyCustomerEmailAction(formData.Email);
+    setIsVerifyingEmail(false);
+
+    if (res.success && res.data) {
+      toast.success("Account verified successfully");
+      const data = res.data;
+
+      const newBillingState = data.billing_address?.state || formData.State;
+      const newServiceState = data.service_address?.state || formData.Service_State;
+
+      setFormData(prev => ({
+        ...prev,
+        Company_Name: data.company_name || prev.Company_Name,
+        First_Name: data.first_name || prev.First_Name,
+        Last_Name: data.last_name || prev.Last_Name,
+        Mobile: data.phone_number || prev.Mobile,
+        Street: data.billing_address?.street || prev.Street,
+        City: data.billing_address?.city || prev.City,
+        State: newBillingState,
+        Zip_Code: data.billing_address?.zip || prev.Zip_Code,
+        Country: data.billing_address?.country || prev.Country,
+        Service_Street: data.service_address?.street || prev.Service_Street,
+        Service_City: data.service_address?.city || prev.Service_City,
+        Service_State: newServiceState,
+        Service_Zip_Code: data.service_address?.zip || prev.Service_Zip_Code,
+        Service_Country: data.service_address?.country || prev.Service_Country,
+      }));
+
+      // Update state and city dropdown options based on the returned states
+      if (newBillingState) {
+        const usStates = State.getStatesOfCountry("US");
+        let stateCode = usStates.find((s) => s.name === newBillingState || s.isoCode === newBillingState)?.isoCode;
+        if (stateCode) setCities(CityLib.getCitiesOfState("US", stateCode));
+      }
+
+      if (newServiceState) {
+        const usStates = State.getStatesOfCountry("US");
+        let stateCode = usStates.find((s) => s.name === newServiceState || s.isoCode === newServiceState)?.isoCode;
+        if (stateCode) setServiceCities(CityLib.getCitiesOfState("US", stateCode));
+      }
+
+    } else {
+      const errorMsg = res.error || "Failed to verify email";
+      toast.error(errorMsg);
+      setVerifyEmailError(errorMsg);
+
+      setTimeout(() => {
+        setVerifyEmailError(null);
+        setCustomerType("");
+        setFormData(initialFormData);
+      }, 5000);
+    }
+  };
+
+  const toggleExistingCustomer = () => {
+    if (customerType === "existing") {
+      setCustomerType("");
+      setFormData(initialFormData);
+      setVerifyEmailError(null);
+    } else {
+      setCustomerType("existing");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
@@ -709,9 +781,62 @@ export default function QuoteForm() {
             />
           </a>
         </div>
-        <h2 className="text-2xl font-bold text-center uppercase text-[#0d7943]">
+        <h2 className="text-2xl font-bold text-center uppercase text-[#0d7943] mb-8">
           INSTANT QUOTE
         </h2>
+
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-slate-800 mb-4">I am a:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="border border-slate-200 rounded-xl p-4 flex items-center gap-4 transition-all hover:border-[#0d7943]">
+              <div className="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center bg-[#e5f3ea] text-[#0d7943]">
+                <UserPlus size={20} />
+              </div>
+              <h4 className="font-semibold text-slate-800 flex-1">New Customer</h4>
+              <button
+                type="button"
+                className="cursor-pointer px-4 py-1.5 border border-[#0d7943] text-[#0d7943] text-sm font-semibold rounded-md hover:bg-[#e5f3ea] transition-colors shrink-0"
+                onClick={() => {
+                  window.open('/customer/register', '_blank');
+                }}
+              >
+                Register
+              </button>
+            </div>
+
+            <div
+              className={`cursor-pointer border rounded-xl p-4 flex items-center gap-4 transition-all ${customerType === "existing" ? "border-[#0d7943] bg-[#e5f3ea]/50" : "border-slate-200 hover:border-[#0d7943]"}`}
+              onClick={toggleExistingCustomer}
+            >
+              <div className={`w-5 h-5 relative flex-shrink-0 rounded-full border-2 ${customerType === "existing" ? "border-[#0d7943]" : "border-slate-300"}`}>
+                {customerType === "existing" && <div className="w-2.5 h-2.5 rounded-full bg-[#0d7943] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />}
+              </div>
+              <div className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center ${customerType === "existing" ? "bg-[#cce6d5] text-[#0d7943]" : "bg-[#e5f3ea] text-[#0d7943]"}`}>
+                <User size={20} />
+              </div>
+              <h4 className={`font-semibold ${customerType === "existing" ? "text-[#0d7943]" : "text-slate-800"} flex-1`}>Existing Customer</h4>
+            </div>
+          </div>
+
+          <div className="mt-6 bg-[#f6fbf8] border border-[#e5f3ea] rounded-xl p-6 text-sm text-slate-700 space-y-4">
+            <div className="flex items-center gap-2 text-[#0d7943] font-bold text-base mb-1">
+              <ClipboardList size={20} />
+              Note:
+            </div>
+            <p className="flex items-start gap-2">
+              <Check className="w-4 h-4 text-[#0d7943] mt-0.5 shrink-0" strokeWidth={3} />
+              <span><strong className="text-[#0d7943]">New Customer: </strong> Register to access the app, get real-time shift and guard updates, and place orders directly.</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <Check className="w-4 h-4 text-[#0d7943] mt-0.5 shrink-0" strokeWidth={3} />
+              <span><strong className="text-[#0d7943]">Existing Customer: </strong> Use your registered email to auto-fill your existing information.</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <Check className="w-4 h-4 text-[#0d7943] mt-0.5 shrink-0" strokeWidth={3} />
+              <span><strong className="text-[#0d7943]">Get an Estimate: </strong> No registration or selection required. Just fill out the form and get your estimate by email.</span>
+            </p>
+          </div>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8" noValidate>
@@ -743,10 +868,27 @@ export default function QuoteForm() {
               {formErrors.Mobile && <span className="text-xs text-red-500 mt-1 block">{formErrors.Mobile}</span>}
             </div>
 
-            <div>
+            <div className={customerType === "existing" ? "col-span-1 md:col-span-2 flex flex-col order-first" : ""}>
               <label className="block text-sm font-medium mb-1 text-slate-700">Email <span className="text-red-500">*</span></label>
-              <input type="email" name="Email" value={formData.Email} onChange={handleInputChange} placeholder="Enter Email" className={`flex h-10 w-full rounded-md border ${formErrors.Email ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+              <div className="flex gap-2 w-full">
+                <input type="email" name="Email" value={formData.Email} onChange={handleInputChange} placeholder="Enter Email" className={`flex h-10 w-full rounded-md border ${formErrors.Email || verifyEmailError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
+                {customerType === "existing" && (
+                  <button
+                    type="button"
+                    onClick={handleVerifyEmail}
+                    disabled={isVerifyingEmail || !formData.Email}
+                    className="cursor-pointer h-10 px-4 bg-[#0d7943] text-white rounded-md text-sm font-semibold hover:bg-[#0a5c32] disabled:opacity-50 transition-colors shrink-0 flex items-center justify-center min-w-[100px]"
+                  >
+                    {isVerifyingEmail ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      "Verify"
+                    )}
+                  </button>
+                )}
+              </div>
               {formErrors.Email && <span className="text-xs text-red-500 mt-1 block">{formErrors.Email}</span>}
+              {verifyEmailError && !formErrors.Email && <span className="text-xs text-red-500 mt-1 block font-medium">{verifyEmailError}</span>}
             </div>
 
             <div>
