@@ -5,15 +5,18 @@ import {
   clientFetchCommentsAction,
   clientFetchGuardTrackingAction
 } from "@/lib/client-actions";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 import {
   addCommentAction,
   updateShiftDetailsAction,
   cancelShiftServiceAction,
   manualStartShiftAction,
+  assignGuardToShiftAction,
+  reassignGuardToShiftAction,
   assignLeadGuardAction,
   assignStandbyGuardAction,
   reassignLeadGuardAction,
@@ -94,7 +97,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number };
     };
   }>({ isOpen: false, warnings: [] });
-  const [actionError, setActionError] = useState<{ isOpen: boolean, message: string }>({ isOpen: false, message: "" });
+  const [actionError, setActionError] = useState<{isOpen: boolean, message: string}>({isOpen: false, message: ""});
 
   const loadShiftDetails = useCallback(async () => {
     if (!shiftId) return;
@@ -645,7 +648,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         setIsNewAssignOpen(false);
         loadShiftDetails();
       } else {
-        setActionError({ isOpen: true, message: res.error || "Failed to reassign guard" });
+        setActionError({isOpen: true, message: res.error || "Failed to reassign guard"});
       }
     } else {
       const actionPayload: any = {
@@ -666,7 +669,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         setIsNewAssignOpen(false);
         loadShiftDetails();
       } else {
-        setActionError({ isOpen: true, message: res.error || "Failed to assign guard" });
+        setActionError({isOpen: true, message: res.error || "Failed to assign guard"});
       }
     }
     setIsAssigningGuard(null);
@@ -736,18 +739,16 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onCancelService={() => setIsCancelServiceOpen(true)}
         showSettingBtn={showSettingBtn}
         onStartVideoCall={() => {
-          const guardData = shift?.lead_guard || (typeof shift?.assigned_guard === 'object' ? shift?.assigned_guard : null);
-          const guardId = guardData?.guard_id || (guardData as any)?.id || (typeof shift?.assigned_guard === 'string' ? shift?.assigned_guard : null);
-          console.log("Whole lead_guard / guardData object:", guardData);
+          const guardId = shift?.lead_guard?.guard_id ||
+            (typeof shift?.assigned_guard === 'object'
+              ? shift?.assigned_guard?.id || shift?.assigned_guard?.guard_id
+              : shift?.assigned_guard);
 
           if (!guardId) {
             toast.error("No guard assigned to this shift yet.");
             return;
           }
-          const shiftZegoConfig = guardData?.zego_cloud;
-          const formattedGuardId = (guardId as string).replace(/-/g, "");
-          console.log("Starting Video Call with guardId:", formattedGuardId, "and zegoConfig:", shiftZegoConfig);
-          startCall(formattedGuardId, shiftId, 1, shiftZegoConfig);
+          startCall(guardId as string, shiftId);
         }}
         onJoinVideoCall={async () => {
           toast.info("Incoming/Outgoing calls are now managed automatically.");
@@ -793,7 +794,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               const res = await sendShiftReportAction(shift.shift_id);
               if (res.success) {
                 toast.success(res.message || "Report email successfully sent");
-
+                
                 // Refresh shift details to get updated `is_report_send` status
                 await loadShiftDetails();
               } else {
@@ -1036,10 +1037,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         isSaving={isStartingShift}
       />
 
-      <ActionErrorDialog
-        isOpen={actionError.isOpen}
-        onClose={() => setActionError({ isOpen: false, message: "" })}
-        message={actionError.message}
+      <ActionErrorDialog 
+        isOpen={actionError.isOpen} 
+        onClose={() => setActionError({ isOpen: false, message: "" })} 
+        message={actionError.message} 
       />
     </div>
   );

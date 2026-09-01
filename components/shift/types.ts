@@ -61,7 +61,6 @@ export interface AssignedGuard {
   first_name?: string;
   last_name?: string;
   name?: string;
-  zego_cloud?: any;
 }
 
 export interface LeadGuard {
@@ -72,7 +71,6 @@ export interface LeadGuard {
   phone_no?: string;
   shift_status?: string;
   execution_time?: ExecutionTime | string | null;
-  zego_cloud?: any;
 }
 
 export interface StandbyGuard {
