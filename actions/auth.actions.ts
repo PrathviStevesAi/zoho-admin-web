@@ -134,7 +134,6 @@ export async function registerGuardAction(guardData: any) {
 export async function registerCustomerAction(customerData: any) {
     try {
         const session = await auth();
-        const token = session?.accessToken;
 
         console.log("Sending customer registration data:", customerData);
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/customer/register`, {
@@ -143,7 +142,7 @@ export async function registerCustomerAction(customerData: any) {
             headers: {
                 "Content-Type": "application/json",
                 "ngrok-skip-browser-warning": "true",
-                "Authorization": `Bearer ${token}`
+                "x-api-key": "trk_live_7f9c2a4d8b1e5f6a9c3d2e7f8a1b4c6d"
             },
         });
 

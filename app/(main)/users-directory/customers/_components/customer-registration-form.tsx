@@ -10,7 +10,8 @@ import {
   Phone,
   MapPin,
   ChevronDown,
-  ArrowLeft
+  ArrowLeft,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +73,17 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     lastName: "",
     email: "",
     phone: "",
+    billingType: "zoho",
+    netTerms: "",
+    servicePrices: [
+      { id: 1, name: "Armed Security", price: 0 },
+      { id: 2, name: "Body Guard Armed", price: 0 },
+      { id: 3, name: "Fire Watch Guard", price: 0 },
+      { id: 4, name: "Unarmed Security", price: 0 },
+      { id: 5, name: "Body Guard Unarmed", price: 0 },
+      { id: 6, name: "Body Guard with Suit", price: 0 },
+      { id: 7, name: "Employee Termination / Work Place Separation Security", price: 0 },
+    ],
     billingZip: "",
     billingCity: "",
     billingState: "",
@@ -217,6 +229,9 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
       }
     }
 
+    if (!formData.billingType) newErrors.billingType = "Billing type is required";
+    if (formData.billingType === "net_term" && !formData.netTerms) newErrors.netTerms = "Net terms is required";
+
     if (!formData.billingStreet) newErrors.billingStreet = "Street address is required";
     if (!formData.billingCountry) newErrors.billingCountry = "Country is required";
     if (!formData.billingState) newErrors.billingState = "State is required";
@@ -240,12 +255,20 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     setErrors({});
     setIsRegistering(true);
 
+    const securityServicePriceObj = formData.servicePrices.reduce((acc, curr) => {
+      acc[curr.name] = curr.price;
+      return acc;
+    }, {} as Record<string, number>);
+
     const res = await registerCustomerAction({
       company_name: formData.companyName,
       first_name: formData.firstName,
       last_name: formData.lastName,
       email: formData.email,
       phone_number: formData.phone ? `${selectedCountry.dialCode}${formData.phone}` : "",
+      billing_type: formData.billingType,
+      net_terms_days: formData.billingType === "net_term" ? (Number(formData.netTerms) || 0) : 0,
+      security_service_price: formData.billingType === "net_term" ? securityServicePriceObj : {},
       billing_address: {
         zip: formData.billingZip,
         city: formData.billingCity,
@@ -272,6 +295,17 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         lastName: "",
         email: "",
         phone: "",
+        billingType: "zoho",
+        netTerms: "",
+        servicePrices: [
+          { id: 1, name: "Armed Security", price: 0 },
+          { id: 2, name: "Body Guard Armed", price: 0 },
+          { id: 3, name: "Fire Watch Guard", price: 0 },
+          { id: 4, name: "Unarmed Security", price: 0 },
+          { id: 5, name: "Body Guard Unarmed", price: 0 },
+          { id: 6, name: "Body Guard with Suit", price: 0 },
+          { id: 7, name: "Employee Termination / Work Place Separation Security", price: 0 },
+        ],
         billingZip: "",
         billingCity: "",
         billingState: "",
@@ -468,6 +502,132 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                   {errors.phone && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.phone}</p>}
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-slate-700 border-b pb-2">Billing Type</h3>
+
+              <div className="bg-[#f0f7ff] border border-[#e0f0ff] rounded-xl p-4">
+                <div className="flex gap-2">
+                  <div className="text-[#0064cb] mt-0.5">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-700">
+                    <p className="font-semibold text-[#0064cb]">Note -</p>
+                    <ul className="list-disc pl-4 space-y-1 text-slate-600">
+                      <li><strong>Billing Type - Zoho</strong> means customer can place and order and it will execute through zoho same as Auto quote , he will get estimate and invoice through zoho.</li>
+                      <li><strong>Net Term</strong> - Means Customer is regular customer he can place and order with predefined guard price , order directly add in new invoice section.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">
+                    Billing Type <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    onValueChange={(val) => {
+                      setFormData({ ...formData, billingType: val });
+                      clearError("billingType");
+                    }}
+                    value={formData.billingType}
+                  >
+                    <SelectTrigger className={getSelectTriggerClassName(errors.billingType)}>
+                      <SelectValue placeholder="Select billing type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="zoho">Zoho</SelectItem>
+                      <SelectItem value="net_term">Net Term</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.billingType && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.billingType}</p>}
+                </div>
+
+                {formData.billingType === "net_term" && (
+                  <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1 flex items-center gap-1">
+                      Net Terms (Days)
+                      <Info className="w-3.5 h-3.5 text-slate-400" />
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="Enter days (e.g., 15, 30, 45)"
+                      value={formData.netTerms}
+                      onKeyDown={(e) => {
+                        if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        setFormData({ ...formData, netTerms: val });
+                        clearError("netTerms");
+                      }}
+                      className={getInputClassName(errors.netTerms)}
+                    />
+                    {errors.netTerms && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.netTerms}</p>}
+                  </div>
+                )}
+              </div>
+
+              {formData.billingType === "net_term" && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-300 mt-6">
+                  <div>
+                    <h4 className="text-[13px] font-bold text-slate-800 flex items-center gap-1">
+                      Security Service Price <span className="text-red-500">*</span> <Info className="w-3.5 h-3.5 text-slate-400" />
+                    </h4>
+                    <p className="text-[11px] text-slate-500">Set default prices for security services (editable)</p>
+                  </div>
+                  <div className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-sm">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase">
+                        <tr>
+                          <th className="p-2.5 w-10 text-center">#</th>
+                          <th className="p-2.5">Service Name</th>
+                          <th className="p-2.5 w-38">Price (USD)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {formData.servicePrices.map((service, index) => (
+                          <tr key={service.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="p-2 text-center text-slate-400 font-medium">{index + 1}</td>
+                            <td className="p-2 text-slate-600 font-medium">{service.name}</td>
+                            <td className="p-2">
+                              <div className="relative flex items-center">
+                                <span className="absolute left-2.5 text-slate-400 font-medium text-xs">$</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={service.price}
+                                  onKeyDown={(e) => {
+                                    if (e.key === '-') {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '' || Number(val) >= 0) {
+                                      const newPrices = [...formData.servicePrices];
+                                      newPrices[index].price = val as any;
+                                      setFormData({ ...formData, servicePrices: newPrices });
+                                    }
+                                  }}
+                                  className="w-full h-8 pl-6 pr-2 bg-white border border-slate-200 rounded-md text-slate-700 font-semibold focus:outline-none focus:border-[#0064cb] focus:ring-1 focus:ring-[#0064cb] text-xs transition-all"
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
