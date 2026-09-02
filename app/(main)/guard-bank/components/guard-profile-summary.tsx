@@ -1,6 +1,9 @@
-import { Mail, Phone, ChevronDown, CheckCircle2, XCircle, Calendar } from "lucide-react";
+import { Mail, Phone, ChevronDown, CheckCircle2, XCircle, Calendar, Plus, Loader2 } from "lucide-react";
 import { FormattedDate } from "@/components/ui/formatted-date";
 import { cn } from "@/lib/utils";
+import { useState, useRef } from "react";
+import { getSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface GuardProfileSummaryProps {
   guard: any;
@@ -14,6 +17,7 @@ interface GuardProfileSummaryProps {
   setIsPhoneDropdownOpen: (isOpen: boolean) => void;
   getLevelBadge: (level: number) => React.ReactNode;
   formErrors?: Record<string, string>;
+  refreshGuardDetails?: () => void;
 }
 
 export function GuardProfileSummary({
@@ -27,13 +31,130 @@ export function GuardProfileSummary({
   isPhoneDropdownOpen,
   setIsPhoneDropdownOpen,
   getLevelBadge,
-  formErrors
+  formErrors,
+  refreshGuardDetails
 }: GuardProfileSummaryProps) {
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewImage(objectUrl);
+
+    setIsUploadingImage(true);
+    try {
+      const session = await getSession() as any;
+      const token = session?.accessToken;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+
+      const generateRes = await fetch(`${baseUrl}/api/v1/shift/media/generate-upload-url`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          type: "profile_img",
+          guard_id: guard.id,
+          file_name: file.name
+        })
+      });
+
+      if (!generateRes.ok) {
+        throw new Error("Failed to generate upload URL");
+      }
+
+      const generateData = await generateRes.json();
+      const signedUrl = generateData.data?.signed_url;
+      const filePath = generateData.data?.file_path;
+
+      if (!signedUrl || !filePath) {
+        throw new Error("Invalid response from server");
+      }
+
+      const uploadRes = await fetch(signedUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type
+        },
+        body: file
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const patchRes = await fetch(`${baseUrl}/api/v1/guard/bank/application/${guard.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({ profile_img_url: filePath })
+      });
+
+      if (!patchRes.ok) {
+        throw new Error("Failed to update profile image in database");
+      }
+
+      toast.success("Profile image updated successfully");
+
+      if (refreshGuardDetails) {
+        refreshGuardDetails();
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "An error occurred while uploading the image");
+      setPreviewImage(null);
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const currentImage = previewImage || guard.profile_img_url;
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center gap-5 sm:gap-6 justify-between">
       <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
-        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-50 flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden p-2.5 sm:p-3">
-          <img src="/guard-placeholder.png" alt="Guard Avatar" className="w-full h-full object-contain opacity-80" />
+        <div className="relative shrink-0">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-50 flex items-center justify-center border border-slate-200 overflow-hidden">
+            {currentImage ? (
+              <img src={currentImage} alt="Guard Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <img src="/guard-placeholder.png" alt="Guard Avatar" className="w-full h-full object-contain opacity-80 p-2.5 sm:p-3" />
+            )}
+          </div>
+
+          {guard?.action?.is_profile_img_edit && (
+            <button
+              onClick={() => !isUploadingImage && fileInputRef.current?.click()}
+              disabled={isUploadingImage}
+              className="absolute bottom-0 right-0 w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-md border-2 border-white transition-colors cursor-pointer z-10"
+              title="Upload Profile Image"
+            >
+              {isUploadingImage ? (
+                <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+              ) : (
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              )}
+            </button>
+          )}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            accept="image/*"
+            className="hidden"
+          />
         </div>
 
         <div className="space-y-3 sm:space-y-4 flex-1 min-w-0 flex flex-col items-center sm:items-start text-center sm:text-left w-full">

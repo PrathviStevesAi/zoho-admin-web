@@ -169,7 +169,8 @@ export default function GuardDetailPage() {
       "firewatch_certificate_url", "verification_video_url", "first_name", "last_name",
       "street_address", "country", "state", "city", "zip_code", "referral", "on_call",
       "smartphone", "job_alerts", "license", "background", "transport", "unarmed", "armed",
-      "english_language", "gender", "ethnicity", "veteran_status", "disability_status", "notes"
+      "english_language", "gender", "ethnicity", "veteran_status", "disability_status", "notes",
+      "profile_img_url"
     ];
 
     const payload: any = {};
@@ -642,6 +643,7 @@ export default function GuardDetailPage() {
         setIsPhoneDropdownOpen={setIsPhoneDropdownOpen}
         getLevelBadge={getLevelBadge}
         formErrors={formErrors}
+        refreshGuardDetails={fetchGuardDetails}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
