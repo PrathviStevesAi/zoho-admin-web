@@ -79,14 +79,14 @@ export function ShiftSettingsCard({
           <div className="relative">
             <Input
               type="number"
-              min={0}
+              min={1}
               value={form.guard_break_max_duration}
               onKeyDown={(e) => {
                 if (e.key === "-" || e.key === "e" || e.key === ".") e.preventDefault();
               }}
               onChange={(e) => {
                 const val = e.target.value;
-                if (val.includes("-") || val.includes(".")) return;
+                if (val.includes("-") || val.includes(".") || val === "0") return;
                 setForm(prev => ({ ...prev, guard_break_max_duration: val }));
               }}
               placeholder="e.g. 30"

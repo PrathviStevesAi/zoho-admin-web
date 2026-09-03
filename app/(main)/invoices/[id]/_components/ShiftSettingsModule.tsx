@@ -211,10 +211,13 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
                 <div className="relative">
                   <Input
                     type="number"
-                    min="0"
+                    min="1"
                     value={form.break_max_time}
                     onKeyDown={preventInvalidKeys}
-                    onChange={(e) => handleChange("break_max_time", e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value === "0") return;
+                      handleChange("break_max_time", e.target.value);
+                    }}
                     className="w-full h-11 bg-white border-slate-200 rounded-lg pr-12"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
