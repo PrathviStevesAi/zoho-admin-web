@@ -185,86 +185,88 @@ export default function ReportView({ data, reportToken, shiftId }: ReportViewPro
         </div>
       </div>
 
-      <div className="w-full bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-6 md:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-              <User className="text-slate-500 dark:text-slate-400" size={24} />
+      {!isReviewMode && (
+        <div className="w-full bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-6 md:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                <User className="text-slate-500 dark:text-slate-400" size={24} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Customer Name</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1">{data.customer_name || "-"}</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Customer Name</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-white mt-1">{data.customer_name || "-"}</span>
-            </div>
-          </div>
 
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-              <FileText className="text-slate-500 dark:text-slate-400" size={24} />
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                <FileText className="text-slate-500 dark:text-slate-400" size={24} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Invoice No</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1">[{data.invoice_no || "-"}]</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Invoice No</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-white mt-1">[{data.invoice_no || "-"}]</span>
-            </div>
-          </div>
 
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-              <UserCheck className="text-slate-500 dark:text-slate-400" size={24} />
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                <UserCheck className="text-slate-500 dark:text-slate-400" size={24} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Assigned To</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1">{data.assigned_to || "-"}</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Assigned To</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-white mt-1">{data.assigned_to || "-"}</span>
-            </div>
-          </div>
 
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-              <MapPin className="text-slate-500 dark:text-slate-400" size={24} />
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                <MapPin className="text-slate-500 dark:text-slate-400" size={24} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Shift Location</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 mt-1 leading-snug max-w-[280px]">
+                  {data.shift_location || "-"}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Shift Location</span>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 mt-1 leading-snug max-w-[280px]">
-                {data.shift_location || "-"}
-              </span>
-            </div>
-          </div>
 
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-              <Clock className="text-slate-500 dark:text-slate-400" size={24} />
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                <Clock className="text-slate-500 dark:text-slate-400" size={24} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Shift Time</span>
+                {!data.start_time && !data.end_time ? (
+                  <span className="text-lg font-bold text-slate-900 dark:text-white mt-1">-</span>
+                ) : (
+                  <div className="flex flex-col mt-1">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{formatTime(data.start_time)}</span>
+                    <span className="text-sm text-slate-500 my-0.5">-</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{formatTime(data.end_time)}</span>
+                    <span className="text-xs font-medium text-slate-500 mt-1">
+                      ( {getDuration(data.start_time, data.end_time)} )
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Shift Time</span>
-              {!data.start_time && !data.end_time ? (
-                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1">-</span>
-              ) : (
-                <div className="flex flex-col mt-1">
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">{formatTime(data.start_time)}</span>
-                  <span className="text-sm text-slate-500 my-0.5">-</span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">{formatTime(data.end_time)}</span>
-                  <span className="text-xs font-medium text-slate-500 mt-1">
-                    ( {getDuration(data.start_time, data.end_time)} )
+
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                <div className={`w-3 h-3 rounded-full ${statusDot}`}></div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</span>
+                <div className="mt-2">
+                  <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${statusColor}`}>
+                    {statusLabel}
                   </span>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-              <div className={`w-3 h-3 rounded-full ${statusDot}`}></div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</span>
-              <div className="mt-2">
-                <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${statusColor}`}>
-                  {statusLabel}
-                </span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {isReviewMode ? (
         <FeedbackForm shiftId={shiftId} reportToken={reportToken} onClose={() => setIsReviewMode(false)} onRefreshStart={() => setIsRefreshing(true)} />

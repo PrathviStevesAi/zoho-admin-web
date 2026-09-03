@@ -296,7 +296,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     const res = await updateShiftDetailsAction(detailsPayload);
     if (res.success) {
       toast.success("Details updated successfully");
-      await loadShiftDetails();
+      await Promise.all([loadShiftDetails(), loadReportsDetails()]);
     } else {
       toast.error(res.error || "Failed to update details");
     }
@@ -321,7 +321,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     if (res.success) {
       toast.success("Location updated successfully");
       setIsEditLocationOpen(false);
-      loadShiftDetails();
+      Promise.all([loadShiftDetails(), loadReportsDetails()]);
     } else {
       toast.error(res.error || "Failed to update location");
     }
@@ -397,7 +397,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     if (res.success) {
       toast.success("Settings updated successfully");
       setIsSettingsOpen(false);
-      loadShiftDetails();
+      Promise.all([loadShiftDetails(), loadReportsDetails()]);
     } else {
       toast.error(res.error || "Failed to update settings");
     }
@@ -414,7 +414,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success("Shift manually started successfully");
         setIsManualStartOpen(false);
-        loadShiftDetails();
+        Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
         toast.error(res.error || "Failed to start shift");
       }
@@ -435,7 +435,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success("Service cancelled successfully");
         setIsCancelServiceOpen(false);
-        loadShiftDetails();
+        Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
         toast.error(res.error || "Failed to cancel service");
       }
@@ -646,7 +646,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success(res.message || "Shift reassigned successfully");
         setIsNewAssignOpen(false);
-        loadShiftDetails();
+        Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
         setActionError({isOpen: true, message: res.error || "Failed to reassign guard"});
       }
@@ -667,7 +667,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success(res.message || "Guard assigned successfully");
         setIsNewAssignOpen(false);
-        loadShiftDetails();
+        Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
         setActionError({isOpen: true, message: res.error || "Failed to assign guard"});
       }
@@ -796,7 +796,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 toast.success(res.message || "Report email successfully sent");
                 
                 // Refresh shift details to get updated `is_report_send` status
-                await loadShiftDetails();
+                await Promise.all([loadShiftDetails(), loadReportsDetails()]);
               } else {
                 toast.error(res.error || "Failed to send report.");
               }

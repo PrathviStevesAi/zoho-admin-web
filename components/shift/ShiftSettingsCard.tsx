@@ -30,7 +30,7 @@ export function ShiftSettingsCard({
   const [form, setForm] = useState<ShiftSettingsForm>({
     checkpoint_create_interval: "0",
     guard_break_max_duration: "",
-    guard_break_limit: "",
+    guard_break_limit: "1",
     geofence_radius: "150",
   });
 
@@ -42,7 +42,7 @@ export function ShiftSettingsCard({
             ? String(initialSettings.checkpoint_create_interval)
             : "0",
         guard_break_max_duration: initialSettings.guard_break_max_duration || "",
-        guard_break_limit: initialSettings.guard_break_limit || "",
+        guard_break_limit: initialSettings.guard_break_limit || "1",
         geofence_radius: initialSettings.geofence_radius || "150",
       });
     }
@@ -99,14 +99,14 @@ export function ShiftSettingsCard({
           <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Guard Break Limit (Count)</Label>
           <Input
             type="number"
-            min={0}
+            min={1}
             value={form.guard_break_limit}
             onKeyDown={(e) => {
               if (e.key === "-" || e.key === "e" || e.key === ".") e.preventDefault();
             }}
             onChange={(e) => {
               const val = e.target.value;
-              if (val.includes("-") || val.includes(".")) return;
+              if (val.includes("-") || val.includes(".") || val === "0") return;
               setForm(prev => ({ ...prev, guard_break_limit: val }));
             }}
             placeholder="e.g. 2"

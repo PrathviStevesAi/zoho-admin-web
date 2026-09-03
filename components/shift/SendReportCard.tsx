@@ -23,7 +23,7 @@ export function SendReportCard({
 }: SendReportCardProps) {
   if (!isOpen || !shift) return null;
 
-  const publicReportUrl = typeof window !== 'undefined' 
+  const publicReportUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/public/report?shift_id=${shift.shift_id}&report_token=${shift.report_token}`
     : '';
 
@@ -48,7 +48,7 @@ export function SendReportCard({
           <h2 className="text-xl font-bold text-slate-900">Send Report</h2>
           <p className="text-sm text-slate-500 font-medium">View the Shift Report, copy the link and send it to the recipients.</p>
         </div>
-        <button 
+        <button
           onClick={onClose}
           className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
         >
@@ -57,60 +57,60 @@ export function SendReportCard({
       </div>
 
       <div className="p-6 flex flex-col md:flex-row gap-6 bg-slate-50/30">
-        {/* Left Column: Shift Report Link */}
         <div className="w-full md:w-5/12 bg-white border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center gap-6 shadow-sm">
           <h4 className="text-[13px] font-bold text-blue-600 uppercase tracking-wide">Shift Report</h4>
-          
+
           <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-500 shadow-sm">
             <FileText className="w-8 h-8" />
           </div>
 
-          <div className="flex w-full items-center gap-3">
-            <Button 
-              variant="outline" 
+          <div className="flex flex-wrap w-full items-center justify-center gap-3">
+            <Button
+              variant="outline"
               onClick={handleViewReport}
-              className="flex-1 rounded-lg border-slate-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold transition-colors cursor-pointer flex items-center gap-2 h-10"
+              className="flex-1 min-w-[130px] rounded-lg border-slate-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 h-10 px-3"
             >
-              <Eye className="w-4 h-4" />
-              <span>View Report</span>
+              <Eye className="w-4 h-4 shrink-0" />
+              <span className="truncate">View Report</span>
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleCopyLink}
-              className="flex-1 rounded-lg border-slate-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold transition-colors cursor-pointer flex items-center gap-2 h-10"
+              className="flex-1 min-w-[130px] rounded-lg border-slate-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 h-10 px-3"
             >
-              <LinkIcon className="w-4 h-4" />
-              <span>Copy Link</span>
+              <LinkIcon className="w-4 h-4 shrink-0" />
+              <span className="truncate">Copy Link</span>
             </Button>
           </div>
         </div>
 
-        {/* Right Column: Email Details */}
         <div className="w-full md:w-7/12 bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm">
-          {/* Primary Email */}
           <div className="space-y-2">
             <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">To (Primary Email)</h4>
-            <div className="w-full bg-slate-50 border border-slate-100 rounded-lg p-3 flex items-center justify-between min-h-[46px]">
-              <span className="text-sm text-slate-700 font-medium">
+            <div className="w-full bg-slate-50 border border-slate-100 rounded-lg p-3 flex items-center justify-between min-h-[46px] gap-2">
+              <span
+                className="text-sm text-slate-700 font-medium truncate"
+                title={shift.customer_email || ""}
+              >
                 {shift.customer_email || "No primary email set"}
               </span>
               {shift.customer_email && (
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full shrink-0">
                   Primary
                 </span>
               )}
             </div>
           </div>
 
-          {/* Additional Emails */}
           <div className="space-y-2">
             <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">CC (Additional Emails)</h4>
             <div className="w-full bg-slate-50 border border-slate-100 rounded-lg p-3 flex flex-wrap gap-2 min-h-[80px] content-start">
               {shift.customer_recepients && shift.customer_recepients.length > 0 ? (
                 shift.customer_recepients.map((email: string, idx: number) => (
-                  <span 
+                  <span
                     key={idx}
-                    className="text-xs font-medium text-slate-600 bg-slate-200/60 px-3 py-1.5 rounded-md"
+                    className="text-xs font-medium text-slate-600 bg-slate-200/60 px-3 py-1.5 rounded-md truncate max-w-full"
+                    title={email}
                   >
                     {email}
                   </span>
@@ -126,7 +126,6 @@ export function SendReportCard({
       </div>
 
       <div className="p-6 pt-0 space-y-6 bg-slate-50/30">
-        {/* Note Section (Conditionally rendered) */}
         {shift.is_report_send && (
           <div className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-start gap-3 mt-4 md:mt-0">
             <Info className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -136,7 +135,6 @@ export function SendReportCard({
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
           <Button
             type="button"

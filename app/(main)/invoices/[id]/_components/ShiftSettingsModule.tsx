@@ -227,10 +227,13 @@ export function ShiftSettingsModule({ title = "Shift Settings", description = "C
                 <Label className="text-[11px] font-bold text-slate-800 uppercase">Guard Break Limit (Count)</Label>
                 <Input
                   type="number"
-                  min="0"
+                  min="1"
                   value={form.total_break_limit}
                   onKeyDown={preventInvalidKeys}
-                  onChange={(e) => handleChange("total_break_limit", e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value === "0") return;
+                    handleChange("total_break_limit", e.target.value);
+                  }}
                   className="w-full h-11 bg-white border-slate-200 rounded-lg"
                 />
               </div>
