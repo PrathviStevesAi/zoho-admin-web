@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CustomInput } from "../CustomInput";
 import { FormValues } from "../SubcontractorForm";
+import { PreviousEmploymentSection } from "./PreviousEmploymentSection";
 
 export function VoluntarySelfIdSection() {
   const { register, control, formState: { errors } } = useFormContext<FormValues>();
@@ -201,7 +202,9 @@ export function VoluntarySelfIdSection() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-none border-slate-200">
+      <PreviousEmploymentSection />
+
+      <Card className="shadow-none border-slate-200 mt-6">
         <CardHeader className="pb-3 border-b border-slate-100">
           <CardTitle className="text-base font-bold text-slate-800">Candidate Acknowledgment</CardTitle>
         </CardHeader>
