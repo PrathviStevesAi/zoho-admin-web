@@ -27,6 +27,7 @@ import { GuardProfileSummary } from "../components/guard-profile-summary";
 import { GuardPersonalDetails, GuardContactInfo, GuardPreferences } from "../components/guard-information";
 import { GuardAddress } from "../components/guard-address";
 import { GuardDocuments } from "../components/guard-documents";
+import { GuardPreviousEmployment } from "../components/guard-previous-employment";
 import { GuardNotesAndBadge } from "../components/guard-notes-and-badge";
 
 const phoneCountries = [
@@ -676,6 +677,8 @@ export default function GuardDetailPage() {
             handleEditChange={handleEditChange}
           />
         </div>
+
+        <GuardPreviousEmployment guard={guard} />
 
         <GuardDocuments
           guard={guard}
