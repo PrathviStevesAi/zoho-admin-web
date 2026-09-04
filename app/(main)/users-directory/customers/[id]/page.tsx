@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { clientFetchCustomerByIdAction, updateCustomerAction } from "@/lib/client-actions";
 import { toast } from "sonner";
 import {
@@ -23,6 +23,8 @@ export default function CustomerViewPage() {
   const params = useParams();
   const router = useRouter();
   const customerId = params.id as string;
+  const searchParams = useSearchParams();
+  const zohoCustomerId = searchParams.get("customer_id");
 
   const [customerData, setCustomerData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,7 +60,7 @@ export default function CustomerViewPage() {
 
   const loadCustomer = async () => {
     setIsLoading(true);
-    const res = await clientFetchCustomerByIdAction(customerId);
+    const res = await clientFetchCustomerByIdAction(customerId, zohoCustomerId);
     if (!res.success) {
       toast.error(res.error || "Failed to load customer details");
     } else if (res.data) {
@@ -133,7 +135,7 @@ export default function CustomerViewPage() {
     }
 
     if (formData.billing_type !== (customerData.billing_type || "")) payload.billing_type = formData.billing_type;
-    
+
     const initialNetTerms = customerData.net_terms_days ? String(customerData.net_terms_days) : "";
     if (formData.net_terms_days !== initialNetTerms) {
       payload.net_terms_days = formData.net_terms_days ? Number(formData.net_terms_days) : 0;
@@ -150,7 +152,7 @@ export default function CustomerViewPage() {
     }
 
     setIsSaving(true);
-    const res = await updateCustomerAction(customerId, payload);
+    const res = await updateCustomerAction(customerId, payload, zohoCustomerId);
     setIsSaving(false);
 
     if (res.success) {
@@ -285,9 +287,9 @@ export default function CustomerViewPage() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.push("/users-directory/customers")}
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors text-slate-600"
+          className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors text-slate-600"
         >
-          <ArrowLeft className="cursor-pointer w-5 h-5" />
+          <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Customer Details</h1>
@@ -363,7 +365,7 @@ export default function CustomerViewPage() {
                     type="email"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
-                    disabled={!isEditing}
+                    disabled
                     className="pl-10 h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                   />
                 </div>
@@ -469,14 +471,14 @@ export default function CustomerViewPage() {
                 const currentServicePrices = Object.keys(formData.security_service_price || {}).length > 0
                   ? formData.security_service_price
                   : {
-                      "Armed Security": 0,
-                      "Body Guard Armed": 0,
-                      "Fire Watch Guard": 0,
-                      "Unarmed Security": 0,
-                      "Body Guard Unarmed": 0,
-                      "Body Guard with Suit": 0,
-                      "Employee Termination / Work Place Separation Security": 0,
-                    };
+                    "Armed Security": 0,
+                    "Body Guard Armed": 0,
+                    "Fire Watch Guard": 0,
+                    "Unarmed Security": 0,
+                    "Body Guard Unarmed": 0,
+                    "Body Guard with Suit": 0,
+                    "Employee Termination / Work Place Separation Security": 0,
+                  };
 
                 return (
                   <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-300 mt-6">

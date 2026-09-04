@@ -584,18 +584,22 @@ export async function clientFetchGuardTrackingAction(guard_id: string, shift_id:
   }
 }
 
-export async function clientFetchCustomerByIdAction(customer_id: string): Promise<SingleFetchResponse<any>> {
+export async function clientFetchCustomerByIdAction(id: string, customer_id?: string | null): Promise<SingleFetchResponse<any>> {
   try {
-    const data = await clientApiFetch<any>(`/api/v1/customer/${customer_id}`);
+    const pathId = customer_id || id;
+    const url = customer_id ? `/api/v1/customer/${pathId}?customer_id=${customer_id}` : `/api/v1/customer/${id}`;
+    const data = await clientApiFetch<any>(url);
     return { success: true, data: data?.data || data };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to fetch customer details" };
   }
 }
 
-export async function updateCustomerAction(customer_id: string, payload: any): Promise<{ success: boolean; data?: any; error?: string }> {
+export async function updateCustomerAction(id: string, payload: any, customer_id?: string | null): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const data = await clientApiFetch<any>(`/api/v1/customer/${customer_id}`, {
+    const pathId = customer_id || id;
+    const url = customer_id ? `/api/v1/customer/${pathId}?customer_id=${customer_id}` : `/api/v1/customer/${id}`;
+    const data = await clientApiFetch<any>(url, {
       method: "PATCH",
       body: JSON.stringify(payload)
     });

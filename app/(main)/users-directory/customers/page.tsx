@@ -155,7 +155,7 @@ export default function CustomerDirectoryPage() {
                       customers.map((customer) => (
                         <TableRow key={customer.id || customer.customer_id || Math.random()} className="group hover:bg-slate-50/50 border-slate-50 transition-colors">
                           <TableCell className="px-6 py-4">
-                            <Link href={`/users-directory/customers/${customer.id || customer.customer_id}`}>
+                            <Link href={`/users-directory/customers/${customer.id || customer.customer_id}${customer.customer_id ? `?customer_id=${customer.customer_id}` : ''}`}>
                               <Button variant="outline" size="sm" className="h-8 px-3 rounded-full text-xs font-semibold text-[#0064cb] border-[#0064cb]/20 hover:bg-[#0064cb]/5 hover:text-[#0052ae]">
                                 View
                               </Button>
