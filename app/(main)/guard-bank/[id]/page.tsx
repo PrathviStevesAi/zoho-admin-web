@@ -171,12 +171,18 @@ export default function GuardDetailPage() {
       "street_address", "country", "state", "city", "zip_code", "referral", "on_call",
       "smartphone", "job_alerts", "license", "background", "transport", "unarmed", "armed",
       "english_language", "gender", "ethnicity", "veteran_status", "disability_status", "notes",
-      "profile_img_url"
+      "profile_img_url", "previous_employer_name", "previous_employer_position_and_duties",
+      "previous_employment_start_date", "previous_employment_end_date",
+      "previous_employment_end_reason", "previous_employer_rehire_eligible"
     ];
 
     const payload: any = {};
     Object.keys(editForm).forEach(key => {
-      if (editForm[key] !== guard[key] && allowedKeys.includes(key)) {
+      let originalVal = guard[key];
+      if (key.startsWith("previous_") && guard.previous_employee_info) {
+        originalVal = guard.previous_employee_info[key];
+      }
+      if (editForm[key] !== originalVal && allowedKeys.includes(key)) {
         if (key === "phone_number" && typeof editForm[key] === "string") {
           payload[key] = editForm[key].replace(/\s/g, "");
         } else {
@@ -614,7 +620,13 @@ export default function GuardDetailPage() {
     );
   };
 
-  const hasChanges = Object.keys(editForm).some((key) => editForm[key] !== guard[key]);
+  const hasChanges = Object.keys(editForm).some((key) => {
+    let originalVal = guard[key];
+    if (key.startsWith("previous_") && guard.previous_employee_info) {
+      originalVal = guard.previous_employee_info[key];
+    }
+    return editForm[key] !== originalVal;
+  });
 
   return (
     <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
@@ -678,7 +690,12 @@ export default function GuardDetailPage() {
           />
         </div>
 
-        <GuardPreviousEmployment guard={guard} />
+        <GuardPreviousEmployment 
+          guard={guard}
+          isEditing={isEditing}
+          editForm={editForm}
+          handleEditChange={handleEditChange}
+        />
 
         <GuardDocuments
           guard={guard}

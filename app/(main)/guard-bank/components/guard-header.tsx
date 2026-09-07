@@ -88,7 +88,7 @@ export function GuardHeader({
               </DropdownMenuItem>
             )}
             {guard.action?.is_edit_application && (
-              <DropdownMenuItem onClick={() => { setEditForm({ ...guard }); setIsEditing(true); }} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
+              <DropdownMenuItem onClick={() => { setEditForm({ ...guard, ...(guard.previous_employee_info || {}) }); setIsEditing(true); }} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                 <Edit2 className="w-4 h-4" />
                 Edit Application
               </DropdownMenuItem>
