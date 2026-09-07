@@ -229,7 +229,7 @@ export function VoluntarySelfIdSection() {
         <p className="text-sm text-slate-700 mb-2">
           By clicking the checkbox below, you agree to the terms of our privacy policy.
         </p>
-        <a href="https://fastguardservice.com/privacy-policy-fast-guard-service/" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline block mb-4 w-fit">
+        <a href="https://fastguardservice.com/privacy-policy-2/" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline block mb-4 w-fit">
           Click here to read our Privacy Policy
         </a>
         <div className="flex items-start space-x-2">
@@ -264,11 +264,11 @@ export function VoluntarySelfIdSection() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 pt-3 text-sm text-blue-600">
-        <a href="https://fastguardservice.com/privacy-policy-fast-guard-service/" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
+        <a href="https://fastguardservice.com/privacy-policy-2/" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
           Privacy Policy
         </a>
         <span className="text-slate-300">|</span>
-        <a href="https://fastguardservice.com/security-services-we-provide-in-palm-beach" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
+        <a href="https://fastguardservice.com/terms-and-conditions-v2/" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
           Terms & Conditions
         </a>
         <span className="text-slate-300">|</span>
