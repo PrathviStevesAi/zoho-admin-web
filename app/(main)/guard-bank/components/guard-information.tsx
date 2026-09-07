@@ -30,7 +30,7 @@ export function GuardPersonalDetails({ guard, isEditing, editForm, handleEditCha
           <span className="text-[11px] text-slate-500 font-semibold block">First Name {isEditing && <span className="text-red-500">*</span>}</span>
           {isEditing && handleEditChange ? (
             <>
-              <Input value={editForm.first_name || ""} onChange={e => handleEditChange("first_name", e.target.value)} className={cn("h-10 text-sm mt-1", formErrors?.first_name && "border-red-500 focus-visible:ring-red-500")} />
+              <Input value={editForm.first_name || ""} onChange={e => handleEditChange("first_name", e.target.value)} placeholder="Enter First Name" className={cn("h-10 text-sm mt-1", formErrors?.first_name && "border-red-500 focus-visible:ring-red-500")} />
               {formErrors?.first_name && <p className="text-xs text-red-500 font-medium mt-1">{formErrors.first_name}</p>}
             </>
           ) : <p className="text-[13px] font-bold text-slate-800">{guard.first_name || "N/A"}</p>}
@@ -39,7 +39,7 @@ export function GuardPersonalDetails({ guard, isEditing, editForm, handleEditCha
           <span className="text-[11px] text-slate-500 font-semibold block">Last Name {isEditing && <span className="text-red-500">*</span>}</span>
           {isEditing && handleEditChange ? (
             <>
-              <Input value={editForm.last_name || ""} onChange={e => handleEditChange("last_name", e.target.value)} className={cn("h-10 text-sm mt-1", formErrors?.last_name && "border-red-500 focus-visible:ring-red-500")} />
+              <Input value={editForm.last_name || ""} onChange={e => handleEditChange("last_name", e.target.value)} placeholder="Enter Last Name" className={cn("h-10 text-sm mt-1", formErrors?.last_name && "border-red-500 focus-visible:ring-red-500")} />
               {formErrors?.last_name && <p className="text-xs text-red-500 font-medium mt-1">{formErrors.last_name}</p>}
             </>
           ) : <p className="text-[13px] font-bold text-slate-800">{guard.last_name || "N/A"}</p>}
@@ -318,7 +318,7 @@ export function GuardPreferences({ guard, isEditing, editForm, handleEditChange 
         </div>
         <div className="space-y-1 p-2">
           <span className="text-[11px] text-slate-500 font-semibold block">Driving License no.</span>
-          {isEditing && handleEditChange ? <Input value={editForm.license_number || ""} onChange={e => handleEditChange("license_number", e.target.value)} className="h-10 text-sm mt-1" /> : <p className="text-[13px] font-bold text-slate-800">{guard.license_number || "N/A"}</p>}
+          {isEditing && handleEditChange ? <Input value={editForm.license_number || ""} onChange={e => handleEditChange("license_number", e.target.value)} placeholder="Enter License no." className="h-10 text-sm mt-1" /> : <p className="text-[13px] font-bold text-slate-800">{guard.license_number || "N/A"}</p>}
         </div>
         <div className="space-y-1 p-2">
           <span className="text-[11px] text-slate-500 font-semibold block">License Expire Date</span>

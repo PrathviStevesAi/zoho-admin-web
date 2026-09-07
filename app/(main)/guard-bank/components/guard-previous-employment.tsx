@@ -31,6 +31,7 @@ export function GuardPreviousEmployment({ guard, isEditing, editForm, handleEdit
             <textarea
               value={currentValue || ""}
               onChange={(e) => handleEditChange?.(fieldKey, e.target.value)}
+              placeholder={`Enter ${label}...`}
               className="flex min-h-[100px] w-full rounded-sm border border-border bg-surface px-3 py-2 text-md text-slate-900 font-medium ring-offset-background placeholder:text-muted-foreground placeholder:text-sm placeholder:font-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           ) : type === "text" ? (
@@ -38,6 +39,7 @@ export function GuardPreviousEmployment({ guard, isEditing, editForm, handleEdit
               type={isDate ? "date" : "text"}
               value={currentValue || ""}
               onChange={(e) => handleEditChange?.(fieldKey, e.target.value)}
+              placeholder={isDate ? undefined : `Enter ${label}`}
               className="h-10 text-[14px]"
             />
           ) : (
