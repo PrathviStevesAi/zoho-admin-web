@@ -940,6 +940,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 leadGuardStatus={shift?.lead_guard?.shift_status}
                 standbyGuardStatus={shift?.standby_guard?.shift_status}
                 timezone={shift?.shipping_location?.timezone}
+                shiftExtensionRequests={shift?.shift_extension_requests || []}
+                shiftId={shiftId}
+                onRefresh={loadShiftDetails}
               />
             </div>
           </div>
@@ -979,6 +982,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               leadGuardStatus={shift?.lead_guard?.shift_status}
               standbyGuardStatus={shift?.standby_guard?.shift_status}
               timezone={shift?.shipping_location?.timezone}
+              shiftExtensionRequests={shift?.shift_extension_requests || []}
+              shiftId={shiftId}
+              onRefresh={loadShiftDetails}
             />
 
             {!isLoading && shift && (

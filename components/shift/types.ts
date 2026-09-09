@@ -116,6 +116,16 @@ export interface Shift {
   call_id?: string | null;
   lead_guard?: LeadGuard;
   standby_guard?: StandbyGuard;
+  shift_extension_requests?: ShiftExtensionRequest[];
+}
+
+export interface ShiftExtensionRequest {
+  id: string;
+  requested_end_time: string;
+  reason: string;
+  status: string;
+  action: boolean | { is_approved: boolean; is_reject: boolean };
+  created_at: string;
 }
 
 export interface ShiftHistoryEvent {

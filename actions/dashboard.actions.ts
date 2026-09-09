@@ -1197,3 +1197,27 @@ export async function notApproveShiftAction(payload: {
     return { success: false, error: message };
   }
 }
+
+export async function shiftExtensionAction(payload: {
+  id: string;
+  shift_id: string;
+  status: string; // "approved" | "rejected"
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await apiFetch<{ success: boolean; message?: string }>(
+      `/api/v1/shift/extension-action`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+    revalidatePath(`/shift/view`);
+    revalidatePath(`/invoices/[id]`, 'page');
+
+    return { success: true, message: res.message || "Shift extension action successful." };
+  } catch (error: any) {
+    const message = error.message || "Failed to submit shift extension action";
+    return { success: false, error: message };
+  }
+}
+
