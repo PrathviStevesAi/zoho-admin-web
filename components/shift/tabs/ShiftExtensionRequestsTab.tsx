@@ -51,8 +51,8 @@ export function ShiftExtensionRequestsTab({
 
         <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
           {requests.map((req, idx) => {
-            const hasAction = req.action && typeof req.action === 'object' 
-              ? (req.action.is_approved || req.action.is_reject) 
+            const hasAction = req.action && typeof req.action === 'object'
+              ? (req.action.is_approved || req.action.is_reject)
               : req.action === true;
 
             return (
@@ -76,8 +76,8 @@ export function ShiftExtensionRequestsTab({
                         req.status === "approved"
                           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                           : req.status === "rejected"
-                          ? "bg-red-50 text-red-700 border-red-200"
-                          : "bg-amber-50 text-amber-700 border-amber-200"
+                            ? "bg-red-50 text-red-700 border-red-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
                       )}
                     >
                       {req.status}
@@ -99,7 +99,7 @@ export function ShiftExtensionRequestsTab({
                         size="sm"
                         disabled={loadingState?.id === req.id}
                         onClick={() => handleAction(req.id, "rejected")}
-                        className="font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 cursor-pointer h-8"
+                        className="font-semibold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 cursor-pointer h-8"
                       >
                         {loadingState?.id === req.id && loadingState.action === "rejected" ? (
                           <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
@@ -115,7 +115,7 @@ export function ShiftExtensionRequestsTab({
                         size="sm"
                         disabled={loadingState?.id === req.id}
                         onClick={() => handleAction(req.id, "approved")}
-                        className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer h-8"
+                        className="font-semibold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer h-8"
                       >
                         {loadingState?.id === req.id && loadingState.action === "approved" ? (
                           <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
