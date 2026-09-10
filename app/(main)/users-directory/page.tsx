@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useSession } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,7 @@ export default function StaffDirectoryPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<{ id: string, name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { data: session, update: updateSession } = useSession();
 
   useEffect(() => {
     loadStaff();
@@ -94,6 +96,10 @@ export default function StaffDirectoryPage() {
       toast.success(res.message || "Role updated successfully!", { id: toastId });
       setStaff(prev => prev.map(m => m.id === id ? { ...m, role: selectedRole } : m));
       setEditingRoleId(null);
+      
+      if (session?.user?.id === id) {
+        await updateSession({ role: selectedRole });
+      }
     } else {
       toast.error(res.error || "Failed to update role", { id: toastId });
     }

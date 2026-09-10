@@ -54,6 +54,14 @@ export default function RootLayout({
                   }
                   return originalInsertBefore.apply(this, arguments);
                 };
+                
+                window.addEventListener('unhandledrejection', function(event) {
+                  if (event.reason && typeof event.reason === 'object' && typeof event.reason.message === 'string' && event.reason.message.includes('exceed user mau limit')) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    console.warn('Suppressed Zego SDK MAU limit unhandled rejection (from head script)');
+                  }
+                }, true);
               }
             `,
           }}
