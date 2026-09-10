@@ -61,7 +61,7 @@ const navGroups: NavGroup[] = [
         icon: Users,
         submenus: [
           { label: "Guard", href: "/users-directory/guards" },
-          { label: "Member", href: "/users-directory" },
+          { label: "All Staff", href: "/users-directory" },
           { label: "Customer", href: "/users-directory/customers" },
         ],
       },
@@ -152,8 +152,8 @@ export function Sidebar({ userRole }: { userRole?: string }) {
                   const hasSubmenus = Array.isArray(route.submenus) && route.submenus.length > 0;
                   let submenus = hasSubmenus ? route.submenus! : [];
 
-                  if (userRole === "member" && route.label === "Users") {
-                    submenus = submenus.filter((sub) => sub.label !== "Member");
+                  if (userRole !== "admin" && route.label === "Users") {
+                    submenus = submenus.filter((sub) => sub.label !== "All Staff");
                   }
 
                   const isParentActive =

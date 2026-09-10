@@ -290,6 +290,33 @@ export async function fetchMembersAction() {
     }
 }
 
+export async function fetchStaffAction() {
+    try {
+        const session = await auth();
+        const token = session?.accessToken;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/staff`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            return { success: true, data: result.data };
+        } else {
+            return { success: false, error: result.message || "Failed to fetch staff" };
+        }
+    } catch (error) {
+        console.error("Fetch Staff Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
 export async function deleteMemberAction(memberId: string) {
     try {
         const session = await auth();
@@ -316,6 +343,99 @@ export async function deleteMemberAction(memberId: string) {
         }
     } catch (error) {
         console.error("Delete Member Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
+export async function deleteStaffAction(staffId: string) {
+    try {
+        const session = await auth();
+        const token = session?.accessToken;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/staff/${staffId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            return { success: true, message: result.message || "Staff deleted successfully" };
+        } else {
+            const errorMsg = result.detail?.error || result.message || "Failed to delete staff";
+            return { success: false, error: errorMsg };
+        }
+    } catch (error) {
+        console.error("Delete Staff Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
+export async function updateStaffRoleAction(staffId: string, role: string) {
+    try {
+        const session = await auth();
+        const token = session?.accessToken;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/staff/${staffId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ role }),
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            return { success: true, message: result.message || "Staff role updated successfully" };
+        } else {
+            const errorMsg = result.detail?.error || result.message || "Failed to update staff role";
+            return { success: false, error: errorMsg };
+        }
+    } catch (error) {
+        console.error("Update Staff Role Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
+export async function registerStaffAction(data: {
+    email: string;
+    password?: string;
+    first_name: string;
+    last_name: string;
+    phone_number?: string;
+    role: string;
+}) {
+    try {
+        const session = await auth();
+        const token = session?.accessToken;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/staff/register`, {
+            method: "POST",
+            body: JSON.stringify(data),
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            return { success: true, message: result.message || "Staff registered successfully" };
+        } else {
+            const errorMsg = result.detail?.error || result.message || "Failed to register staff";
+            return { success: false, error: errorMsg };
+        }
+    } catch (error) {
+        console.error("Register Staff Error:", error);
         return { success: false, error: "An unexpected error occurred." };
     }
 }
