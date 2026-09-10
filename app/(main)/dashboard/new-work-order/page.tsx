@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, MapPin, Loader2 } from "lucide-react";
 import { GooglePlacesAutocomplete } from "@/components/ui/GooglePlacesAutocomplete";
@@ -36,6 +36,7 @@ export default function NewWorkOrderPage() {
   const [customerSearch, setCustomerSearch] = useState("");
   const [customers, setCustomers] = useState<any[]>([]);
   const [isCustomersLoading, setIsCustomersLoading] = useState(false);
+  const skipVerification = useRef(false);
 
   React.useEffect(() => {
     if (isCustomerDialogOpen) {
@@ -63,7 +64,7 @@ export default function NewWorkOrderPage() {
   const handleSelectCustomer = (customer: any) => {
     setCustomerName(customer.company_name || `${customer.first_name} ${customer.last_name}`);
     setCustomerEmail(customer.email || "");
-    setSelectedCustomerId(customer.id);
+    setSelectedCustomerId(customer.customer_id || customer.id);
 
     if (customer.service_address) {
       setStreetAddress(customer.service_address.street || customer.service_address.address || "");
@@ -104,7 +105,7 @@ export default function NewWorkOrderPage() {
     let digits = "";
 
     for (let i = 0; i < 5; i++) {
-      digits = Math.floor(10000 + Math.random() * 90000).toString();
+      digits = Math.floor(100000 + Math.random() * 900000).toString();
       const res = await verifyInvoiceNumberAction(digits);
       if (res.success) {
         valid = true;
@@ -112,6 +113,7 @@ export default function NewWorkOrderPage() {
       }
     }
 
+    skipVerification.current = true;
     setInvoiceDigits(digits);
     if (!valid) {
       setErrors(prev => ({ ...prev, invoiceNo: "Could not generate a unique invoice number. Please try again." }));
@@ -123,7 +125,11 @@ export default function NewWorkOrderPage() {
 
   React.useEffect(() => {
     const verifyManual = async () => {
-      if (invoiceDigits.length === 5) {
+      if (skipVerification.current) {
+        skipVerification.current = false;
+        return;
+      }
+      if (invoiceDigits.length === 6) {
         setIsVerifyingInvoice(true);
         const res = await verifyInvoiceNumberAction(invoiceDigits);
         if (!res.success) {
@@ -155,8 +161,8 @@ export default function NewWorkOrderPage() {
 
     if (!invoiceDigits) {
       newErrors.invoiceNo = "Invoice number is required.";
-    } else if (invoiceDigits.length !== 5) {
-      newErrors.invoiceNo = "Invoice digits must be exactly 5 digits.";
+    } else if (invoiceDigits.length !== 6) {
+      newErrors.invoiceNo = "Invoice digits must be exactly 6 digits.";
     }
 
     if (!invoiceAmount) {
@@ -335,7 +341,7 @@ export default function NewWorkOrderPage() {
                       className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-none h-10 w-full bg-transparent text-slate-900 dark:text-slate-100 font-medium"
                       value={invoiceDigits}
                       onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, "").substring(0, 5);
+                        const val = e.target.value.replace(/\D/g, "").substring(0, 6);
                         setInvoiceDigits(val);
                         clearError("invoiceNo");
                       }}
@@ -355,7 +361,7 @@ export default function NewWorkOrderPage() {
                 {errors.invoiceNo ? (
                   <p className="text-xs text-red-500 font-semibold">{errors.invoiceNo}</p>
                 ) : (
-                  <p className="text-[11px] text-slate-400 font-medium">Type a 5-digit number or generate one randomly</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Type a 6-digit number or generate one randomly</p>
                 )}
               </div>
 

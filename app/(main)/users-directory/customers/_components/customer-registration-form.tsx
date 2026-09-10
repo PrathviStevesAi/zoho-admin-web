@@ -515,8 +515,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                   <div className="space-y-2 text-xs text-slate-700">
                     <p className="font-semibold text-[#0064cb]">Note -</p>
                     <ul className="list-disc pl-4 space-y-1 text-slate-600">
-                      <li><strong>Billing Type - Zoho</strong> means customer can place and order and it will execute through zoho same as Auto quote , he will get estimate and invoice through zoho.</li>
-                      <li><strong>Net Term</strong> - Means Customer is regular customer he can place and order with predefined guard price , order directly add in new invoice section.</li>
+                      <li><strong>Billing Type – Zoho: </strong> The customer can place orders, which are processed through Zoho, similar to the Auto Quote process. The customer will receive the estimate and invoice through Zoho based on the pricing defined in Guard Bank.</li>
+                      <li><strong>Billing Type – Net Terms:</strong> The customer is a regular customer who can place orders using the predefined guard pricing configured during customer register</li>
                     </ul>
                   </div>
                 </div>
