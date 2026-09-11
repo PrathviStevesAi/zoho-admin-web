@@ -15,7 +15,10 @@ import {
   User,
   UserPlus,
   Star,
-  Info
+  Info,
+  MoreVertical,
+  Eye,
+  KeyRound
 } from "lucide-react";
 import { GuardRegistrationForm } from "./_components/guard-registration-form";
 import Link from "next/link";
@@ -34,6 +37,13 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Pagination } from "@/components/table/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 const countries = [
   { name: "Argentina", code: "ar", dialCode: "+54" },
@@ -302,14 +312,29 @@ export default function GuardDirectoryPage() {
                               </span>
                             </TableCell>
                             <TableCell className="px-6 py-4 text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => handleResendPassword(e, guard.guard_id, `${guard.first_name || ""} ${guard.last_name || ""}`.trim())}
-                                className="cursor-pointer h-8 text-[11px] font-bold text-[#0064cb] hover:text-[#0052ae] hover:bg-blue-50 transition-all border border-[#0064cb]/20 hover:border-[#0064cb]/40 rounded-lg px-3"
-                              >
-                                Resend Password
-                              </Button>
+                              <div onClick={(e) => e.stopPropagation()} className="flex justify-end">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0 text-slate-500 hover:text-slate-900">
+                                      <span className="sr-only">Open menu</span>
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                    {/* <DropdownMenuItem onClick={() => router.push(`/guard-overview`)} className="cursor-pointer py-2">
+                                      <Eye className="mr-2 h-4 w-4 text-slate-500" />
+                                      <span className="font-medium">Guard Overview</span>
+                                    </DropdownMenuItem> */}
+                                    <div className="py-1">
+                                      <DropdownMenuSeparator />
+                                    </div>
+                                    <DropdownMenuItem onClick={(e) => handleResendPassword(e, guard.guard_id, `${guard.first_name || ""} ${guard.last_name || ""}`.trim())} className="cursor-pointer py-2 text-[#0064cb] focus:text-[#0052ae]">
+                                      <KeyRound className="mr-2 h-4 w-4" />
+                                      <span className="font-medium">Resend Password</span>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))

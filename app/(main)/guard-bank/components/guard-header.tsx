@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { 
-  ChevronRight, 
-  ArrowLeft, 
-  MoreVertical, 
-  ExternalLink, 
-  Edit2, 
-  Shield, 
-  Trash2, 
-  Loader2 
+import {
+  ChevronRight,
+  ArrowLeft,
+  MoreVertical,
+  ExternalLink,
+  Edit2,
+  Shield,
+  Trash2,
+  Loader2,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,32 +82,36 @@ export function GuardHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl border-slate-100 shadow-xl bg-white text-slate-700 font-medium text-[13px]">
-            {guard.action?.is_open_crm && (
-              <DropdownMenuItem onClick={() => window.open(`https://crm.zoho.com/crm/org677245190/tab/Vendors/${guard.vendor_id}`, "_blank")} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
-                <ExternalLink className="w-4 h-4" />
-                Open in CRM
+              {/* <DropdownMenuItem onClick={() => window.location.href = `/guard-overview?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
+                <Eye className="w-4 h-4" />
+                Guard Overview
+              </DropdownMenuItem> */}
+              {guard.action?.is_open_crm && (
+                <DropdownMenuItem onClick={() => window.open(`https://crm.zoho.com/crm/org677245190/tab/Vendors/${guard.vendor_id}`, "_blank")} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
+                  <ExternalLink className="w-4 h-4" />
+                  Open in CRM
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_edit_application && (
+                <DropdownMenuItem onClick={() => { setEditForm({ ...guard, ...(guard.previous_employee_info || {}) }); setIsEditing(true); }} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
+                  <Edit2 className="w-4 h-4" />
+                  Edit Application
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_edit_guard_level && (
+                <DropdownMenuItem onClick={() => setIsUpdateLevelModalOpen(true)} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
+                  <Shield className="w-4 h-4" />
+                  Update Level
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => setDeleteConfirmOpen(true)} className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 focus:text-red-600 rounded-lg text-red-500 hover:text-red-600">
+                <Trash2 className="w-4 h-4" />
+                Delete
               </DropdownMenuItem>
-            )}
-            {guard.action?.is_edit_application && (
-              <DropdownMenuItem onClick={() => { setEditForm({ ...guard, ...(guard.previous_employee_info || {}) }); setIsEditing(true); }} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
-                <Edit2 className="w-4 h-4" />
-                Edit Application
-              </DropdownMenuItem>
-            )}
-            {guard.action?.is_edit_guard_level && (
-              <DropdownMenuItem onClick={() => setIsUpdateLevelModalOpen(true)} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
-                <Shield className="w-4 h-4" />
-                Update Level
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onClick={() => setDeleteConfirmOpen(true)} className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 focus:text-red-600 rounded-lg text-red-500 hover:text-red-600">
-              <Trash2 className="w-4 h-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
-    </div>
 
       {isEditing && (
         <div className="flex sm:hidden items-center justify-center gap-3 w-full mt-2">

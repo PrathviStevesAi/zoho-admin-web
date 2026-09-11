@@ -551,24 +551,25 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                       Net Terms (Days)
                       <Info className="w-3.5 h-3.5 text-slate-400" />
                     </label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="Enter days (e.g., 15, 30, 45)"
-                      value={formData.netTerms}
-                      onKeyDown={(e) => {
-                        if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
-                          e.preventDefault();
-                        }
-                      }}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, '');
+                    <Select
+                      onValueChange={(val) => {
                         setFormData({ ...formData, netTerms: val });
                         clearError("netTerms");
                       }}
-                      className={getInputClassName(errors.netTerms)}
-                    />
+                      value={formData.netTerms}
+                    >
+                      <SelectTrigger className={getSelectTriggerClassName(errors.netTerms)}>
+                        <SelectValue placeholder="Select Net Terms" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">Net 7</SelectItem>
+                        <SelectItem value="10">Net 10</SelectItem>
+                        <SelectItem value="15">Net 15</SelectItem>
+                        <SelectItem value="30">Net 30</SelectItem>
+                        <SelectItem value="45">Net 45</SelectItem>
+                        <SelectItem value="60">Net 60</SelectItem>
+                      </SelectContent>
+                    </Select>
                     {errors.netTerms && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.netTerms}</p>}
                   </div>
                 )}
