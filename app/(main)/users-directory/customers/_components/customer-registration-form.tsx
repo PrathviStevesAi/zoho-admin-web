@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { registerCustomerAction } from "@/actions/auth.actions";
+import { getSecurityServiceStatesAction } from "@/actions/quote.actions";
 import { toast } from "sonner";
 import {
   UserPlus,
@@ -46,19 +47,6 @@ const countries = [
 
 const ALLOWED_COUNTRIES: Record<string, string> = {
   US: "United States",
-  CA: "Canada",
-  AR: "Argentina",
-  BO: "Bolivia",
-  BR: "Brazil",
-  CL: "Chile",
-  CO: "Colombia",
-  EC: "Ecuador",
-  GY: "Guyana",
-  PY: "Paraguay",
-  PE: "Peru",
-  SR: "Suriname",
-  UY: "Uruguay",
-  VE: "Venezuela",
 };
 
 export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
@@ -89,13 +77,13 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     billingState: "",
     billingStreet: "",
     billingAddress: "",
-    billingCountry: "",
+    billingCountry: "US",
     serviceZip: "",
     serviceCity: "",
     serviceState: "",
     serviceStreet: "",
     serviceAddress: "",
-    serviceCountry: "",
+    serviceCountry: "US",
     sameAsBilling: false,
   });
 
@@ -104,65 +92,43 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
   const [serviceAddressStates, setServiceAddressStates] = useState<any[]>([]);
   const [serviceAddressCities, setServiceAddressCities] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (formData.billingCountry === "US") {
-      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
-        isoCode: data.short_code,
-        name: name,
-      }));
-      setBillingAddressStates(usStates);
-    } else if (formData.billingCountry) {
-      setBillingAddressStates(State.getStatesOfCountry(formData.billingCountry));
-    } else {
-      setBillingAddressStates([]);
-    }
-  }, [formData.billingCountry]);
+  const [dynamicStates, setDynamicStates] = useState<{ id: number, state: string }[]>([]);
 
   useEffect(() => {
-    if (formData.billingCountry === "US" && formData.billingState) {
-      const stateData = Object.values(US_STATE_CITY_DATA).find((s: any) => s.short_code === formData.billingState);
-      if (stateData) {
-        const usCities = (stateData as any).cities.map((city: string) => ({ name: city }));
-        setBillingAddressCities(usCities);
-      } else {
-        setBillingAddressCities([]);
+    getSecurityServiceStatesAction().then(res => {
+      if (res.success && res.data) {
+        setDynamicStates(res.data);
       }
-    } else if (formData.billingCountry && formData.billingState) {
-      setBillingAddressCities(City.getCitiesOfState(formData.billingCountry, formData.billingState));
+    });
+  }, []);
+
+  const getCitiesForStateName = (stateName: string) => {
+    const allUsStates = State.getStatesOfCountry("US");
+    const match = allUsStates.find(s => s.name === stateName);
+    if (match) {
+      return City.getCitiesOfState("US", match.isoCode).map(c => ({ name: c.name }));
+    }
+    if (US_STATE_CITY_DATA[stateName]) {
+      return US_STATE_CITY_DATA[stateName].cities.map(c => ({ name: c }));
+    }
+    return [];
+  };
+
+  useEffect(() => {
+    if (formData.billingState) {
+      setBillingAddressCities(getCitiesForStateName(formData.billingState));
     } else {
       setBillingAddressCities([]);
     }
-  }, [formData.billingState, formData.billingCountry]);
+  }, [formData.billingState]);
 
   useEffect(() => {
-    if (formData.serviceCountry === "US") {
-      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
-        isoCode: data.short_code,
-        name: name,
-      }));
-      setServiceAddressStates(usStates);
-    } else if (formData.serviceCountry) {
-      setServiceAddressStates(State.getStatesOfCountry(formData.serviceCountry));
-    } else {
-      setServiceAddressStates([]);
-    }
-  }, [formData.serviceCountry]);
-
-  useEffect(() => {
-    if (formData.serviceCountry === "US" && formData.serviceState) {
-      const stateData = Object.values(US_STATE_CITY_DATA).find((s: any) => s.short_code === formData.serviceState);
-      if (stateData) {
-        const usCities = (stateData as any).cities.map((city: string) => ({ name: city }));
-        setServiceAddressCities(usCities);
-      } else {
-        setServiceAddressCities([]);
-      }
-    } else if (formData.serviceCountry && formData.serviceState) {
-      setServiceAddressCities(City.getCitiesOfState(formData.serviceCountry, formData.serviceState));
+    if (formData.serviceState) {
+      setServiceAddressCities(getCitiesForStateName(formData.serviceState));
     } else {
       setServiceAddressCities([]);
     }
-  }, [formData.serviceState, formData.serviceCountry]);
+  }, [formData.serviceState]);
 
   useEffect(() => {
     if (formData.sameAsBilling) {
@@ -275,7 +241,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         state: formData.billingState,
         street: formData.billingStreet,
         address: formData.billingAddress,
-        country: formData.billingCountry
+        country: formData.billingCountry === "US" ? "United States" : formData.billingCountry
       },
       service_address: {
         zip: formData.sameAsBilling ? formData.billingZip : formData.serviceZip,
@@ -283,7 +249,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         state: formData.sameAsBilling ? formData.billingState : formData.serviceState,
         street: formData.sameAsBilling ? formData.billingStreet : formData.serviceStreet,
         address: formData.sameAsBilling ? formData.billingAddress : formData.serviceAddress,
-        country: formData.sameAsBilling ? formData.billingCountry : formData.serviceCountry
+        country: (formData.sameAsBilling ? formData.billingCountry : formData.serviceCountry) === "US" ? "United States" : (formData.sameAsBilling ? formData.billingCountry : formData.serviceCountry)
       }
     });
 
@@ -311,13 +277,13 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         billingState: "",
         billingStreet: "",
         billingAddress: "",
-        billingCountry: "",
+        billingCountry: "US",
         serviceZip: "",
         serviceCity: "",
         serviceState: "",
         serviceStreet: "",
         serviceAddress: "",
-        serviceCountry: "",
+        serviceCountry: "US",
         sameAsBilling: false,
       });
       setSelectedCountry(countries[11]);
@@ -662,12 +628,10 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                     value={formData.billingCountry}
                   >
                     <SelectTrigger className={getSelectTriggerClassName(errors.billingCountry)}>
-                      <SelectValue placeholder="Select Country" />
+                      <SelectValue placeholder="United States" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(ALLOWED_COUNTRIES).map(([code, name]) => (
-                        <SelectItem key={code} value={code}>{name}</SelectItem>
-                      ))}
+                      <SelectItem value="US">United States</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.billingCountry && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.billingCountry}</p>}
@@ -687,8 +651,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                       <SelectValue placeholder="Select State" />
                     </SelectTrigger>
                     <SelectContent>
-                      {billingAddressStates.map((s) => (
-                        <SelectItem key={s.isoCode} value={s.isoCode}>{s.name}</SelectItem>
+                      {dynamicStates.map((s) => (
+                        <SelectItem key={s.id} value={s.state}>{s.state}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -792,12 +756,10 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                       value={formData.serviceCountry}
                     >
                       <SelectTrigger className={getSelectTriggerClassName(errors.serviceCountry)}>
-                        <SelectValue placeholder="Select Country" />
+                        <SelectValue placeholder="United States" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(ALLOWED_COUNTRIES).map(([code, name]) => (
-                          <SelectItem key={code} value={code}>{name}</SelectItem>
-                        ))}
+                        <SelectItem value="US">United States</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -832,8 +794,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                         <SelectValue placeholder="Select State" />
                       </SelectTrigger>
                       <SelectContent>
-                        {serviceAddressStates.map((s) => (
-                          <SelectItem key={s.isoCode} value={s.isoCode}>{s.name}</SelectItem>
+                        {dynamicStates.map((s) => (
+                          <SelectItem key={s.id} value={s.state}>{s.state}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

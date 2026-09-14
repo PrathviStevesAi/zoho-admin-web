@@ -4,24 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Country, State, City as CityLib } from "country-state-city";
-import { securityTypes } from "./Datas";
-import { submitQuoteAction } from "@/actions/quote.actions";
+import { submitQuoteAction, getSecurityServiceStatesAction, getCustomerSecurityServicesAction } from "@/actions/quote.actions";
 import Loader from "../Loader";
 import Autocomplete from "react-google-autocomplete";
-
-const CUSTOM_STATES = [
-  "Alabama", "Alaska", "Arizona", "Arkansas", "Central California",
-  "Colorado", "Connecticut", "Delaware", "Florida", "Georgia",
-  "Hawaii", "Idaho", "Illinois", "Indiana", "Kansas",
-  "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts",
-  "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana",
-  "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico",
-  "New York", "North Carolina", "North Dakota", "Northern California", "Ohio",
-  "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina",
-  "South Dakota", "Southern California", "Tennessee", "Texas", "Utah",
-  "Vermont", "Virginia", "Washington", "Washington DC", "West Virginia",
-  "Wisconsin", "Wyoming"
-];
 
 export type DailySchedule = {
   dateStr: string;
@@ -114,6 +99,7 @@ export default function QuoteForm() {
   const [cities, setCities] = useState<any[]>([]);
   const [serviceStates, setServiceStates] = useState<any[]>([]);
   const [serviceCities, setServiceCities] = useState<any[]>([]);
+  const [dynamicSecurityTypes, setDynamicSecurityTypes] = useState([{ value: "", label: "Select Security Type" }]);
   const [minDate, setMinDate] = useState("");
   const [minDateTime, setMinDateTime] = useState("");
 
@@ -197,20 +183,41 @@ export default function QuoteForm() {
   }, [formData.Start_Date, formData.End_Date, formData.is_per_day]);
 
   useEffect(() => {
-    const allCountries = Country.getAllCountries();
-    setCountries(allCountries);
-    const us = allCountries.find((c) => c.name === "United States");
-    if (us) {
-      const formattedStates = CUSTOM_STATES.map((name) => ({ name, isoCode: name }));
-      setStates(formattedStates);
-      setServiceStates(formattedStates);
+    const fetchInitialData = async () => {
+      const allCountries = Country.getAllCountries();
+      setCountries(allCountries);
+      const us = allCountries.find((c) => c.name === "United States");
+      
+      if (us) {
+        const [statesResponse, securityServicesResponse] = await Promise.all([
+          getSecurityServiceStatesAction(),
+          getCustomerSecurityServicesAction()
+        ]);
 
-      setFormData((prev) => ({
-        ...prev,
-        Country: us.name,
-        Service_Country: us.name,
-      }));
-    }
+        let formattedStates = [];
+        if (statesResponse.success && statesResponse.data) {
+          formattedStates = statesResponse.data.map((item: any) => ({ name: item.state, isoCode: item.state }));
+        }
+        
+        setStates(formattedStates);
+        setServiceStates(formattedStates);
+
+        if (securityServicesResponse.success && securityServicesResponse.data) {
+          const types = securityServicesResponse.data.map((item: any) => ({
+            value: item.service,
+            label: item.service
+          }));
+          setDynamicSecurityTypes([{ value: "", label: "Select Security Type" }, ...types]);
+        }
+
+        setFormData((prev) => ({
+          ...prev,
+          Country: us.name,
+          Service_Country: us.name,
+        }));
+      }
+    };
+    fetchInitialData();
   }, []);
 
   useEffect(() => {
@@ -753,7 +760,7 @@ export default function QuoteForm() {
             <div>
               <label className="block text-sm font-medium mb-1 text-slate-700">Type Of Security Needed? <span className="text-red-500">*</span></label>
               <select name="Security_Type" value={formData.Security_Type} onChange={handleInputChange} className={`flex h-10 w-full rounded-md border ${formErrors.Security_Type ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'} bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white`}>
-                {securityTypes.map((type, idx) => (
+                {dynamicSecurityTypes.map((type, idx) => (
                   <option key={idx} value={type.value} disabled={type.value === ""}>{type.label}</option>
                 ))}
               </select>

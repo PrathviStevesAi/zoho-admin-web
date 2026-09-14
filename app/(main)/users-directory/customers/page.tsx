@@ -1,6 +1,6 @@
 "use client";
 
-import { clientFetchCustomersAction } from "@/lib/client-actions";
+import { clientFetchCustomersAction, clientResendCustomerPasswordAction, clientDeleteCustomerAction } from "@/lib/client-actions";
 import { useState, useEffect } from "react";
 import {
   Search,
@@ -8,9 +8,20 @@ import {
   ArrowLeft,
   Building,
   Users,
-  UserPlus
+  UserPlus,
+  MoreVertical,
+  Mail,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ConfirmationDialog } from "@/app/(main)/guard-bank/components/confirmation-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,9 +43,27 @@ export default function CustomerDirectoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<"list" | "register">("list");
+  const router = useRouter();
   
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText: string;
+    isDanger: boolean;
+    action: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+    confirmText: "",
+    isDanger: false,
+    action: async () => {},
+  });
+  const [isDialogLoading, setIsDialogLoading] = useState(false);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -58,6 +87,53 @@ export default function CustomerDirectoryPage() {
       toast.error(res.error || "Failed to load customers");
     }
     setIsLoading(false);
+  };
+
+  const handleResendPassword = (e: React.MouseEvent, customer: any) => {
+    e.stopPropagation();
+    const name = customer.company_name || `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || "Customer";
+    setConfirmDialog({
+      isOpen: true,
+      title: "Are you sure?",
+      description: `You are about to resend the password for customer ${name}.`,
+      confirmText: "Yes",
+      isDanger: false,
+      action: async () => {
+        setIsDialogLoading(true);
+        const res = await clientResendCustomerPasswordAction(customer.customer_id);
+        setIsDialogLoading(false);
+        if (res.success) {
+          toast.success(res.message || "Password resent successfully");
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        } else {
+          toast.error(res.error || "Failed to resend password");
+        }
+      }
+    });
+  };
+
+  const handleDelete = (e: React.MouseEvent, customer: any) => {
+    e.stopPropagation();
+    const name = customer.company_name || `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || "Customer";
+    setConfirmDialog({
+      isOpen: true,
+      title: "Are you sure?",
+      description: `You are about to delete customer ${name}.`,
+      confirmText: "Yes",
+      isDanger: true,
+      action: async () => {
+        setIsDialogLoading(true);
+        const res = await clientDeleteCustomerAction(customer.customer_id);
+        setIsDialogLoading(false);
+        if (res.success) {
+          toast.success(res.message || "Customer deleted successfully");
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+          loadCustomers(currentPage);
+        } else {
+          toast.error(res.error || "Failed to delete customer");
+        }
+      }
+    });
   };
 
   return (
@@ -119,27 +195,29 @@ export default function CustomerDirectoryPage() {
                 <Table className="min-w-[800px]">
                   <TableHeader>
                     <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Action</TableHead>
                       <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Company Name</TableHead>
                       <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Full Name</TableHead>
                       <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Email</TableHead>
                       <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">Service Address</TableHead>
+                      <TableHead className="py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <TableRow key={i} className="hover:bg-transparent border-slate-50">
-                          <TableCell className="px-6 py-4">
+                          <TableCell className="py-4 px-4">
                             <div className="flex items-center gap-3">
                               <Skeleton className="w-8 h-8 rounded-full bg-slate-100" />
                               <Skeleton className="h-4 w-24 bg-slate-100" />
                             </div>
                           </TableCell>
                           <TableCell className="py-4 px-4"><Skeleton className="h-4 w-24 bg-slate-100" /></TableCell>
-                          <TableCell className="py-4 px-4"><Skeleton className="h-4 w-24 bg-slate-100" /></TableCell>
                           <TableCell className="py-4 px-4"><Skeleton className="h-4 w-36 bg-slate-100" /></TableCell>
                           <TableCell className="py-4 px-4"><Skeleton className="h-4 w-48 bg-slate-100" /></TableCell>
+                          <TableCell className="px-6 py-4 text-right">
+                            <Skeleton className="h-8 w-8 rounded-full bg-slate-100 ml-auto" />
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : customers.length === 0 ? (
@@ -153,14 +231,11 @@ export default function CustomerDirectoryPage() {
                       </TableRow>
                     ) : (
                       customers.map((customer) => (
-                        <TableRow key={customer.id || customer.customer_id || Math.random()} className="group hover:bg-slate-50/50 border-slate-50 transition-colors">
-                          <TableCell className="px-6 py-4">
-                            <Link href={`/users-directory/customers/${customer.id || customer.customer_id}${customer.customer_id ? `?customer_id=${customer.customer_id}` : ''}`}>
-                              <Button variant="outline" size="sm" className="h-8 px-3 rounded-full text-xs font-semibold text-[#0064cb] border-[#0064cb]/20 hover:bg-[#0064cb]/5 hover:text-[#0052ae]">
-                                View
-                              </Button>
-                            </Link>
-                          </TableCell>
+                        <TableRow 
+                          key={customer.id || customer.customer_id || Math.random()} 
+                          className="group hover:bg-slate-50/50 border-slate-50 transition-colors cursor-pointer"
+                          onClick={() => router.push(`/users-directory/customers/${customer.id || customer.customer_id}${customer.customer_id ? `?customer_id=${customer.customer_id}` : ''}`)}
+                        >
                           <TableCell className="px-4 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
@@ -184,6 +259,25 @@ export default function CustomerDirectoryPage() {
                               {customer.service_address ? `${customer.service_address.street}, ${customer.service_address.city}, ${customer.service_address.state} ${customer.service_address.zip}` : "---"}
                             </span>
                           </TableCell>
+                          <TableCell className="px-6 py-4 text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-slate-100 ml-auto flex items-center justify-center">
+                                  <MoreVertical className="h-4 w-4 text-slate-500" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 rounded-xl border-slate-200 shadow-lg" onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem onClick={(e) => handleResendPassword(e, customer)} className="cursor-pointer py-2">
+                                  <Mail className="mr-2 h-4 w-4" />
+                                  Resend Password
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => handleDelete(e, customer)} className="cursor-pointer py-2 text-red-600 focus:text-red-600 focus:bg-red-50">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
@@ -204,6 +298,17 @@ export default function CustomerDirectoryPage() {
           </div>
         )}
       </div>
+
+      <ConfirmationDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.action}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText={confirmDialog.confirmText}
+        isDanger={confirmDialog.isDanger}
+        isLoading={isDialogLoading}
+      />
     </div>
   );
 }

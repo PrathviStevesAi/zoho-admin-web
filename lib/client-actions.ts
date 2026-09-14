@@ -698,3 +698,26 @@ export async function clientResendGuardPasswordAction(user_id: string): Promise<
     return { success: false, error: error.message || "Failed to resend password" };
   }
 }
+
+export async function clientResendCustomerPasswordAction(customer_id: string): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+  try {
+    const data = await clientApiFetch<any>("/api/v1/customer/resend-password", {
+      method: "POST",
+      body: JSON.stringify({ customer_id }),
+    });
+    return { success: true, data: data?.data || data, message: data?.message };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to resend password" };
+  }
+}
+
+export async function clientDeleteCustomerAction(customer_id: string): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+  try {
+    const data = await clientApiFetch<any>(`/api/v1/customer/${customer_id}`, {
+      method: "DELETE",
+    });
+    return { success: true, data: data?.data || data, message: data?.message };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to delete customer" };
+  }
+}

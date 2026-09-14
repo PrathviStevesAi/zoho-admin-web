@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { clientFetchCustomerByIdAction, updateCustomerAction } from "@/lib/client-actions";
+import { State, City } from "country-state-city";
+import { US_STATE_CITY_DATA } from "@/app/subcontractor/components/StaticData";
+import { getSecurityServiceStatesAction } from "@/actions/quote.actions";
 import { toast } from "sonner";
 import {
   ArrowLeft, Edit, Save, X, Loader2, Building, User, Mail, Phone, MapPin, CreditCard, Info
@@ -90,6 +93,46 @@ export default function CustomerViewPage() {
     setIsLoading(false);
   };
 
+  const [dynamicStates, setDynamicStates] = useState<{ id: number, state: string }[]>([]);
+  const [billingAddressCities, setBillingAddressCities] = useState<any[]>([]);
+  const [serviceAddressCities, setServiceAddressCities] = useState<any[]>([]);
+
+  useEffect(() => {
+    getSecurityServiceStatesAction().then(res => {
+      if (res.success && res.data) {
+        setDynamicStates(res.data);
+      }
+    });
+  }, []);
+
+  const getCitiesForStateName = (stateName: string) => {
+    const allUsStates = State.getStatesOfCountry("US");
+    const match = allUsStates.find(s => s.name === stateName);
+    if (match) {
+      return City.getCitiesOfState("US", match.isoCode).map(c => ({ name: c.name }));
+    }
+    if (US_STATE_CITY_DATA[stateName]) {
+      return US_STATE_CITY_DATA[stateName].cities.map(c => ({ name: c }));
+    }
+    return [];
+  };
+
+  useEffect(() => {
+    if (formData.billing_state) {
+      setBillingAddressCities(getCitiesForStateName(formData.billing_state));
+    } else {
+      setBillingAddressCities([]);
+    }
+  }, [formData.billing_state]);
+
+  useEffect(() => {
+    if (formData.service_state) {
+      setServiceAddressCities(getCitiesForStateName(formData.service_state));
+    } else {
+      setServiceAddressCities([]);
+    }
+  }, [formData.service_state]);
+
   const handleSave = async () => {
     const payload: any = {};
     if (formData.company_name !== customerData.company_name) payload.company_name = formData.company_name;
@@ -112,7 +155,7 @@ export default function CustomerViewPage() {
         city: formData.billing_city,
         state: formData.billing_state,
         zip: formData.billing_zip,
-        country: formData.billing_country,
+        country: formData.billing_country === "US" ? "United States" : formData.billing_country,
       };
     }
 
@@ -130,7 +173,7 @@ export default function CustomerViewPage() {
         city: formData.service_city,
         state: formData.service_state,
         zip: formData.service_zip,
-        country: formData.service_country,
+        country: formData.service_country === "US" ? "United States" : formData.service_country,
       };
     }
 
@@ -176,12 +219,12 @@ export default function CustomerViewPage() {
         billing_city: customerData.billing_address?.city || "",
         billing_state: customerData.billing_address?.state || "",
         billing_zip: customerData.billing_address?.zip || "",
-        billing_country: customerData.billing_address?.country || "",
+        billing_country: "US",
         service_street: customerData.service_address?.street || "",
         service_city: customerData.service_address?.city || "",
         service_state: customerData.service_address?.state || "",
         service_zip: customerData.service_address?.zip || "",
-        service_country: customerData.service_address?.country || "",
+        service_country: "US",
         billing_type: customerData.billing_type || "",
         net_terms_days: customerData.net_terms_days ? String(customerData.net_terms_days) : "",
         security_service_price: customerData.security_service_price || {},
@@ -271,12 +314,12 @@ export default function CustomerViewPage() {
     formData.billing_city !== (customerData.billing_address?.city || "") ||
     formData.billing_state !== (customerData.billing_address?.state || "") ||
     formData.billing_zip !== (customerData.billing_address?.zip || "") ||
-    formData.billing_country !== (customerData.billing_address?.country || "") ||
+    formData.billing_country !== "US" ||
     formData.service_street !== (customerData.service_address?.street || "") ||
     formData.service_city !== (customerData.service_address?.city || "") ||
     formData.service_state !== (customerData.service_address?.state || "") ||
     formData.service_zip !== (customerData.service_address?.zip || "") ||
-    formData.service_country !== (customerData.service_address?.country || "") ||
+    formData.service_country !== "US" ||
     formData.billing_type !== (customerData.billing_type || "") ||
     formData.net_terms_days !== (customerData.net_terms_days ? String(customerData.net_terms_days) : "") ||
     JSON.stringify(formData.security_service_price) !== JSON.stringify(customerData.security_service_price || {})
@@ -445,24 +488,28 @@ export default function CustomerViewPage() {
                     <Label className="text-xs font-bold text-slate-600 uppercase flex items-center gap-1">
                       Net Terms (Days)
                     </Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="Enter days (e.g., 15, 30, 45)"
-                      value={formData.net_terms_days}
-                      disabled={!isEditing}
-                      onKeyDown={(e) => {
-                        if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
-                          e.preventDefault();
-                        }
-                      }}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, '');
-                        setFormData({ ...formData, net_terms_days: val });
-                      }}
-                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                    />
+                    {!isEditing ? (
+                      <div className="h-12 bg-slate-100 rounded-xl px-3 flex items-center text-slate-600 text-sm font-medium border border-slate-200">
+                        {formData.net_terms_days ? `Net ${formData.net_terms_days}` : "---"}
+                      </div>
+                    ) : (
+                      <Select
+                        onValueChange={(val) => setFormData({ ...formData, net_terms_days: val })}
+                        value={formData.net_terms_days?.toString() || ""}
+                      >
+                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
+                          <SelectValue placeholder="Select Net Terms" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="7">Net 7</SelectItem>
+                          <SelectItem value="10">Net 10</SelectItem>
+                          <SelectItem value="15">Net 15</SelectItem>
+                          <SelectItem value="30">Net 30</SelectItem>
+                          <SelectItem value="45">Net 45</SelectItem>
+                          <SelectItem value="60">Net 60</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 )}
               </div>
@@ -565,21 +612,53 @@ export default function CustomerViewPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
-                    <Input
-                      value={formData.billing_city}
-                      onChange={e => setFormData({ ...formData, billing_city: e.target.value })}
-                      disabled={!isEditing}
-                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                    />
+                    {!isEditing ? (
+                      <Input
+                        value={formData.billing_city}
+                        disabled
+                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                      />
+                    ) : (
+                      <Select
+                        key={`billing-city-${billingAddressCities.length}`}
+                        value={formData.billing_city}
+                        onValueChange={val => setFormData({ ...formData, billing_city: val })}
+                        disabled={!formData.billing_state}
+                      >
+                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
+                          <SelectValue placeholder="Select City" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {billingAddressCities.map((c) => (
+                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">State</Label>
-                    <Input
-                      value={formData.billing_state}
-                      onChange={e => setFormData({ ...formData, billing_state: e.target.value })}
-                      disabled={!isEditing}
-                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                    />
+                    {!isEditing ? (
+                      <Input
+                        value={formData.billing_state}
+                        disabled
+                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                      />
+                    ) : (
+                      <Select
+                        value={formData.billing_state}
+                        onValueChange={val => setFormData({ ...formData, billing_state: val, billing_city: "" })}
+                      >
+                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
+                          <SelectValue placeholder="Select State" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {dynamicStates.map((s) => (
+                            <SelectItem key={s.id} value={s.state}>{s.state}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </div>
 
@@ -595,12 +674,25 @@ export default function CustomerViewPage() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Country</Label>
-                    <Input
-                      value={formData.billing_country}
-                      onChange={e => setFormData({ ...formData, billing_country: e.target.value })}
-                      disabled={!isEditing}
-                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                    />
+                    {!isEditing ? (
+                      <Input
+                        value={formData.billing_country === "US" ? "United States" : formData.billing_country}
+                        disabled
+                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                      />
+                    ) : (
+                      <Select
+                        value={formData.billing_country}
+                        onValueChange={val => setFormData({ ...formData, billing_country: val })}
+                      >
+                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
+                          <SelectValue placeholder="United States" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="US">United States</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </div>
               </div>
@@ -624,21 +716,53 @@ export default function CustomerViewPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
-                    <Input
-                      value={formData.service_city}
-                      onChange={e => setFormData({ ...formData, service_city: e.target.value })}
-                      disabled={!isEditing}
-                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                    />
+                    {!isEditing ? (
+                      <Input
+                        value={formData.service_city}
+                        disabled
+                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                      />
+                    ) : (
+                      <Select
+                        key={`service-city-${serviceAddressCities.length}`}
+                        value={formData.service_city}
+                        onValueChange={val => setFormData({ ...formData, service_city: val })}
+                        disabled={!formData.service_state}
+                      >
+                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
+                          <SelectValue placeholder="Select City" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {serviceAddressCities.map((c) => (
+                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">State</Label>
-                    <Input
-                      value={formData.service_state}
-                      onChange={e => setFormData({ ...formData, service_state: e.target.value })}
-                      disabled={!isEditing}
-                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                    />
+                    {!isEditing ? (
+                      <Input
+                        value={formData.service_state}
+                        disabled
+                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                      />
+                    ) : (
+                      <Select
+                        value={formData.service_state}
+                        onValueChange={val => setFormData({ ...formData, service_state: val, service_city: "" })}
+                      >
+                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
+                          <SelectValue placeholder="Select State" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {dynamicStates.map((s) => (
+                            <SelectItem key={s.id} value={s.state}>{s.state}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </div>
 
@@ -654,12 +778,25 @@ export default function CustomerViewPage() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Country</Label>
-                    <Input
-                      value={formData.service_country}
-                      onChange={e => setFormData({ ...formData, service_country: e.target.value })}
-                      disabled={!isEditing}
-                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                    />
+                    {!isEditing ? (
+                      <Input
+                        value={formData.service_country === "US" ? "United States" : formData.service_country}
+                        disabled
+                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                      />
+                    ) : (
+                      <Select
+                        value={formData.service_country}
+                        onValueChange={val => setFormData({ ...formData, service_country: val })}
+                      >
+                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
+                          <SelectValue placeholder="United States" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="US">United States</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </div>
               </div>
