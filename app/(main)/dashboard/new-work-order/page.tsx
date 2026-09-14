@@ -23,6 +23,7 @@ export default function NewWorkOrderPage() {
   const [invoiceDigits, setInvoiceDigits] = useState("");
   const [invoiceDescription, setInvoiceDescription] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState("");
+  const [invoiceDueDate, setInvoiceDueDate] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -174,6 +175,10 @@ export default function NewWorkOrderPage() {
       }
     }
 
+    if (!invoiceDueDate) {
+      newErrors.invoiceDueDate = "Invoice due date is required.";
+    }
+
     if (!streetAddress.trim()) {
       newErrors.streetAddress = "Street Address is required.";
     }
@@ -216,6 +221,7 @@ export default function NewWorkOrderPage() {
       invoice_no: fullInvoiceNo,
       invoice_description: invoiceDescription,
       invoice_amount: parseInt(invoiceAmount, 10),
+      due_date: invoiceDueDate,
       shipping_address: {
         street: streetAddress,
         city: city,
@@ -384,6 +390,28 @@ export default function NewWorkOrderPage() {
                   <p className="text-xs text-red-500 font-semibold">{errors.invoiceAmount}</p>
                 ) : (
                   <p className="text-[11px] text-slate-400 font-medium">Whole positive integers only (no decimals or negative values)</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="invoice_due_date" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Invoice Due Date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="invoice_due_date"
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={invoiceDueDate}
+                  onChange={(e) => {
+                    setInvoiceDueDate(e.target.value);
+                    clearError("invoiceDueDate");
+                  }}
+                  className={`block w-full sm:max-w-[240px] [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 relative ${errors.invoiceDueDate ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                />
+                {errors.invoiceDueDate && (
+                  <p className="text-xs text-red-500 font-semibold">{errors.invoiceDueDate}</p>
                 )}
               </div>
             </div>
