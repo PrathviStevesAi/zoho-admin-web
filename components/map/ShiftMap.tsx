@@ -237,7 +237,7 @@ export default function ShiftMap({
           />
 
           <Circle
-            center={shiftLocation || actualCenter}
+            center={shiftLocation || (checkpoints && checkpoints.length > 0 ? checkpoints[0] : actualCenter)}
             radius={radius}
             pathOptions={{
               color: '#3b82f6',

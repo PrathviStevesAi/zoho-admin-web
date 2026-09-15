@@ -274,7 +274,7 @@ export default function ReportView({ data, reportToken, shiftId }: ReportViewPro
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3 lg:sticky lg:top-6 self-start">
             <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-2 overflow-hidden">
-              <DynamicShiftMap checkpoints={checkpoints} className="mt-0 border-none shadow-none bg-transparent" heightClass="h-[290px]" />
+              <DynamicShiftMap checkpoints={checkpoints} radius={data.geofence_radius} className="mt-0 border-none shadow-none bg-transparent" heightClass="h-[290px]" />
             </div>
           </div>
 
