@@ -187,7 +187,7 @@ export default function QuoteForm() {
       const allCountries = Country.getAllCountries();
       setCountries(allCountries);
       const us = allCountries.find((c) => c.name === "United States");
-      
+
       if (us) {
         const [statesResponse, securityServicesResponse] = await Promise.all([
           getSecurityServiceStatesAction(),
@@ -198,7 +198,7 @@ export default function QuoteForm() {
         if (statesResponse.success && statesResponse.data) {
           formattedStates = statesResponse.data.map((item: any) => ({ name: item.state, isoCode: item.state }));
         }
-        
+
         setStates(formattedStates);
         setServiceStates(formattedStates);
 
@@ -612,7 +612,6 @@ export default function QuoteForm() {
       Number_of_Guards: String(formData.No_of_Guards),
       "is_24/7": formData["is_24/7"],
       is_per_day: formData.is_per_day,
-      source: "web",
     };
 
     if (formData["is_24/7"]) {
@@ -670,6 +669,7 @@ export default function QuoteForm() {
 
     const payload = {
       data: [basePayload],
+      source: "web",
     };
 
     console.log("=== SUBMITTING QUOTE ===");
