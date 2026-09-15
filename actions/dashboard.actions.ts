@@ -605,7 +605,6 @@ export async function verifyGuardAssignmentAction(payload: {
         body: JSON.stringify(payload),
       }
     );
-    // If the API returns success false but with data (the warnings), we should probably pass it back
     if (res.success === false && res.data) {
       return { success: false, data: res.data, error: res.message };
     }
