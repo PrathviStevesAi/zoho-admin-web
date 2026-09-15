@@ -572,16 +572,18 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                                   step="0.01"
                                   value={service.price}
                                   onKeyDown={(e) => {
-                                    if (e.key === '-') {
+                                    if (e.key === '-' || e.key === '+') {
                                       e.preventDefault();
                                     }
                                   }}
                                   onChange={(e) => {
                                     const val = e.target.value;
-                                    if (val === '' || Number(val) >= 0) {
-                                      const newPrices = [...formData.servicePrices];
-                                      newPrices[index].price = val as any;
-                                      setFormData({ ...formData, servicePrices: newPrices });
+                                    if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                                      if (val === '' || Number(val) >= 0) {
+                                        const newPrices = [...formData.servicePrices];
+                                        newPrices[index].price = val as any;
+                                        setFormData({ ...formData, servicePrices: newPrices });
+                                      }
                                     }
                                   }}
                                   className="w-full h-8 pl-6 pr-2 bg-white border border-slate-200 rounded-md text-slate-700 font-semibold focus:outline-none focus:border-[#0064cb] focus:ring-1 focus:ring-[#0064cb] text-xs transition-all"
@@ -620,20 +622,11 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
-                  <Select
-                    onValueChange={(val) => {
-                      setFormData({ ...formData, billingCountry: val, billingState: "", billingCity: "" });
-                      clearError("billingCountry");
-                    }}
-                    value={formData.billingCountry}
-                  >
-                    <SelectTrigger className={getSelectTriggerClassName(errors.billingCountry)}>
-                      <SelectValue placeholder="United States" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="US">United States</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={ALLOWED_COUNTRIES[formData.billingCountry] || formData.billingCountry || "United States"}
+                    disabled
+                    className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
+                  />
                   {errors.billingCountry && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.billingCountry}</p>}
                 </div>
                 <div className="space-y-1">
@@ -738,31 +731,11 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
-                  {formData.sameAsBilling ? (
-                    <div className="relative">
-                      <Input
-                        value={ALLOWED_COUNTRIES[formData.billingCountry] || formData.billingCountry}
-                        disabled
-                        className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
-                      />
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    </div>
-                  ) : (
-                    <Select
-                      onValueChange={(val) => {
-                        setFormData({ ...formData, serviceCountry: val, serviceState: "", serviceCity: "" });
-                        clearError("serviceCountry");
-                      }}
-                      value={formData.serviceCountry}
-                    >
-                      <SelectTrigger className={getSelectTriggerClassName(errors.serviceCountry)}>
-                        <SelectValue placeholder="United States" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="US">United States</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Input
+                    value={ALLOWED_COUNTRIES[formData.serviceCountry] || formData.serviceCountry || "United States"}
+                    disabled
+                    className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
+                  />
                   {errors.serviceCountry && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.serviceCountry}</p>}
                 </div>
                 <div className="space-y-1">

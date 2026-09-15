@@ -53,6 +53,7 @@ export default function CustomerViewPage() {
     billing_type: "",
     net_terms_days: "",
     security_service_price: {} as Record<string, number>,
+    sameAsBilling: false,
   });
 
   useEffect(() => {
@@ -88,6 +89,10 @@ export default function CustomerViewPage() {
         billing_type: data.billing_type || "",
         net_terms_days: data.net_terms_days ? String(data.net_terms_days) : "",
         security_service_price: data.security_service_price || {},
+        sameAsBilling: (data.billing_address?.street || "") === (data.service_address?.street || "") &&
+                       (data.billing_address?.city || "") === (data.service_address?.city || "") &&
+                       (data.billing_address?.state || "") === (data.service_address?.state || "") &&
+                       (data.billing_address?.zip || "") === (data.service_address?.zip || ""),
       });
     }
     setIsLoading(false);
@@ -132,6 +137,37 @@ export default function CustomerViewPage() {
       setServiceAddressCities([]);
     }
   }, [formData.service_state]);
+
+  useEffect(() => {
+    if (formData.sameAsBilling) {
+      setFormData(prev => {
+        if (
+          prev.service_zip === prev.billing_zip &&
+          prev.service_city === prev.billing_city &&
+          prev.service_state === prev.billing_state &&
+          prev.service_street === prev.billing_street &&
+          prev.service_country === prev.billing_country
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          service_zip: prev.billing_zip,
+          service_city: prev.billing_city,
+          service_state: prev.billing_state,
+          service_street: prev.billing_street,
+          service_country: prev.billing_country,
+        };
+      });
+    }
+  }, [
+    formData.sameAsBilling,
+    formData.billing_zip,
+    formData.billing_city,
+    formData.billing_state,
+    formData.billing_street,
+    formData.billing_country
+  ]);
 
   const handleSave = async () => {
     const payload: any = {};
@@ -228,6 +264,10 @@ export default function CustomerViewPage() {
         billing_type: customerData.billing_type || "",
         net_terms_days: customerData.net_terms_days ? String(customerData.net_terms_days) : "",
         security_service_price: customerData.security_service_price || {},
+        sameAsBilling: (customerData.billing_address?.street || "") === (customerData.service_address?.street || "") &&
+                       (customerData.billing_address?.city || "") === (customerData.service_address?.city || "") &&
+                       (customerData.billing_address?.state || "") === (customerData.service_address?.state || "") &&
+                       (customerData.billing_address?.zip || "") === (customerData.service_address?.zip || ""),
       });
     }
     setIsEditing(false);
@@ -559,20 +599,22 @@ export default function CustomerViewPage() {
                                     value={price as number}
                                     disabled={!isEditing}
                                     onKeyDown={(e) => {
-                                      if (e.key === '-') {
+                                      if (e.key === '-' || e.key === '+') {
                                         e.preventDefault();
                                       }
                                     }}
                                     onChange={(e) => {
                                       const val = e.target.value;
-                                      if (val === '' || Number(val) >= 0) {
-                                        setFormData({
-                                          ...formData,
-                                          security_service_price: {
-                                            ...currentServicePrices,
-                                            [name]: val as any
-                                          }
-                                        });
+                                      if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                                        if (val === '' || Number(val) >= 0) {
+                                          setFormData({
+                                            ...formData,
+                                            security_service_price: {
+                                              ...currentServicePrices,
+                                              [name]: val as any
+                                            }
+                                          });
+                                        }
                                       }
                                     }}
                                     className="w-full h-8 pl-6 pr-2 bg-white border border-slate-200 rounded-md text-slate-700 font-semibold focus:outline-none focus:border-[#0064cb] focus:ring-1 focus:ring-[#0064cb] text-xs transition-all disabled:bg-slate-100 disabled:text-slate-600"
@@ -611,30 +653,12 @@ export default function CustomerViewPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
-                    {!isEditing ? (
-                      <Input
-                        value={formData.billing_city}
-                        disabled
-                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                      />
-                    ) : (
-                      <Select
-                        key={`billing-city-${billingAddressCities.length}`}
-                        value={formData.billing_city}
-                        onValueChange={val => setFormData({ ...formData, billing_city: val })}
-                        disabled={!formData.billing_state}
-                      >
-                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
-                          <SelectValue placeholder="Select City" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {billingAddressCities.map((c) => (
-                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Label className="text-xs font-bold text-slate-600 uppercase">Country</Label>
+                    <Input
+                      value={formData.billing_country === "US" ? "United States" : formData.billing_country || "United States"}
+                      disabled
+                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">State</Label>
@@ -664,6 +688,32 @@ export default function CustomerViewPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
+                    {!isEditing ? (
+                      <Input
+                        value={formData.billing_city}
+                        disabled
+                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                      />
+                    ) : (
+                      <Select
+                        key={`billing-city-${billingAddressCities.length}`}
+                        value={formData.billing_city}
+                        onValueChange={val => setFormData({ ...formData, billing_city: val })}
+                        disabled={!formData.billing_state}
+                      >
+                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
+                          <SelectValue placeholder="Select City" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {billingAddressCities.map((c) => (
+                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Zip Code</Label>
                     <Input
                       value={formData.billing_zip}
@@ -672,35 +722,29 @@ export default function CustomerViewPage() {
                       className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600 uppercase">Country</Label>
-                    {!isEditing ? (
-                      <Input
-                        value={formData.billing_country === "US" ? "United States" : formData.billing_country}
-                        disabled
-                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                      />
-                    ) : (
-                      <Select
-                        value={formData.billing_country}
-                        onValueChange={val => setFormData({ ...formData, billing_country: val })}
-                      >
-                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
-                          <SelectValue placeholder="United States" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="US">United States</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
             <div className="space-y-6">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-slate-400" /> Service Address
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-slate-400" /> Service Address
+                </h2>
+                {isEditing && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="same-as-billing"
+                      checked={formData.sameAsBilling}
+                      onChange={(e) => setFormData({ ...formData, sameAsBilling: e.target.checked })}
+                      className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                    />
+                    <label htmlFor="same-as-billing" className="text-xs font-semibold text-slate-600 cursor-pointer select-none">
+                      Same as billing
+                    </label>
+                  </div>
+                )}
+              </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -708,41 +752,23 @@ export default function CustomerViewPage() {
                   <Input
                     value={formData.service_street}
                     onChange={e => setFormData({ ...formData, service_street: e.target.value })}
-                    disabled={!isEditing}
+                    disabled={!isEditing || formData.sameAsBilling}
                     className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
-                    {!isEditing ? (
-                      <Input
-                        value={formData.service_city}
-                        disabled
-                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                      />
-                    ) : (
-                      <Select
-                        key={`service-city-${serviceAddressCities.length}`}
-                        value={formData.service_city}
-                        onValueChange={val => setFormData({ ...formData, service_city: val })}
-                        disabled={!formData.service_state}
-                      >
-                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
-                          <SelectValue placeholder="Select City" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {serviceAddressCities.map((c) => (
-                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Label className="text-xs font-bold text-slate-600 uppercase">Country</Label>
+                    <Input
+                      value={formData.service_country === "US" ? "United States" : formData.service_country || "United States"}
+                      disabled
+                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">State</Label>
-                    {!isEditing ? (
+                    {!isEditing || formData.sameAsBilling ? (
                       <Input
                         value={formData.service_state}
                         disabled
@@ -768,35 +794,39 @@ export default function CustomerViewPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600 uppercase">Zip Code</Label>
-                    <Input
-                      value={formData.service_zip}
-                      onChange={e => setFormData({ ...formData, service_zip: e.target.value })}
-                      disabled={!isEditing}
-                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600 uppercase">Country</Label>
-                    {!isEditing ? (
+                    <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
+                    {!isEditing || formData.sameAsBilling ? (
                       <Input
-                        value={formData.service_country === "US" ? "United States" : formData.service_country}
+                        value={formData.service_city}
                         disabled
                         className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
                       />
                     ) : (
                       <Select
-                        value={formData.service_country}
-                        onValueChange={val => setFormData({ ...formData, service_country: val })}
+                        key={`service-city-${serviceAddressCities.length}`}
+                        value={formData.service_city}
+                        onValueChange={val => setFormData({ ...formData, service_city: val })}
+                        disabled={!formData.service_state}
                       >
                         <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
-                          <SelectValue placeholder="United States" />
+                          <SelectValue placeholder="Select City" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="US">United States</SelectItem>
+                          {serviceAddressCities.map((c) => (
+                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-600 uppercase">Zip Code</Label>
+                    <Input
+                      value={formData.service_zip}
+                      onChange={e => setFormData({ ...formData, service_zip: e.target.value })}
+                      disabled={!isEditing || formData.sameAsBilling}
+                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                    />
                   </div>
                 </div>
               </div>
