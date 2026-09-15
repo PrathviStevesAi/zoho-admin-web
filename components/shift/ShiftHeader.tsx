@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
@@ -74,6 +77,8 @@ export function ShiftHeader({
   onNotApproveShift,
   isLoading,
 }: ShiftHeaderProps) {
+  const router = useRouter();
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -141,12 +146,12 @@ export function ShiftHeader({
             )}
           </div>
           <div className="flex items-start sm:items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all shrink-0 mt-0.5 sm:mt-0"
+            <button
+              onClick={() => router.back()}
+              className="cursor-pointer p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all shrink-0 mt-0.5 sm:mt-0"
             >
               <ArrowLeft className="w-4 h-4" />
-            </Link>
+            </button>
             <div className="group relative">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 flex flex-wrap items-center gap-x-2 gap-y-1 cursor-default">
                 {shift ? (
@@ -292,7 +297,7 @@ export function ShiftHeader({
                 label: "Send Report",
                 icon: Send,
                 color: "blue" as const,
-                onClick: onSendReport || (() => {}),
+                onClick: onSendReport || (() => { }),
               });
             }
             if (act.is_approved) {
@@ -300,7 +305,7 @@ export function ShiftHeader({
                 label: "Approved Shift",
                 icon: BadgeCheck,
                 color: "emerald" as const,
-                onClick: onApproveShift || (() => {}),
+                onClick: onApproveShift || (() => { }),
               });
             }
             if (act.is_not_approved) {
@@ -308,7 +313,7 @@ export function ShiftHeader({
                 label: "Not Approved Shift",
                 icon: XOctagon,
                 color: "red" as const,
-                onClick: onNotApproveShift || (() => {}),
+                onClick: onNotApproveShift || (() => { }),
               });
             }
 
