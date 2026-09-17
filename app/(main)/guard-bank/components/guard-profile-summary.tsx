@@ -18,6 +18,8 @@ interface GuardProfileSummaryProps {
   getLevelBadge: (level: number) => React.ReactNode;
   formErrors?: Record<string, string>;
   refreshGuardDetails?: () => void;
+  handleUpdateEmail?: () => void;
+  isUpdatingEmail?: boolean;
 }
 
 export function GuardProfileSummary({
@@ -32,7 +34,9 @@ export function GuardProfileSummary({
   setIsPhoneDropdownOpen,
   getLevelBadge,
   formErrors,
-  refreshGuardDetails
+  refreshGuardDetails,
+  handleUpdateEmail,
+  isUpdatingEmail
 }: GuardProfileSummaryProps) {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -169,7 +173,33 @@ export function GuardProfileSummary({
           <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3 text-[13px] font-medium text-slate-600 w-full">
             <div className="flex items-center justify-center sm:justify-start gap-1.5 min-w-0 w-full sm:w-auto">
               <Mail className="w-4 h-4 text-[#0064cb] shrink-0" />
-              <a href={`mailto:${guard.email}`} className="hover:text-[#0064cb] transition-colors truncate block max-w-full sm:max-w-none">{guard.email || "N/A"}</a>
+              {isEditing ? (
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="email"
+                    value={editForm.email !== undefined ? editForm.email : (guard.email || "")}
+                    onChange={(e) => handleEditChange("email", e.target.value)}
+                    className="h-9 w-full min-w-[200px] bg-white border border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg px-3 text-sm font-medium transition-all"
+                  />
+                  {editForm.email && editForm.email !== guard.email && handleUpdateEmail && (
+                    <button
+                      type="button"
+                      onClick={handleUpdateEmail}
+                      disabled={isUpdatingEmail}
+                      className="h-9 whitespace-nowrap flex items-center justify-center bg-[#0064cb] hover:bg-[#0052ae] text-white px-3 rounded-lg font-bold text-xs disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      {isUpdatingEmail ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                          Updating...
+                        </>
+                      ) : "Update"}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <a href={`mailto:${guard.email}`} className="hover:text-[#0064cb] transition-colors truncate block max-w-full sm:max-w-none">{guard.email || "N/A"}</a>
+              )}
             </div>
             <div className="hidden sm:block w-px h-4 bg-slate-200"></div>
             <div className="flex items-center justify-center sm:justify-start gap-1.5 min-w-0 w-full sm:w-auto">
