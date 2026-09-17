@@ -115,10 +115,11 @@ export async function registerGuardAction(guardData: any) {
         const result = await response.json();
 
         if (response.ok) {
-            return { success: true, data: result };
+            const successMsg = result.detail?.message || result.message || result.msg || "Guard registered successfully";
+            return { success: true, data: result, message: successMsg };
         } else {
             console.error("Guard Registration API Failure Body:", result);
-            const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.error || result.message || result.msg || JSON.stringify(result) || "Guard registration failed";
+            const errorMsg = result.detail?.message || result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.error || result.message || result.msg || JSON.stringify(result) || "Guard registration failed";
             return {
                 success: false,
                 error: errorMsg,
@@ -150,10 +151,11 @@ export async function registerCustomerAction(customerData: any) {
         const result = await response.json();
 
         if (response.ok) {
-            return { success: true, data: result };
+            const successMsg = result.detail?.message || result.message || result.msg || "Customer registered successfully";
+            return { success: true, data: result, message: successMsg };
         } else {
             console.error("Customer Registration API Failure Body:", result);
-            const errorMsg = result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.error || result.message || result.msg || "Customer registration failed";
+            const errorMsg = result.detail?.message || result.detail?.error || (typeof result.detail === 'string' ? result.detail : null) || result.error || result.message || result.msg || "Customer registration failed";
             return {
                 success: false,
                 error: errorMsg

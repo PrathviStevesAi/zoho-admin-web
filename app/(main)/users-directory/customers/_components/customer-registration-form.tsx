@@ -254,7 +254,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     });
 
     if (res.success) {
-      toast.success("Customer registered successfully");
+      toast.success(res.message || "Customer registered successfully");
       setFormData({
         companyName: "",
         firstName: "",

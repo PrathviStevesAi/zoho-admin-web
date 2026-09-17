@@ -687,11 +687,11 @@ export async function clientFetchDispatchDashboardAction(): Promise<{ success: b
   }
 }
 
-export async function clientResendGuardPasswordAction(user_id: string): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+export async function clientResendGuardPasswordAction(guard_id: string): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
   try {
     const data = await clientApiFetch<any>("/api/v1/guard/resend-password", {
       method: "POST",
-      body: JSON.stringify({ user_id }),
+      body: JSON.stringify({ guard_id }),
     });
     return { success: true, data: data?.data || data, message: data?.message };
   } catch (error: any) {
