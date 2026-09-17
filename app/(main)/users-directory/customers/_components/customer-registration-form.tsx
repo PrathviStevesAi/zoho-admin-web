@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { registerCustomerAction } from "@/actions/auth.actions";
+import { registerCustomerAction, verifyCustomerEmailAction } from "@/actions/auth.actions";
 import { getSecurityServiceStatesAction } from "@/actions/quote.actions";
 import { toast } from "sonner";
 import {
@@ -12,7 +12,9 @@ import {
   MapPin,
   ChevronDown,
   ArrowLeft,
-  Info
+  Info,
+  Loader2,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +56,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
   const [selectedCountry, setSelectedCountry] = useState(countries[11]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   const [formData, setFormData] = useState({
     companyName: "",
@@ -169,6 +173,22 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         delete newErrors[field];
         return newErrors;
       });
+    }
+  };
+
+  const handleEmailBlur = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && emailRegex.test(formData.email) && !isEmailVerified) {
+      setIsVerifyingEmail(true);
+      const res = await verifyCustomerEmailAction(formData.email);
+      setIsVerifyingEmail(false);
+      
+      if (res.success) {
+        setIsEmailVerified(true);
+      } else {
+        toast.error(res.message);
+        setErrors(prev => ({ ...prev, email: res.message }));
+      }
     }
   };
 
@@ -394,10 +414,16 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                       value={formData.email}
                       onChange={(e) => {
                         setFormData({ ...formData, email: e.target.value });
+                        if (isEmailVerified) setIsEmailVerified(false);
                         clearError("email");
                       }}
+                      onBlur={handleEmailBlur}
                       className={getInputClassName(errors.email, true)}
                     />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                      {isVerifyingEmail && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
+                      {isEmailVerified && !errors.email && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                    </div>
                   </div>
                   {errors.email && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.email}</p>}
                 </div>
@@ -832,8 +858,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
             <div className="flex justify-center mt-8">
               <Button
                 type="submit"
-                disabled={isRegistering}
-                className="cursor-pointer h-12 px-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-70 text-base"
+                disabled={isRegistering || !isEmailVerified || isVerifyingEmail}
+                className="cursor-pointer h-12 px-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed text-base"
               >
                 {isRegistering ? (
                   <div className="flex items-center gap-2">
