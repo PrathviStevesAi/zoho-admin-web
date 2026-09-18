@@ -104,6 +104,12 @@ export default function NotificationProvider() {
 
             console.log("Processing toast:", { title, body, notificationId, shiftId, invoiceId, view });
 
+            if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("fcm-notification-received", { 
+                    detail: { payload, shiftId, type }
+                }));
+            }
+
             if (title || body) {
                 toast(title, {
                     description: body,

@@ -47,7 +47,7 @@ interface ShiftHeaderProps {
   isLoading?: boolean;
 }
 
-function DigitalClock({ timeZone }: { timeZone?: string }) {
+function DigitalClock({ timeZone, city, state }: { timeZone?: string; city?: string; state?: string }) {
   const [dateTime, setDateTime] = useState<string>("");
 
   useEffect(() => {
@@ -84,7 +84,7 @@ function DigitalClock({ timeZone }: { timeZone?: string }) {
 
   return (
     <div className="flex flex-col items-center md:items-end shrink-0 mt-4 md:mt-0 w-full md:w-auto">
-      <div className="flex items-center gap-2 text-base sm:text-md font-bold text-slate-800 tracking-wider font-mono bg-slate-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-md border border-slate-200 shadow-sm">
+      <div className="flex items-center gap-2 text-base sm:text-md font-bold text-slate-800 tracking-wider font-mono bg-slate-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-sm border border-slate-200 shadow-sm">
         <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#0064cb]" />
         {datePart && timePart ? (
           <>
@@ -95,6 +95,12 @@ function DigitalClock({ timeZone }: { timeZone?: string }) {
           dateTime
         )}
       </div>
+      {(state || city) && (
+        <div className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1 tracking-wide">
+          <span className="text-slate-800 font-semibold">Timezone : </span>
+          {[state, city].filter(Boolean).join(" / ")}
+        </div>
+      )}
     </div>
   );
 }
@@ -266,7 +272,11 @@ export function ShiftHeader({
         </div>
 
         {shift?.shipping_location?.timezone && (
-          <DigitalClock timeZone={shift.shipping_location.timezone} />
+          <DigitalClock
+            timeZone={shift.shipping_location.timezone}
+            city={shift.shipping_location.location?.city}
+            state={shift.shipping_location.location?.state}
+          />
         )}
       </div>
 
@@ -274,10 +284,6 @@ export function ShiftHeader({
         {(() => {
           if (!shift) return null;
           const buttons: any[] = [];
-
-          console.log("[ShiftHeader] Shift Data Loaded:", shift);
-          console.log("[ShiftHeader] shift.action:", shift?.action);
-          console.log("[ShiftHeader] shift.action.is_manual_start_shift:", shift?.action?.is_manual_start_shift);
 
           if (shift.action && typeof shift.action === "object") {
             const act = shift.action;

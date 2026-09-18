@@ -5,9 +5,10 @@ import {
   clientFetchCommentsAction,
   clientFetchGuardTrackingAction
 } from "@/lib/client-actions";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 import {
   addCommentAction,
@@ -57,9 +58,14 @@ interface ShiftDashboardProps {
 export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps) {
   const router = useRouter();
   const { startCall } = useVideoCall();
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
+  const commentsWsRef = useRef<WebSocket | null>(null);
+
   const [shift, setShift] = useState<Shift | null>(null);
   const [reports, setReports] = useState<ShiftReports | null>(null);
   const [comments, setComments] = useState<any[]>([]);
+  const [dashboardActiveTab, setDashboardActiveTab] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
@@ -126,9 +132,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsReportsLoading(false);
   }, [shiftId]);
 
-  const loadComments = useCallback(async () => {
+  const loadComments = useCallback(async (silent: boolean = false) => {
     if (!shiftId) return;
-    setIsCommentsLoading(true);
+    if (!silent) setIsCommentsLoading(true);
     setCommentsError(null);
     const res = await clientFetchCommentsAction(shiftId);
     if (res.success && res.data) {
@@ -136,7 +142,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     } else {
       setCommentsError(res.error || "Failed to load comments");
     }
-    setIsCommentsLoading(false);
+    if (!silent) setIsCommentsLoading(false);
   }, [shiftId]);
 
   useEffect(() => {
@@ -250,10 +256,104 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         };
 
         return () => {
-          console.log("[WebSocket] Cleaning up connection...");
-          ws.close();
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.close();
+          }
         };
       }
+    }
+  }, [shift]);
+
+  useEffect(() => {
+    console.log("[Comments WebSocket] useEffect triggered. shiftId:", shiftId, "dashboardActiveTab:", dashboardActiveTab);
+    if (shiftId && token && dashboardActiveTab === "comment") {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://clanking-bagginess-flammable.ngrok-free.dev";
+      const cleanBase = baseUrl.replace(/\/+$/, "");
+      const wsProtocol = cleanBase.startsWith("https") ? "wss" : "ws";
+      const wsHost = cleanBase.replace(/^https?:\/\//, "").split("/")[0];
+      const wsUrl = `${wsProtocol}://${wsHost}/api/v1/ws/comment/shift/${shiftId}/admin-guard?token=${token}`;
+
+      console.log("[Comments WebSocket] Connecting to:", wsUrl);
+      let ws: WebSocket;
+      try {
+        ws = new WebSocket(wsUrl);
+      } catch (err) {
+        console.error("[Comments WebSocket] Error initializing:", err);
+        return;
+      }
+
+      ws.onopen = () => {
+        console.log("[Comments WebSocket] Connection established successfully!");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          console.log("[Comments WebSocket] Received message:", event.data);
+          const parsed = JSON.parse(event.data);
+          
+          if (parsed && typeof parsed === "object") {
+            const commentData = ["new_comment", "create_comment", "comment_created"].includes(parsed.event) ? parsed.data : parsed;
+            
+            // If the received data looks like a comment object, append it directly
+            if (commentData && commentData.id && commentData.user_message) {
+              setComments((prev) => {
+                if (prev.some(c => c.id === commentData.id)) return prev;
+                // Assuming newer comments should be at the bottom or top depending on the UI
+                return [...prev, commentData];
+              });
+              return;
+            }
+          }
+          
+          // Fallback to silently reloading all comments if we can't parse or append it perfectly
+          loadComments(true);
+        } catch (err) {
+          console.error("[Comments WebSocket] Error handling message:", err);
+          loadComments(true);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.warn("[Comments WebSocket] Connection error:", error);
+      };
+
+      ws.onclose = (event) => {
+        console.log("[Comments WebSocket] Connection closed.", event.reason, event.code);
+      };
+
+      commentsWsRef.current = ws;
+
+      return () => {
+        console.log("[Comments WebSocket] Cleanup called, closing connection if open.");
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+          ws.close();
+        }
+        commentsWsRef.current = null;
+      };
+    } else {
+      console.log("[Comments WebSocket] Not connecting. dashboardActiveTab:", dashboardActiveTab);
+      if (commentsWsRef.current && commentsWsRef.current.readyState === WebSocket.OPEN) {
+        console.log("[Comments WebSocket] Closing existing connection due to tab change.");
+        commentsWsRef.current.close();
+      }
+      commentsWsRef.current = null;
+    }
+  }, [shiftId, token, dashboardActiveTab, loadComments]);
+
+  useEffect(() => {
+    const handlePushNotification = (e: any) => {
+      if (e.detail?.shiftId === shiftId && dashboardActiveTab === "comment") {
+        console.log("[Comments] Received push notification for this shift, silently reloading comments.");
+        loadComments(true);
+      }
+    };
+    window.addEventListener("fcm-notification-received", handlePushNotification);
+    return () => window.removeEventListener("fcm-notification-received", handlePushNotification);
+  }, [shiftId, dashboardActiveTab, loadComments]);
+
+  useEffect(() => {
+    if (shift) {
+      document.title = `Shift ${shift.shift_no}`;
     }
   }, [shift]);
 
@@ -475,25 +575,28 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         attachFileUrl = file_path;
       }
 
-      let guard_role = undefined;
+      let guard_role: string | null = null;
       if (recipient === "lead") guard_role = "lead_guard";
       else if (recipient === "standby") guard_role = "standby_guard";
       else if (recipient === "both") guard_role = "both";
 
-      const res = await addCommentAction({
-        shift_id: shiftId,
-        type,
-        user_message: text.trim() || null,
-        attach_file_url: attachFileUrl,
-        guard_role,
-      });
+      const payload = {
+        event: "create_comment",
+        data: {
+          user_message: text.trim() || null,
+          type,
+          attach_file_url: attachFileUrl || null,
+          guard_role,
+        }
+      };
 
-      if (res.success) {
-        toast.success("Comment added successfully");
-        loadComments();
+      if (commentsWsRef.current && commentsWsRef.current.readyState === WebSocket.OPEN) {
+        commentsWsRef.current.send(JSON.stringify(payload));
+        toast.success("Comment sent successfully");
+        // We rely on the WebSocket's onmessage event to call loadComments() and update the UI
         return true;
       } else {
-        toast.error(res.error || "Failed to add comment");
+        toast.error("WebSocket is not connected. Please refresh the page and try again.");
         return false;
       }
     } catch (err: unknown) {
@@ -940,6 +1043,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 isReportsLoading={isReportsLoading}
                 reportsError={reportsError}
                 onTabChange={(tabId) => {
+                  setDashboardActiveTab(tabId);
                   if (tabId === "comment") loadComments();
                 }}
                 setPreviewFile={setPreviewFile}
@@ -982,6 +1086,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               isReportsLoading={isReportsLoading}
               reportsError={reportsError}
               onTabChange={(tabId) => {
+                setDashboardActiveTab(tabId);
                 if (tabId === "comment") loadComments();
               }}
               setPreviewFile={setPreviewFile}
