@@ -5,10 +5,9 @@ import {
   clientFetchCommentsAction,
   clientFetchGuardTrackingAction
 } from "@/lib/client-actions";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 import {
   addCommentAction,
@@ -46,6 +45,7 @@ import { FilePreviewDialog } from "./dialogs/FilePreviewDialog";
 import { SendReportCard } from "./SendReportCard";
 import { ApproveShiftCard } from "./ApproveShiftCard";
 import { NotApproveShiftCard } from "./NotApproveShiftCard";
+import { CallRecordingsCard } from "./CallRecordingsCard";
 import { Shift, ShiftReports, PreviewFile, Address } from "./types";
 import { useVideoCall } from "@/context/VideoCallContext";
 
@@ -79,6 +79,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [isSendReportOpen, setIsSendReportOpen] = useState(false);
   const [isApproveShiftOpen, setIsApproveShiftOpen] = useState(false);
   const [isNotApproveShiftOpen, setIsNotApproveShiftOpen] = useState(false);
+  const [isCallRecordingsOpen, setIsCallRecordingsOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [isStartingShift, setIsStartingShift] = useState(false);
   const [isSendingReport, setIsSendingReport] = useState(false);
@@ -97,7 +98,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number };
     };
   }>({ isOpen: false, warnings: [] });
-  const [actionError, setActionError] = useState<{isOpen: boolean, message: string}>({isOpen: false, message: ""});
+  const [actionError, setActionError] = useState<{ isOpen: boolean, message: string }>({ isOpen: false, message: "" });
 
   const loadShiftDetails = useCallback(async () => {
     if (!shiftId) return;
@@ -648,7 +649,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         setIsNewAssignOpen(false);
         Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
-        setActionError({isOpen: true, message: res.error || "Failed to reassign guard"});
+        setActionError({ isOpen: true, message: res.error || "Failed to reassign guard" });
       }
     } else {
       const actionPayload: any = {
@@ -669,7 +670,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         setIsNewAssignOpen(false);
         Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
-        setActionError({isOpen: true, message: res.error || "Failed to assign guard"});
+        setActionError({ isOpen: true, message: res.error || "Failed to assign guard" });
       }
     }
     setIsAssigningGuard(null);
@@ -715,18 +716,20 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         shiftId={shiftId}
         notificationId={notificationId}
         isSettingsOpen={isSettingsOpen}
-        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) { setIsNewAssignOpen(false); setIsStandbyGuardsOpen(false); setIsSendReportOpen(false); setIsApproveShiftOpen(false); setIsNotApproveShiftOpen(false); } }}
+        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) { setIsNewAssignOpen(false); setIsStandbyGuardsOpen(false); setIsSendReportOpen(false); setIsApproveShiftOpen(false); setIsNotApproveShiftOpen(false); setIsCallRecordingsOpen(false); } }}
         isNewAssignOpen={isNewAssignOpen}
         isStandbyGuardsOpen={isStandbyGuardsOpen}
         isSendReportOpen={isSendReportOpen}
         isApproveShiftOpen={isApproveShiftOpen}
         isNotApproveShiftOpen={isNotApproveShiftOpen}
+        isCallRecordingsOpen={isCallRecordingsOpen}
         isReassign={isReassign}
         onCloseNewAssign={() => setIsNewAssignOpen(false)}
         onCloseStandbyGuards={() => setIsStandbyGuardsOpen(false)}
         onCloseSendReport={() => setIsSendReportOpen(false)}
         onCloseApproveShift={() => setIsApproveShiftOpen(false)}
         onCloseNotApproveShift={() => setIsNotApproveShiftOpen(false)}
+        onCloseCallRecordings={() => setIsCallRecordingsOpen(false)}
         isStartingShift={isStartingShift}
         onManualStart={() => setIsManualStartOpen(true)}
         onAssignGuard={handleAssignGuard}
@@ -737,6 +740,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onReassignStandbyGuard={handleReassignStandbyGuard}
         onFindStandbyGuard={() => { setIsStandbyGuardsOpen(true); setIsNewAssignOpen(false); setIsSettingsOpen(false); }}
         onCancelService={() => setIsCancelServiceOpen(true)}
+        onCallRecording={() => { setIsCallRecordingsOpen(!isCallRecordingsOpen); setIsNewAssignOpen(false); setIsSettingsOpen(false); setIsSendReportOpen(false); }}
         showSettingBtn={showSettingBtn}
         onStartVideoCall={() => {
           const guardId = shift?.lead_guard?.guard_id ||
@@ -794,7 +798,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               const res = await sendShiftReportAction(shift.shift_id);
               if (res.success) {
                 toast.success(res.message || "Report email successfully sent");
-                
+
                 // Refresh shift details to get updated `is_report_send` status
                 await Promise.all([loadShiftDetails(), loadReportsDetails()]);
               } else {
@@ -875,6 +879,12 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         />
       ) : isStandbyGuardsOpen ? (
         <StandbyGuardsPanel shift={shift} onClose={() => setIsStandbyGuardsOpen(false)} />
+      ) : isCallRecordingsOpen ? (
+        <CallRecordingsCard
+          isOpen={isCallRecordingsOpen}
+          onClose={() => setIsCallRecordingsOpen(false)}
+          shift={shift}
+        />
       ) : !isLoading && !shift ? (
         <div className="max-w-2xl mx-auto w-full">
           <ShiftDetailsCard
@@ -1017,7 +1027,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       <CancelServiceDialog
         isOpen={isCancelServiceOpen}
         onClose={() => setIsCancelServiceOpen(false)}
-        onConfirm={handleCancelServiceConfirm}
+        onConfirm={(reason) => handleCancelServiceConfirm(reason)}
         isSaving={isCancellingService}
       />
 
@@ -1043,10 +1053,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         isSaving={isStartingShift}
       />
 
-      <ActionErrorDialog 
-        isOpen={actionError.isOpen} 
-        onClose={() => setActionError({ isOpen: false, message: "" })} 
-        message={actionError.message} 
+      <ActionErrorDialog
+        isOpen={actionError.isOpen}
+        onClose={() => setActionError({ isOpen: false, message: "" })}
+        message={actionError.message}
       />
     </div>
   );

@@ -53,6 +53,7 @@ export interface ShiftActions {
   is_approved?: boolean;
   is_not_approved?: boolean;
   call_id?: string;
+  is_call_recording?: boolean;
 }
 
 export interface AssignedGuard {
@@ -117,6 +118,18 @@ export interface Shift {
   lead_guard?: LeadGuard;
   standby_guard?: StandbyGuard;
   shift_extension_requests?: ShiftExtensionRequest[];
+  shift_voice_calls?: ShiftVoiceCall[];
+}
+
+export interface ShiftVoiceCall {
+  id: string;
+  call_type: string | null;
+  status: string;
+  call_by: string;
+  call_to: string;
+  call_time: string;
+  recording_url: string | null;
+  duration: string | null;
 }
 
 export interface ShiftExtensionRequest {

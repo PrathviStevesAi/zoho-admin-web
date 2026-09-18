@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon } from "lucide-react";
+import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
@@ -18,12 +18,14 @@ interface ShiftHeaderProps {
   isSendReportOpen?: boolean;
   isApproveShiftOpen?: boolean;
   isNotApproveShiftOpen?: boolean;
+  isCallRecordingsOpen?: boolean;
   isReassign?: boolean;
   onCloseNewAssign: () => void;
   onCloseStandbyGuards?: () => void;
   onCloseSendReport?: () => void;
   onCloseApproveShift?: () => void;
   onCloseNotApproveShift?: () => void;
+  onCloseCallRecordings?: () => void;
   isStartingShift: boolean;
   onManualStart: () => void;
   onAssignGuard: () => void;
@@ -33,7 +35,8 @@ interface ShiftHeaderProps {
   onReassignLeadGuard: () => void;
   onReassignStandbyGuard: () => void;
   onFindStandbyGuard?: () => void;
-  onCancelService: () => void;
+  onCancelService?: () => void;
+  onCallRecording?: () => void;
   showSettingBtn: boolean;
   onStartVideoCall: () => void;
   onJoinVideoCall: () => void;
@@ -54,12 +57,14 @@ export function ShiftHeader({
   isSendReportOpen,
   isApproveShiftOpen,
   isNotApproveShiftOpen,
+  isCallRecordingsOpen,
   isReassign,
   onCloseNewAssign,
   onCloseStandbyGuards,
   onCloseSendReport,
   onCloseApproveShift,
   onCloseNotApproveShift,
+  onCloseCallRecordings,
   isStartingShift,
   onManualStart,
   onAssignGuard,
@@ -70,6 +75,7 @@ export function ShiftHeader({
   onReassignStandbyGuard,
   onFindStandbyGuard,
   onCancelService,
+  onCallRecording,
   onStartVideoCall,
   onJoinVideoCall,
   onSendReport,
@@ -98,10 +104,11 @@ export function ShiftHeader({
                 if (onCloseSendReport) onCloseSendReport();
                 if (onCloseApproveShift) onCloseApproveShift();
                 if (onCloseNotApproveShift) onCloseNotApproveShift();
+                if (onCloseCallRecordings) onCloseCallRecordings();
               }}
               className={cn(
                 "transition-colors font-medium",
-                (isSettingsOpen || isNewAssignOpen || isStandbyGuardsOpen || isSendReportOpen || isApproveShiftOpen || isNotApproveShiftOpen)
+                (isSettingsOpen || isNewAssignOpen || isStandbyGuardsOpen || isSendReportOpen || isApproveShiftOpen || isNotApproveShiftOpen || isCallRecordingsOpen)
                   ? "text-slate-500 hover:text-[#0064cb] cursor-pointer"
                   : "text-[#0064cb] font-bold cursor-default pointer-events-none"
               )}
@@ -142,6 +149,12 @@ export function ShiftHeader({
               <>
                 <ChevronRight className="w-3.5 h-3.5" />
                 <span className="text-[#0064cb] font-bold">Not Approved Shift</span>
+              </>
+            )}
+            {isCallRecordingsOpen && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="text-[#0064cb] font-bold">Call Recording</span>
               </>
             )}
           </div>
@@ -290,6 +303,14 @@ export function ShiftHeader({
                 icon: Video,
                 color: "orange" as const,
                 onClick: onStartVideoCall,
+              });
+            }
+            if (act.is_call_recording) {
+              buttons.push({
+                label: "Call Recording",
+                icon: Mic,
+                color: isCallRecordingsOpen ? ("blue" as const) : ("slate" as const),
+                onClick: onCallRecording || (() => { }),
               });
             }
             if (act.is_send_report) {
