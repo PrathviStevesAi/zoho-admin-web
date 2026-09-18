@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon, Mic } from "lucide-react";
+import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon, Mic, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
@@ -44,6 +45,58 @@ interface ShiftHeaderProps {
   onApproveShift?: () => void;
   onNotApproveShift?: () => void;
   isLoading?: boolean;
+}
+
+function DigitalClock({ timeZone }: { timeZone?: string }) {
+  const [dateTime, setDateTime] = useState<string>("");
+
+  useEffect(() => {
+    if (!timeZone) return;
+
+    const updateTime = () => {
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone,
+          month: '2-digit',
+          day: '2-digit',
+          year: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        });
+
+        // The default en-US format is "MM/DD/YY, HH:MM:SS AM/PM"
+        setDateTime(formatter.format(new Date()));
+      } catch (e) {
+        console.error("Invalid timezone", e);
+      }
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, [timeZone]);
+
+  if (!timeZone || !dateTime) return null;
+
+  const [datePart, timePart] = dateTime.split(', ');
+
+  return (
+    <div className="flex flex-col items-center md:items-end shrink-0 mt-4 md:mt-0 w-full md:w-auto">
+      <div className="flex items-center gap-2 text-base sm:text-md font-bold text-slate-800 tracking-wider font-mono bg-slate-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-md border border-slate-200 shadow-sm">
+        <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#0064cb]" />
+        {datePart && timePart ? (
+          <>
+            <span className="text-slate-600 text-sm">{datePart},</span>
+            <span className="text-slate-800 text-md">{timePart}</span>
+          </>
+        ) : (
+          dateTime
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function ShiftHeader({
@@ -211,6 +264,10 @@ export function ShiftHeader({
             </div>
           </div>
         </div>
+
+        {shift?.shipping_location?.timezone && (
+          <DigitalClock timeZone={shift.shipping_location.timezone} />
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-x-6 md:gap-x-12 gap-y-6 py-4">
