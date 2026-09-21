@@ -25,6 +25,8 @@ interface ShiftCommentsTabProps {
   leadGuardStatus?: string;
   standbyGuardStatus?: string;
   timezone?: string;
+  leadGuardName?: string;
+  standbyGuardName?: string;
 }
 
 export function ShiftCommentsTab({
@@ -38,6 +40,8 @@ export function ShiftCommentsTab({
   leadGuardStatus,
   standbyGuardStatus,
   timezone,
+  leadGuardName,
+  standbyGuardName,
 }: ShiftCommentsTabProps) {
   const [commentType, setCommentType] = useState<"external" | "internal">("external");
   const [recipient, setRecipient] = useState<"lead" | "standby" | "both">(hasLeadGuard ? "lead" : "standby");
@@ -183,7 +187,12 @@ export function ShiftCommentsTab({
           {comments.map((comment: any) => {
             const authorName = getCommentAuthorName(comment);
             const isExternal = comment.type === "external";
-            const sendByDisplay = getSendByDisplay(comment);
+            const sendByDisplay = getSendByDisplay(comment, {
+              leadGuardName,
+              standbyGuardName,
+              hasLeadGuard,
+              hasStandbyGuard,
+            });
             return (
               <div key={comment.id} className="flex gap-3">
                 <div

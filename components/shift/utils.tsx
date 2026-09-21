@@ -148,15 +148,32 @@ export const getCommentAuthorName = (comment: any) => {
   return "User";
 };
 
-export const getSendByDisplay = (comment: any) => {
+export const getSendByDisplay = (
+  comment: any,
+  guardContext?: {
+    leadGuardName?: string;
+    standbyGuardName?: string;
+    hasLeadGuard?: boolean;
+    hasStandbyGuard?: boolean;
+  }
+) => {
   if (!comment) return null;
   const raw = comment.sent_to || comment.send_to || comment.guard_role || comment.recipient;
-  if (!raw) return null;
-  const lower = String(raw).toLowerCase().trim();
-  if (lower === "lead_guard" || lower === "lead") return "Lead Guard";
-  if (lower === "standby_guard" || lower === "standby") return "Standby Guard";
-  if (lower === "both" || lower === "both_guards" || lower === "both guards") return "Both Guards";
-  return String(raw);
+  if (raw) {
+    const lower = String(raw).toLowerCase().trim();
+    if (lower === "lead_guard" || lower === "lead") return guardContext?.leadGuardName || "Lead Guard";
+    if (lower === "standby_guard" || lower === "standby") return guardContext?.standbyGuardName || "Standby Guard";
+    if (lower === "both" || lower === "both_guards" || lower === "both guards") return "Both Guards";
+    return String(raw);
+  }
+
+  // If not explicitly set on comment object, but is external comment from admin
+  if (comment.type === "external" && (comment.sender_role === "admin" || comment.user_role === "admin")) {
+    if (guardContext?.leadGuardName) return guardContext.leadGuardName;
+    if (guardContext?.standbyGuardName) return guardContext.standbyGuardName;
+  }
+
+  return null;
 };
 
 export const formatDescription = (text: string) => {

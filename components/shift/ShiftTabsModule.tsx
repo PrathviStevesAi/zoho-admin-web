@@ -29,6 +29,8 @@ interface ShiftTabsModuleProps {
   leadGuardStatus?: string;
   standbyGuardStatus?: string;
   timezone?: string;
+  leadGuardName?: string;
+  standbyGuardName?: string;
   shiftExtensionRequests?: ShiftExtensionRequest[];
   shiftId: string;
   onRefresh?: () => void;
@@ -51,6 +53,8 @@ export function ShiftTabsModule({
   leadGuardStatus,
   standbyGuardStatus,
   timezone,
+  leadGuardName,
+  standbyGuardName,
   shiftExtensionRequests = [],
   shiftId,
   onRefresh,
@@ -174,6 +178,8 @@ export function ShiftTabsModule({
                         leadGuardStatus={leadGuardStatus}
                         standbyGuardStatus={standbyGuardStatus}
                         timezone={timezone}
+                        leadGuardName={leadGuardName}
+                        standbyGuardName={standbyGuardName}
                       />
                     )}
                     {tab.id === "dar" && (

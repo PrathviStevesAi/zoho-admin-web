@@ -60,8 +60,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
   const commentsWsRef = useRef<WebSocket | null>(null);
+  const shiftRef = useRef<Shift | null>(null);
+  const lastSubmittedRecipientRef = useRef<string | null>(null);
 
   const [shift, setShift] = useState<Shift | null>(null);
+
+  useEffect(() => {
+    shiftRef.current = shift;
+  }, [shift]);
   const [reports, setReports] = useState<ShiftReports | null>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [dashboardActiveTab, setDashboardActiveTab] = useState<string>("");
@@ -296,9 +302,26 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
             // If the received data looks like a comment object, append it directly
             if (commentData && (commentData.id || commentData.user_message || commentData.attach_file_url)) {
               const uniqueId = commentData.id || commentData.comment_id || commentData._id || `ws-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+              
+              const currentShift = shiftRef.current;
+              let sentTo = commentData.sent_to || commentData.send_to;
+              if (!sentTo) {
+                const targetRole = commentData.guard_role || commentData.recipient || lastSubmittedRecipientRef.current;
+                if (targetRole === "lead_guard" || targetRole === "lead") {
+                  sentTo = currentShift?.lead_guard?.first_name || "Lead Guard";
+                } else if (targetRole === "standby_guard" || targetRole === "standby") {
+                  sentTo = currentShift?.standby_guard?.first_name || "Standby Guard";
+                } else if (targetRole === "both" || targetRole === "both_guards") {
+                  sentTo = "Both Guards";
+                } else if (commentData.type === "external" && currentShift?.lead_guard?.first_name) {
+                  sentTo = currentShift.lead_guard.first_name;
+                }
+              }
+
               const normalizedComment = {
                 ...commentData,
                 id: uniqueId,
+                ...(sentTo ? { sent_to: sentTo } : {}),
               };
 
               setComments((prev) => {
@@ -601,6 +624,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           guard_role,
         }
       };
+
+      lastSubmittedRecipientRef.current = recipient || (guard_role === "lead_guard" ? "lead" : guard_role === "standby_guard" ? "standby" : "lead");
 
       if (commentsWsRef.current && commentsWsRef.current.readyState === WebSocket.OPEN) {
         commentsWsRef.current.send(JSON.stringify(payload));
@@ -1063,6 +1088,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 hasStandbyGuard={!!(shift?.standby_guard && Object.keys(shift.standby_guard).length > 0)}
                 leadGuardStatus={shift?.lead_guard?.shift_status}
                 standbyGuardStatus={shift?.standby_guard?.shift_status}
+                leadGuardName={shift?.lead_guard?.first_name}
+                standbyGuardName={shift?.standby_guard?.first_name}
                 timezone={shift?.shipping_location?.timezone}
                 shiftExtensionRequests={shift?.shift_extension_requests || []}
                 shiftId={shiftId}
@@ -1106,6 +1133,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               hasStandbyGuard={!!(shift?.standby_guard && Object.keys(shift.standby_guard).length > 0)}
               leadGuardStatus={shift?.lead_guard?.shift_status}
               standbyGuardStatus={shift?.standby_guard?.shift_status}
+              leadGuardName={shift?.lead_guard?.first_name}
+              standbyGuardName={shift?.standby_guard?.first_name}
               timezone={shift?.shipping_location?.timezone}
               shiftExtensionRequests={shift?.shift_extension_requests || []}
               shiftId={shiftId}
