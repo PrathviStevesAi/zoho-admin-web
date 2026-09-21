@@ -565,7 +565,7 @@ export async function clientFetchCommentsAction(
   shiftId: string
 ): Promise<{ success: boolean; data?: Comment[]; error?: string }> {
   try {
-    const data = await clientApiFetch<{ success: boolean; data?: Comment[] } | Comment[]>(`/api/v1/comment/shift/${shiftId}?channel=admin_guard`);
+    const data = await clientApiFetch<{ success: boolean; data?: Comment[] } | Comment[]>(`/api/v1/comment/shift/${shiftId}/new?channel=admin_guard`);
     const commentsList = Array.isArray(data) ? data : (data.data || []);
     return { success: true, data: commentsList };
   } catch (error: unknown) {
