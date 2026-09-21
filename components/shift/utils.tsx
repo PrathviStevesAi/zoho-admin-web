@@ -100,6 +100,7 @@ export const getCommentAuthorName = (comment: any) => {
     return sendBy;
   }
 
+  if (comment.sender_name) return comment.sender_name;
   if (comment.first_name || comment.last_name) {
     return `${comment.first_name || ""} ${comment.last_name || ""}`.trim();
   }

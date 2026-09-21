@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 
 import {
-  addCommentAction,
   updateShiftDetailsAction,
   cancelShiftServiceAction,
   manualStartShiftAction,
@@ -295,21 +294,34 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
             const commentData = ["new_comment", "create_comment", "comment_created"].includes(parsed.event) ? parsed.data : parsed;
             
             // If the received data looks like a comment object, append it directly
-            if (commentData && commentData.id && commentData.user_message) {
+            if (commentData && (commentData.id || commentData.user_message || commentData.attach_file_url)) {
+              const uniqueId = commentData.id || commentData.comment_id || commentData._id || `ws-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+              const normalizedComment = {
+                ...commentData,
+                id: uniqueId,
+              };
+
               setComments((prev) => {
-                if (prev.some(c => c.id === commentData.id)) return prev;
-                // Assuming newer comments should be at the bottom or top depending on the UI
-                return [...prev, commentData];
+                // If comment with this id already exists, don't duplicate
+                if (prev.some((c) => c.id === uniqueId)) return prev;
+                // If same message content and created_at already exists, don't duplicate
+                if (
+                  normalizedComment.created_at &&
+                  prev.some(
+                    (c) =>
+                      c.user_message === normalizedComment.user_message &&
+                      c.created_at === normalizedComment.created_at
+                  )
+                ) {
+                  return prev;
+                }
+                return [...prev, normalizedComment];
               });
               return;
             }
           }
-          
-          // Fallback to silently reloading all comments if we can't parse or append it perfectly
-          loadComments(true);
         } catch (err) {
           console.error("[Comments WebSocket] Error handling message:", err);
-          loadComments(true);
         }
       };
 
@@ -592,28 +604,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
       if (commentsWsRef.current && commentsWsRef.current.readyState === WebSocket.OPEN) {
         commentsWsRef.current.send(JSON.stringify(payload));
-        toast.success("Comment sent successfully");
-        // We rely on the WebSocket's onmessage event to call loadComments() and update the UI
         return true;
       } else {
-        // Fallback to REST API if WebSocket is not connected
-        const apiPayload = {
-          shift_id: shiftId,
-          type,
-          user_message: text.trim() || null,
-          attach_file_url: attachFileUrl || null,
-          guard_role,
-        };
-        const res = await addCommentAction(apiPayload);
-        if (res.success) {
-          toast.success("Comment sent successfully");
-          // Since there is no live WebSocket connection to receive the event, we fetch it manually
-          loadComments(true);
-          return true;
-        } else {
-          toast.error(res.error || "Failed to submit comment via API");
-          return false;
-        }
+        toast.error("WebSocket is not connected. Unable to send comment in real-time.");
+        return false;
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to submit comment";
