@@ -984,7 +984,7 @@ export async function addCommentAction(payload: {
   type: "internal" | "external";
   user_message: string | null;
   attach_file_url: string | null;
-  guard_role?: string;
+  guard_role?: string | null;
 }): Promise<{ success: boolean; data?: unknown; error?: string }> {
   try {
     const data = await apiFetch<unknown>(`/api/v1/shift/comment`, {
@@ -1220,3 +1220,77 @@ export async function shiftExtensionAction(payload: {
   }
 }
 
+export async function generateInvoiceUploadUrlAction(
+  invoiceId: string,
+  fileName: string,
+  fileType: string
+): Promise<{ success: boolean; data?: { signed_url: string; file_path: string }; error?: string }> {
+  try {
+    const data = await apiFetch<{ success: boolean; data: { signed_url: string; file_path: string } }>(
+      `/api/v1/invoice/generate-upload-url`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          invoice_id: invoiceId,
+          file_name: fileName,
+          file_type: fileType,
+        }),
+      }
+    );
+    return { success: true, data: data.data };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to generate upload URL";
+    return { success: false, error: message };
+  }
+}
+
+export async function uploadInvoiceAttachmentAction(payload: {
+  invoice_id: string;
+  attachment_url: string;
+  file_name: string;
+}): Promise<{ success: boolean; error?: string; message?: string }> {
+  console.log("[uploadInvoiceAttachmentAction] POST /api/v1/invoice/attachment Payload:", payload);
+  try {
+    const res = await apiFetch<{ success: boolean; message?: string }>(`/api/v1/invoice/attachment`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    console.log("[uploadInvoiceAttachmentAction] API Response:", res);
+    return { success: true, message: res.message };
+  } catch (error: any) {
+    console.error("[uploadInvoiceAttachmentAction] API Error:", error?.message || error);
+    const message = error.message || "Failed to upload attachment";
+    return { success: false, error: message };
+  }
+}
+
+export async function fetchInvoiceAttachmentsAction(
+  invoiceId: string
+): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  try {
+    const data = await apiFetch<{ success: boolean; data: any[] }>(
+      `/api/v1/invoice/${invoiceId}/attachments`,
+      {
+        method: "GET",
+      }
+    );
+    return { success: true, data: data.data };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to fetch attachments";
+    return { success: false, error: message };
+  }
+}
+
+export async function deleteInvoiceAttachmentAction(
+  attachmentId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await apiFetch(`/api/v1/invoice/attachment/${attachmentId}`, {
+      method: "DELETE",
+    });
+    return { success: true };
+  } catch (error: any) {
+    const message = error.message || "Failed to delete attachment";
+    return { success: false, error: message };
+  }
+}

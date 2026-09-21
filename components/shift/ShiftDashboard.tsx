@@ -596,8 +596,24 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         // We rely on the WebSocket's onmessage event to call loadComments() and update the UI
         return true;
       } else {
-        toast.error("WebSocket is not connected. Please refresh the page and try again.");
-        return false;
+        // Fallback to REST API if WebSocket is not connected
+        const apiPayload = {
+          shift_id: shiftId,
+          type,
+          user_message: text.trim() || null,
+          attach_file_url: attachFileUrl || null,
+          guard_role,
+        };
+        const res = await addCommentAction(apiPayload);
+        if (res.success) {
+          toast.success("Comment sent successfully");
+          // Since there is no live WebSocket connection to receive the event, we fetch it manually
+          loadComments(true);
+          return true;
+        } else {
+          toast.error(res.error || "Failed to submit comment via API");
+          return false;
+        }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to submit comment";

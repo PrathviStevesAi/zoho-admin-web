@@ -48,6 +48,7 @@ import { EditShiftDialog } from "./_components/EditShiftDialog";
 import { ShippingAddress } from "@/types/dashboard.types";
 import { ActionErrorDialog } from "./_components/ActionErrorDialog";
 import { ShiftSettingsModule } from "./_components/ShiftSettingsModule";
+import { AttachmentModule } from "./_components/AttachmentModule";
 const formatDateKey = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -82,6 +83,7 @@ export default function InvoiceDetailsPage() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isAssignGuardOpen, setIsAssignGuardOpen] = useState(false);
   const [isAvailableGuardsOpen, setIsAvailableGuardsOpen] = useState(false);
+  const [isUploadAttachmentOpen, setIsUploadAttachmentOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ title: "", description: "", shift_description: "" });
@@ -903,6 +905,7 @@ export default function InvoiceDetailsPage() {
     if (isScheduleOpen) return "Schedule Shift";
     if (isAssignGuardOpen) return "Assign Guard";
     if (isAvailableGuardsOpen) return "Available Guards";
+    if (isUploadAttachmentOpen) return "Uploaded Attachments";
     if (isSettingsOpen) return "Shift Settings";
     return "";
   };
@@ -915,9 +918,9 @@ export default function InvoiceDetailsPage() {
         zohoInvoiceId={invoice.zoho_invoice_id}
         description={invoice.invoice_description || invoice.description || ""}
         shippingAddress={invoice.shipping_address}
-        onOpenPayment={() => { setIsPaymentOpen(true); setIsScheduleOpen(false); setIsAssignGuardOpen(false); }}
+        onOpenPayment={() => { setIsPaymentOpen(true); setIsScheduleOpen(false); setIsAssignGuardOpen(false); setIsAvailableGuardsOpen(false); setIsSettingsOpen(false); setIsUploadAttachmentOpen(false); }}
         onOpenShiftDetail={() => { setIsEditOpen(true); }}
-        onOpenSchedule={() => { setIsScheduleOpen(true); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAddingShift(false); loadShifts("schedule"); }}
+        onOpenSchedule={() => { setIsScheduleOpen(true); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAvailableGuardsOpen(false); setIsSettingsOpen(false); setIsUploadAttachmentOpen(false); setIsAddingShift(false); loadShifts("schedule"); }}
         onOpenAssignGuard={() => {
           const paymentStatus = invoice?.payment_status?.toLowerCase();
           if (!paymentStatus || paymentStatus === 'pending' || paymentStatus === 'unpaid') {
@@ -930,6 +933,8 @@ export default function InvoiceDetailsPage() {
           setIsScheduleOpen(false);
           setIsPaymentOpen(false);
           setIsAvailableGuardsOpen(false);
+          setIsSettingsOpen(false);
+          setIsUploadAttachmentOpen(false);
           loadShifts("assign_guard");
         }}
         onOpenAvailableGuards={() => {
@@ -938,6 +943,7 @@ export default function InvoiceDetailsPage() {
           setIsScheduleOpen(false);
           setIsPaymentOpen(false);
           setIsSettingsOpen(false);
+          setIsUploadAttachmentOpen(false);
           loadAvailableGuards();
           loadShifts("assign_guard");
         }}
@@ -947,8 +953,17 @@ export default function InvoiceDetailsPage() {
           setIsScheduleOpen(false);
           setIsAssignGuardOpen(false);
           setIsAvailableGuardsOpen(false);
+          setIsUploadAttachmentOpen(false);
         }}
-        onResetView={() => { setIsScheduleOpen(false); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAvailableGuardsOpen(false); setIsSettingsOpen(false); }}
+        onUploadAttachment={() => {
+          setIsUploadAttachmentOpen(true);
+          setIsSettingsOpen(false);
+          setIsPaymentOpen(false);
+          setIsScheduleOpen(false);
+          setIsAssignGuardOpen(false);
+          setIsAvailableGuardsOpen(false);
+        }}
+        onResetView={() => { setIsScheduleOpen(false); setIsPaymentOpen(false); setIsAssignGuardOpen(false); setIsAvailableGuardsOpen(false); setIsSettingsOpen(false); setIsUploadAttachmentOpen(false); }}
         onCancelService={handleCancelService}
         currentView={getCurrentViewName()}
         status={invoice.status}
@@ -1057,6 +1072,11 @@ export default function InvoiceDetailsPage() {
               toast.error(res.error || "Failed to save settings.");
             }
           }}
+        />
+      ) : isUploadAttachmentOpen ? (
+        <AttachmentModule
+          invoiceId={id}
+          onCancel={() => setIsUploadAttachmentOpen(false)}
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
