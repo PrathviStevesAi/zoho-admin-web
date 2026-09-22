@@ -255,10 +255,10 @@ function GuardShiftsContent() {
           </CardHeader>
 
           <CardContent className="p-0 flex-1 flex flex-col">
-            <div className="overflow-x-auto flex-1">
+            <div className={cn("overflow-x-auto flex-1", shifts.length > 10 && "max-h-[620px] overflow-y-auto")}>
               <Table className="min-w-[900px]">
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-slate-100">
+                <TableHeader className={cn("bg-[#f0f4f8]", shifts.length > 10 && "sticky top-0 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.05)]")}>
+                  <TableRow className="hover:bg-transparent border-slate-100 bg-[#f0f4f8]">
                     <TableHead className="py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                       #
                     </TableHead>

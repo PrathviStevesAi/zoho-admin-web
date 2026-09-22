@@ -11,6 +11,7 @@ import {
   Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,14 @@ export function GuardHeader({
   getTabParam,
   getStatusBreadcrumb
 }: GuardHeaderProps) {
+  const router = useRouter();
+
+  const handleNavigateToOverview = () => {
+    const targetGuardId = guard?.guard_id || guard?.user_id || guard?.id || "";
+    const returnUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/guard-bank";
+    router.push(`/guard-overview?guard_id=${targetGuardId}&returnTo=${encodeURIComponent(returnUrl)}`);
+  };
+
   return (
     <div className="flex flex-col gap-3 w-full">
       <div className="flex flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 w-full">
@@ -82,7 +91,7 @@ export function GuardHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl border-slate-100 shadow-xl bg-white text-slate-700 font-medium text-[13px]">
-              <DropdownMenuItem onClick={() => window.location.href = `/guard-overview?guard_id=${guard.id || guard.guard_id || ""}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
+              <DropdownMenuItem onClick={handleNavigateToOverview} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                 <Eye className="w-4 h-4" />
                 Guard Overview
               </DropdownMenuItem>

@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { clientFetchShiftReportsAction, ShiftReportItem } from "@/lib/client-actions";
 
 type DateFilterOption = "today" | "yesterday" | "last_7_days" | "custom";
@@ -169,6 +170,31 @@ function ShiftReportContent() {
     return { date: dateStr, time: "" };
   };
 
+  const formatStatus = (status?: string) => {
+    if (!status) return "---";
+    return status
+      .replace(/^shift_/, "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  const getStatusBadgeClass = (status?: string) => {
+    const s = (status || "").toLowerCase();
+    if (s.includes("finish") || s.includes("complete") || s.includes("approved")) {
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    }
+    if (s.includes("progress") || s.includes("active") || s.includes("accepted")) {
+      return "bg-blue-50 text-blue-700 border-blue-200";
+    }
+    if (s.includes("scheduled") || s.includes("planned") || s.includes("pending")) {
+      return "bg-amber-50 text-amber-700 border-amber-200";
+    }
+    if (s.includes("cancel") || s.includes("refused") || s.includes("abandon")) {
+      return "bg-rose-50 text-rose-700 border-rose-200";
+    }
+    return "bg-slate-100 text-slate-700 border-slate-200";
+  };
+
   const handleExport = () => {
     if (!reports || reports.length === 0) {
       return;
@@ -179,6 +205,7 @@ function ShiftReportContent() {
       "Guard Name",
       "Invoice No",
       "Company",
+      "Status",
       "Shift Start",
       "Shift End",
       "Location",
@@ -187,12 +214,13 @@ function ShiftReportContent() {
     const rows = reports.map((r) => {
       const startFmt = formatDateTime(r.start_time || r.shift_start);
       const endFmt = formatDateTime(r.end_time || r.shift_end);
-      const shiftStartStr = startFmt.date !== "---" ? `${startFmt.date} ${startFmt.time}` : "";
-      const shiftEndStr = endFmt.date !== "---" ? `${endFmt.date} ${endFmt.time}` : "";
+      const shiftStartStr = startFmt.date !== "---" ? (startFmt.time !== "---" && startFmt.time ? `${startFmt.date} ${startFmt.time}` : startFmt.date) : "";
+      const shiftEndStr = endFmt.date !== "---" ? (endFmt.time !== "---" && endFmt.time ? `${endFmt.date} ${endFmt.time}` : endFmt.date) : "";
       const shiftNo = r.shift_no ? String(r.shift_no) : "";
       const guardName = (r.assigned_guard_name || r.guard_name || "").replace(/"/g, '""');
       const invoiceNo = (r.invoice_no || "").replace(/"/g, '""');
       const company = (r.company_name || r.company || "").replace(/"/g, '""');
+      const statusStr = (formatStatus(r.status) || "").replace(/"/g, '""');
       const location = (r.shift_location || r.location || "").replace(/"/g, '""');
 
       return [
@@ -200,6 +228,7 @@ function ShiftReportContent() {
         `"${guardName}"`,
         `"${invoiceNo}"`,
         `"${company}"`,
+        `"${statusStr}"`,
         `"${shiftStartStr}"`,
         `"${shiftEndStr}"`,
         `"${location}"`,
@@ -333,10 +362,10 @@ function ShiftReportContent() {
           </CardHeader>
 
           <CardContent className="p-0 flex-1 flex flex-col">
-            <div className="overflow-x-auto flex-1">
+            <div className={cn("overflow-x-auto flex-1", reports.length > 10 && "max-h-[620px] overflow-y-auto")}>
               <Table className="min-w-[900px]">
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-slate-100">
+                <TableHeader className={cn("bg-[#f0f4f8]", reports.length > 10 && "sticky top-0 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.05)]")}>
+                  <TableRow className="hover:bg-transparent border-slate-100 bg-[#f0f4f8]">
                     <TableHead className="py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                       #
                     </TableHead>
@@ -351,6 +380,9 @@ function ShiftReportContent() {
                     </TableHead>
                     <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                       Company
+                    </TableHead>
+                    <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      Status
                     </TableHead>
                     <TableHead className="py-4 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                       Shift Start
@@ -383,6 +415,9 @@ function ShiftReportContent() {
                           <Skeleton className="h-4 w-32 bg-slate-100" />
                         </TableCell>
                         <TableCell className="px-4 py-4">
+                          <Skeleton className="h-5 w-20 rounded-full bg-slate-100" />
+                        </TableCell>
+                        <TableCell className="px-4 py-4">
                           <Skeleton className="h-8 w-24 bg-slate-100" />
                         </TableCell>
                         <TableCell className="px-4 py-4">
@@ -395,7 +430,7 @@ function ShiftReportContent() {
                     ))
                   ) : reports.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-12 text-center text-sm font-medium text-slate-500">
+                      <TableCell colSpan={9} className="py-12 text-center text-sm font-medium text-slate-500">
                         No shift reports found for the selected date range.
                       </TableCell>
                     </TableRow>
@@ -433,6 +468,17 @@ function ShiftReportContent() {
 
                           <TableCell className="px-4 py-4 text-xs font-medium text-slate-800 whitespace-nowrap">
                             {item.company_name || item.company || "---"}
+                          </TableCell>
+
+                          <TableCell className="px-4 py-4 whitespace-nowrap">
+                            <span
+                              className={cn(
+                                "inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border",
+                                getStatusBadgeClass(item.status)
+                              )}
+                            >
+                              {formatStatus(item.status)}
+                            </span>
                           </TableCell>
 
                           <TableCell className="px-4 py-4 whitespace-nowrap">
