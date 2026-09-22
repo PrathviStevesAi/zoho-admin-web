@@ -82,10 +82,10 @@ export function GuardHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl border-slate-100 shadow-xl bg-white text-slate-700 font-medium text-[13px]">
-              {/* <DropdownMenuItem onClick={() => window.location.href = `/guard-overview?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
+              <DropdownMenuItem onClick={() => window.location.href = `/guard-overview?guard_id=${guard.id || guard.guard_id || ""}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                 <Eye className="w-4 h-4" />
                 Guard Overview
-              </DropdownMenuItem> */}
+              </DropdownMenuItem>
               {guard.action?.is_open_crm && (
                 <DropdownMenuItem onClick={() => window.open(`https://crm.zoho.com/crm/org677245190/tab/Vendors/${guard.vendor_id}`, "_blank")} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                   <ExternalLink className="w-4 h-4" />

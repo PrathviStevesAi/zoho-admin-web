@@ -460,6 +460,7 @@ export async function createShiftAction(payload: {
     end_date: string;
     total_hr: number;
   }[];
+  is_travel_guard?: boolean;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await apiFetch(`/api/v1/shift/create`, {
@@ -1294,3 +1295,59 @@ export async function deleteInvoiceAttachmentAction(
     return { success: false, error: message };
   }
 }
+
+export async function fetchGuardSummaryAction(guard_id: string): Promise<{
+  success: boolean;
+  data?: {
+    complete_shifts: number;
+    scheduled_shifts: number;
+    active_shifts: number;
+  };
+  error?: string;
+}> {
+  if (!guard_id) {
+    return { success: false, error: "Guard ID is required" };
+  }
+  try {
+    const data = await apiFetch<any>(`/api/v1/guard/${guard_id}/summary`);
+    return { success: true, data: data?.data || data };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to fetch guard summary";
+    return { success: false, error: message };
+  }
+}
+
+export async function fetchGuardReviewsSummaryAction(params?: {
+  guard_id?: string;
+  filter_type?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<{
+  success: boolean;
+  data?: {
+    overall_rating: number;
+    total_reviews: number;
+    rating_counts: {
+      [key: string]: number;
+    };
+    customer_reviews_count: number;
+    fastguard_reviews_count: number;
+  };
+  error?: string;
+}> {
+  const query = new URLSearchParams();
+  query.append("filter_type", params?.filter_type || "summary");
+  if (params?.page) query.append("page", params.page.toString());
+  if (params?.page_size) query.append("page_size", params.page_size.toString());
+  if (params?.guard_id) query.append("guard_id", params.guard_id);
+
+  try {
+    const data = await apiFetch<any>(`/api/v1/guard/review?${query.toString()}`);
+    return { success: true, data: data?.data || data };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to fetch guard reviews summary";
+    return { success: false, error: message };
+  }
+}
+
+

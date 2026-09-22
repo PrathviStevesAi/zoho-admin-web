@@ -74,10 +74,8 @@ export default function ProfilePage() {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedCountry, setSelectedCountry] = useState(countries[11]); // Default to US
+  const [selectedCountry, setSelectedCountry] = useState(countries[11]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
-  // OTP flow states
   const [emailToUpdate, setEmailToUpdate] = useState("");
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
@@ -199,7 +197,7 @@ export default function ProfilePage() {
     if (res.success) {
       toast.success(res.message || "OTP sent to your email");
       setOtpSent(true);
-      setOtpResendTimer(300); // 5 minutes = 300 seconds
+      setOtpResendTimer(300);
     } else {
       toast.error(res.error || "Failed to send OTP");
     }
@@ -513,8 +511,8 @@ export default function ProfilePage() {
                       className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all flex-1"
                     />
                     {emailToUpdate !== currentUser.email && (
-                      <Button 
-                        onClick={handleSendEmailOtp} 
+                      <Button
+                        onClick={handleSendEmailOtp}
                         disabled={isSendingOtp || otpResendTimer > 0}
                         className="h-11 bg-[#0064cb] hover:bg-[#0052ae] text-white px-4 rounded-xl font-semibold text-sm disabled:opacity-50"
                       >
@@ -530,8 +528,8 @@ export default function ProfilePage() {
                         onChange={(e) => setOtpValue(e.target.value)}
                         className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all flex-1"
                       />
-                      <Button 
-                        onClick={handleVerifyEmailOtp} 
+                      <Button
+                        onClick={handleVerifyEmailOtp}
                         disabled={isVerifyingOtp || !otpValue}
                         className="h-11 bg-green-600 hover:bg-green-700 text-white px-6 rounded-xl font-semibold text-sm"
                       >
@@ -589,8 +587,8 @@ export default function ProfilePage() {
                   <span className="text-[14px] font-medium text-slate-700">
                     {(currentUser.phone_number || "").startsWith("+1")
                       ? (currentUser.phone_number || "").slice(2)
-                      : (currentUser.phone_number || "").startsWith("+") 
-                        ? currentUser.phone_number 
+                      : (currentUser.phone_number || "").startsWith("+")
+                        ? currentUser.phone_number
                         : currentUser.phone_number || "Not provided"}
                   </span>
                 </div>

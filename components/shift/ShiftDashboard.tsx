@@ -185,7 +185,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           }
         });
 
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://clanking-bagginess-flammable.ngrok-free.dev";
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://fastguard.securityguardbank.com";
         const cleanBase = baseUrl.replace(/\/+$/, "");
         const wsProtocol = cleanBase.startsWith("https") ? "wss" : "ws";
         const wsHost = cleanBase.replace(/^https?:\/\//, "").split("/")[0];
@@ -272,7 +272,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   useEffect(() => {
     console.log("[Comments WebSocket] useEffect triggered. shiftId:", shiftId, "dashboardActiveTab:", dashboardActiveTab);
     if (shiftId && token && dashboardActiveTab === "comment") {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://clanking-bagginess-flammable.ngrok-free.dev";
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://fastguard.securityguardbank.com";
       const cleanBase = baseUrl.replace(/\/+$/, "");
       const wsProtocol = cleanBase.startsWith("https") ? "wss" : "ws";
       const wsHost = cleanBase.replace(/^https?:\/\//, "").split("/")[0];
@@ -295,14 +295,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         try {
           console.log("[Comments WebSocket] Received message:", event.data);
           const parsed = JSON.parse(event.data);
-          
+
           if (parsed && typeof parsed === "object") {
             const commentData = ["new_comment", "create_comment", "comment_created"].includes(parsed.event) ? parsed.data : parsed;
-            
+
             // If the received data looks like a comment object, append it directly
             if (commentData && (commentData.id || commentData.user_message || commentData.attach_file_url)) {
               const uniqueId = commentData.id || commentData.comment_id || commentData._id || `ws-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-              
+
               const currentShift = shiftRef.current;
               let sentTo = commentData.sent_to || commentData.send_to;
               if (!sentTo) {
@@ -936,8 +936,6 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               const res = await sendShiftReportAction(shift.shift_id);
               if (res.success) {
                 toast.success(res.message || "Report email successfully sent");
-
-                // Refresh shift details to get updated `is_report_send` status
                 await Promise.all([loadShiftDetails(), loadReportsDetails()]);
               } else {
                 toast.error(res.error || "Failed to send report.");

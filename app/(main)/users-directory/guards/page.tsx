@@ -321,10 +321,10 @@ export default function GuardDirectoryPage() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-48">
-                                    {/* <DropdownMenuItem onClick={() => router.push(`/guard-overview`)} className="cursor-pointer py-2">
+                                    <DropdownMenuItem onClick={() => router.push(`/guard-overview?guard_id=${guard.guard_id || guard.id || ""}&returnTo=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "/users-directory/guards")}`)} className="cursor-pointer py-2">
                                       <Eye className="mr-2 h-4 w-4 text-slate-500" />
                                       <span className="font-medium">Guard Overview</span>
-                                    </DropdownMenuItem> */}
+                                    </DropdownMenuItem>
                                     <div className="py-1">
                                       <DropdownMenuSeparator />
                                     </div>

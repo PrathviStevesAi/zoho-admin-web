@@ -118,7 +118,8 @@ export default function InvoiceDetailsPage() {
     dateFrom: formatDateKey(new Date()),
     dateTo: formatDateKey(new Date()),
     service: "",
-    people: 1
+    people: 1,
+    is_travel_guard: false
   });
 
   const [rowSchedules, setRowSchedules] = useState<Record<string, any>>({});
@@ -599,7 +600,12 @@ export default function InvoiceDetailsPage() {
     }
     setIsCreatingShift(true);
     try {
-      const payload = { invoice_id: id, service_id: addShiftData.service, schedule };
+      const payload = {
+        invoice_id: id,
+        service_id: addShiftData.service,
+        schedule,
+        is_travel_guard: !!addShiftData.is_travel_guard
+      };
       console.log("[ShiftModule] Creating shifts with payload:", payload);
 
       const result = await createShiftAction(payload);
@@ -612,7 +618,8 @@ export default function InvoiceDetailsPage() {
           dateFrom: formatDateKey(new Date()),
           dateTo: formatDateKey(new Date()),
           service: "",
-          people: 1
+          people: 1,
+          is_travel_guard: false
         });
         setRowSchedules({});
         loadShifts();
