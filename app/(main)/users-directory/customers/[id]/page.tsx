@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function CustomerViewPage() {
+function CustomerViewContent() {
   const params = useParams();
   const router = useRouter();
   const customerId = params.id as string;
@@ -86,7 +86,7 @@ export default function CustomerViewPage() {
         service_state: data.service_address?.state || "",
         service_zip: data.service_address?.zip || "",
         service_country: data.service_address?.country || "",
-        billing_type: data.billing_type || "",
+        billing_type: data.billing_type === "net_term" ? "net_term" : "regular",
         net_terms_days: data.net_terms_days ? String(data.net_terms_days) : "",
         security_service_price: data.security_service_price || {},
         sameAsBilling: (data.billing_address?.street || "") === (data.service_address?.street || "") &&
@@ -261,7 +261,7 @@ export default function CustomerViewPage() {
         service_state: customerData.service_address?.state || "",
         service_zip: customerData.service_address?.zip || "",
         service_country: "US",
-        billing_type: customerData.billing_type || "",
+        billing_type: customerData.billing_type === "net_term" ? "net_term" : "regular",
         net_terms_days: customerData.net_terms_days ? String(customerData.net_terms_days) : "",
         security_service_price: customerData.security_service_price || {},
         sameAsBilling: (customerData.billing_address?.street || "") === (customerData.service_address?.street || "") &&
@@ -473,7 +473,7 @@ export default function CustomerViewPage() {
 
           <div className="space-y-6">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-slate-400" /> Billing Details
+              <CreditCard className="w-5 h-5 text-slate-400" /> User Type
             </h2>
 
             <div className="space-y-4">
@@ -837,5 +837,17 @@ export default function CustomerViewPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CustomerViewPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="p-4 sm:p-6 max-w-[1200px] mx-auto flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0064cb]" />
+      </div>
+    }>
+      <CustomerViewContent />
+    </React.Suspense>
   );
 }
