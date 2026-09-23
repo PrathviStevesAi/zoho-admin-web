@@ -221,12 +221,6 @@ export function ShiftCommentsTab({
           {comments.map((comment: any) => {
             const authorName = getCommentAuthorName(comment);
             const isExternal = comment.type === "external";
-            const sendByDisplay = getSendByDisplay(comment, {
-              leadGuardName,
-              standbyGuardName,
-              hasLeadGuard,
-              hasStandbyGuard,
-            });
             return (
               <div key={comment.id} className="flex gap-3">
                 <div
@@ -240,21 +234,6 @@ export function ShiftCommentsTab({
                 <div className="space-y-2 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[13px] font-bold text-slate-800">{authorName}</span>
-                    {sendByDisplay && (
-                      <div className="flex items-center gap-1.5 text-[12px]">
-                        <span className="text-[#0064cb] font-semibold">Sent to :-</span>
-                        <div className="flex items-center gap-1 text-slate-700 font-semibold">
-                          {sendByDisplay === "Both Guards" ? (
-                            <Users className="w-3.5 h-3.5 text-slate-600" />
-                          ) : sendByDisplay === "Lead Guard" ? (
-                            <UserPlus className="w-3.5 h-3.5 text-slate-600" />
-                          ) : (
-                            <User className="w-3.5 h-3.5 text-slate-600" />
-                          )}
-                          <span>{sendByDisplay}</span>
-                        </div>
-                      </div>
-                    )}
                     <span className="text-[11px] text-slate-700 flex items-center gap-1">
                       {formatDateTime(comment.created_at, timezone)}
                       {(comment.is_pending || (typeof comment.id === "string" && comment.id.startsWith("temp-"))) && (

@@ -421,12 +421,20 @@ export function ShiftDetailsCard({
                 </span>
               </p>
             )}
-            <p className="text-slate-600 font-bold text-sm mt-1.5">
+            <p className="text-slate-600 font-bold text-sm mt-2.5">
               TRAVEL ASSIGNMENT :{" "}
               <span className="text-slate-800 font-medium">
                 {shift.is_travel_guard ? "🟢 Yes" : "🔴 No"}
               </span>
             </p>
+            {shift.security_service && (
+              <p className="text-slate-600 font-bold text-sm">
+                SECURITY SERVICE :{" "}
+                <span className="text-slate-800 font-medium">
+                  {shift.security_service}
+                </span>
+              </p>
+            )}
           </div>
         </div>
 

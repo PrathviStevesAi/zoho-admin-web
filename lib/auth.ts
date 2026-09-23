@@ -68,6 +68,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             accessToken: result.access_token,
                             refreshToken: result.refresh_token,
                             role: result.data.role || result.role,
+                            name: result.data.first_name || result.data.name || credentials.email,
+                            first_name: result.data.first_name,
+                            last_name: result.data.last_name,
                             email: credentials.email as string,
                         };
                     }
@@ -87,12 +90,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.role = session.role;
             }
             if (user) {
-
                 return {
                     ...token,
                     accessToken: user.accessToken,
                     refreshToken: user.refreshToken,
                     role: user.role,
+                    name: (user as any).name || (user as any).first_name,
+                    first_name: (user as any).first_name,
+                    last_name: (user as any).last_name,
                     expiresAt: Math.floor(Date.now() / 1000) + 3600,
                 };
             }
@@ -105,10 +110,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         },
         async session({ session, token }) {
             if (token) {
-
                 session.accessToken = token.accessToken;
                 session.user.id = token.sub as string;
                 session.user.role = token.role;
+                if (token.name) session.user.name = token.name as string;
+                (session.user as any).first_name = token.first_name;
+                (session.user as any).last_name = token.last_name;
                 session.error = token.error;
             }
             return session;

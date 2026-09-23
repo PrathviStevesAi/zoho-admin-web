@@ -116,6 +116,7 @@ export interface Shift {
   travel_fee?: number | null;
   qc_flat_rate?: number | null;
   security_service_id?: string | null;
+  security_service?: string | null;
   call_id?: string | null;
   lead_guard?: LeadGuard;
   standby_guard?: StandbyGuard;

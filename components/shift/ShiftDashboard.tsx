@@ -25,7 +25,7 @@ import {
   approveShiftAction,
   notApproveShiftAction,
 } from "@/actions/dashboard.actions";
-import { generateUploadUrlAction } from "@/actions/profile.actions";
+import { generateUploadUrlAction, fetchProfileAction } from "@/actions/profile.actions";
 import { fetchShiftReportsAction } from "@/actions/notification.actions";
 import { CancelServiceDialog } from "@/app/(main)/invoices/[id]/_components/CancelServiceDialog";
 import { VerifyWarningDialog } from "@/app/(main)/invoices/[id]/_components/VerifyWarningDialog";
@@ -58,6 +58,16 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const router = useRouter();
   const { startCall } = useVideoCall();
   const { data: session } = useSession();
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    fetchProfileAction().then((res) => {
+      if (res.success && res.data) {
+        setCurrentUserProfile(res.data);
+      }
+    });
+  }, []);
+
   const token = (session as any)?.accessToken;
   const commentsWsRef = useRef<WebSocket | null>(null);
   const shiftRef = useRef<Shift | null>(null);
@@ -704,7 +714,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       }
 
       const adminName =
+        currentUserProfile?.first_name ||
         (session as any)?.user?.first_name ||
+        currentUserProfile?.name ||
         session?.user?.name ||
         "Admin";
 
