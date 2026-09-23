@@ -562,10 +562,15 @@ export interface Comment {
 
 
 export async function clientFetchCommentsAction(
-  shiftId: string
+  shiftId: string,
+  guard?: string
 ): Promise<{ success: boolean; data?: Comment[]; error?: string }> {
   try {
-    const data = await clientApiFetch<{ success: boolean; data?: Comment[] } | Comment[]>(`/api/v1/comment/shift/${shiftId}/new?channel=admin_guard`);
+    const query = new URLSearchParams({ channel: "admin_guard" });
+    if (guard) {
+      query.append("guard", guard);
+    }
+    const data = await clientApiFetch<{ success: boolean; data?: Comment[] } | Comment[]>(`/api/v1/comment/shift/${shiftId}/new?${query.toString()}`);
     const commentsList = Array.isArray(data) ? data : (data.data || []);
     return { success: true, data: commentsList };
   } catch (error: unknown) {

@@ -18,7 +18,7 @@ interface ShiftCommentsTabProps {
   comments: Comment[];
   isCommentsLoading: boolean;
   commentsError: string | null;
-  onCommentSubmit: (text: string, type: "external" | "internal", file: File | null, recipient?: string) => Promise<boolean>;
+  onCommentSubmit: (text: string, type: "external" | "internal", file: File | null, recipient?: "lead" | "standby") => Promise<boolean>;
   setPreviewFile: (file: PreviewFile | null) => void;
   hasLeadGuard?: boolean;
   hasStandbyGuard?: boolean;
@@ -27,6 +27,8 @@ interface ShiftCommentsTabProps {
   timezone?: string;
   leadGuardName?: string;
   standbyGuardName?: string;
+  activeRecipient?: "lead" | "standby";
+  onRecipientChange?: (recipient: "lead" | "standby") => void;
 }
 
 export function ShiftCommentsTab({
@@ -42,9 +44,11 @@ export function ShiftCommentsTab({
   timezone,
   leadGuardName,
   standbyGuardName,
+  activeRecipient,
+  onRecipientChange,
 }: ShiftCommentsTabProps) {
   const [commentType, setCommentType] = useState<"external" | "internal">("external");
-  const [recipient, setRecipient] = useState<"lead" | "standby" | "both">(hasLeadGuard ? "lead" : "standby");
+  const [recipient, setRecipient] = useState<"lead" | "standby">(activeRecipient || (hasLeadGuard ? "lead" : "standby"));
   const [commentText, setCommentText] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +56,17 @@ export function ShiftCommentsTab({
   const commentsContainerRef = useRef<HTMLDivElement>(null);
   const hasInitiallyScrolled = useRef(false);
   const prevCommentsLengthRef = useRef(0);
+
+  useEffect(() => {
+    if (activeRecipient) {
+      setRecipient(activeRecipient);
+    }
+  }, [activeRecipient]);
+
+  const handleSelectRecipient = (r: "lead" | "standby") => {
+    setRecipient(r);
+    onRecipientChange?.(r);
+  };
 
   const scrollToBottomInsideContainer = (behavior: ScrollBehavior = "smooth") => {
     if (commentsContainerRef.current) {
@@ -114,13 +129,6 @@ export function ShiftCommentsTab({
       } else if (isStandbyPlanned) {
         isCommentDisabled = true;
       }
-    } else if (recipient === "both") {
-      if (!hasLeadGuard || !hasStandbyGuard) {
-        isCommentDisabled = true;
-        disabledMessage = "Both guards must be assigned to use this option.";
-      } else if (isLeadPlanned || isStandbyPlanned) {
-        isCommentDisabled = true;
-      }
     }
   }
   const handleSubmit = async () => {
@@ -143,7 +151,7 @@ export function ShiftCommentsTab({
           <button
             type="button"
             disabled={isInternal}
-            onClick={() => setRecipient("lead")}
+            onClick={() => handleSelectRecipient("lead")}
             className={cn(
               "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg flex-1",
               isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
@@ -162,7 +170,7 @@ export function ShiftCommentsTab({
           <button
             type="button"
             disabled={isInternal}
-            onClick={() => setRecipient("standby")}
+            onClick={() => handleSelectRecipient("standby")}
             className={cn(
               "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg flex-1",
               isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
@@ -174,25 +182,6 @@ export function ShiftCommentsTab({
           >
             <User className="w-[18px] h-[18px]" />
             <span className="text-[13px]">Standby Guard</span>
-          </button>
-
-          <div className="w-[1px] h-6 bg-slate-200 mx-0.5" />
-
-          <button
-            type="button"
-            disabled={isInternal}
-            onClick={() => setRecipient("both")}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg",
-              isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
-              recipient === "both" && !isInternal
-                ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
-                : "text-slate-500 border border-transparent",
-              !isInternal && recipient !== "both" && "hover:text-slate-700 hover:bg-slate-50"
-            )}
-          >
-            <Users className="w-[18px] h-[18px]" />
-            <span className="text-[13px]">Both Guards</span>
           </button>
         </div>
       </div>

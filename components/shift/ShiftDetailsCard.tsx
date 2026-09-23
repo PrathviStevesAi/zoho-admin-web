@@ -396,8 +396,8 @@ export function ShiftDetailsCard({
             </Button>
           </div>
 
-          {shift.shipping_location?.location && (
-            <div className="space-y-0.5">
+          <div className="space-y-0.5">
+            {shift.shipping_location?.location && (
               <p className="text-slate-600 font-bold text-sm">
                 Location -{" "}
                 <span className="text-[#0064cb] cursor-pointer hover:underline">
@@ -412,16 +412,22 @@ export function ShiftDetailsCard({
                     .join(", ")}
                 </span>
               </p>
-              {shift.shipping_location.timezone && (
-                <p className="text-slate-600 font-bold text-sm">
-                  Timezone:{" "}
-                  <span className="text-slate-800 font-medium">
-                    {shift.shipping_location.timezone}
-                  </span>
-                </p>
-              )}
-            </div>
-          )}
+            )}
+            {shift.shipping_location?.timezone && (
+              <p className="text-slate-600 font-bold text-sm">
+                Timezone:{" "}
+                <span className="text-slate-800 font-medium">
+                  {shift.shipping_location.timezone}
+                </span>
+              </p>
+            )}
+            <p className="text-slate-600 font-bold text-sm mt-1.5">
+              TRAVEL ASSIGNMENT :{" "}
+              <span className="text-slate-800 font-medium">
+                {shift.is_travel_guard ? "🟢 Yes" : "🔴 No"}
+              </span>
+            </p>
+          </div>
         </div>
 
         <SectionBlock title="Invoice Information">
@@ -744,6 +750,16 @@ export function ShiftDetailsCard({
                                   </span>
                                 </div>
                               ) : null}
+                              {execTime?.shift_duration && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] text-slate-700 uppercase font-bold whitespace-nowrap">
+                                    Shift Duration:
+                                  </span>
+                                  <span className="text-sm text-slate-800 font-medium">
+                                    {execTime.shift_duration}
+                                  </span>
+                                </div>
+                              )}
                               {!execTime?.guard_shift_started_at &&
                                 !execTime?.guard_shift_ended_at && (
                                   <span className="text-sm text-slate-700 font-medium">N/A</span>

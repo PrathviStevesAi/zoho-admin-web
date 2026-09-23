@@ -65,7 +65,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     lastName: "",
     email: "",
     phone: "",
-    billingType: "zoho",
+    billingType: "regular",
     netTerms: "",
     servicePrices: [
       { id: 1, name: "Armed Security", price: 0 },
@@ -215,7 +215,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
       }
     }
 
-    if (!formData.billingType) newErrors.billingType = "Billing type is required";
+    if (!formData.billingType) newErrors.billingType = "User type is required";
     if (formData.billingType === "net_term" && !formData.netTerms) newErrors.netTerms = "Net terms is required";
 
     if (!formData.billingStreet) newErrors.billingStreet = "Street address is required";
@@ -281,7 +281,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         lastName: "",
         email: "",
         phone: "",
-        billingType: "zoho",
+        billingType: "regular",
         netTerms: "",
         servicePrices: [
           { id: 1, name: "Armed Security", price: 0 },
@@ -497,7 +497,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-slate-700 border-b pb-2">Billing Type</h3>
+              <h3 className="text-sm font-bold text-slate-700 border-b pb-2">User Type</h3>
 
               <div className="bg-[#f0f7ff] border border-[#e0f0ff] rounded-xl p-4">
                 <div className="flex gap-2">
@@ -507,8 +507,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                   <div className="space-y-2 text-xs text-slate-700">
                     <p className="font-semibold text-[#0064cb]">Note -</p>
                     <ul className="list-disc pl-4 space-y-1 text-slate-600">
-                      <li><strong>Billing Type – Zoho: </strong> The customer can place orders, which are processed through Zoho, similar to the Auto Quote process. The customer will receive the estimate and invoice through Zoho based on the pricing defined in Guard Bank.</li>
-                      <li><strong>Billing Type – Net Terms:</strong> The customer is a regular customer who can place orders using the predefined guard pricing configured during customer register</li>
+                      <li><strong>User Type – Net Term:</strong> The estimate/invoice is calculated based on the predefined guard pricing configured for the customer.</li>
+                      <li><strong>User Type – Regular:</strong> The estimate/invoice is calculated based on the pricing defined in Guard Bank.</li>
                     </ul>
                   </div>
                 </div>
@@ -517,7 +517,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">
-                    Billing Type <span className="text-red-500">*</span>
+                    User Type <span className="text-red-500">*</span>
                   </label>
                   <Select
                     onValueChange={(val) => {
@@ -527,10 +527,10 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                     value={formData.billingType}
                   >
                     <SelectTrigger className={getSelectTriggerClassName(errors.billingType)}>
-                      <SelectValue placeholder="Select billing type" />
+                      <SelectValue placeholder="Select user type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="zoho">Zoho</SelectItem>
+                      <SelectItem value="regular">Regular</SelectItem>
                       <SelectItem value="net_term">Net Term</SelectItem>
                     </SelectContent>
                   </Select>

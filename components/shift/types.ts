@@ -24,6 +24,7 @@ export interface ExecutionTime {
   guard_shift_started_at?: string;
   guard_shift_ended_at?: string;
   total_break_duration_min?: number;
+  shift_duration?: string;
 }
 
 export interface ShiftActions {
@@ -98,6 +99,7 @@ export interface Shift {
   customer_recepients?: string[];
   report_token?: string;
   is_report_send?: boolean;
+  is_travel_guard?: boolean;
   assigned_guard?: string | AssignedGuard;
   scheduled_for?: ShiftTime;
   execution_time?: ExecutionTime;

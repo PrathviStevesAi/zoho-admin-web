@@ -14,7 +14,7 @@ interface ShiftTabsModuleProps {
   comments: Comment[];
   isCommentsLoading: boolean;
   commentsError: string | null;
-  onCommentSubmit: (text: string, type: "internal" | "external", file: File | null, recipient?: string) => Promise<boolean>;
+  onCommentSubmit: (text: string, type: "internal" | "external", file: File | null, recipient?: "lead" | "standby") => Promise<boolean>;
 
   reports: ShiftReports | null;
   isReportsLoading: boolean;
@@ -31,6 +31,8 @@ interface ShiftTabsModuleProps {
   timezone?: string;
   leadGuardName?: string;
   standbyGuardName?: string;
+  activeRecipient?: "lead" | "standby";
+  onRecipientChange?: (recipient: "lead" | "standby") => void;
   shiftExtensionRequests?: ShiftExtensionRequest[];
   shiftId: string;
   onRefresh?: () => void;
@@ -55,6 +57,8 @@ export function ShiftTabsModule({
   timezone,
   leadGuardName,
   standbyGuardName,
+  activeRecipient,
+  onRecipientChange,
   shiftExtensionRequests = [],
   shiftId,
   onRefresh,
@@ -180,6 +184,8 @@ export function ShiftTabsModule({
                         timezone={timezone}
                         leadGuardName={leadGuardName}
                         standbyGuardName={standbyGuardName}
+                        activeRecipient={activeRecipient}
+                        onRecipientChange={onRecipientChange}
                       />
                     )}
                     {tab.id === "dar" && (

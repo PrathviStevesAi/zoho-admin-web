@@ -70,6 +70,13 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   }, [shift]);
   const [reports, setReports] = useState<ShiftReports | null>(null);
   const [comments, setComments] = useState<any[]>([]);
+  const [commentsRecipient, setCommentsRecipient] = useState<"lead" | "standby">("lead");
+  const commentsRecipientRef = useRef<"lead" | "standby">("lead");
+
+  useEffect(() => {
+    commentsRecipientRef.current = commentsRecipient;
+  }, [commentsRecipient]);
+
   const [dashboardActiveTab, setDashboardActiveTab] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isReportsLoading, setIsReportsLoading] = useState(false);
@@ -111,18 +118,67 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   }>({ isOpen: false, warnings: [] });
   const [actionError, setActionError] = useState<{ isOpen: boolean, message: string }>({ isOpen: false, message: "" });
 
+  const loadComments = useCallback(async (
+    silent: boolean = false,
+    targetRecipient?: "lead" | "standby",
+    shiftOverride?: Shift | null
+  ) => {
+    if (!shiftId) return;
+
+    const currentShift = shiftOverride !== undefined ? shiftOverride : shiftRef.current;
+    const hasLead = Boolean(currentShift?.lead_guard && (currentShift.lead_guard.guard_id || currentShift.lead_guard.first_name || Object.keys(currentShift.lead_guard).length > 0));
+    const hasStandby = Boolean(currentShift?.standby_guard && (currentShift.standby_guard.guard_id || currentShift.standby_guard.first_name || Object.keys(currentShift.standby_guard).length > 0));
+
+    // If neither lead guard nor standby guard is assigned, do not call the GET comments API
+    if (!hasLead && !hasStandby) {
+      setComments([]);
+      if (!silent) setIsCommentsLoading(false);
+      return;
+    }
+
+    const recipient = targetRecipient || commentsRecipientRef.current;
+    const guardParam = recipient === "lead" ? "lead_guard" : "standby_guard";
+
+    // If the selected guard role is not assigned, empty the comments without fetching
+    if ((recipient === "lead" && !hasLead) || (recipient === "standby" && !hasStandby)) {
+      setComments([]);
+      if (!silent) setIsCommentsLoading(false);
+      return;
+    }
+
+    if (!silent) setIsCommentsLoading(true);
+    setCommentsError(null);
+    const res = await clientFetchCommentsAction(shiftId, guardParam);
+    if (res.success && res.data) {
+      setComments(res.data);
+    } else {
+      setCommentsError(res.error || "Failed to load comments");
+    }
+    if (!silent) setIsCommentsLoading(false);
+  }, [shiftId]);
+
   const loadShiftDetails = useCallback(async () => {
     if (!shiftId) return;
     setIsLoading(true);
     const res = await clientFetchShiftDetailsAction(shiftId, notificationId || undefined);
     if (res.success) {
       setShift(res.data);
+      shiftRef.current = res.data;
       setError(null);
+      const hasLead = Boolean(res.data?.lead_guard && (res.data.lead_guard.guard_id || res.data.lead_guard.first_name || Object.keys(res.data.lead_guard).length > 0));
+      const hasStandby = Boolean(res.data?.standby_guard && (res.data.standby_guard.guard_id || res.data.standby_guard.first_name || Object.keys(res.data.standby_guard).length > 0));
+      if (hasLead || hasStandby) {
+        const initialRecipient = hasLead ? "lead" : "standby";
+        setCommentsRecipient(initialRecipient);
+        loadComments(false, initialRecipient, res.data);
+      } else {
+        setComments([]);
+      }
     } else {
       setError(res.error || "Shift not found");
     }
     setIsLoading(false);
-  }, [shiftId, notificationId]);
+  }, [shiftId, notificationId, loadComments]);
 
   const loadReportsDetails = useCallback(async () => {
     if (!shiftId) return;
@@ -137,24 +193,15 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsReportsLoading(false);
   }, [shiftId]);
 
-  const loadComments = useCallback(async (silent: boolean = false) => {
-    if (!shiftId) return;
-    if (!silent) setIsCommentsLoading(true);
-    setCommentsError(null);
-    const res = await clientFetchCommentsAction(shiftId);
-    if (res.success && res.data) {
-      setComments(res.data);
-    } else {
-      setCommentsError(res.error || "Failed to load comments");
-    }
-    if (!silent) setIsCommentsLoading(false);
-  }, [shiftId]);
-
   useEffect(() => {
     loadShiftDetails();
     loadReportsDetails();
-    loadComments();
-  }, [loadShiftDetails, loadReportsDetails, loadComments]);
+  }, [loadShiftDetails, loadReportsDetails]);
+
+  const handleRecipientChange = (newRecipient: "lead" | "standby") => {
+    setCommentsRecipient(newRecipient);
+    loadComments(false, newRecipient);
+  };
 
   useEffect(() => {
     const handleCallEnded = (e: any) => {
@@ -168,37 +215,37 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     return () => window.removeEventListener("videoCallEnded", handleCallEnded);
   }, [shiftId, loadShiftDetails]);
 
+  const trackingGuardId = shift?.lead_guard?.guard_id ||
+    (shift?.assigned_guard
+      ? (typeof shift.assigned_guard === "object"
+        ? shift.assigned_guard.id || shift.assigned_guard.guard_id
+        : shift.assigned_guard)
+      : null);
+  const currentTrackingShiftId = shift?.shift_id;
+
   useEffect(() => {
-    if (shift && shift.shift_id) {
-      const guardId = shift.lead_guard?.guard_id ||
-        (shift.assigned_guard
-          ? (typeof shift.assigned_guard === "object"
-            ? shift.assigned_guard.id || shift.assigned_guard.guard_id
-            : shift.assigned_guard)
-          : null);
-
-      if (guardId) {
-        clientFetchGuardTrackingAction(guardId, shift.shift_id).then((res) => {
-          if (res.success && res.data && res.data.path) {
-            const mappedPath = res.data.path.map((p: any) => [p.latitude, p.longitude]);
-            setTrackingPath(mappedPath);
-          }
-        });
-
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://fastguard.securityguardbank.com";
-        const cleanBase = baseUrl.replace(/\/+$/, "");
-        const wsProtocol = cleanBase.startsWith("https") ? "wss" : "ws";
-        const wsHost = cleanBase.replace(/^https?:\/\//, "").split("/")[0];
-        const wsUrl = `${wsProtocol}://${wsHost}/api/v1/tracking/ws/admin/shift/${shift.shift_id}`;
-
-        console.log("[WebSocket] Connecting to:", wsUrl);
-        let ws: WebSocket;
-        try {
-          ws = new WebSocket(wsUrl);
-        } catch (err) {
-          console.error("[WebSocket] Security or initialization error (likely Mixed Content blocked by browser):", err);
-          return;
+    if (currentTrackingShiftId && trackingGuardId) {
+      clientFetchGuardTrackingAction(trackingGuardId, currentTrackingShiftId).then((res) => {
+        if (res.success && res.data && res.data.path) {
+          const mappedPath = res.data.path.map((p: any) => [p.latitude, p.longitude]);
+          setTrackingPath(mappedPath);
         }
+      });
+
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://fastguard.securityguardbank.com";
+      const cleanBase = baseUrl.replace(/\/+$/, "");
+      const wsProtocol = cleanBase.startsWith("https") ? "wss" : "ws";
+      const wsHost = cleanBase.replace(/^https?:\/\//, "").split("/")[0];
+      const wsUrl = `${wsProtocol}://${wsHost}/api/v1/tracking/ws/admin/shift/${currentTrackingShiftId}`;
+
+      console.log("[WebSocket] Connecting to:", wsUrl);
+      let ws: WebSocket;
+      try {
+        ws = new WebSocket(wsUrl);
+      } catch (err) {
+        console.error("[WebSocket] Security or initialization error (likely Mixed Content blocked by browser):", err);
+        return;
+      }
 
         ws.onopen = () => {
           console.log("[WebSocket] Connection established successfully!");
@@ -266,8 +313,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
           }
         };
       }
-    }
-  }, [shift]);
+  }, [currentTrackingShiftId, trackingGuardId]);
 
   useEffect(() => {
     console.log("[Comments WebSocket] useEffect triggered. shiftId:", shiftId, "dashboardActiveTab:", dashboardActiveTab);
@@ -408,7 +454,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     const handlePushNotification = (e: any) => {
       if (e.detail?.shiftId === shiftId && dashboardActiveTab === "comment") {
         console.log("[Comments] Received push notification for this shift, silently reloading comments.");
-        loadComments(true);
+        loadComments(true, commentsRecipientRef.current);
       }
     };
     window.addEventListener("fcm-notification-received", handlePushNotification);
@@ -649,15 +695,12 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       let guard_role: string | null = null;
       if (recipient === "lead") guard_role = "lead_guard";
       else if (recipient === "standby") guard_role = "standby_guard";
-      else if (recipient === "both") guard_role = "both";
 
       let sentTo: string | undefined = undefined;
       if (recipient === "lead") {
         sentTo = shift?.lead_guard?.first_name || "Lead Guard";
       } else if (recipient === "standby") {
         sentTo = shift?.standby_guard?.first_name || "Standby Guard";
-      } else if (recipient === "both") {
-        sentTo = "Both Guards";
       }
 
       const adminName =
@@ -1153,7 +1196,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 reportsError={reportsError}
                 onTabChange={(tabId) => {
                   setDashboardActiveTab(tabId);
-                  if (tabId === "comment") loadComments();
+                  if (tabId === "comment") loadComments(false, commentsRecipientRef.current);
                 }}
                 setPreviewFile={setPreviewFile}
                 securityServiceId={shift?.security_service_id}
@@ -1164,6 +1207,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 standbyGuardStatus={shift?.standby_guard?.shift_status}
                 leadGuardName={shift?.lead_guard?.first_name}
                 standbyGuardName={shift?.standby_guard?.first_name}
+                activeRecipient={commentsRecipient}
+                onRecipientChange={handleRecipientChange}
                 timezone={shift?.shipping_location?.timezone}
                 shiftExtensionRequests={shift?.shift_extension_requests || []}
                 shiftId={shiftId}
@@ -1198,7 +1243,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               reportsError={reportsError}
               onTabChange={(tabId) => {
                 setDashboardActiveTab(tabId);
-                if (tabId === "comment") loadComments();
+                if (tabId === "comment") loadComments(false, commentsRecipientRef.current);
               }}
               setPreviewFile={setPreviewFile}
               securityServiceId={shift?.security_service_id}
@@ -1209,6 +1254,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               standbyGuardStatus={shift?.standby_guard?.shift_status}
               leadGuardName={shift?.lead_guard?.first_name}
               standbyGuardName={shift?.standby_guard?.first_name}
+              activeRecipient={commentsRecipient}
+              onRecipientChange={handleRecipientChange}
               timezone={shift?.shipping_location?.timezone}
               shiftExtensionRequests={shift?.shift_extension_requests || []}
               shiftId={shiftId}

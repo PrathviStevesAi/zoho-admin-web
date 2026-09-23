@@ -485,8 +485,8 @@ export default function CustomerViewPage() {
                   <div className="space-y-2 text-xs text-slate-700">
                     <p className="font-semibold text-[#0064cb]">Note -</p>
                     <ul className="list-disc pl-4 space-y-1 text-slate-600">
-                      <li><strong>Billing Type – Zoho:</strong> The customer can place orders, which are processed through Zoho, similar to the Auto Quote process. The customer will receive the estimate and invoice through Zoho based on the pricing defined in Guard Bank.</li>
-                      <li><strong>Billing Type – Net Terms:</strong>The customer is a regular customer who can place orders using the predefined guard pricing configured during customer registration.</li>
+                      <li><strong>User Type – Net Term:</strong> The estimate/invoice is calculated based on the predefined guard pricing configured for the customer.</li>
+                      <li><strong>User Type – Regular:</strong> The estimate/invoice is calculated based on the pricing defined in Guard Bank.</li>
                     </ul>
                   </div>
                 </div>
@@ -494,16 +494,16 @@ export default function CustomerViewPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-600 uppercase">Billing Type</Label>
+                  <Label className="text-xs font-bold text-slate-600 uppercase">User Type</Label>
                   {!isEditing ? (
                     <div className="h-12 flex items-center">
                       {formData.billing_type ? (
                         <span className="inline-flex items-center justify-center text-center px-5 py-2 rounded-full border border-[#0064cb]/30 bg-[#e0f0ff] text-[#0064cb] font-bold text-[13px] uppercase tracking-wider min-w-[120px]">
-                          {formData.billing_type === "zoho" ? "Zoho" : "Net Term"}
+                          {formData.billing_type === "net_term" ? "Net Term" : formData.billing_type === "regular" ? "Regular" : formData.billing_type === "zoho" ? "Regular" : formData.billing_type}
                         </span>
                       ) : (
                         <span className="inline-flex items-center justify-center text-center px-6 py-2 rounded-full border border-orange-200 bg-orange-50 text-orange-600 font-bold text-[13px] min-w-[220px]">
-                          No Billing Type Selected Yet
+                          No User Type Selected Yet
                         </span>
                       )}
                     </div>
@@ -513,10 +513,10 @@ export default function CustomerViewPage() {
                       value={formData.billing_type || ""}
                     >
                       <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
-                        <SelectValue placeholder="Select billing type" />
+                        <SelectValue placeholder="Select user type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="zoho">Zoho</SelectItem>
+                        <SelectItem value="regular">Regular</SelectItem>
                         <SelectItem value="net_term">Net Term</SelectItem>
                       </SelectContent>
                     </Select>
