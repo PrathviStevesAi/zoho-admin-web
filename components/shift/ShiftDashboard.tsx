@@ -304,8 +304,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               const uniqueId = commentData.id || commentData.comment_id || commentData._id || `ws-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
               const currentShift = shiftRef.current;
+              const userRole = (commentData.user_role || commentData.sender_role || commentData.role || "").toLowerCase();
+              const isFromGuard = userRole === "guard" || Boolean(commentData.guard) || Boolean(commentData.guard_id);
+
               let sentTo = commentData.sent_to || commentData.send_to;
-              if (!sentTo) {
+              if (!sentTo && !isFromGuard) {
                 const targetRole = commentData.guard_role || commentData.recipient || lastSubmittedRecipientRef.current;
                 if (targetRole === "lead_guard" || targetRole === "lead") {
                   sentTo = currentShift?.lead_guard?.first_name || "Lead Guard";
@@ -313,10 +316,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                   sentTo = currentShift?.standby_guard?.first_name || "Standby Guard";
                 } else if (targetRole === "both" || targetRole === "both_guards") {
                   sentTo = "Both Guards";
-                } else if (commentData.type === "external" && currentShift?.lead_guard?.first_name) {
-                  sentTo = currentShift.lead_guard.first_name;
                 }
               }
+
+              // Reset last submitted recipient ref after receiving
+              lastSubmittedRecipientRef.current = null;
 
               const normalizedComment = {
                 ...commentData,
@@ -327,12 +331,37 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               setComments((prev) => {
                 // If comment with this id already exists, don't duplicate
                 if (prev.some((c) => c.id === uniqueId)) return prev;
+
+                // Match and replace any optimistic temp comment
+                const tempIndex = prev.findIndex((c) => {
+                  if (typeof c.id !== "string" || !c.id.startsWith("temp-")) return false;
+                  const msg1 = (c.user_message || "").trim();
+                  const msg2 = (normalizedComment.user_message || "").trim();
+                  if (msg1 && msg2) return msg1 === msg2;
+                  if (c.attach_file_url || normalizedComment.attach_file_url) return true;
+                  return msg1 === msg2;
+                });
+
+                if (tempIndex !== -1) {
+                  const next = [...prev];
+                  if (prev[tempIndex]?.attach_file_url?.startsWith("blob:")) {
+                    try {
+                      URL.revokeObjectURL(prev[tempIndex].attach_file_url);
+                    } catch {
+                      // ignore revoke errors
+                    }
+                  }
+                  next[tempIndex] = normalizedComment;
+                  return next;
+                }
+
                 // If same message content and created_at already exists, don't duplicate
+                const normMsg = (normalizedComment.user_message || "").trim();
                 if (
                   normalizedComment.created_at &&
                   prev.some(
                     (c) =>
-                      c.user_message === normalizedComment.user_message &&
+                      (c.user_message || "").trim() === normMsg &&
                       c.created_at === normalizedComment.created_at
                   )
                 ) {
@@ -583,9 +612,16 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   };
 
   const handleCommentSubmit = async (text: string, type: "internal" | "external", file: File | null, recipient?: string) => {
+    let optimisticId: string | null = null;
     try {
       let attachFileUrl = null;
+      let localBlobUrl: string | null = null;
       if (file) {
+        try {
+          localBlobUrl = URL.createObjectURL(file);
+        } catch {
+          localBlobUrl = null;
+        }
         const fileExt = file.name.split(".").pop();
         const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
         const uniqueId = Math.floor(1000 + Math.random() * 9000);
@@ -615,6 +651,40 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       else if (recipient === "standby") guard_role = "standby_guard";
       else if (recipient === "both") guard_role = "both";
 
+      let sentTo: string | undefined = undefined;
+      if (recipient === "lead") {
+        sentTo = shift?.lead_guard?.first_name || "Lead Guard";
+      } else if (recipient === "standby") {
+        sentTo = shift?.standby_guard?.first_name || "Standby Guard";
+      } else if (recipient === "both") {
+        sentTo = "Both Guards";
+      }
+
+      const adminName =
+        (session as any)?.user?.first_name ||
+        session?.user?.name ||
+        "Admin";
+
+      optimisticId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const optimisticComment = {
+        id: optimisticId,
+        shift_id: shiftId,
+        type,
+        user_message: text.trim() || null,
+        attach_file_url: localBlobUrl || attachFileUrl || null,
+        user_role: "admin",
+        sender_role: "admin",
+        send_by: adminName,
+        sender_name: adminName,
+        created_at: new Date().toISOString(),
+        guard_role: guard_role || undefined,
+        sent_to: sentTo,
+        is_pending: true,
+      };
+
+      // Instantly display message in UI (optimistic update)
+      setComments((prev) => [...prev, optimisticComment]);
+
       const payload = {
         event: "create_comment",
         data: {
@@ -631,10 +701,16 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         commentsWsRef.current.send(JSON.stringify(payload));
         return true;
       } else {
+        if (optimisticId) {
+          setComments((prev) => prev.filter((c) => c.id !== optimisticId));
+        }
         toast.error("WebSocket is not connected. Unable to send comment in real-time.");
         return false;
       }
     } catch (err: unknown) {
+      if (optimisticId) {
+        setComments((prev) => prev.filter((c) => c.id !== optimisticId));
+      }
       const message = err instanceof Error ? err.message : "Failed to submit comment";
       toast.error(message);
       return false;

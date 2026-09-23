@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { UserPlus, Paperclip, Loader2, Send, XCircle, Lock, Users, User } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { UserPlus, Paperclip, Loader2, Send, XCircle, Lock, Users, User, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,47 @@ export function ShiftCommentsTab({
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const commentsContainerRef = useRef<HTMLDivElement>(null);
+  const hasInitiallyScrolled = useRef(false);
+  const prevCommentsLengthRef = useRef(0);
+
+  const scrollToBottomInsideContainer = (behavior: ScrollBehavior = "smooth") => {
+    if (commentsContainerRef.current) {
+      if (behavior === "auto") {
+        commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight;
+      } else {
+        commentsContainerRef.current.scrollTo({
+          top: commentsContainerRef.current.scrollHeight,
+          behavior,
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isCommentsLoading && comments && comments.length > 0) {
+      if (!hasInitiallyScrolled.current) {
+        hasInitiallyScrolled.current = true;
+        prevCommentsLengthRef.current = comments.length;
+        const timer = setTimeout(() => {
+          if (commentsContainerRef.current) {
+            commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight;
+          }
+        }, 50);
+        return () => clearTimeout(timer);
+      }
+
+      const currentLen = comments.length;
+      if (currentLen > prevCommentsLengthRef.current) {
+        const timer = setTimeout(() => {
+          scrollToBottomInsideContainer("smooth");
+        }, 50);
+        prevCommentsLengthRef.current = currentLen;
+        return () => clearTimeout(timer);
+      }
+      prevCommentsLengthRef.current = currentLen;
+    }
+  }, [comments, isCommentsLoading]);
 
   const isInternal = commentType === "internal";
 
@@ -89,6 +130,7 @@ export function ShiftCommentsTab({
     if (success) {
       setCommentText("");
       setAttachedFile(null);
+      setTimeout(() => scrollToBottomInsideContainer("smooth"), 100);
     }
     setIsSubmitting(false);
   };
@@ -183,7 +225,10 @@ export function ShiftCommentsTab({
           No comments yet. Write one below!
         </div>
       ) : (
-        <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+        <div
+          ref={commentsContainerRef}
+          className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar scroll-smooth"
+        >
           {comments.map((comment: any) => {
             const authorName = getCommentAuthorName(comment);
             const isExternal = comment.type === "external";
@@ -221,7 +266,19 @@ export function ShiftCommentsTab({
                         </div>
                       </div>
                     )}
-                    <span className="text-[11px] text-slate-700">{formatDateTime(comment.created_at, timezone)}</span>
+                    <span className="text-[11px] text-slate-700 flex items-center gap-1">
+                      {formatDateTime(comment.created_at, timezone)}
+                      {(comment.is_pending || (typeof comment.id === "string" && comment.id.startsWith("temp-"))) && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center text-slate-600">
+                              <Clock className="w-3 h-3 animate-pulse text-slate-600" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">Sending...</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </span>
                     {!isExternal && (
                       <Tooltip>
                         <TooltipTrigger asChild>

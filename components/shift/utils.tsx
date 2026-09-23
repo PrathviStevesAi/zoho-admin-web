@@ -158,9 +158,31 @@ export const getSendByDisplay = (
   }
 ) => {
   if (!comment) return null;
+
+  const userRole = (comment.user_role || comment.sender_role || comment.role || "").toLowerCase();
+  const authorName = getCommentAuthorName(comment).toLowerCase().trim();
+  const leadName = (guardContext?.leadGuardName || "").toLowerCase().trim();
+  const standbyName = (guardContext?.standbyGuardName || "").toLowerCase().trim();
+
+  // If the message was sent by a guard (incoming received message), do not show "Sent to :-"
+  const isGuardSender =
+    userRole === "guard" ||
+    Boolean(comment.guard) ||
+    Boolean(comment.guard_id) ||
+    (leadName && (authorName === leadName || leadName.includes(authorName) || authorName.includes(leadName))) ||
+    (standbyName && (authorName === standbyName || standbyName.includes(authorName) || authorName.includes(standbyName)));
+
+  if (isGuardSender) {
+    return null;
+  }
+
   const raw = comment.sent_to || comment.send_to || comment.guard_role || comment.recipient;
   if (raw) {
     const lower = String(raw).toLowerCase().trim();
+    // If recipient is same as author, do not display
+    if (authorName && (lower === authorName || authorName.includes(lower) || lower.includes(authorName))) {
+      return null;
+    }
     if (lower === "lead_guard" || lower === "lead") return guardContext?.leadGuardName || "Lead Guard";
     if (lower === "standby_guard" || lower === "standby") return guardContext?.standbyGuardName || "Standby Guard";
     if (lower === "both" || lower === "both_guards" || lower === "both guards") return "Both Guards";
@@ -168,7 +190,13 @@ export const getSendByDisplay = (
   }
 
   // If not explicitly set on comment object, but is external comment from admin
-  if (comment.type === "external" && (comment.sender_role === "admin" || comment.user_role === "admin")) {
+  const isAdminSender =
+    userRole === "admin" ||
+    Boolean(comment.admin) ||
+    comment.sender_role === "admin" ||
+    comment.type === "external";
+
+  if (isAdminSender && comment.type === "external") {
     if (guardContext?.leadGuardName) return guardContext.leadGuardName;
     if (guardContext?.standbyGuardName) return guardContext.standbyGuardName;
   }
