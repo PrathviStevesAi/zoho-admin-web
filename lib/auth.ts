@@ -65,8 +65,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     if (result && result.data) {
                         return {
                             id: result.data.user_id,
-                            accessToken: result.access_token,
-                            refreshToken: result.refresh_token,
+                            accessToken: result.access_token || result.data.access_token,
+                            refreshToken: result.refresh_token || result.data.refresh_token,
                             role: result.data.role || result.role,
                             name: result.data.first_name || result.data.name || credentials.email,
                             first_name: result.data.first_name,
@@ -106,6 +106,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 return token;
             }
 
+            if (!token.refreshToken) {
+                return { ...token, error: "RefreshAccessTokenError" };
+            }
+
             return await refreshAccessToken(token);
         },
         async session({ session, token }) {
@@ -140,7 +144,12 @@ const refreshPromises = new Map<string, Promise<any>>();
 async function refreshAccessToken(token: any) {
     const key = token.refreshToken;
 
-    if (key && refreshPromises.has(key)) {
+    if (!key || typeof key !== "string" || !key.trim()) {
+        console.warn("[Auth] No valid refresh token available, expiring session.");
+        return { ...token, error: "RefreshAccessTokenError" };
+    }
+
+    if (refreshPromises.has(key)) {
         try {
             const newTokens = await refreshPromises.get(key);
             return {
@@ -161,7 +170,7 @@ async function refreshAccessToken(token: any) {
                 "Content-Type": "application/json",
                 "ngrok-skip-browser-warning": "true"
             },
-            body: JSON.stringify({ refresh_token: token.refreshToken }),
+            body: JSON.stringify({ refresh_token: key }),
         });
 
         const text = await response.text();
@@ -176,7 +185,7 @@ async function refreshAccessToken(token: any) {
         if (!response.ok) throw refreshedTokens;
 
         const newAccessToken = refreshedTokens.data?.access_token || refreshedTokens.access_token;
-        const newRefreshToken = refreshedTokens.data?.refresh_token || refreshedTokens.refresh_token || token.refreshToken;
+        const newRefreshToken = refreshedTokens.data?.refresh_token || refreshedTokens.refresh_token || key;
 
         return {
             accessToken: newAccessToken,
