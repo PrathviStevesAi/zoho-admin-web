@@ -667,7 +667,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                   <Select
                     key={`billing-state-${billingAddressStates.length}`}
                     onValueChange={(val) => {
-                      setFormData({ ...formData, billingState: val, billingCity: "" });
+                      setFormData({ ...formData, billingState: val });
                       clearError("billingState");
                     }}
                     value={formData.billingState}
@@ -689,24 +689,15 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">City</label>
-                  <Select
-                    key={`billing-city-${billingAddressCities.length}`}
-                    onValueChange={(val) => {
-                      setFormData({ ...formData, billingCity: val });
+                  <Input
+                    placeholder="Enter city"
+                    value={formData.billingCity}
+                    onChange={(e) => {
+                      setFormData({ ...formData, billingCity: e.target.value });
                       clearError("billingCity");
                     }}
-                    value={formData.billingCity}
-                    disabled={!formData.billingState}
-                  >
-                    <SelectTrigger className={getSelectTriggerClassName(errors.billingCity)}>
-                      <SelectValue placeholder="Select City" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {billingAddressCities.map((c) => (
-                        <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    className={getInputClassName(errors.billingCity)}
+                  />
                   {errors.billingCity && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.billingCity}</p>}
                 </div>
                 <div className="space-y-1">
@@ -790,7 +781,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                     <Select
                       key={`service-state-${serviceAddressStates.length}`}
                       onValueChange={(val) => {
-                        setFormData({ ...formData, serviceState: val, serviceCity: "" });
+                        setFormData({ ...formData, serviceState: val });
                         clearError("serviceState");
                       }}
                       value={formData.serviceState}
@@ -813,35 +804,16 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">City</label>
-                  {formData.sameAsBilling ? (
-                    <div className="relative">
-                      <Input
-                        value={formData.billingCity}
-                        disabled
-                        className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
-                      />
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    </div>
-                  ) : (
-                    <Select
-                      key={`service-city-${serviceAddressCities.length}`}
-                      onValueChange={(val) => {
-                        setFormData({ ...formData, serviceCity: val });
-                        clearError("serviceCity");
-                      }}
-                      value={formData.serviceCity}
-                      disabled={!formData.serviceState}
-                    >
-                      <SelectTrigger className={getSelectTriggerClassName(errors.serviceCity)}>
-                        <SelectValue placeholder="Select City" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {serviceAddressCities.map((c) => (
-                          <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Input
+                    placeholder="Enter city"
+                    value={formData.sameAsBilling ? formData.billingCity : formData.serviceCity}
+                    disabled={formData.sameAsBilling}
+                    onChange={(e) => {
+                      setFormData({ ...formData, serviceCity: e.target.value });
+                      clearError("serviceCity");
+                    }}
+                    className={getInputClassName(errors.serviceCity)}
+                  />
                   {errors.serviceCity && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.serviceCity}</p>}
                 </div>
                 <div className="space-y-1">

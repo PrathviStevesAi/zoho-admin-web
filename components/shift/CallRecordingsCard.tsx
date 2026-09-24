@@ -21,6 +21,32 @@ const formatDateTime = (dateStr: string) => {
   return `${day} ${month} ${year} ${time}`;
 };
 
+const formatCallType = (type: string | null | undefined) => {
+  if (!type) return "-";
+  return type
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
+const formatDuration = (duration: number | string | null | undefined) => {
+  if (duration === null || duration === undefined || duration === "") return "-";
+  const totalSeconds = Number(duration);
+  if (isNaN(totalSeconds) || totalSeconds < 0) return "-";
+  if (totalSeconds === 0) return "0 Sec";
+
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+
+  if (mins > 0 && secs > 0) {
+    return `${mins} Min ${secs} Sec`;
+  }
+  if (mins > 0 && secs === 0) {
+    return `${mins} Min`;
+  }
+  return `${secs} Sec`;
+};
+
 const handleDownloadRecording = async (url: string, filename: string) => {
   try {
     const response = await fetch(url);
@@ -94,7 +120,7 @@ export function CallRecordingsCard({ isOpen, onClose, shift }: CallRecordingsCar
               <tbody className="divide-y divide-slate-100">
                 {recordings.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                       No call recordings found.
                     </td>
                   </tr>
@@ -102,13 +128,13 @@ export function CallRecordingsCard({ isOpen, onClose, shift }: CallRecordingsCar
                   recordings.map((rec, idx) => (
                     <tr key={rec.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 font-medium text-slate-700">{idx + 1}</td>
-                      <td className="px-6 py-4 text-slate-600">{rec.call_type || "-"}</td>
+                      <td className="px-6 py-4 text-slate-600 font-medium">{formatCallType(rec.call_type)}</td>
                       <td className="px-6 py-4 font-medium text-slate-800">{rec.call_by || "-"}</td>
                       <td className="px-6 py-4 text-slate-600">{rec.call_to || "-"}</td>
                       <td className="px-6 py-4 text-slate-600">
                         {rec.call_time ? formatDateTime(rec.call_time) : "-"}
                       </td>
-                      <td className="px-6 py-4 text-slate-600">{rec.duration || "-"}</td>
+                      <td className="px-6 py-4 text-slate-600 font-medium">{formatDuration(rec.duration)}</td>
                       <td className="px-6 py-4">
                         {rec.status === "connected" ? (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">

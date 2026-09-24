@@ -690,7 +690,7 @@ function CustomerViewContent() {
                     ) : (
                       <Select
                         value={formData.billing_state}
-                        onValueChange={val => setFormData({ ...formData, billing_state: val, billing_city: "" })}
+                        onValueChange={val => setFormData({ ...formData, billing_state: val })}
                       >
                         <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
                           <SelectValue placeholder="Select State" />
@@ -708,29 +708,13 @@ function CustomerViewContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
-                    {!isEditing ? (
-                      <Input
-                        value={formData.billing_city}
-                        disabled
-                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                      />
-                    ) : (
-                      <Select
-                        key={`billing-city-${billingAddressCities.length}`}
-                        value={formData.billing_city}
-                        onValueChange={val => setFormData({ ...formData, billing_city: val })}
-                        disabled={!formData.billing_state}
-                      >
-                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
-                          <SelectValue placeholder="Select City" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {billingAddressCities.map((c) => (
-                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Input
+                      placeholder="Enter city"
+                      value={formData.billing_city}
+                      onChange={e => setFormData({ ...formData, billing_city: e.target.value })}
+                      disabled={!isEditing}
+                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Zip Code</Label>
@@ -796,7 +780,7 @@ function CustomerViewContent() {
                     ) : (
                       <Select
                         value={formData.service_state}
-                        onValueChange={val => setFormData({ ...formData, service_state: val, service_city: "" })}
+                        onValueChange={val => setFormData({ ...formData, service_state: val })}
                       >
                         <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
                           <SelectValue placeholder="Select State" />
@@ -814,29 +798,13 @@ function CustomerViewContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
-                    {!isEditing || formData.sameAsBilling ? (
-                      <Input
-                        value={formData.service_city}
-                        disabled
-                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                      />
-                    ) : (
-                      <Select
-                        key={`service-city-${serviceAddressCities.length}`}
-                        value={formData.service_city}
-                        onValueChange={val => setFormData({ ...formData, service_city: val })}
-                        disabled={!formData.service_state}
-                      >
-                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
-                          <SelectValue placeholder="Select City" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {serviceAddressCities.map((c) => (
-                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Input
+                      placeholder="Enter city"
+                      value={formData.sameAsBilling ? formData.billing_city : formData.service_city}
+                      onChange={e => setFormData({ ...formData, service_city: e.target.value })}
+                      disabled={!isEditing || formData.sameAsBilling}
+                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Zip Code</Label>
