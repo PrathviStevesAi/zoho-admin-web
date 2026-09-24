@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CustomInput } from "../CustomInput";
 import { FormValues } from "../SubcontractorForm";
+import { PreviousEmploymentSection } from "./PreviousEmploymentSection";
 
 export function VoluntarySelfIdSection() {
   const { register, control, formState: { errors } } = useFormContext<FormValues>();
@@ -201,7 +202,9 @@ export function VoluntarySelfIdSection() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-none border-slate-200">
+      <PreviousEmploymentSection />
+
+      <Card className="shadow-none border-slate-200 mt-6">
         <CardHeader className="pb-3 border-b border-slate-100">
           <CardTitle className="text-base font-bold text-slate-800">Candidate Acknowledgment</CardTitle>
         </CardHeader>
@@ -226,7 +229,7 @@ export function VoluntarySelfIdSection() {
         <p className="text-sm text-slate-700 mb-2">
           By clicking the checkbox below, you agree to the terms of our privacy policy.
         </p>
-        <a href="https://fastguardservice.com/privacy-policy-fast-guard-service/" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline block mb-4 w-fit">
+        <a href="https://fastguardservice.com/privacy-policy-2/" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline block mb-4 w-fit">
           Click here to read our Privacy Policy
         </a>
         <div className="flex items-start space-x-2">
@@ -261,11 +264,11 @@ export function VoluntarySelfIdSection() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 pt-3 text-sm text-blue-600">
-        <a href="https://fastguardservice.com/privacy-policy-fast-guard-service/" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
+        <a href="https://fastguardservice.com/privacy-policy-2/" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
           Privacy Policy
         </a>
         <span className="text-slate-300">|</span>
-        <a href="https://fastguardservice.com/security-services-we-provide-in-palm-beach" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
+        <a href="https://fastguardservice.com/terms-and-conditions-v2/" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
           Terms & Conditions
         </a>
         <span className="text-slate-300">|</span>

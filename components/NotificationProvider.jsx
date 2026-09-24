@@ -13,14 +13,6 @@ export default function NotificationProvider() {
 
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const handleUnhandledRejection = (event) => {
-                if (event.reason && event.reason.message && typeof event.reason.message === 'string' && event.reason.message.includes("exceed user mau limit")) {
-                    event.preventDefault();
-                    console.warn("Suppressed Zego SDK MAU limit unhandled rejection");
-                }
-            };
-            window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
             let originalError = console.error;
             if (process.env.NODE_ENV !== "production") {
                 console.error = (...args) => {
@@ -37,7 +29,6 @@ export default function NotificationProvider() {
             }
 
             return () => {
-                window.removeEventListener('unhandledrejection', handleUnhandledRejection);
                 if (process.env.NODE_ENV !== "production") {
                     console.error = originalError;
                 }
@@ -112,6 +103,12 @@ export default function NotificationProvider() {
             const view = payload?.data?.view || payload?.view;
 
             console.log("Processing toast:", { title, body, notificationId, shiftId, invoiceId, view });
+
+            if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("fcm-notification-received", { 
+                    detail: { payload, shiftId, type }
+                }));
+            }
 
             if (title || body) {
                 toast(title, {

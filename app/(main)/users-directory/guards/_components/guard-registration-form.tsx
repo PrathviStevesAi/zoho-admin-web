@@ -12,6 +12,7 @@ import {
   VeteranStatusSection,
   DisabilityStatusSection
 } from "./status-sections";
+import { GuardLevelSection } from "./guard-level-section";
 import { registerGuardAction } from "@/actions/auth.actions";
 
 export function GuardRegistrationForm({ onBack, countries }: any) {
@@ -50,7 +51,8 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     securityLicenseFile: null,
     driverLicenseFile: null,
     firewatchCertFile: null,
-    videoFile: null
+    videoFile: null,
+    guardLevel: 1
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,6 +83,10 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     }
     if (!formData.addressState) {
       newErrors.stateError = "State is required";
+      hasRequiredError = true;
+    }
+    if (!formData.guardLevel) {
+      newErrors.guardLevelError = "Guard level is required";
       hasRequiredError = true;
     }
 
@@ -119,19 +125,20 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
       state: formData.addressState,
       city: formData.city,
       zip_code: formData.zipCode,
-      on_call: formData.onCall === "yes",
-      smartphone: formData.smartphone === "yes",
-      job_alerts: formData.respond4hr === "yes",
-      license: formData.holdSgLicense === "yes",
-      background: formData.passBgCheck === "yes",
-      transport: formData.reliableTransport === "yes",
-      unarmed: formData.holdUnarmedLicense === "yes",
-      armed: formData.holdArmedLicense === "yes",
-      english_language: formData.englishProficiency === "fluent",
+      on_call: formData.onCall === "Yes",
+      smartphone: formData.smartphone === "Yes",
+      job_alerts: formData.respond4hr === "Yes",
+      license: formData.holdSgLicense === "Yes",
+      background: formData.passBgCheck === "Yes",
+      transport: formData.reliableTransport === "Yes",
+      unarmed: formData.holdUnarmedLicense === "Yes",
+      armed: formData.holdArmedLicense === "Yes",
+      english_language: formData.englishProficiency === "Yes" || formData.englishProficiency === "fluent",
       gender: formData.voluntaryGender,
       ethnicity: formData.raceEthnicity,
       veteran_status: formData.veteranStatus,
-      disability_status: formData.disabilityStatus
+      disability_status: formData.disabilityStatus,
+      guard_level: formData.guardLevel
     };
 
     const cleanedPayload = Object.fromEntries(
@@ -198,6 +205,11 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
             <DisabilityStatusSection formData={formData} setFormData={setFormData} />
           </div>
         </div>
+
+        <GuardLevelSection
+          formData={formData}
+          setFormData={setFormData}
+        />
 
         <div className="flex justify-center mt-8">
           <Button

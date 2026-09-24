@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   DollarSign,
   History,
+  FileText,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ const navGroups: NavGroup[] = [
       { label: "New Work Order", icon: ClipboardList, href: "/new-work-order" },
       { label: "Schedule Calendar", icon: Calendar, href: "/calendar" },
       { label: "Blast Messages", icon: Megaphone, href: "/broadcast-notifications" },
+      { label: "Shift Report", icon: FileText, href: "/shift-report" },
     ],
   },
   {
@@ -61,7 +63,7 @@ const navGroups: NavGroup[] = [
         icon: Users,
         submenus: [
           { label: "Guard", href: "/users-directory/guards" },
-          { label: "Member", href: "/users-directory" },
+          { label: "All Staff", href: "/users-directory" },
           { label: "Customer", href: "/users-directory/customers" },
         ],
       },
@@ -152,8 +154,8 @@ export function Sidebar({ userRole }: { userRole?: string }) {
                   const hasSubmenus = Array.isArray(route.submenus) && route.submenus.length > 0;
                   let submenus = hasSubmenus ? route.submenus! : [];
 
-                  if (userRole === "member" && route.label === "Users") {
-                    submenus = submenus.filter((sub) => sub.label !== "Member");
+                  if (userRole !== "admin" && route.label === "Users") {
+                    submenus = submenus.filter((sub) => sub.label !== "All Staff");
                   }
 
                   const isParentActive =

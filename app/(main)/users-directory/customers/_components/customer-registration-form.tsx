@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { registerCustomerAction } from "@/actions/auth.actions";
+import { registerCustomerAction, verifyCustomerEmailAction } from "@/actions/auth.actions";
+import { getSecurityServiceStatesAction } from "@/actions/quote.actions";
 import { toast } from "sonner";
 import {
   UserPlus,
@@ -10,7 +11,10 @@ import {
   Phone,
   MapPin,
   ChevronDown,
-  ArrowLeft
+  ArrowLeft,
+  Info,
+  Loader2,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,19 +49,6 @@ const countries = [
 
 const ALLOWED_COUNTRIES: Record<string, string> = {
   US: "United States",
-  CA: "Canada",
-  AR: "Argentina",
-  BO: "Bolivia",
-  BR: "Brazil",
-  CL: "Chile",
-  CO: "Colombia",
-  EC: "Ecuador",
-  GY: "Guyana",
-  PY: "Paraguay",
-  PE: "Peru",
-  SR: "Suriname",
-  UY: "Uruguay",
-  VE: "Venezuela",
 };
 
 export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
@@ -65,6 +56,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
   const [selectedCountry, setSelectedCountry] = useState(countries[11]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   const [formData, setFormData] = useState({
     companyName: "",
@@ -72,18 +65,29 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     lastName: "",
     email: "",
     phone: "",
+    billingType: "regular",
+    netTerms: "",
+    servicePrices: [
+      { id: 1, name: "Armed Security", price: 0 },
+      { id: 2, name: "Body Guard Armed", price: 0 },
+      { id: 3, name: "Fire Watch Guard", price: 0 },
+      { id: 4, name: "Unarmed Security", price: 0 },
+      { id: 5, name: "Body Guard Unarmed", price: 0 },
+      { id: 6, name: "Body Guard with Suit", price: 0 },
+      { id: 7, name: "Employee Termination / Work Place Separation Security", price: 0 },
+    ],
     billingZip: "",
     billingCity: "",
     billingState: "",
     billingStreet: "",
     billingAddress: "",
-    billingCountry: "",
+    billingCountry: "US",
     serviceZip: "",
     serviceCity: "",
     serviceState: "",
     serviceStreet: "",
     serviceAddress: "",
-    serviceCountry: "",
+    serviceCountry: "US",
     sameAsBilling: false,
   });
 
@@ -92,65 +96,43 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
   const [serviceAddressStates, setServiceAddressStates] = useState<any[]>([]);
   const [serviceAddressCities, setServiceAddressCities] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (formData.billingCountry === "US") {
-      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
-        isoCode: data.short_code,
-        name: name,
-      }));
-      setBillingAddressStates(usStates);
-    } else if (formData.billingCountry) {
-      setBillingAddressStates(State.getStatesOfCountry(formData.billingCountry));
-    } else {
-      setBillingAddressStates([]);
-    }
-  }, [formData.billingCountry]);
+  const [dynamicStates, setDynamicStates] = useState<{ id: number, state: string }[]>([]);
 
   useEffect(() => {
-    if (formData.billingCountry === "US" && formData.billingState) {
-      const stateData = Object.values(US_STATE_CITY_DATA).find((s: any) => s.short_code === formData.billingState);
-      if (stateData) {
-        const usCities = (stateData as any).cities.map((city: string) => ({ name: city }));
-        setBillingAddressCities(usCities);
-      } else {
-        setBillingAddressCities([]);
+    getSecurityServiceStatesAction().then(res => {
+      if (res.success && res.data) {
+        setDynamicStates(res.data);
       }
-    } else if (formData.billingCountry && formData.billingState) {
-      setBillingAddressCities(City.getCitiesOfState(formData.billingCountry, formData.billingState));
+    });
+  }, []);
+
+  const getCitiesForStateName = (stateName: string) => {
+    const allUsStates = State.getStatesOfCountry("US");
+    const match = allUsStates.find(s => s.name === stateName);
+    if (match) {
+      return City.getCitiesOfState("US", match.isoCode).map(c => ({ name: c.name }));
+    }
+    if (US_STATE_CITY_DATA[stateName]) {
+      return US_STATE_CITY_DATA[stateName].cities.map(c => ({ name: c }));
+    }
+    return [];
+  };
+
+  useEffect(() => {
+    if (formData.billingState) {
+      setBillingAddressCities(getCitiesForStateName(formData.billingState));
     } else {
       setBillingAddressCities([]);
     }
-  }, [formData.billingState, formData.billingCountry]);
+  }, [formData.billingState]);
 
   useEffect(() => {
-    if (formData.serviceCountry === "US") {
-      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
-        isoCode: data.short_code,
-        name: name,
-      }));
-      setServiceAddressStates(usStates);
-    } else if (formData.serviceCountry) {
-      setServiceAddressStates(State.getStatesOfCountry(formData.serviceCountry));
-    } else {
-      setServiceAddressStates([]);
-    }
-  }, [formData.serviceCountry]);
-
-  useEffect(() => {
-    if (formData.serviceCountry === "US" && formData.serviceState) {
-      const stateData = Object.values(US_STATE_CITY_DATA).find((s: any) => s.short_code === formData.serviceState);
-      if (stateData) {
-        const usCities = (stateData as any).cities.map((city: string) => ({ name: city }));
-        setServiceAddressCities(usCities);
-      } else {
-        setServiceAddressCities([]);
-      }
-    } else if (formData.serviceCountry && formData.serviceState) {
-      setServiceAddressCities(City.getCitiesOfState(formData.serviceCountry, formData.serviceState));
+    if (formData.serviceState) {
+      setServiceAddressCities(getCitiesForStateName(formData.serviceState));
     } else {
       setServiceAddressCities([]);
     }
-  }, [formData.serviceState, formData.serviceCountry]);
+  }, [formData.serviceState]);
 
   useEffect(() => {
     if (formData.sameAsBilling) {
@@ -194,6 +176,22 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const handleEmailBlur = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && emailRegex.test(formData.email) && !isEmailVerified) {
+      setIsVerifyingEmail(true);
+      const res = await verifyCustomerEmailAction(formData.email);
+      setIsVerifyingEmail(false);
+      
+      if (res.success) {
+        setIsEmailVerified(true);
+      } else {
+        toast.error(res.message);
+        setErrors(prev => ({ ...prev, email: res.message }));
+      }
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -216,6 +214,9 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         newErrors.phone = "Phone number must be between 7 and 15 digits";
       }
     }
+
+    if (!formData.billingType) newErrors.billingType = "User type is required";
+    if (formData.billingType === "net_term" && !formData.netTerms) newErrors.netTerms = "Net terms is required";
 
     if (!formData.billingStreet) newErrors.billingStreet = "Street address is required";
     if (!formData.billingCountry) newErrors.billingCountry = "Country is required";
@@ -240,19 +241,27 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     setErrors({});
     setIsRegistering(true);
 
+    const securityServicePriceObj = formData.servicePrices.reduce((acc, curr) => {
+      acc[curr.name] = Number(curr.price) || 0;
+      return acc;
+    }, {} as Record<string, number>);
+
     const res = await registerCustomerAction({
       company_name: formData.companyName,
       first_name: formData.firstName,
       last_name: formData.lastName,
       email: formData.email,
       phone_number: formData.phone ? `${selectedCountry.dialCode}${formData.phone}` : "",
+      billing_type: formData.billingType,
+      net_terms_days: formData.billingType === "net_term" ? (Number(formData.netTerms) || 0) : 0,
+      security_service_price: formData.billingType === "net_term" ? securityServicePriceObj : {},
       billing_address: {
         zip: formData.billingZip,
         city: formData.billingCity,
         state: formData.billingState,
         street: formData.billingStreet,
         address: formData.billingAddress,
-        country: formData.billingCountry
+        country: formData.billingCountry === "US" ? "United States" : formData.billingCountry
       },
       service_address: {
         zip: formData.sameAsBilling ? formData.billingZip : formData.serviceZip,
@@ -260,30 +269,41 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         state: formData.sameAsBilling ? formData.billingState : formData.serviceState,
         street: formData.sameAsBilling ? formData.billingStreet : formData.serviceStreet,
         address: formData.sameAsBilling ? formData.billingAddress : formData.serviceAddress,
-        country: formData.sameAsBilling ? formData.billingCountry : formData.serviceCountry
+        country: (formData.sameAsBilling ? formData.billingCountry : formData.serviceCountry) === "US" ? "United States" : (formData.sameAsBilling ? formData.billingCountry : formData.serviceCountry)
       }
     });
 
     if (res.success) {
-      toast.success("Customer registered successfully");
+      toast.success(res.message || "Customer registered successfully");
       setFormData({
         companyName: "",
         firstName: "",
         lastName: "",
         email: "",
         phone: "",
+        billingType: "regular",
+        netTerms: "",
+        servicePrices: [
+          { id: 1, name: "Armed Security", price: 0 },
+          { id: 2, name: "Body Guard Armed", price: 0 },
+          { id: 3, name: "Fire Watch Guard", price: 0 },
+          { id: 4, name: "Unarmed Security", price: 0 },
+          { id: 5, name: "Body Guard Unarmed", price: 0 },
+          { id: 6, name: "Body Guard with Suit", price: 0 },
+          { id: 7, name: "Employee Termination / Work Place Separation Security", price: 0 },
+        ],
         billingZip: "",
         billingCity: "",
         billingState: "",
         billingStreet: "",
         billingAddress: "",
-        billingCountry: "",
+        billingCountry: "US",
         serviceZip: "",
         serviceCity: "",
         serviceState: "",
         serviceStreet: "",
         serviceAddress: "",
-        serviceCountry: "",
+        serviceCountry: "US",
         sameAsBilling: false,
       });
       setSelectedCountry(countries[11]);
@@ -394,10 +414,16 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                       value={formData.email}
                       onChange={(e) => {
                         setFormData({ ...formData, email: e.target.value });
+                        if (isEmailVerified) setIsEmailVerified(false);
                         clearError("email");
                       }}
+                      onBlur={handleEmailBlur}
                       className={getInputClassName(errors.email, true)}
                     />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                      {isVerifyingEmail && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
+                      {isEmailVerified && !errors.email && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                    </div>
                   </div>
                   {errors.email && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.email}</p>}
                 </div>
@@ -471,6 +497,142 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
             </div>
 
             <div className="space-y-4">
+              <h3 className="text-sm font-bold text-slate-700 border-b pb-2">User Type</h3>
+
+              <div className="bg-[#f0f7ff] border border-[#e0f0ff] rounded-xl p-4">
+                <div className="flex gap-2">
+                  <div className="text-[#0064cb] mt-0.5">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-700">
+                    <p className="font-semibold text-[#0064cb]">Note -</p>
+                    <ul className="list-disc pl-4 space-y-1 text-slate-600">
+                      <li><strong>User Type – Net Term:</strong> The estimate/invoice is calculated based on the predefined guard pricing configured for the customer.</li>
+                      <li><strong>User Type – Regular:</strong> The estimate/invoice is calculated based on the pricing defined in Guard Bank.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">
+                    User Type <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    onValueChange={(val) => {
+                      setFormData({ ...formData, billingType: val });
+                      clearError("billingType");
+                    }}
+                    value={formData.billingType}
+                  >
+                    <SelectTrigger className={getSelectTriggerClassName(errors.billingType)}>
+                      <SelectValue placeholder="Select user type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="regular">Regular</SelectItem>
+                      <SelectItem value="net_term">Net Term</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.billingType && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.billingType}</p>}
+                </div>
+
+                {formData.billingType === "net_term" && (
+                  <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1 flex items-center gap-1">
+                      Net Terms (Days)
+                      <Info className="w-3.5 h-3.5 text-slate-400" />
+                    </label>
+                    <Select
+                      onValueChange={(val) => {
+                        setFormData({ ...formData, netTerms: val });
+                        clearError("netTerms");
+                      }}
+                      value={formData.netTerms}
+                    >
+                      <SelectTrigger className={getSelectTriggerClassName(errors.netTerms)}>
+                        <SelectValue placeholder="Select Net Terms" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">Net 7</SelectItem>
+                        <SelectItem value="10">Net 10</SelectItem>
+                        <SelectItem value="15">Net 15</SelectItem>
+                        <SelectItem value="30">Net 30</SelectItem>
+                        <SelectItem value="45">Net 45</SelectItem>
+                        <SelectItem value="60">Net 60</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.netTerms && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.netTerms}</p>}
+                  </div>
+                )}
+              </div>
+
+              {formData.billingType === "net_term" && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-300 mt-6">
+                  <div>
+                    <h4 className="text-[13px] font-bold text-slate-800 flex items-center gap-1">
+                      Security Service Price <span className="text-red-500">*</span> <Info className="w-3.5 h-3.5 text-slate-400" />
+                    </h4>
+                    <p className="text-[11px] text-slate-500">Set default prices for security services (editable)</p>
+                  </div>
+                  <div className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-sm">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase">
+                        <tr>
+                          <th className="p-2.5 w-10 text-center">#</th>
+                          <th className="p-2.5">Service Name</th>
+                          <th className="p-2.5 w-38">Price (USD)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {formData.servicePrices.map((service, index) => (
+                          <tr key={service.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="p-2 text-center text-slate-400 font-medium">{index + 1}</td>
+                            <td className="p-2 text-slate-600 font-medium">{service.name}</td>
+                            <td className="p-2">
+                              <div className="relative flex items-center">
+                                <span className="absolute left-2.5 text-slate-400 font-medium text-xs">$</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={service.price}
+                                  onKeyDown={(e) => {
+                                    if (e.key === '-' || e.key === '+') {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    if ((service.price as any) === '' || service.price === null || service.price === undefined || isNaN(Number(service.price)) || Number(service.price) < 0) {
+                                      const newPrices = [...formData.servicePrices];
+                                      newPrices[index].price = 0;
+                                      setFormData({ ...formData, servicePrices: newPrices });
+                                    }
+                                  }}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                                      if (val === '' || Number(val) >= 0) {
+                                        const newPrices = [...formData.servicePrices];
+                                        newPrices[index].price = val as any;
+                                        setFormData({ ...formData, servicePrices: newPrices });
+                                      }
+                                    }
+                                  }}
+                                  className="w-full h-8 pl-6 pr-2 bg-white border border-slate-200 rounded-md text-slate-700 font-semibold focus:outline-none focus:border-[#0064cb] focus:ring-1 focus:ring-[#0064cb] text-xs transition-all"
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
               <h3 className="text-sm font-bold text-slate-700 border-b pb-2">Billing Address</h3>
 
               <div className="space-y-1">
@@ -493,22 +655,11 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
-                  <Select
-                    onValueChange={(val) => {
-                      setFormData({ ...formData, billingCountry: val, billingState: "", billingCity: "" });
-                      clearError("billingCountry");
-                    }}
-                    value={formData.billingCountry}
-                  >
-                    <SelectTrigger className={getSelectTriggerClassName(errors.billingCountry)}>
-                      <SelectValue placeholder="Select Country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(ALLOWED_COUNTRIES).map(([code, name]) => (
-                        <SelectItem key={code} value={code}>{name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={ALLOWED_COUNTRIES[formData.billingCountry] || formData.billingCountry || "United States"}
+                    disabled
+                    className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
+                  />
                   {errors.billingCountry && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.billingCountry}</p>}
                 </div>
                 <div className="space-y-1">
@@ -526,8 +677,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                       <SelectValue placeholder="Select State" />
                     </SelectTrigger>
                     <SelectContent>
-                      {billingAddressStates.map((s) => (
-                        <SelectItem key={s.isoCode} value={s.isoCode}>{s.name}</SelectItem>
+                      {dynamicStates.map((s) => (
+                        <SelectItem key={s.id} value={s.state}>{s.state}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -613,33 +764,11 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
-                  {formData.sameAsBilling ? (
-                    <div className="relative">
-                      <Input
-                        value={ALLOWED_COUNTRIES[formData.billingCountry] || formData.billingCountry}
-                        disabled
-                        className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
-                      />
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    </div>
-                  ) : (
-                    <Select
-                      onValueChange={(val) => {
-                        setFormData({ ...formData, serviceCountry: val, serviceState: "", serviceCity: "" });
-                        clearError("serviceCountry");
-                      }}
-                      value={formData.serviceCountry}
-                    >
-                      <SelectTrigger className={getSelectTriggerClassName(errors.serviceCountry)}>
-                        <SelectValue placeholder="Select Country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(ALLOWED_COUNTRIES).map(([code, name]) => (
-                          <SelectItem key={code} value={code}>{name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Input
+                    value={ALLOWED_COUNTRIES[formData.serviceCountry] || formData.serviceCountry || "United States"}
+                    disabled
+                    className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
+                  />
                   {errors.serviceCountry && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.serviceCountry}</p>}
                 </div>
                 <div className="space-y-1">
@@ -671,8 +800,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                         <SelectValue placeholder="Select State" />
                       </SelectTrigger>
                       <SelectContent>
-                        {serviceAddressStates.map((s) => (
-                          <SelectItem key={s.isoCode} value={s.isoCode}>{s.name}</SelectItem>
+                        {dynamicStates.map((s) => (
+                          <SelectItem key={s.id} value={s.state}>{s.state}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -736,8 +865,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
             <div className="flex justify-center mt-8">
               <Button
                 type="submit"
-                disabled={isRegistering}
-                className="cursor-pointer h-12 px-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-70 text-base"
+                disabled={isRegistering || !isEmailVerified || isVerifyingEmail}
+                className="cursor-pointer h-12 px-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed text-base"
               >
                 {isRegistering ? (
                   <div className="flex items-center gap-2">

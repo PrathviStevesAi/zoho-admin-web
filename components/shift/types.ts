@@ -24,6 +24,7 @@ export interface ExecutionTime {
   guard_shift_started_at?: string;
   guard_shift_ended_at?: string;
   total_break_duration_min?: number;
+  shift_duration?: string;
 }
 
 export interface ShiftActions {
@@ -53,6 +54,7 @@ export interface ShiftActions {
   is_approved?: boolean;
   is_not_approved?: boolean;
   call_id?: string;
+  is_call_recording?: boolean;
 }
 
 export interface AssignedGuard {
@@ -97,6 +99,7 @@ export interface Shift {
   customer_recepients?: string[];
   report_token?: string;
   is_report_send?: boolean;
+  is_travel_guard?: boolean;
   assigned_guard?: string | AssignedGuard;
   scheduled_for?: ShiftTime;
   execution_time?: ExecutionTime;
@@ -113,9 +116,32 @@ export interface Shift {
   travel_fee?: number | null;
   qc_flat_rate?: number | null;
   security_service_id?: string | null;
+  security_service?: string | null;
   call_id?: string | null;
   lead_guard?: LeadGuard;
   standby_guard?: StandbyGuard;
+  shift_extension_requests?: ShiftExtensionRequest[];
+  shift_voice_calls?: ShiftVoiceCall[];
+}
+
+export interface ShiftVoiceCall {
+  id: string;
+  call_type: string | null;
+  status: string;
+  call_by: string;
+  call_to: string;
+  call_time: string;
+  recording_url: string | null;
+  duration: string | null;
+}
+
+export interface ShiftExtensionRequest {
+  id: string;
+  requested_end_time: string;
+  reason: string;
+  status: string;
+  action: boolean | { is_approved: boolean; is_reject: boolean };
+  created_at: string;
 }
 
 export interface ShiftHistoryEvent {

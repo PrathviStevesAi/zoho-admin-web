@@ -1,5 +1,9 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon, Mic, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
@@ -15,12 +19,14 @@ interface ShiftHeaderProps {
   isSendReportOpen?: boolean;
   isApproveShiftOpen?: boolean;
   isNotApproveShiftOpen?: boolean;
+  isCallRecordingsOpen?: boolean;
   isReassign?: boolean;
   onCloseNewAssign: () => void;
   onCloseStandbyGuards?: () => void;
   onCloseSendReport?: () => void;
   onCloseApproveShift?: () => void;
   onCloseNotApproveShift?: () => void;
+  onCloseCallRecordings?: () => void;
   isStartingShift: boolean;
   onManualStart: () => void;
   onAssignGuard: () => void;
@@ -30,7 +36,8 @@ interface ShiftHeaderProps {
   onReassignLeadGuard: () => void;
   onReassignStandbyGuard: () => void;
   onFindStandbyGuard?: () => void;
-  onCancelService: () => void;
+  onCancelService?: () => void;
+  onCallRecording?: () => void;
   showSettingBtn: boolean;
   onStartVideoCall: () => void;
   onJoinVideoCall: () => void;
@@ -38,6 +45,64 @@ interface ShiftHeaderProps {
   onApproveShift?: () => void;
   onNotApproveShift?: () => void;
   isLoading?: boolean;
+}
+
+function DigitalClock({ timeZone, city, state }: { timeZone?: string; city?: string; state?: string }) {
+  const [dateTime, setDateTime] = useState<string>("");
+
+  useEffect(() => {
+    if (!timeZone) return;
+
+    const updateTime = () => {
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone,
+          month: '2-digit',
+          day: '2-digit',
+          year: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        });
+
+        // The default en-US format is "MM/DD/YY, HH:MM:SS AM/PM"
+        setDateTime(formatter.format(new Date()));
+      } catch (e) {
+        console.error("Invalid timezone", e);
+      }
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, [timeZone]);
+
+  if (!timeZone || !dateTime) return null;
+
+  const [datePart, timePart] = dateTime.split(', ');
+
+  return (
+    <div className="flex flex-col items-center md:items-end shrink-0 mt-4 md:mt-0 w-full md:w-auto">
+      <div className="flex items-center gap-2 text-base sm:text-md font-bold text-slate-800 tracking-wider font-mono bg-slate-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-sm border border-slate-200 shadow-sm">
+        <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#0064cb]" />
+        {datePart && timePart ? (
+          <>
+            <span className="text-slate-600 text-sm">{datePart},</span>
+            <span className="text-slate-800 text-md">{timePart}</span>
+          </>
+        ) : (
+          dateTime
+        )}
+      </div>
+      {(state || city) && (
+        <div className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1 tracking-wide">
+          <span className="text-slate-800 font-semibold">Timezone : </span>
+          {[state, city].filter(Boolean).join(" / ")}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ShiftHeader({
@@ -51,12 +116,14 @@ export function ShiftHeader({
   isSendReportOpen,
   isApproveShiftOpen,
   isNotApproveShiftOpen,
+  isCallRecordingsOpen,
   isReassign,
   onCloseNewAssign,
   onCloseStandbyGuards,
   onCloseSendReport,
   onCloseApproveShift,
   onCloseNotApproveShift,
+  onCloseCallRecordings,
   isStartingShift,
   onManualStart,
   onAssignGuard,
@@ -67,6 +134,7 @@ export function ShiftHeader({
   onReassignStandbyGuard,
   onFindStandbyGuard,
   onCancelService,
+  onCallRecording,
   onStartVideoCall,
   onJoinVideoCall,
   onSendReport,
@@ -74,6 +142,8 @@ export function ShiftHeader({
   onNotApproveShift,
   isLoading,
 }: ShiftHeaderProps) {
+  const router = useRouter();
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -93,10 +163,11 @@ export function ShiftHeader({
                 if (onCloseSendReport) onCloseSendReport();
                 if (onCloseApproveShift) onCloseApproveShift();
                 if (onCloseNotApproveShift) onCloseNotApproveShift();
+                if (onCloseCallRecordings) onCloseCallRecordings();
               }}
               className={cn(
                 "transition-colors font-medium",
-                (isSettingsOpen || isNewAssignOpen || isStandbyGuardsOpen || isSendReportOpen || isApproveShiftOpen || isNotApproveShiftOpen)
+                (isSettingsOpen || isNewAssignOpen || isStandbyGuardsOpen || isSendReportOpen || isApproveShiftOpen || isNotApproveShiftOpen || isCallRecordingsOpen)
                   ? "text-slate-500 hover:text-[#0064cb] cursor-pointer"
                   : "text-[#0064cb] font-bold cursor-default pointer-events-none"
               )}
@@ -139,14 +210,20 @@ export function ShiftHeader({
                 <span className="text-[#0064cb] font-bold">Not Approved Shift</span>
               </>
             )}
+            {isCallRecordingsOpen && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="text-[#0064cb] font-bold">Call Recording</span>
+              </>
+            )}
           </div>
           <div className="flex items-start sm:items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all shrink-0 mt-0.5 sm:mt-0"
+            <button
+              onClick={() => router.back()}
+              className="cursor-pointer p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all shrink-0 mt-0.5 sm:mt-0"
             >
               <ArrowLeft className="w-4 h-4" />
-            </Link>
+            </button>
             <div className="group relative">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 flex flex-wrap items-center gap-x-2 gap-y-1 cursor-default">
                 {shift ? (
@@ -193,16 +270,20 @@ export function ShiftHeader({
             </div>
           </div>
         </div>
+
+        {shift?.shipping_location?.timezone && (
+          <DigitalClock
+            timeZone={shift.shipping_location.timezone}
+            city={shift.shipping_location.location?.city}
+            state={shift.shipping_location.location?.state}
+          />
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-x-6 md:gap-x-12 gap-y-6 py-4">
         {(() => {
           if (!shift) return null;
           const buttons: any[] = [];
-
-          console.log("[ShiftHeader] Shift Data Loaded:", shift);
-          console.log("[ShiftHeader] shift.action:", shift?.action);
-          console.log("[ShiftHeader] shift.action.is_manual_start_shift:", shift?.action?.is_manual_start_shift);
 
           if (shift.action && typeof shift.action === "object") {
             const act = shift.action;
@@ -287,12 +368,20 @@ export function ShiftHeader({
                 onClick: onStartVideoCall,
               });
             }
+            if (act.is_call_recording) {
+              buttons.push({
+                label: "Call Recording",
+                icon: Mic,
+                color: isCallRecordingsOpen ? ("blue" as const) : ("slate" as const),
+                onClick: onCallRecording || (() => { }),
+              });
+            }
             if (act.is_send_report) {
               buttons.push({
                 label: "Send Report",
                 icon: Send,
                 color: "blue" as const,
-                onClick: onSendReport || (() => {}),
+                onClick: onSendReport || (() => { }),
               });
             }
             if (act.is_approved) {
@@ -300,7 +389,7 @@ export function ShiftHeader({
                 label: "Approved Shift",
                 icon: BadgeCheck,
                 color: "emerald" as const,
-                onClick: onApproveShift || (() => {}),
+                onClick: onApproveShift || (() => { }),
               });
             }
             if (act.is_not_approved) {
@@ -308,7 +397,7 @@ export function ShiftHeader({
                 label: "Not Approved Shift",
                 icon: XOctagon,
                 color: "red" as const,
-                onClick: onNotApproveShift || (() => {}),
+                onClick: onNotApproveShift || (() => { }),
               });
             }
 

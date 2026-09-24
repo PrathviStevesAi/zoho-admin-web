@@ -39,7 +39,7 @@ export function GuardAddress({
       <div className="grid grid-cols-2 gap-y-5 gap-x-4">
         <div className="col-span-2 space-y-1">
           <span className="text-[11px] text-slate-500 font-semibold block">Street Address</span>
-          {isEditing ? <Input value={editForm.street_address || ""} onChange={e => handleEditChange("street_address", e.target.value)} className="h-10 text-sm mt-1" /> : <p className="text-[13px] font-bold text-slate-800 leading-relaxed">{guard.street_address || "N/A"}</p>}
+          {isEditing ? <Input value={editForm.street_address || ""} onChange={e => handleEditChange("street_address", e.target.value)} placeholder="Enter Street Address" className="h-10 text-sm mt-1" /> : <p className="text-[13px] font-bold text-slate-800 leading-relaxed">{guard.street_address || "N/A"}</p>}
         </div>
         <div className="space-y-1">
           <span className="text-[11px] text-slate-500 font-semibold block">Country {isEditing && <span className="text-red-500">*</span>}</span>
@@ -97,7 +97,7 @@ export function GuardAddress({
           {isEditing ? <Input value={editForm.zip_code || ""} onChange={e => {
             const val = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
             if (val.length <= 10) handleEditChange("zip_code", val);
-          }} className="h-10 text-sm mt-1" /> : <p className="text-[13px] font-bold text-slate-800">{guard.zip_code || "N/A"}</p>}
+          }} placeholder="Enter Zip Code" className="h-10 text-sm mt-1" /> : <p className="text-[13px] font-bold text-slate-800">{guard.zip_code || "N/A"}</p>}
         </div>
       </div>
     </div>

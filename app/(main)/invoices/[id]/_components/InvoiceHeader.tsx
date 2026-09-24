@@ -12,6 +12,7 @@ import {
   XCircle,
   FileEdit,
   Settings,
+  Paperclip,
 } from "lucide-react";
 
 interface InvoiceHeaderProps {
@@ -26,6 +27,7 @@ interface InvoiceHeaderProps {
   onOpenAssignGuard: () => void;
   onOpenAvailableGuards: () => void;
   onOpenSettings?: () => void;
+  onUploadAttachment?: () => void;
   onResetView: () => void;
   onCancelService: () => void;
   currentView?: string;
@@ -36,6 +38,7 @@ interface InvoiceHeaderProps {
     is_find_guards?: boolean;
     is_assigned_guards?: boolean;
     is_open_crm?: boolean;
+    is_upload_attachment?: boolean;
     is_cancel_service?: boolean;
     is_config_settings?: boolean;
   };
@@ -54,6 +57,7 @@ export function InvoiceHeader({
   onOpenAssignGuard,
   onOpenAvailableGuards,
   onOpenSettings,
+  onUploadAttachment,
   onResetView,
   onCancelService,
   currentView,
@@ -277,6 +281,15 @@ export function InvoiceHeader({
                   <ExternalLink className="w-5.5 h-5.5" />
                 </div>
                 <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Open in<br />CRM</span>
+              </div>
+            )}
+
+            {actions?.is_upload_attachment && (
+              <div className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={onUploadAttachment}>
+                <div className="w-12 h-12 rounded-full border-2 border-blue-400 flex items-center justify-center text-blue-500 group-hover:bg-blue-50 transition-colors shadow-sm">
+                  <Paperclip className="w-5.5 h-5.5" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight">Upload<br />Attachment</span>
               </div>
             )}
 

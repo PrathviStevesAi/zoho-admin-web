@@ -4,11 +4,19 @@ import NotificationProvider from "@/components/NotificationProvider";
 import { auth } from "@/lib/auth";
 import { ShieldAlert } from "lucide-react";
 import { LogoutButton } from "@/components/layout/LogoutButton";
+import { fetchProfileAction } from "@/actions/profile.actions";
+import { SessionUpdater } from "@/components/auth/SessionUpdater";
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
+  let currentRole = session?.user?.role as string;
 
-  if (session?.user?.role !== "admin" && session?.user?.role !== "member") {
+  const profileRes = await fetchProfileAction();
+  if (profileRes.success && profileRes.data?.role) {
+    currentRole = profileRes.data.role;
+  }
+
+  if (currentRole !== "admin" && currentRole !== "member") {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-slate-50 p-4 text-center">
         <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6 shadow-sm">
@@ -25,8 +33,9 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex min-h-screen bg-background">
+      <SessionUpdater currentRole={currentRole} />
       <NotificationProvider />
-      <Sidebar userRole={session?.user?.role} />
+      <Sidebar userRole={currentRole} />
       <div className="flex flex-1 flex-col min-w-0">
         <Header />
         <main className="flex-1 p-3 sm:p-6">

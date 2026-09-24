@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, MapPin, Loader2 } from "lucide-react";
 import { GooglePlacesAutocomplete } from "@/components/ui/GooglePlacesAutocomplete";
@@ -23,6 +23,7 @@ export default function NewWorkOrderPage() {
   const [invoiceDigits, setInvoiceDigits] = useState("");
   const [invoiceDescription, setInvoiceDescription] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState("");
+  const [invoiceDueDate, setInvoiceDueDate] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -36,6 +37,7 @@ export default function NewWorkOrderPage() {
   const [customerSearch, setCustomerSearch] = useState("");
   const [customers, setCustomers] = useState<any[]>([]);
   const [isCustomersLoading, setIsCustomersLoading] = useState(false);
+  const skipVerification = useRef(false);
 
   React.useEffect(() => {
     if (isCustomerDialogOpen) {
@@ -63,7 +65,7 @@ export default function NewWorkOrderPage() {
   const handleSelectCustomer = (customer: any) => {
     setCustomerName(customer.company_name || `${customer.first_name} ${customer.last_name}`);
     setCustomerEmail(customer.email || "");
-    setSelectedCustomerId(customer.id);
+    setSelectedCustomerId(customer.customer_id || customer.id);
 
     if (customer.service_address) {
       setStreetAddress(customer.service_address.street || customer.service_address.address || "");
@@ -104,7 +106,7 @@ export default function NewWorkOrderPage() {
     let digits = "";
 
     for (let i = 0; i < 5; i++) {
-      digits = Math.floor(10000 + Math.random() * 90000).toString();
+      digits = Math.floor(100000 + Math.random() * 900000).toString();
       const res = await verifyInvoiceNumberAction(digits);
       if (res.success) {
         valid = true;
@@ -112,6 +114,7 @@ export default function NewWorkOrderPage() {
       }
     }
 
+    skipVerification.current = true;
     setInvoiceDigits(digits);
     if (!valid) {
       setErrors(prev => ({ ...prev, invoiceNo: "Could not generate a unique invoice number. Please try again." }));
@@ -123,7 +126,11 @@ export default function NewWorkOrderPage() {
 
   React.useEffect(() => {
     const verifyManual = async () => {
-      if (invoiceDigits.length === 5) {
+      if (skipVerification.current) {
+        skipVerification.current = false;
+        return;
+      }
+      if (invoiceDigits.length === 6) {
         setIsVerifyingInvoice(true);
         const res = await verifyInvoiceNumberAction(invoiceDigits);
         if (!res.success) {
@@ -155,8 +162,8 @@ export default function NewWorkOrderPage() {
 
     if (!invoiceDigits) {
       newErrors.invoiceNo = "Invoice number is required.";
-    } else if (invoiceDigits.length !== 5) {
-      newErrors.invoiceNo = "Invoice digits must be exactly 5 digits.";
+    } else if (invoiceDigits.length !== 6) {
+      newErrors.invoiceNo = "Invoice digits must be exactly 6 digits.";
     }
 
     if (!invoiceAmount) {
@@ -166,6 +173,10 @@ export default function NewWorkOrderPage() {
       if (isNaN(amt) || amt < 0) {
         newErrors.invoiceAmount = "Invoice amount must be a non-negative integer.";
       }
+    }
+
+    if (!invoiceDueDate) {
+      newErrors.invoiceDueDate = "Invoice due date is required.";
     }
 
     if (!streetAddress.trim()) {
@@ -210,6 +221,7 @@ export default function NewWorkOrderPage() {
       invoice_no: fullInvoiceNo,
       invoice_description: invoiceDescription,
       invoice_amount: parseInt(invoiceAmount, 10),
+      due_date: invoiceDueDate,
       shipping_address: {
         street: streetAddress,
         city: city,
@@ -335,7 +347,7 @@ export default function NewWorkOrderPage() {
                       className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-none h-10 w-full bg-transparent text-slate-900 dark:text-slate-100 font-medium"
                       value={invoiceDigits}
                       onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, "").substring(0, 5);
+                        const val = e.target.value.replace(/\D/g, "").substring(0, 6);
                         setInvoiceDigits(val);
                         clearError("invoiceNo");
                       }}
@@ -355,7 +367,7 @@ export default function NewWorkOrderPage() {
                 {errors.invoiceNo ? (
                   <p className="text-xs text-red-500 font-semibold">{errors.invoiceNo}</p>
                 ) : (
-                  <p className="text-[11px] text-slate-400 font-medium">Type a 5-digit number or generate one randomly</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Type a 6-digit number or generate one randomly</p>
                 )}
               </div>
 
@@ -378,6 +390,28 @@ export default function NewWorkOrderPage() {
                   <p className="text-xs text-red-500 font-semibold">{errors.invoiceAmount}</p>
                 ) : (
                   <p className="text-[11px] text-slate-400 font-medium">Whole positive integers only (no decimals or negative values)</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="invoice_due_date" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Invoice Due Date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="invoice_due_date"
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={invoiceDueDate}
+                  onChange={(e) => {
+                    setInvoiceDueDate(e.target.value);
+                    clearError("invoiceDueDate");
+                  }}
+                  className={`block w-full sm:max-w-[240px] [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 relative ${errors.invoiceDueDate ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                />
+                {errors.invoiceDueDate && (
+                  <p className="text-xs text-red-500 font-semibold">{errors.invoiceDueDate}</p>
                 )}
               </div>
             </div>

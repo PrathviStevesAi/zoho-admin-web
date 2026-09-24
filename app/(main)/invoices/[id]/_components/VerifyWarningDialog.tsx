@@ -30,16 +30,17 @@ export function VerifyWarningDialog({
         </div>
         <h2 className="text-xl font-bold text-slate-900">Warning</h2>
 
-        <div className="w-full text-left text-sm text-slate-700 space-y-4">
+        <div className="w-full text-left text-sm text-slate-700 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
           {warnings.length > 0 ? (
             <div className="space-y-2">
               {warnings.map((warning, idx) => (
                 <div key={idx} className="leading-relaxed">
-                  <span dangerouslySetInnerHTML={{
+                  <div dangerouslySetInnerHTML={{
                     __html: warning
                       .replace(/\n/g, '<br />')
                       .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-900">$1</strong>')
                       .replace(/Shift \d+/g, '<strong class="text-orange-500">$&</strong>')
+                      .replace(/Please confirm first then add\./g, '<div class="text-center font-bold text-slate-900 mt-1 mb-1">Please confirm first then add.</div>')
                   }} />
                 </div>
               ))}

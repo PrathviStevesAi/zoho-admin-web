@@ -30,10 +30,8 @@ export function FilePreviewDialog({ previewFile, setPreviewFile }: FilePreviewDi
             previewFile.contentType?.startsWith("image/") ? (
               (() => {
                 const isSignature =
-                  previewFile.title?.toLowerCase().includes("sig") ||
-                  previewFile.url?.toLowerCase().includes("sig") ||
                   previewFile.title?.toLowerCase().includes("signature") ||
-                  previewFile.url?.toLowerCase().includes("signature");
+                  previewFile.title?.toLowerCase().includes("sig");
                 return (
                   <div className={cn(
                     "relative max-w-full max-h-full flex items-center justify-center rounded-xl",

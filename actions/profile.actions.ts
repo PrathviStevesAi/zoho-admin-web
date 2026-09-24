@@ -64,3 +64,28 @@ export async function generateUploadUrlAction(
   }
 }
 
+export async function sendEmailOtpAction(new_email: string): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+  try {
+    const data = await apiFetch<any>(`/api/v1/user/update-email/send-otp`, {
+      method: "POST",
+      body: JSON.stringify({ new_email }),
+    });
+    return { success: true, data, message: data.message };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to send OTP";
+    return { success: false, error: message };
+  }
+}
+
+export async function verifyEmailOtpAction(new_email: string, otp: string): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+  try {
+    const data = await apiFetch<any>(`/api/v1/user/update-email/verify`, {
+      method: "POST",
+      body: JSON.stringify({ new_email, otp }),
+    });
+    return { success: true, data, message: data.message };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to verify OTP";
+    return { success: false, error: message };
+  }
+}

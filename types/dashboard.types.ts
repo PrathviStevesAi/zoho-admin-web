@@ -42,6 +42,7 @@ export type InvoiceData = {
     is_assigned_guards?: boolean;
     is_open_crm?: boolean;
     is_cancel_service?: boolean;
+    is_upload_attachment?: boolean;
     is_location_edit?: boolean;
     is_customer_name_edit?: boolean;
     is_invoice_details_edit?: boolean;

@@ -74,10 +74,10 @@ export function ApproveShiftCard({
         </div>
 
         <div className="flex flex-col gap-3">
-          <h4 className="text-sm font-bold text-slate-500">Comments about guard's performance <span className="text-red-400">*</span></h4>
+          <h4 className="text-sm font-bold text-slate-500">Guard's Review<span className="text-red-400">*</span></h4>
           <textarea
             className="w-full min-h-[120px] p-3 text-sm text-slate-700 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all resize-y placeholder:text-slate-400"
-            placeholder="Comments about guard's performance"
+            placeholder="Enter guard review (The guard can view their review in their app.)"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />

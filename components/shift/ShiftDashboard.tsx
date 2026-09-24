@@ -8,10 +8,9 @@ import {
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 import {
-  addCommentAction,
   updateShiftDetailsAction,
   cancelShiftServiceAction,
   manualStartShiftAction,
@@ -26,7 +25,7 @@ import {
   approveShiftAction,
   notApproveShiftAction,
 } from "@/actions/dashboard.actions";
-import { generateUploadUrlAction } from "@/actions/profile.actions";
+import { generateUploadUrlAction, fetchProfileAction } from "@/actions/profile.actions";
 import { fetchShiftReportsAction } from "@/actions/notification.actions";
 import { CancelServiceDialog } from "@/app/(main)/invoices/[id]/_components/CancelServiceDialog";
 import { VerifyWarningDialog } from "@/app/(main)/invoices/[id]/_components/VerifyWarningDialog";
@@ -46,6 +45,7 @@ import { FilePreviewDialog } from "./dialogs/FilePreviewDialog";
 import { SendReportCard } from "./SendReportCard";
 import { ApproveShiftCard } from "./ApproveShiftCard";
 import { NotApproveShiftCard } from "./NotApproveShiftCard";
+import { CallRecordingsCard } from "./CallRecordingsCard";
 import { Shift, ShiftReports, PreviewFile, Address } from "./types";
 import { useVideoCall } from "@/context/VideoCallContext";
 
@@ -57,9 +57,37 @@ interface ShiftDashboardProps {
 export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps) {
   const router = useRouter();
   const { startCall } = useVideoCall();
+  const { data: session } = useSession();
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    fetchProfileAction().then((res) => {
+      if (res.success && res.data) {
+        setCurrentUserProfile(res.data);
+      }
+    });
+  }, []);
+
+  const token = (session as any)?.accessToken;
+  const commentsWsRef = useRef<WebSocket | null>(null);
+  const shiftRef = useRef<Shift | null>(null);
+  const lastSubmittedRecipientRef = useRef<string | null>(null);
+
   const [shift, setShift] = useState<Shift | null>(null);
+
+  useEffect(() => {
+    shiftRef.current = shift;
+  }, [shift]);
   const [reports, setReports] = useState<ShiftReports | null>(null);
   const [comments, setComments] = useState<any[]>([]);
+  const [commentsRecipient, setCommentsRecipient] = useState<"lead" | "standby">("lead");
+  const commentsRecipientRef = useRef<"lead" | "standby">("lead");
+
+  useEffect(() => {
+    commentsRecipientRef.current = commentsRecipient;
+  }, [commentsRecipient]);
+
+  const [dashboardActiveTab, setDashboardActiveTab] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
@@ -79,6 +107,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [isSendReportOpen, setIsSendReportOpen] = useState(false);
   const [isApproveShiftOpen, setIsApproveShiftOpen] = useState(false);
   const [isNotApproveShiftOpen, setIsNotApproveShiftOpen] = useState(false);
+  const [isCallRecordingsOpen, setIsCallRecordingsOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [isStartingShift, setIsStartingShift] = useState(false);
   const [isSendingReport, setIsSendingReport] = useState(false);
@@ -97,7 +126,46 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number };
     };
   }>({ isOpen: false, warnings: [] });
-  const [actionError, setActionError] = useState<{isOpen: boolean, message: string}>({isOpen: false, message: ""});
+  const [actionError, setActionError] = useState<{ isOpen: boolean, message: string }>({ isOpen: false, message: "" });
+
+  const loadComments = useCallback(async (
+    silent: boolean = false,
+    targetRecipient?: "lead" | "standby",
+    shiftOverride?: Shift | null
+  ) => {
+    if (!shiftId) return;
+
+    const currentShift = shiftOverride !== undefined ? shiftOverride : shiftRef.current;
+    const hasLead = Boolean(currentShift?.lead_guard && (currentShift.lead_guard.guard_id || currentShift.lead_guard.first_name || Object.keys(currentShift.lead_guard).length > 0));
+    const hasStandby = Boolean(currentShift?.standby_guard && (currentShift.standby_guard.guard_id || currentShift.standby_guard.first_name || Object.keys(currentShift.standby_guard).length > 0));
+
+    // If neither lead guard nor standby guard is assigned, do not call the GET comments API
+    if (!hasLead && !hasStandby) {
+      setComments([]);
+      if (!silent) setIsCommentsLoading(false);
+      return;
+    }
+
+    const recipient = targetRecipient || commentsRecipientRef.current;
+    const guardParam = recipient === "lead" ? "lead_guard" : "standby_guard";
+
+    // If the selected guard role is not assigned, empty the comments without fetching
+    if ((recipient === "lead" && !hasLead) || (recipient === "standby" && !hasStandby)) {
+      setComments([]);
+      if (!silent) setIsCommentsLoading(false);
+      return;
+    }
+
+    if (!silent) setIsCommentsLoading(true);
+    setCommentsError(null);
+    const res = await clientFetchCommentsAction(shiftId, guardParam);
+    if (res.success && res.data) {
+      setComments(res.data);
+    } else {
+      setCommentsError(res.error || "Failed to load comments");
+    }
+    if (!silent) setIsCommentsLoading(false);
+  }, [shiftId]);
 
   const loadShiftDetails = useCallback(async () => {
     if (!shiftId) return;
@@ -105,12 +173,22 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     const res = await clientFetchShiftDetailsAction(shiftId, notificationId || undefined);
     if (res.success) {
       setShift(res.data);
+      shiftRef.current = res.data;
       setError(null);
+      const hasLead = Boolean(res.data?.lead_guard && (res.data.lead_guard.guard_id || res.data.lead_guard.first_name || Object.keys(res.data.lead_guard).length > 0));
+      const hasStandby = Boolean(res.data?.standby_guard && (res.data.standby_guard.guard_id || res.data.standby_guard.first_name || Object.keys(res.data.standby_guard).length > 0));
+      if (hasLead || hasStandby) {
+        const initialRecipient = hasLead ? "lead" : "standby";
+        setCommentsRecipient(initialRecipient);
+        loadComments(false, initialRecipient, res.data);
+      } else {
+        setComments([]);
+      }
     } else {
       setError(res.error || "Shift not found");
     }
     setIsLoading(false);
-  }, [shiftId, notificationId]);
+  }, [shiftId, notificationId, loadComments]);
 
   const loadReportsDetails = useCallback(async () => {
     if (!shiftId) return;
@@ -125,24 +203,15 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsReportsLoading(false);
   }, [shiftId]);
 
-  const loadComments = useCallback(async () => {
-    if (!shiftId) return;
-    setIsCommentsLoading(true);
-    setCommentsError(null);
-    const res = await clientFetchCommentsAction(shiftId);
-    if (res.success && res.data) {
-      setComments(res.data);
-    } else {
-      setCommentsError(res.error || "Failed to load comments");
-    }
-    setIsCommentsLoading(false);
-  }, [shiftId]);
-
   useEffect(() => {
     loadShiftDetails();
     loadReportsDetails();
-    loadComments();
-  }, [loadShiftDetails, loadReportsDetails, loadComments]);
+  }, [loadShiftDetails, loadReportsDetails]);
+
+  const handleRecipientChange = (newRecipient: "lead" | "standby") => {
+    setCommentsRecipient(newRecipient);
+    loadComments(false, newRecipient);
+  };
 
   useEffect(() => {
     const handleCallEnded = (e: any) => {
@@ -156,37 +225,37 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     return () => window.removeEventListener("videoCallEnded", handleCallEnded);
   }, [shiftId, loadShiftDetails]);
 
+  const trackingGuardId = shift?.lead_guard?.guard_id ||
+    (shift?.assigned_guard
+      ? (typeof shift.assigned_guard === "object"
+        ? shift.assigned_guard.id || shift.assigned_guard.guard_id
+        : shift.assigned_guard)
+      : null);
+  const currentTrackingShiftId = shift?.shift_id;
+
   useEffect(() => {
-    if (shift && shift.shift_id) {
-      const guardId = shift.lead_guard?.guard_id ||
-        (shift.assigned_guard
-          ? (typeof shift.assigned_guard === "object"
-            ? shift.assigned_guard.id || shift.assigned_guard.guard_id
-            : shift.assigned_guard)
-          : null);
-
-      if (guardId) {
-        clientFetchGuardTrackingAction(guardId, shift.shift_id).then((res) => {
-          if (res.success && res.data && res.data.path) {
-            const mappedPath = res.data.path.map((p: any) => [p.latitude, p.longitude]);
-            setTrackingPath(mappedPath);
-          }
-        });
-
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://clanking-bagginess-flammable.ngrok-free.dev";
-        const cleanBase = baseUrl.replace(/\/+$/, "");
-        const wsProtocol = cleanBase.startsWith("https") ? "wss" : "ws";
-        const wsHost = cleanBase.replace(/^https?:\/\//, "").split("/")[0];
-        const wsUrl = `${wsProtocol}://${wsHost}/api/v1/tracking/ws/admin/shift/${shift.shift_id}`;
-
-        console.log("[WebSocket] Connecting to:", wsUrl);
-        let ws: WebSocket;
-        try {
-          ws = new WebSocket(wsUrl);
-        } catch (err) {
-          console.error("[WebSocket] Security or initialization error (likely Mixed Content blocked by browser):", err);
-          return;
+    if (currentTrackingShiftId && trackingGuardId) {
+      clientFetchGuardTrackingAction(trackingGuardId, currentTrackingShiftId).then((res) => {
+        if (res.success && res.data && res.data.path) {
+          const mappedPath = res.data.path.map((p: any) => [p.latitude, p.longitude]);
+          setTrackingPath(mappedPath);
         }
+      });
+
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://fastguard.securityguardbank.com";
+      const cleanBase = baseUrl.replace(/\/+$/, "");
+      const wsProtocol = cleanBase.startsWith("https") ? "wss" : "ws";
+      const wsHost = cleanBase.replace(/^https?:\/\//, "").split("/")[0];
+      const wsUrl = `${wsProtocol}://${wsHost}/api/v1/tracking/ws/admin/shift/${currentTrackingShiftId}`;
+
+      console.log("[WebSocket] Connecting to:", wsUrl);
+      let ws: WebSocket;
+      try {
+        ws = new WebSocket(wsUrl);
+      } catch (err) {
+        console.error("[WebSocket] Security or initialization error (likely Mixed Content blocked by browser):", err);
+        return;
+      }
 
         ws.onopen = () => {
           console.log("[WebSocket] Connection established successfully!");
@@ -249,10 +318,162 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         };
 
         return () => {
-          console.log("[WebSocket] Cleaning up connection...");
-          ws.close();
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.close();
+          }
         };
       }
+  }, [currentTrackingShiftId, trackingGuardId]);
+
+  useEffect(() => {
+    console.log("[Comments WebSocket] useEffect triggered. shiftId:", shiftId, "dashboardActiveTab:", dashboardActiveTab);
+    if (shiftId && token && dashboardActiveTab === "comment") {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://fastguard.securityguardbank.com";
+      const cleanBase = baseUrl.replace(/\/+$/, "");
+      const wsProtocol = cleanBase.startsWith("https") ? "wss" : "ws";
+      const wsHost = cleanBase.replace(/^https?:\/\//, "").split("/")[0];
+      const wsUrl = `${wsProtocol}://${wsHost}/api/v1/ws/comment/shift/${shiftId}/admin-guard?token=${token}`;
+
+      console.log("[Comments WebSocket] Connecting to:", wsUrl);
+      let ws: WebSocket;
+      try {
+        ws = new WebSocket(wsUrl);
+      } catch (err) {
+        console.error("[Comments WebSocket] Error initializing:", err);
+        return;
+      }
+
+      ws.onopen = () => {
+        console.log("[Comments WebSocket] Connection established successfully!");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          console.log("[Comments WebSocket] Received message:", event.data);
+          const parsed = JSON.parse(event.data);
+
+          if (parsed && typeof parsed === "object") {
+            const commentData = ["new_comment", "create_comment", "comment_created"].includes(parsed.event) ? parsed.data : parsed;
+
+            // If the received data looks like a comment object, append it directly
+            if (commentData && (commentData.id || commentData.user_message || commentData.attach_file_url)) {
+              const uniqueId = commentData.id || commentData.comment_id || commentData._id || `ws-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+              const currentShift = shiftRef.current;
+              const userRole = (commentData.user_role || commentData.sender_role || commentData.role || "").toLowerCase();
+              const isFromGuard = userRole === "guard" || Boolean(commentData.guard) || Boolean(commentData.guard_id);
+
+              let sentTo = commentData.sent_to || commentData.send_to;
+              if (!sentTo && !isFromGuard) {
+                const targetRole = commentData.guard_role || commentData.recipient || lastSubmittedRecipientRef.current;
+                if (targetRole === "lead_guard" || targetRole === "lead") {
+                  sentTo = currentShift?.lead_guard?.first_name || "Lead Guard";
+                } else if (targetRole === "standby_guard" || targetRole === "standby") {
+                  sentTo = currentShift?.standby_guard?.first_name || "Standby Guard";
+                } else if (targetRole === "both" || targetRole === "both_guards") {
+                  sentTo = "Both Guards";
+                }
+              }
+
+              // Reset last submitted recipient ref after receiving
+              lastSubmittedRecipientRef.current = null;
+
+              const normalizedComment = {
+                ...commentData,
+                id: uniqueId,
+                ...(sentTo ? { sent_to: sentTo } : {}),
+              };
+
+              setComments((prev) => {
+                // If comment with this id already exists, don't duplicate
+                if (prev.some((c) => c.id === uniqueId)) return prev;
+
+                // Match and replace any optimistic temp comment
+                const tempIndex = prev.findIndex((c) => {
+                  if (typeof c.id !== "string" || !c.id.startsWith("temp-")) return false;
+                  const msg1 = (c.user_message || "").trim();
+                  const msg2 = (normalizedComment.user_message || "").trim();
+                  if (msg1 && msg2) return msg1 === msg2;
+                  if (c.attach_file_url || normalizedComment.attach_file_url) return true;
+                  return msg1 === msg2;
+                });
+
+                if (tempIndex !== -1) {
+                  const next = [...prev];
+                  if (prev[tempIndex]?.attach_file_url?.startsWith("blob:")) {
+                    try {
+                      URL.revokeObjectURL(prev[tempIndex].attach_file_url);
+                    } catch {
+                      // ignore revoke errors
+                    }
+                  }
+                  next[tempIndex] = normalizedComment;
+                  return next;
+                }
+
+                // If same message content and created_at already exists, don't duplicate
+                const normMsg = (normalizedComment.user_message || "").trim();
+                if (
+                  normalizedComment.created_at &&
+                  prev.some(
+                    (c) =>
+                      (c.user_message || "").trim() === normMsg &&
+                      c.created_at === normalizedComment.created_at
+                  )
+                ) {
+                  return prev;
+                }
+                return [...prev, normalizedComment];
+              });
+              return;
+            }
+          }
+        } catch (err) {
+          console.error("[Comments WebSocket] Error handling message:", err);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.warn("[Comments WebSocket] Connection error:", error);
+      };
+
+      ws.onclose = (event) => {
+        console.log("[Comments WebSocket] Connection closed.", event.reason, event.code);
+      };
+
+      commentsWsRef.current = ws;
+
+      return () => {
+        console.log("[Comments WebSocket] Cleanup called, closing connection if open.");
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+          ws.close();
+        }
+        commentsWsRef.current = null;
+      };
+    } else {
+      console.log("[Comments WebSocket] Not connecting. dashboardActiveTab:", dashboardActiveTab);
+      if (commentsWsRef.current && commentsWsRef.current.readyState === WebSocket.OPEN) {
+        console.log("[Comments WebSocket] Closing existing connection due to tab change.");
+        commentsWsRef.current.close();
+      }
+      commentsWsRef.current = null;
+    }
+  }, [shiftId, token, dashboardActiveTab, loadComments]);
+
+  useEffect(() => {
+    const handlePushNotification = (e: any) => {
+      if (e.detail?.shiftId === shiftId && dashboardActiveTab === "comment") {
+        console.log("[Comments] Received push notification for this shift, silently reloading comments.");
+        loadComments(true, commentsRecipientRef.current);
+      }
+    };
+    window.addEventListener("fcm-notification-received", handlePushNotification);
+    return () => window.removeEventListener("fcm-notification-received", handlePushNotification);
+  }, [shiftId, dashboardActiveTab, loadComments]);
+
+  useEffect(() => {
+    if (shift) {
+      document.title = `Shift ${shift.shift_no}`;
     }
   }, [shift]);
 
@@ -296,7 +517,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     const res = await updateShiftDetailsAction(detailsPayload);
     if (res.success) {
       toast.success("Details updated successfully");
-      await loadShiftDetails();
+      await Promise.all([loadShiftDetails(), loadReportsDetails()]);
     } else {
       toast.error(res.error || "Failed to update details");
     }
@@ -321,7 +542,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     if (res.success) {
       toast.success("Location updated successfully");
       setIsEditLocationOpen(false);
-      loadShiftDetails();
+      Promise.all([loadShiftDetails(), loadReportsDetails()]);
     } else {
       toast.error(res.error || "Failed to update location");
     }
@@ -397,7 +618,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     if (res.success) {
       toast.success("Settings updated successfully");
       setIsSettingsOpen(false);
-      loadShiftDetails();
+      Promise.all([loadShiftDetails(), loadReportsDetails()]);
     } else {
       toast.error(res.error || "Failed to update settings");
     }
@@ -414,7 +635,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success("Shift manually started successfully");
         setIsManualStartOpen(false);
-        loadShiftDetails();
+        Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
         toast.error(res.error || "Failed to start shift");
       }
@@ -435,7 +656,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success("Service cancelled successfully");
         setIsCancelServiceOpen(false);
-        loadShiftDetails();
+        Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
         toast.error(res.error || "Failed to cancel service");
       }
@@ -447,9 +668,16 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   };
 
   const handleCommentSubmit = async (text: string, type: "internal" | "external", file: File | null, recipient?: string) => {
+    let optimisticId: string | null = null;
     try {
       let attachFileUrl = null;
+      let localBlobUrl: string | null = null;
       if (file) {
+        try {
+          localBlobUrl = URL.createObjectURL(file);
+        } catch {
+          localBlobUrl = null;
+        }
         const fileExt = file.name.split(".").pop();
         const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
         const uniqueId = Math.floor(1000 + Math.random() * 9000);
@@ -474,28 +702,70 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         attachFileUrl = file_path;
       }
 
-      let guard_role = undefined;
+      let guard_role: string | null = null;
       if (recipient === "lead") guard_role = "lead_guard";
       else if (recipient === "standby") guard_role = "standby_guard";
-      else if (recipient === "both") guard_role = "both";
 
-      const res = await addCommentAction({
+      let sentTo: string | undefined = undefined;
+      if (recipient === "lead") {
+        sentTo = shift?.lead_guard?.first_name || "Lead Guard";
+      } else if (recipient === "standby") {
+        sentTo = shift?.standby_guard?.first_name || "Standby Guard";
+      }
+
+      const adminName =
+        currentUserProfile?.first_name ||
+        (session as any)?.user?.first_name ||
+        currentUserProfile?.name ||
+        session?.user?.name ||
+        "Admin";
+
+      optimisticId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const optimisticComment = {
+        id: optimisticId,
         shift_id: shiftId,
         type,
         user_message: text.trim() || null,
-        attach_file_url: attachFileUrl,
-        guard_role,
-      });
+        attach_file_url: localBlobUrl || attachFileUrl || null,
+        user_role: "admin",
+        sender_role: "admin",
+        send_by: adminName,
+        sender_name: adminName,
+        created_at: new Date().toISOString(),
+        guard_role: guard_role || undefined,
+        sent_to: sentTo,
+        is_pending: true,
+      };
 
-      if (res.success) {
-        toast.success("Comment added successfully");
-        loadComments();
+      // Instantly display message in UI (optimistic update)
+      setComments((prev) => [...prev, optimisticComment]);
+
+      const payload = {
+        event: "create_comment",
+        data: {
+          user_message: text.trim() || null,
+          type,
+          attach_file_url: attachFileUrl || null,
+          guard_role,
+        }
+      };
+
+      lastSubmittedRecipientRef.current = recipient || (guard_role === "lead_guard" ? "lead" : guard_role === "standby_guard" ? "standby" : "lead");
+
+      if (commentsWsRef.current && commentsWsRef.current.readyState === WebSocket.OPEN) {
+        commentsWsRef.current.send(JSON.stringify(payload));
         return true;
       } else {
-        toast.error(res.error || "Failed to add comment");
+        if (optimisticId) {
+          setComments((prev) => prev.filter((c) => c.id !== optimisticId));
+        }
+        toast.error("WebSocket is not connected. Unable to send comment in real-time.");
         return false;
       }
     } catch (err: unknown) {
+      if (optimisticId) {
+        setComments((prev) => prev.filter((c) => c.id !== optimisticId));
+      }
       const message = err instanceof Error ? err.message : "Failed to submit comment";
       toast.error(message);
       return false;
@@ -646,9 +916,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success(res.message || "Shift reassigned successfully");
         setIsNewAssignOpen(false);
-        loadShiftDetails();
+        Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
-        setActionError({isOpen: true, message: res.error || "Failed to reassign guard"});
+        setActionError({ isOpen: true, message: res.error || "Failed to reassign guard" });
       }
     } else {
       const actionPayload: any = {
@@ -667,9 +937,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success(res.message || "Guard assigned successfully");
         setIsNewAssignOpen(false);
-        loadShiftDetails();
+        Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
-        setActionError({isOpen: true, message: res.error || "Failed to assign guard"});
+        setActionError({ isOpen: true, message: res.error || "Failed to assign guard" });
       }
     }
     setIsAssigningGuard(null);
@@ -715,18 +985,20 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         shiftId={shiftId}
         notificationId={notificationId}
         isSettingsOpen={isSettingsOpen}
-        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) { setIsNewAssignOpen(false); setIsStandbyGuardsOpen(false); setIsSendReportOpen(false); setIsApproveShiftOpen(false); setIsNotApproveShiftOpen(false); } }}
+        setIsSettingsOpen={(open) => { setIsSettingsOpen(open); if (open) { setIsNewAssignOpen(false); setIsStandbyGuardsOpen(false); setIsSendReportOpen(false); setIsApproveShiftOpen(false); setIsNotApproveShiftOpen(false); setIsCallRecordingsOpen(false); } }}
         isNewAssignOpen={isNewAssignOpen}
         isStandbyGuardsOpen={isStandbyGuardsOpen}
         isSendReportOpen={isSendReportOpen}
         isApproveShiftOpen={isApproveShiftOpen}
         isNotApproveShiftOpen={isNotApproveShiftOpen}
+        isCallRecordingsOpen={isCallRecordingsOpen}
         isReassign={isReassign}
         onCloseNewAssign={() => setIsNewAssignOpen(false)}
         onCloseStandbyGuards={() => setIsStandbyGuardsOpen(false)}
         onCloseSendReport={() => setIsSendReportOpen(false)}
         onCloseApproveShift={() => setIsApproveShiftOpen(false)}
         onCloseNotApproveShift={() => setIsNotApproveShiftOpen(false)}
+        onCloseCallRecordings={() => setIsCallRecordingsOpen(false)}
         isStartingShift={isStartingShift}
         onManualStart={() => setIsManualStartOpen(true)}
         onAssignGuard={handleAssignGuard}
@@ -737,6 +1009,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onReassignStandbyGuard={handleReassignStandbyGuard}
         onFindStandbyGuard={() => { setIsStandbyGuardsOpen(true); setIsNewAssignOpen(false); setIsSettingsOpen(false); }}
         onCancelService={() => setIsCancelServiceOpen(true)}
+        onCallRecording={() => { setIsCallRecordingsOpen(!isCallRecordingsOpen); setIsNewAssignOpen(false); setIsSettingsOpen(false); setIsSendReportOpen(false); }}
         showSettingBtn={showSettingBtn}
         onStartVideoCall={() => {
           const guardId = shift?.lead_guard?.guard_id ||
@@ -794,9 +1067,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               const res = await sendShiftReportAction(shift.shift_id);
               if (res.success) {
                 toast.success(res.message || "Report email successfully sent");
-                
-                // Refresh shift details to get updated `is_report_send` status
-                await loadShiftDetails();
+                await Promise.all([loadShiftDetails(), loadReportsDetails()]);
               } else {
                 toast.error(res.error || "Failed to send report.");
               }
@@ -875,6 +1146,12 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         />
       ) : isStandbyGuardsOpen ? (
         <StandbyGuardsPanel shift={shift} onClose={() => setIsStandbyGuardsOpen(false)} />
+      ) : isCallRecordingsOpen ? (
+        <CallRecordingsCard
+          isOpen={isCallRecordingsOpen}
+          onClose={() => setIsCallRecordingsOpen(false)}
+          shift={shift}
+        />
       ) : !isLoading && !shift ? (
         <div className="max-w-2xl mx-auto w-full">
           <ShiftDetailsCard
@@ -930,7 +1207,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 isReportsLoading={isReportsLoading}
                 reportsError={reportsError}
                 onTabChange={(tabId) => {
-                  if (tabId === "comment") loadComments();
+                  setDashboardActiveTab(tabId);
+                  if (tabId === "comment") loadComments(false, commentsRecipientRef.current);
                 }}
                 setPreviewFile={setPreviewFile}
                 securityServiceId={shift?.security_service_id}
@@ -939,7 +1217,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
                 hasStandbyGuard={!!(shift?.standby_guard && Object.keys(shift.standby_guard).length > 0)}
                 leadGuardStatus={shift?.lead_guard?.shift_status}
                 standbyGuardStatus={shift?.standby_guard?.shift_status}
+                leadGuardName={shift?.lead_guard?.first_name}
+                standbyGuardName={shift?.standby_guard?.first_name}
+                activeRecipient={commentsRecipient}
+                onRecipientChange={handleRecipientChange}
                 timezone={shift?.shipping_location?.timezone}
+                shiftExtensionRequests={shift?.shift_extension_requests || []}
+                shiftId={shiftId}
+                onRefresh={loadShiftDetails}
               />
             </div>
           </div>
@@ -969,7 +1254,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               isReportsLoading={isReportsLoading}
               reportsError={reportsError}
               onTabChange={(tabId) => {
-                if (tabId === "comment") loadComments();
+                setDashboardActiveTab(tabId);
+                if (tabId === "comment") loadComments(false, commentsRecipientRef.current);
               }}
               setPreviewFile={setPreviewFile}
               securityServiceId={shift?.security_service_id}
@@ -978,7 +1264,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
               hasStandbyGuard={!!(shift?.standby_guard && Object.keys(shift.standby_guard).length > 0)}
               leadGuardStatus={shift?.lead_guard?.shift_status}
               standbyGuardStatus={shift?.standby_guard?.shift_status}
+              leadGuardName={shift?.lead_guard?.first_name}
+              standbyGuardName={shift?.standby_guard?.first_name}
+              activeRecipient={commentsRecipient}
+              onRecipientChange={handleRecipientChange}
               timezone={shift?.shipping_location?.timezone}
+              shiftExtensionRequests={shift?.shift_extension_requests || []}
+              shiftId={shiftId}
+              onRefresh={loadShiftDetails}
             />
 
             {!isLoading && shift && (
@@ -1011,7 +1304,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       <CancelServiceDialog
         isOpen={isCancelServiceOpen}
         onClose={() => setIsCancelServiceOpen(false)}
-        onConfirm={handleCancelServiceConfirm}
+        onConfirm={(reason) => handleCancelServiceConfirm(reason)}
         isSaving={isCancellingService}
       />
 
@@ -1037,10 +1330,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         isSaving={isStartingShift}
       />
 
-      <ActionErrorDialog 
-        isOpen={actionError.isOpen} 
-        onClose={() => setActionError({ isOpen: false, message: "" })} 
-        message={actionError.message} 
+      <ActionErrorDialog
+        isOpen={actionError.isOpen}
+        onClose={() => setActionError({ isOpen: false, message: "" })}
+        message={actionError.message}
       />
     </div>
   );

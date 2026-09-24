@@ -27,6 +27,7 @@ import { GuardProfileSummary } from "../components/guard-profile-summary";
 import { GuardPersonalDetails, GuardContactInfo, GuardPreferences } from "../components/guard-information";
 import { GuardAddress } from "../components/guard-address";
 import { GuardDocuments } from "../components/guard-documents";
+import { GuardPreviousEmployment } from "../components/guard-previous-employment";
 import { GuardNotesAndBadge } from "../components/guard-notes-and-badge";
 
 const phoneCountries = [
@@ -68,6 +69,7 @@ export default function GuardDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [deletingDocs, setDeletingDocs] = useState<Record<string, boolean>>({});
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
   const [localFileNames, setLocalFileNames] = useState<Record<string, string>>({});
@@ -169,12 +171,19 @@ export default function GuardDetailPage() {
       "firewatch_certificate_url", "verification_video_url", "first_name", "last_name",
       "street_address", "country", "state", "city", "zip_code", "referral", "on_call",
       "smartphone", "job_alerts", "license", "background", "transport", "unarmed", "armed",
-      "english_language", "gender", "ethnicity", "veteran_status", "disability_status", "notes"
+      "english_language", "gender", "ethnicity", "veteran_status", "disability_status", "notes",
+      "profile_img_url", "previous_employer_name", "previous_employer_position_and_duties",
+      "previous_employment_start_date", "previous_employment_end_date",
+      "previous_employment_end_reason", "previous_employer_rehire_eligible"
     ];
 
     const payload: any = {};
     Object.keys(editForm).forEach(key => {
-      if (editForm[key] !== guard[key] && allowedKeys.includes(key)) {
+      let originalVal = guard[key];
+      if (key.startsWith("previous_") && guard.previous_employee_info) {
+        originalVal = guard.previous_employee_info[key];
+      }
+      if (editForm[key] !== originalVal && allowedKeys.includes(key)) {
         if (key === "phone_number" && typeof editForm[key] === "string") {
           payload[key] = editForm[key].replace(/\s/g, "");
         } else {
@@ -220,6 +229,40 @@ export default function GuardDetailPage() {
       toast.error("An error occurred while updating the application");
     } finally {
       setIsSavingEdit(false);
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    if (editForm.email === guard.email) return;
+    setIsUpdatingEmail(true);
+    try {
+      const session = await getSession() as any;
+      const token = session?.accessToken;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const url = `${baseUrl}/api/v1/guard/bank/application/${guard.id}`;
+
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({ email: editForm.email })
+      });
+      if (res.ok) {
+        const responseData = await res.json().catch(() => ({}));
+        toast.success(responseData.message || "Email updated successfully");
+        setIsEditing(false);
+        fetchGuardDetails();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(getErrorMessage(data, "Failed to update email") || "Failed to update email");
+      }
+    } catch (error) {
+      toast.error("An error occurred while updating the email");
+    } finally {
+      setIsUpdatingEmail(false);
     }
   };
 
@@ -612,7 +655,18 @@ export default function GuardDetailPage() {
     );
   };
 
-  const hasChanges = Object.keys(editForm).some((key) => editForm[key] !== guard[key]);
+  const isEmailChanged = editForm.email && editForm.email !== guard.email;
+  
+  const hasOtherChanges = Object.keys(editForm).some((key) => {
+    if (key === "email") return false;
+    let originalVal = guard[key];
+    if (key.startsWith("previous_") && guard.previous_employee_info) {
+      originalVal = guard.previous_employee_info[key];
+    }
+    return editForm[key] !== originalVal;
+  });
+
+  const hasChanges = hasOtherChanges && !isEmailChanged;
 
   return (
     <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
@@ -642,6 +696,9 @@ export default function GuardDetailPage() {
         setIsPhoneDropdownOpen={setIsPhoneDropdownOpen}
         getLevelBadge={getLevelBadge}
         formErrors={formErrors}
+        refreshGuardDetails={fetchGuardDetails}
+        handleUpdateEmail={handleUpdateEmail}
+        isUpdatingEmail={isUpdatingEmail}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -674,6 +731,13 @@ export default function GuardDetailPage() {
             handleEditChange={handleEditChange}
           />
         </div>
+
+        <GuardPreviousEmployment 
+          guard={guard}
+          isEditing={isEditing}
+          editForm={editForm}
+          handleEditChange={handleEditChange}
+        />
 
         <GuardDocuments
           guard={guard}

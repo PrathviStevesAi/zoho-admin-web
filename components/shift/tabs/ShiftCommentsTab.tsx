@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { UserPlus, Paperclip, Loader2, Send, XCircle, Lock, Users, User } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { UserPlus, Paperclip, Loader2, Send, XCircle, Lock, Users, User, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,13 +18,17 @@ interface ShiftCommentsTabProps {
   comments: Comment[];
   isCommentsLoading: boolean;
   commentsError: string | null;
-  onCommentSubmit: (text: string, type: "external" | "internal", file: File | null, recipient?: string) => Promise<boolean>;
+  onCommentSubmit: (text: string, type: "external" | "internal", file: File | null, recipient?: "lead" | "standby") => Promise<boolean>;
   setPreviewFile: (file: PreviewFile | null) => void;
   hasLeadGuard?: boolean;
   hasStandbyGuard?: boolean;
   leadGuardStatus?: string;
   standbyGuardStatus?: string;
   timezone?: string;
+  leadGuardName?: string;
+  standbyGuardName?: string;
+  activeRecipient?: "lead" | "standby";
+  onRecipientChange?: (recipient: "lead" | "standby") => void;
 }
 
 export function ShiftCommentsTab({
@@ -38,13 +42,69 @@ export function ShiftCommentsTab({
   leadGuardStatus,
   standbyGuardStatus,
   timezone,
+  leadGuardName,
+  standbyGuardName,
+  activeRecipient,
+  onRecipientChange,
 }: ShiftCommentsTabProps) {
   const [commentType, setCommentType] = useState<"external" | "internal">("external");
-  const [recipient, setRecipient] = useState<"lead" | "standby" | "both">(hasLeadGuard ? "lead" : "standby");
+  const [recipient, setRecipient] = useState<"lead" | "standby">(activeRecipient || (hasLeadGuard ? "lead" : "standby"));
   const [commentText, setCommentText] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const commentsContainerRef = useRef<HTMLDivElement>(null);
+  const hasInitiallyScrolled = useRef(false);
+  const prevCommentsLengthRef = useRef(0);
+
+  useEffect(() => {
+    if (activeRecipient) {
+      setRecipient(activeRecipient);
+    }
+  }, [activeRecipient]);
+
+  const handleSelectRecipient = (r: "lead" | "standby") => {
+    setRecipient(r);
+    onRecipientChange?.(r);
+  };
+
+  const scrollToBottomInsideContainer = (behavior: ScrollBehavior = "smooth") => {
+    if (commentsContainerRef.current) {
+      if (behavior === "auto") {
+        commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight;
+      } else {
+        commentsContainerRef.current.scrollTo({
+          top: commentsContainerRef.current.scrollHeight,
+          behavior,
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isCommentsLoading && comments && comments.length > 0) {
+      if (!hasInitiallyScrolled.current) {
+        hasInitiallyScrolled.current = true;
+        prevCommentsLengthRef.current = comments.length;
+        const timer = setTimeout(() => {
+          if (commentsContainerRef.current) {
+            commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight;
+          }
+        }, 50);
+        return () => clearTimeout(timer);
+      }
+
+      const currentLen = comments.length;
+      if (currentLen > prevCommentsLengthRef.current) {
+        const timer = setTimeout(() => {
+          scrollToBottomInsideContainer("smooth");
+        }, 50);
+        prevCommentsLengthRef.current = currentLen;
+        return () => clearTimeout(timer);
+      }
+      prevCommentsLengthRef.current = currentLen;
+    }
+  }, [comments, isCommentsLoading]);
 
   const isInternal = commentType === "internal";
 
@@ -69,13 +129,6 @@ export function ShiftCommentsTab({
       } else if (isStandbyPlanned) {
         isCommentDisabled = true;
       }
-    } else if (recipient === "both") {
-      if (!hasLeadGuard || !hasStandbyGuard) {
-        isCommentDisabled = true;
-        disabledMessage = "Both guards must be assigned to use this option.";
-      } else if (isLeadPlanned || isStandbyPlanned) {
-        isCommentDisabled = true;
-      }
     }
   }
   const handleSubmit = async () => {
@@ -85,6 +138,7 @@ export function ShiftCommentsTab({
     if (success) {
       setCommentText("");
       setAttachedFile(null);
+      setTimeout(() => scrollToBottomInsideContainer("smooth"), 100);
     }
     setIsSubmitting(false);
   };
@@ -97,7 +151,7 @@ export function ShiftCommentsTab({
           <button
             type="button"
             disabled={isInternal}
-            onClick={() => setRecipient("lead")}
+            onClick={() => handleSelectRecipient("lead")}
             className={cn(
               "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg flex-1",
               isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
@@ -116,7 +170,7 @@ export function ShiftCommentsTab({
           <button
             type="button"
             disabled={isInternal}
-            onClick={() => setRecipient("standby")}
+            onClick={() => handleSelectRecipient("standby")}
             className={cn(
               "flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg flex-1",
               isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
@@ -128,25 +182,6 @@ export function ShiftCommentsTab({
           >
             <User className="w-[18px] h-[18px]" />
             <span className="text-[13px]">Standby Guard</span>
-          </button>
-
-          <div className="w-[1px] h-6 bg-slate-200 mx-0.5" />
-
-          <button
-            type="button"
-            disabled={isInternal}
-            onClick={() => setRecipient("both")}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2.5 py-2.5 font-semibold transition-all rounded-lg",
-              isInternal ? "cursor-not-allowed text-slate-400" : "cursor-pointer",
-              recipient === "both" && !isInternal
-                ? "text-[#0064cb] border border-[#0064cb] shadow-[0_0_0_1px_#0064cb] z-10 bg-white"
-                : "text-slate-500 border border-transparent",
-              !isInternal && recipient !== "both" && "hover:text-slate-700 hover:bg-slate-50"
-            )}
-          >
-            <Users className="w-[18px] h-[18px]" />
-            <span className="text-[13px]">Both Guards</span>
           </button>
         </div>
       </div>
@@ -179,11 +214,13 @@ export function ShiftCommentsTab({
           No comments yet. Write one below!
         </div>
       ) : (
-        <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+        <div
+          ref={commentsContainerRef}
+          className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar scroll-smooth"
+        >
           {comments.map((comment: any) => {
             const authorName = getCommentAuthorName(comment);
             const isExternal = comment.type === "external";
-            const sendByDisplay = getSendByDisplay(comment);
             return (
               <div key={comment.id} className="flex gap-3">
                 <div
@@ -197,22 +234,19 @@ export function ShiftCommentsTab({
                 <div className="space-y-2 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[13px] font-bold text-slate-800">{authorName}</span>
-                    {sendByDisplay && (
-                      <div className="flex items-center gap-1.5 text-[12px]">
-                        <span className="text-[#0064cb] font-semibold">Sent to :-</span>
-                        <div className="flex items-center gap-1 text-slate-700 font-semibold">
-                          {sendByDisplay === "Both Guards" ? (
-                            <Users className="w-3.5 h-3.5 text-slate-600" />
-                          ) : sendByDisplay === "Lead Guard" ? (
-                            <UserPlus className="w-3.5 h-3.5 text-slate-600" />
-                          ) : (
-                            <User className="w-3.5 h-3.5 text-slate-600" />
-                          )}
-                          <span>{sendByDisplay}</span>
-                        </div>
-                      </div>
-                    )}
-                    <span className="text-[11px] text-slate-700">{formatDateTime(comment.created_at, timezone)}</span>
+                    <span className="text-[11px] text-slate-700 flex items-center gap-1">
+                      {formatDateTime(comment.created_at, timezone)}
+                      {(comment.is_pending || (typeof comment.id === "string" && comment.id.startsWith("temp-"))) && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center text-slate-600">
+                              <Clock className="w-3 h-3 animate-pulse text-slate-600" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">Sending...</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </span>
                     {!isExternal && (
                       <Tooltip>
                         <TooltipTrigger asChild>
