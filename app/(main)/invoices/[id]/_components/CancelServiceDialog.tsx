@@ -14,13 +14,17 @@ interface CancelServiceDialogProps {
   onClose: () => void;
   onConfirm: (reason: string) => Promise<void>;
   isSaving: boolean;
+  note?: string;
+  title?: string;
 }
 
 export function CancelServiceDialog({
   isOpen,
   onClose,
   onConfirm,
-  isSaving
+  isSaving,
+  note = "Note: All shifts related to this invoice will be canceled and no longer accessible.",
+  title = "Cancel Service ?"
 }: CancelServiceDialogProps) {
   const [reason, setReason] = useState("");
 
@@ -39,7 +43,7 @@ export function CancelServiceDialog({
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-bold text-slate-900">Cancel Service ?</DialogTitle>
+              <DialogTitle className="text-xl font-bold text-slate-900">{title}</DialogTitle>
             </div>
           </div>
         </div>
@@ -48,7 +52,7 @@ export function CancelServiceDialog({
           <div className="bg-amber-50/50 border border-amber-100/50 p-4 rounded-xl flex gap-3 items-start">
             <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
             <p className="text-[12px] text-amber-700 font-medium leading-relaxed">
-              Note: All shifts related to this invoice will be canceled and no longer accessible.
+              {note}
             </p>
           </div>
 

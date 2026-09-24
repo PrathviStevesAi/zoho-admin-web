@@ -1306,6 +1306,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onClose={() => setIsCancelServiceOpen(false)}
         onConfirm={(reason) => handleCancelServiceConfirm(reason)}
         isSaving={isCancellingService}
+        note="Note: Once shift is cancelled, no longer accessible."
       />
 
       <VerifyWarningDialog
