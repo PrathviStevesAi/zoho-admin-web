@@ -242,7 +242,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     setIsRegistering(true);
 
     const securityServicePriceObj = formData.servicePrices.reduce((acc, curr) => {
-      acc[curr.name] = curr.price;
+      acc[curr.name] = Number(curr.price) || 0;
       return acc;
     }, {} as Record<string, number>);
 
@@ -600,6 +600,13 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                                   onKeyDown={(e) => {
                                     if (e.key === '-' || e.key === '+') {
                                       e.preventDefault();
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    if ((service.price as any) === '' || service.price === null || service.price === undefined || isNaN(Number(service.price)) || Number(service.price) < 0) {
+                                      const newPrices = [...formData.servicePrices];
+                                      newPrices[index].price = 0;
+                                      setFormData({ ...formData, servicePrices: newPrices });
                                     }
                                   }}
                                   onChange={(e) => {

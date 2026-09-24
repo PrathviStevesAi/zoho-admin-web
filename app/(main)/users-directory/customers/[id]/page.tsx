@@ -221,7 +221,15 @@ function CustomerViewContent() {
     }
 
     if (JSON.stringify(formData.security_service_price) !== JSON.stringify(customerData.security_service_price || {})) {
-      payload.security_service_price = Object.keys(formData.security_service_price || {}).length > 0 ? formData.security_service_price : null;
+      if (Object.keys(formData.security_service_price || {}).length > 0) {
+        const sanitized: Record<string, number> = {};
+        Object.entries(formData.security_service_price).forEach(([k, v]) => {
+          sanitized[k] = Number(v) || 0;
+        });
+        payload.security_service_price = sanitized;
+      } else {
+        payload.security_service_price = null;
+      }
     }
 
     if (Object.keys(payload).length === 0) {
@@ -601,6 +609,17 @@ function CustomerViewContent() {
                                     onKeyDown={(e) => {
                                       if (e.key === '-' || e.key === '+') {
                                         e.preventDefault();
+                                      }
+                                    }}
+                                    onBlur={() => {
+                                      if ((price as any) === '' || price === null || price === undefined || isNaN(Number(price)) || Number(price) < 0) {
+                                        setFormData({
+                                          ...formData,
+                                          security_service_price: {
+                                            ...currentServicePrices,
+                                            [name]: 0
+                                          }
+                                        });
                                       }
                                     }}
                                     onChange={(e) => {
