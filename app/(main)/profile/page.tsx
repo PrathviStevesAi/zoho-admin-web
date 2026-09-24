@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { fetchProfileAction, updateProfileAction, generateUploadUrlAction } from "@/actions/profile.actions";
+import { fetchProfileAction, updateProfileAction, generateUploadUrlAction, sendEmailOtpAction, verifyEmailOtpAction } from "@/actions/profile.actions";
 import { UserProfile } from "@/types/profile.types";
 
 const countries = [
@@ -74,8 +74,25 @@ export default function ProfilePage() {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedCountry, setSelectedCountry] = useState(countries[11]); // Default to US
+  const [selectedCountry, setSelectedCountry] = useState(countries[11]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [emailToUpdate, setEmailToUpdate] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [otpResendTimer, setOtpResendTimer] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (otpResendTimer > 0) {
+      interval = setInterval(() => {
+        setOtpResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [otpResendTimer]);
+
   const [editFormData, setEditFormData] = useState({
     first_name: "",
     last_name: "",
@@ -105,6 +122,7 @@ export default function ProfilePage() {
         setUser(res.data);
         const parsed = getCountryAndPhone(res.data.phone_number || "");
         setSelectedCountry(parsed.country);
+        setEmailToUpdate(res.data.email || "");
         setEditFormData({
           first_name: res.data.first_name || "",
           last_name: res.data.last_name || "",
@@ -125,6 +143,7 @@ export default function ProfilePage() {
         setUser(defaultUser);
         const parsed = getCountryAndPhone(defaultUser.phone_number);
         setSelectedCountry(parsed.country);
+        setEmailToUpdate(defaultUser.email || "");
         setEditFormData({
           first_name: defaultUser.first_name || "",
           last_name: defaultUser.last_name || "",
@@ -148,6 +167,7 @@ export default function ProfilePage() {
       setUser(defaultUser);
       const parsed = getCountryAndPhone(defaultUser.phone_number);
       setSelectedCountry(parsed.country);
+      setEmailToUpdate(defaultUser.email || "");
       setEditFormData({
         first_name: defaultUser.first_name || "",
         last_name: defaultUser.last_name || "",
@@ -165,6 +185,72 @@ export default function ProfilePage() {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  const handleSendEmailOtp = async () => {
+    if (!emailToUpdate) {
+      toast.error("Please enter an email address");
+      return;
+    }
+    setIsSendingOtp(true);
+    const res = await sendEmailOtpAction(emailToUpdate);
+    setIsSendingOtp(false);
+    if (res.success) {
+      toast.success(res.message || "OTP sent to your email");
+      setOtpSent(true);
+      setOtpResendTimer(300);
+    } else {
+      toast.error(res.error || "Failed to send OTP");
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    if (!otpValue) {
+      toast.error("Please enter the OTP");
+      return;
+    }
+    setIsVerifyingOtp(true);
+    const res = await verifyEmailOtpAction(emailToUpdate, otpValue);
+    setIsVerifyingOtp(false);
+    if (res.success) {
+      toast.success(res.message || "Email verified successfully");
+      setOtpSent(false);
+      setOtpValue("");
+      await loadProfile();
+      setIsEditing(false);
+    } else {
+      toast.error(res.error || "Failed to verify OTP");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    if (user) {
+      const parsed = getCountryAndPhone(user.phone_number || "");
+      setSelectedCountry(parsed.country);
+      setEmailToUpdate(user.email || "");
+      setEditFormData({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        phone_number: parsed.phone,
+        old_password: "",
+        new_password: "",
+        profile_img_url: user.profile_img_url || ""
+      });
+    }
+    setOtpSent(false);
+    setOtpValue("");
+    setOtpResendTimer(0);
+  };
+
+  const handleStartEdit = () => {
+    setIsEditing(true);
+    if (user) {
+      setEmailToUpdate(user.email || "");
+    }
+    setOtpSent(false);
+    setOtpValue("");
+    setOtpResendTimer(0);
+  };
 
   const handleUpdateProfile = async () => {
     setIsUpdating(true);
@@ -351,7 +437,7 @@ export default function ProfilePage() {
         <div className="flex gap-3">
           {isEditing ? (
             <>
-              <Button variant="outline" onClick={() => setIsEditing(false)} className="px-5 h-9 rounded-lg font-bold border-slate-200 text-xs text-slate-800 hover:bg-slate-50 transition-all cursor-pointer">
+              <Button variant="outline" onClick={handleCancelEdit} className="px-5 h-9 rounded-lg font-bold border-slate-200 text-xs text-slate-800 hover:bg-slate-50 transition-all cursor-pointer">
                 Cancel
               </Button>
               <Button onClick={handleUpdateProfile} disabled={isUpdating || !isFormChanged} className="bg-[#0064cb] hover:bg-[#0052ae] disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 h-9 rounded-lg font-bold text-xs shadow-md shadow-blue-100 transition-all active:scale-95 flex gap-2 cursor-pointer">
@@ -359,7 +445,7 @@ export default function ProfilePage() {
               </Button>
             </>
           ) : (
-            <Button onClick={() => setIsEditing(true)} className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-6 h-10 rounded-xl font-bold text-sm shadow-md shadow-blue-100 transition-all active:scale-95 flex gap-2 cursor-pointer">
+            <Button onClick={handleStartEdit} className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-6 h-10 rounded-xl font-bold text-sm shadow-md shadow-blue-100 transition-all active:scale-95 flex gap-2 cursor-pointer">
               <Edit3 className="w-3.5 h-3.5" />
               Edit Profile
             </Button>
@@ -410,9 +496,53 @@ export default function ProfilePage() {
 
             <div className="space-y-1.5">
               <Label className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">Email Address</Label>
-              <div className="flex items-center gap-2 px-0.5">
-                <p className="text-[14px] font-medium text-slate-700">{currentUser.email}</p>
-              </div>
+              {isEditing ? (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter new email"
+                      value={emailToUpdate}
+                      onChange={(e) => {
+                        setEmailToUpdate(e.target.value);
+                        setOtpSent(false);
+                        setOtpValue("");
+                        setOtpResendTimer(0);
+                      }}
+                      className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all flex-1"
+                    />
+                    {emailToUpdate !== currentUser.email && (
+                      <Button
+                        onClick={handleSendEmailOtp}
+                        disabled={isSendingOtp || otpResendTimer > 0}
+                        className="h-11 bg-[#0064cb] hover:bg-[#0052ae] text-white px-4 rounded-xl font-semibold text-sm disabled:opacity-50"
+                      >
+                        {isSendingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : otpResendTimer > 0 ? `Resend in ${Math.floor(otpResendTimer / 60)}:${(otpResendTimer % 60).toString().padStart(2, '0')}` : otpSent ? "Resend OTP" : "Send OTP"}
+                      </Button>
+                    )}
+                  </div>
+                  {otpSent && (
+                    <div className="flex gap-2 animate-in fade-in slide-in-from-top-2">
+                      <Input
+                        placeholder="Enter OTP"
+                        value={otpValue}
+                        onChange={(e) => setOtpValue(e.target.value)}
+                        className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-xl px-4 text-sm font-medium transition-all flex-1"
+                      />
+                      <Button
+                        onClick={handleVerifyEmailOtp}
+                        disabled={isVerifyingOtp || !otpValue}
+                        className="h-11 bg-green-600 hover:bg-green-700 text-white px-6 rounded-xl font-semibold text-sm"
+                      >
+                        {isVerifyingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 px-0.5">
+                  <p className="text-[14px] font-medium text-slate-700">{currentUser.email}</p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -457,8 +587,8 @@ export default function ProfilePage() {
                   <span className="text-[14px] font-medium text-slate-700">
                     {(currentUser.phone_number || "").startsWith("+1")
                       ? (currentUser.phone_number || "").slice(2)
-                      : (currentUser.phone_number || "").startsWith("+") 
-                        ? currentUser.phone_number 
+                      : (currentUser.phone_number || "").startsWith("+")
+                        ? currentUser.phone_number
                         : currentUser.phone_number || "Not provided"}
                   </span>
                 </div>

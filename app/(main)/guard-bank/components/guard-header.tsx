@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -8,15 +9,20 @@ import {
   Shield,
   Trash2,
   Loader2,
-  Eye
+  Eye,
+  KeyRound
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { clientResendGuardPasswordAction } from "@/lib/client-actions";
+import { ConfirmationDialog } from "./confirmation-dialog";
 
 interface GuardHeaderProps {
   guard: any;
@@ -45,6 +51,42 @@ export function GuardHeader({
   getTabParam,
   getStatusBreadcrumb
 }: GuardHeaderProps) {
+  const router = useRouter();
+  const [resendPasswordConfirm, setResendPasswordConfirm] = useState<{
+    isOpen: boolean;
+    guardId: string;
+    guardName: string;
+  }>({ isOpen: false, guardId: "", guardName: "" });
+  const [isResendingPassword, setIsResendingPassword] = useState(false);
+
+  const handleNavigateToOverview = () => {
+    const targetGuardId = guard?.guard_id || guard?.user_id || guard?.id || "";
+    const returnUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/guard-bank";
+    router.push(`/guard-overview?guard_id=${targetGuardId}&returnTo=${encodeURIComponent(returnUrl)}`);
+  };
+
+  const handleResendPassword = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const targetGuardId = guard?.guard_id || guard?.user_id || guard?.id || "";
+    const guardName = `${guard?.first_name || ""} ${guard?.last_name || ""}`.trim() || guard?.name || "Guard";
+    setResendPasswordConfirm({ isOpen: true, guardId: targetGuardId, guardName });
+  };
+
+  const handleConfirmResendPassword = async () => {
+    const id = resendPasswordConfirm.guardId;
+    if (!id) return;
+    setIsResendingPassword(true);
+    const res = await clientResendGuardPasswordAction(id);
+
+    if (res.success) {
+      toast.success(res.message || "Password sent successfully");
+    } else {
+      toast.error(res.error || "Failed to resend password");
+    }
+    setIsResendingPassword(false);
+    setResendPasswordConfirm({ isOpen: false, guardId: "", guardName: "" });
+  };
+
   return (
     <div className="flex flex-col gap-3 w-full">
       <div className="flex flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 w-full">
@@ -82,10 +124,10 @@ export function GuardHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl border-slate-100 shadow-xl bg-white text-slate-700 font-medium text-[13px]">
-              {/* <DropdownMenuItem onClick={() => window.location.href = `/guard-overview?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
+              <DropdownMenuItem onClick={handleNavigateToOverview} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                 <Eye className="w-4 h-4" />
                 Guard Overview
-              </DropdownMenuItem> */}
+              </DropdownMenuItem>
               {guard.action?.is_open_crm && (
                 <DropdownMenuItem onClick={() => window.open(`https://crm.zoho.com/crm/org677245190/tab/Vendors/${guard.vendor_id}`, "_blank")} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                   <ExternalLink className="w-4 h-4" />
@@ -98,6 +140,10 @@ export function GuardHeader({
                   Edit Application
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem onClick={handleResendPassword} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
+                <KeyRound className="w-4 h-4" />
+                Resend Password
+              </DropdownMenuItem>
               {guard.action?.is_edit_guard_level && (
                 <DropdownMenuItem onClick={() => setIsUpdateLevelModalOpen(true)} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                   <Shield className="w-4 h-4" />
@@ -121,6 +167,18 @@ export function GuardHeader({
           </Button>
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={resendPasswordConfirm.isOpen}
+        onClose={() => setResendPasswordConfirm({ isOpen: false, guardId: "", guardName: "" })}
+        onConfirm={handleConfirmResendPassword}
+        title="Are you sure?"
+        description={`You are about to resend the password for guard ${resendPasswordConfirm.guardName}.`}
+        confirmText="Yes"
+        cancelText="Cancel"
+        isDanger={false}
+        isLoading={isResendingPassword}
+      />
     </div>
   );
 }

@@ -562,10 +562,15 @@ export interface Comment {
 
 
 export async function clientFetchCommentsAction(
-  shiftId: string
+  shiftId: string,
+  guard?: string
 ): Promise<{ success: boolean; data?: Comment[]; error?: string }> {
   try {
-    const data = await clientApiFetch<{ success: boolean; data?: Comment[] } | Comment[]>(`/api/v1/shift/comment/${shiftId}`);
+    const query = new URLSearchParams({ channel: "admin_guard" });
+    if (guard) {
+      query.append("guard", guard);
+    }
+    const data = await clientApiFetch<{ success: boolean; data?: Comment[] } | Comment[]>(`/api/v1/comment/shift/${shiftId}/new?${query.toString()}`);
     const commentsList = Array.isArray(data) ? data : (data.data || []);
     return { success: true, data: commentsList };
   } catch (error: unknown) {
@@ -721,3 +726,209 @@ export async function clientDeleteCustomerAction(customer_id: string): Promise<{
     return { success: false, error: error.message || "Failed to delete customer" };
   }
 }
+
+export async function clientFetchGuardSummaryAction(guard_id: string): Promise<{
+  success: boolean;
+  data?: {
+    complete_shifts: number;
+    scheduled_shifts: number;
+    active_shifts: number;
+  };
+  error?: string;
+}> {
+  if (!guard_id) {
+    return { success: false, error: "Guard ID is required" };
+  }
+  try {
+    const data = await clientApiFetch<any>(`/api/v1/guard/${guard_id}/summary`);
+    return { success: true, data: data?.data || data };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to fetch guard summary" };
+  }
+}
+
+export async function clientFetchGuardReviewsSummaryAction(params?: {
+  guard_id?: string;
+  filter_type?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<{
+  success: boolean;
+  data?: {
+    overall_rating: number;
+    total_reviews: number;
+    rating_counts: {
+      [key: string]: number;
+    };
+    customer_reviews_count: number;
+    fastguard_reviews_count: number;
+  };
+  error?: string;
+}> {
+  const query = new URLSearchParams();
+  query.append("filter_type", params?.filter_type || "summary");
+  if (params?.page) query.append("page", params.page.toString());
+  if (params?.page_size) query.append("page_size", params.page_size.toString());
+  if (params?.guard_id) query.append("guard_id", params.guard_id);
+
+  try {
+    const data = await clientApiFetch<any>(`/api/v1/guard/review?${query.toString()}`);
+    return { success: true, data: data?.data || data };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to fetch guard reviews summary" };
+  }
+}
+
+export type GuardReviewItem = {
+  id?: string;
+  shift_id?: string;
+  review_type: "customer" | "fastguard" | string;
+  rating: number;
+  review_text: string;
+  date: string;
+  shift_no?: number | string;
+  customer_name?: string;
+  local_start_time?: string;
+  local_end_time?: string;
+  reviewed_by?: string;
+};
+
+export async function clientFetchGuardReviewsAction(params: {
+  guard_id?: string;
+  filter_type?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<{
+  success: boolean;
+  page?: number;
+  page_size?: number;
+  total?: number;
+  total_pages?: number;
+  data?: GuardReviewItem[];
+  error?: string;
+}> {
+  const query = new URLSearchParams();
+  query.append("filter_type", params.filter_type || "all");
+  query.append("page", (params.page || 1).toString());
+  query.append("page_size", (params.page_size || 10).toString());
+  if (params.guard_id) query.append("guard_id", params.guard_id);
+
+  try {
+    const data = await clientApiFetch<any>(`/api/v1/guard/review?${query.toString()}`);
+    const pageSize = data.page_size || params.page_size || 10;
+    const total = data.total || 0;
+    return {
+      success: true,
+      data: Array.isArray(data.data) ? data.data : [],
+      page: data.page || params.page || 1,
+      page_size: pageSize,
+      total: total,
+      total_pages: Math.ceil(total / pageSize) || 1,
+    };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to fetch guard reviews" };
+  }
+}
+
+export type GuardShiftRecord = {
+  shift_id?: string;
+  id?: string;
+  shift_no: number;
+  start_time: string;
+  end_time: string;
+  invoice_no: string;
+  company_name: string;
+  status: string;
+  role: string;
+  shift_location: string;
+};
+
+export async function clientFetchGuardShiftsAction(params: {
+  guard_id: string;
+  type?: "complete_shifts" | "scheduled_shifts" | "active_shifts" | string;
+  page?: number;
+  page_size?: number;
+}): Promise<{
+  success: boolean;
+  page?: number;
+  page_size?: number;
+  total?: number;
+  total_pages?: number;
+  data?: GuardShiftRecord[];
+  error?: string;
+}> {
+  if (!params.guard_id) {
+    return { success: false, error: "Guard ID is required" };
+  }
+  const query = new URLSearchParams();
+  if (params.type) query.append("type", params.type);
+  query.append("page", (params.page || 1).toString());
+  query.append("page_size", (params.page_size || 20).toString());
+
+  try {
+    const data = await clientApiFetch<any>(
+      `/api/v1/guard/${params.guard_id}/summary?${query.toString()}`
+    );
+    const pageSize = data.page_size || params.page_size || 20;
+    const total = data.total || 0;
+    return {
+      success: true,
+      data: Array.isArray(data.data) ? data.data : [],
+      page: data.page || params.page || 1,
+      page_size: pageSize,
+      total: total,
+      total_pages: Math.ceil(total / pageSize) || 1,
+    };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to fetch guard shifts" };
+  }
+}
+
+export type ShiftReportItem = {
+  shift_id: string;
+  id?: string;
+  shift_no: number | string;
+  assigned_guard_name?: string;
+  guard_name?: string;
+  invoice_no: string;
+  company_name?: string;
+  company?: string;
+  shift_location?: string;
+  location?: string;
+  start_time: string;
+  end_time: string;
+  shift_start?: string;
+  shift_end?: string;
+  status?: string;
+};
+
+export async function clientFetchShiftReportsAction(params: {
+  start_date: string;
+  end_date: string;
+  search?: string;
+}): Promise<{
+  success: boolean;
+  total?: number;
+  data?: ShiftReportItem[];
+  error?: string;
+}> {
+  const query = new URLSearchParams();
+  if (params.start_date) query.append("start_date", params.start_date);
+  if (params.end_date) query.append("end_date", params.end_date);
+  if (params.search) query.append("search", params.search);
+
+  try {
+    const data = await clientApiFetch<any>(
+      `/api/v1/shift/reports?${query.toString()}`
+    );
+    const total = data.total ?? (Array.isArray(data.data) ? data.data.length : 0);
+    return {
+      success: true,
+      data: Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [],
+      total: total,
+    };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to fetch shift reports" };
+  }
+}
+

@@ -167,6 +167,31 @@ export async function registerCustomerAction(customerData: any) {
     }
 }
 
+export async function verifyCustomerEmailAction(email: string) {
+    try {
+        const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/customer/verify/?email=${encodeURIComponent(email)}`;
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "x-api-key": "trk_live_7f9c2a4d8b1e5f6a9c3d2e7f8a1b4c6d"
+            }
+        });
+
+        const result = await response.json();
+        
+        if (response.ok && result.success !== false) {
+            return { success: true, message: result.message || "Email Verified!" };
+        } else {
+            return { success: false, message: result.message || "Email verification failed" };
+        }
+    } catch (error) {
+        console.error("Email Verification Error:", error);
+        return { success: false, message: "An error occurred while verifying the email." };
+    }
+}
+
 export async function sendOtpAction(email: string) {
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user/forgot-password/send-otp`, {

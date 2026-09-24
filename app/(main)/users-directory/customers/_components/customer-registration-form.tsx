@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { registerCustomerAction } from "@/actions/auth.actions";
+import { registerCustomerAction, verifyCustomerEmailAction } from "@/actions/auth.actions";
 import { getSecurityServiceStatesAction } from "@/actions/quote.actions";
 import { toast } from "sonner";
 import {
@@ -12,7 +12,9 @@ import {
   MapPin,
   ChevronDown,
   ArrowLeft,
-  Info
+  Info,
+  Loader2,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +56,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
   const [selectedCountry, setSelectedCountry] = useState(countries[11]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   const [formData, setFormData] = useState({
     companyName: "",
@@ -61,7 +65,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     lastName: "",
     email: "",
     phone: "",
-    billingType: "zoho",
+    billingType: "regular",
     netTerms: "",
     servicePrices: [
       { id: 1, name: "Armed Security", price: 0 },
@@ -172,6 +176,22 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const handleEmailBlur = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && emailRegex.test(formData.email) && !isEmailVerified) {
+      setIsVerifyingEmail(true);
+      const res = await verifyCustomerEmailAction(formData.email);
+      setIsVerifyingEmail(false);
+      
+      if (res.success) {
+        setIsEmailVerified(true);
+      } else {
+        toast.error(res.message);
+        setErrors(prev => ({ ...prev, email: res.message }));
+      }
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -195,7 +215,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
       }
     }
 
-    if (!formData.billingType) newErrors.billingType = "Billing type is required";
+    if (!formData.billingType) newErrors.billingType = "User type is required";
     if (formData.billingType === "net_term" && !formData.netTerms) newErrors.netTerms = "Net terms is required";
 
     if (!formData.billingStreet) newErrors.billingStreet = "Street address is required";
@@ -222,7 +242,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     setIsRegistering(true);
 
     const securityServicePriceObj = formData.servicePrices.reduce((acc, curr) => {
-      acc[curr.name] = curr.price;
+      acc[curr.name] = Number(curr.price) || 0;
       return acc;
     }, {} as Record<string, number>);
 
@@ -261,7 +281,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         lastName: "",
         email: "",
         phone: "",
-        billingType: "zoho",
+        billingType: "regular",
         netTerms: "",
         servicePrices: [
           { id: 1, name: "Armed Security", price: 0 },
@@ -394,10 +414,16 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                       value={formData.email}
                       onChange={(e) => {
                         setFormData({ ...formData, email: e.target.value });
+                        if (isEmailVerified) setIsEmailVerified(false);
                         clearError("email");
                       }}
+                      onBlur={handleEmailBlur}
                       className={getInputClassName(errors.email, true)}
                     />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                      {isVerifyingEmail && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
+                      {isEmailVerified && !errors.email && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                    </div>
                   </div>
                   {errors.email && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.email}</p>}
                 </div>
@@ -471,7 +497,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-slate-700 border-b pb-2">Billing Type</h3>
+              <h3 className="text-sm font-bold text-slate-700 border-b pb-2">User Type</h3>
 
               <div className="bg-[#f0f7ff] border border-[#e0f0ff] rounded-xl p-4">
                 <div className="flex gap-2">
@@ -481,8 +507,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                   <div className="space-y-2 text-xs text-slate-700">
                     <p className="font-semibold text-[#0064cb]">Note -</p>
                     <ul className="list-disc pl-4 space-y-1 text-slate-600">
-                      <li><strong>Billing Type – Zoho: </strong> The customer can place orders, which are processed through Zoho, similar to the Auto Quote process. The customer will receive the estimate and invoice through Zoho based on the pricing defined in Guard Bank.</li>
-                      <li><strong>Billing Type – Net Terms:</strong> The customer is a regular customer who can place orders using the predefined guard pricing configured during customer register</li>
+                      <li><strong>User Type – Net Term:</strong> The estimate/invoice is calculated based on the predefined guard pricing configured for the customer.</li>
+                      <li><strong>User Type – Regular:</strong> The estimate/invoice is calculated based on the pricing defined in Guard Bank.</li>
                     </ul>
                   </div>
                 </div>
@@ -491,7 +517,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">
-                    Billing Type <span className="text-red-500">*</span>
+                    User Type <span className="text-red-500">*</span>
                   </label>
                   <Select
                     onValueChange={(val) => {
@@ -501,10 +527,10 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                     value={formData.billingType}
                   >
                     <SelectTrigger className={getSelectTriggerClassName(errors.billingType)}>
-                      <SelectValue placeholder="Select billing type" />
+                      <SelectValue placeholder="Select user type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="zoho">Zoho</SelectItem>
+                      <SelectItem value="regular">Regular</SelectItem>
                       <SelectItem value="net_term">Net Term</SelectItem>
                     </SelectContent>
                   </Select>
@@ -576,6 +602,13 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                                       e.preventDefault();
                                     }
                                   }}
+                                  onBlur={() => {
+                                    if ((service.price as any) === '' || service.price === null || service.price === undefined || isNaN(Number(service.price)) || Number(service.price) < 0) {
+                                      const newPrices = [...formData.servicePrices];
+                                      newPrices[index].price = 0;
+                                      setFormData({ ...formData, servicePrices: newPrices });
+                                    }
+                                  }}
                                   onChange={(e) => {
                                     const val = e.target.value;
                                     if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
@@ -634,7 +667,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                   <Select
                     key={`billing-state-${billingAddressStates.length}`}
                     onValueChange={(val) => {
-                      setFormData({ ...formData, billingState: val, billingCity: "" });
+                      setFormData({ ...formData, billingState: val });
                       clearError("billingState");
                     }}
                     value={formData.billingState}
@@ -656,24 +689,15 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">City</label>
-                  <Select
-                    key={`billing-city-${billingAddressCities.length}`}
-                    onValueChange={(val) => {
-                      setFormData({ ...formData, billingCity: val });
+                  <Input
+                    placeholder="Enter city"
+                    value={formData.billingCity}
+                    onChange={(e) => {
+                      setFormData({ ...formData, billingCity: e.target.value });
                       clearError("billingCity");
                     }}
-                    value={formData.billingCity}
-                    disabled={!formData.billingState}
-                  >
-                    <SelectTrigger className={getSelectTriggerClassName(errors.billingCity)}>
-                      <SelectValue placeholder="Select City" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {billingAddressCities.map((c) => (
-                        <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    className={getInputClassName(errors.billingCity)}
+                  />
                   {errors.billingCity && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.billingCity}</p>}
                 </div>
                 <div className="space-y-1">
@@ -757,7 +781,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                     <Select
                       key={`service-state-${serviceAddressStates.length}`}
                       onValueChange={(val) => {
-                        setFormData({ ...formData, serviceState: val, serviceCity: "" });
+                        setFormData({ ...formData, serviceState: val });
                         clearError("serviceState");
                       }}
                       value={formData.serviceState}
@@ -780,35 +804,16 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">City</label>
-                  {formData.sameAsBilling ? (
-                    <div className="relative">
-                      <Input
-                        value={formData.billingCity}
-                        disabled
-                        className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
-                      />
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    </div>
-                  ) : (
-                    <Select
-                      key={`service-city-${serviceAddressCities.length}`}
-                      onValueChange={(val) => {
-                        setFormData({ ...formData, serviceCity: val });
-                        clearError("serviceCity");
-                      }}
-                      value={formData.serviceCity}
-                      disabled={!formData.serviceState}
-                    >
-                      <SelectTrigger className={getSelectTriggerClassName(errors.serviceCity)}>
-                        <SelectValue placeholder="Select City" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {serviceAddressCities.map((c) => (
-                          <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Input
+                    placeholder="Enter city"
+                    value={formData.sameAsBilling ? formData.billingCity : formData.serviceCity}
+                    disabled={formData.sameAsBilling}
+                    onChange={(e) => {
+                      setFormData({ ...formData, serviceCity: e.target.value });
+                      clearError("serviceCity");
+                    }}
+                    className={getInputClassName(errors.serviceCity)}
+                  />
                   {errors.serviceCity && <p className="text-red-500 text-[10px] mt-1 font-medium ml-1">{errors.serviceCity}</p>}
                 </div>
                 <div className="space-y-1">
@@ -832,8 +837,8 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
             <div className="flex justify-center mt-8">
               <Button
                 type="submit"
-                disabled={isRegistering}
-                className="cursor-pointer h-12 px-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-70 text-base"
+                disabled={isRegistering || !isEmailVerified || isVerifyingEmail}
+                className="cursor-pointer h-12 px-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed text-base"
               >
                 {isRegistering ? (
                   <div className="flex items-center gap-2">

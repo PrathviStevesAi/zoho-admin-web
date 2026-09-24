@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function CustomerViewPage() {
+function CustomerViewContent() {
   const params = useParams();
   const router = useRouter();
   const customerId = params.id as string;
@@ -86,7 +86,7 @@ export default function CustomerViewPage() {
         service_state: data.service_address?.state || "",
         service_zip: data.service_address?.zip || "",
         service_country: data.service_address?.country || "",
-        billing_type: data.billing_type || "",
+        billing_type: data.billing_type === "net_term" ? "net_term" : "regular",
         net_terms_days: data.net_terms_days ? String(data.net_terms_days) : "",
         security_service_price: data.security_service_price || {},
         sameAsBilling: (data.billing_address?.street || "") === (data.service_address?.street || "") &&
@@ -221,7 +221,15 @@ export default function CustomerViewPage() {
     }
 
     if (JSON.stringify(formData.security_service_price) !== JSON.stringify(customerData.security_service_price || {})) {
-      payload.security_service_price = Object.keys(formData.security_service_price || {}).length > 0 ? formData.security_service_price : null;
+      if (Object.keys(formData.security_service_price || {}).length > 0) {
+        const sanitized: Record<string, number> = {};
+        Object.entries(formData.security_service_price).forEach(([k, v]) => {
+          sanitized[k] = Number(v) || 0;
+        });
+        payload.security_service_price = sanitized;
+      } else {
+        payload.security_service_price = null;
+      }
     }
 
     if (Object.keys(payload).length === 0) {
@@ -261,7 +269,7 @@ export default function CustomerViewPage() {
         service_state: customerData.service_address?.state || "",
         service_zip: customerData.service_address?.zip || "",
         service_country: "US",
-        billing_type: customerData.billing_type || "",
+        billing_type: customerData.billing_type === "net_term" ? "net_term" : "regular",
         net_terms_days: customerData.net_terms_days ? String(customerData.net_terms_days) : "",
         security_service_price: customerData.security_service_price || {},
         sameAsBilling: (customerData.billing_address?.street || "") === (customerData.service_address?.street || "") &&
@@ -473,7 +481,7 @@ export default function CustomerViewPage() {
 
           <div className="space-y-6">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-slate-400" /> Billing Details
+              <CreditCard className="w-5 h-5 text-slate-400" /> User Type
             </h2>
 
             <div className="space-y-4">
@@ -485,8 +493,8 @@ export default function CustomerViewPage() {
                   <div className="space-y-2 text-xs text-slate-700">
                     <p className="font-semibold text-[#0064cb]">Note -</p>
                     <ul className="list-disc pl-4 space-y-1 text-slate-600">
-                      <li><strong>Billing Type – Zoho:</strong> The customer can place orders, which are processed through Zoho, similar to the Auto Quote process. The customer will receive the estimate and invoice through Zoho based on the pricing defined in Guard Bank.</li>
-                      <li><strong>Billing Type – Net Terms:</strong>The customer is a regular customer who can place orders using the predefined guard pricing configured during customer registration.</li>
+                      <li><strong>User Type – Net Term:</strong> The estimate/invoice is calculated based on the predefined guard pricing configured for the customer.</li>
+                      <li><strong>User Type – Regular:</strong> The estimate/invoice is calculated based on the pricing defined in Guard Bank.</li>
                     </ul>
                   </div>
                 </div>
@@ -494,16 +502,16 @@ export default function CustomerViewPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-600 uppercase">Billing Type</Label>
+                  <Label className="text-xs font-bold text-slate-600 uppercase">User Type</Label>
                   {!isEditing ? (
                     <div className="h-12 flex items-center">
                       {formData.billing_type ? (
                         <span className="inline-flex items-center justify-center text-center px-5 py-2 rounded-full border border-[#0064cb]/30 bg-[#e0f0ff] text-[#0064cb] font-bold text-[13px] uppercase tracking-wider min-w-[120px]">
-                          {formData.billing_type === "zoho" ? "Zoho" : "Net Term"}
+                          {formData.billing_type === "net_term" ? "Net Term" : formData.billing_type === "regular" ? "Regular" : formData.billing_type === "zoho" ? "Regular" : formData.billing_type}
                         </span>
                       ) : (
                         <span className="inline-flex items-center justify-center text-center px-6 py-2 rounded-full border border-orange-200 bg-orange-50 text-orange-600 font-bold text-[13px] min-w-[220px]">
-                          No Billing Type Selected Yet
+                          No User Type Selected Yet
                         </span>
                       )}
                     </div>
@@ -513,10 +521,10 @@ export default function CustomerViewPage() {
                       value={formData.billing_type || ""}
                     >
                       <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
-                        <SelectValue placeholder="Select billing type" />
+                        <SelectValue placeholder="Select user type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="zoho">Zoho</SelectItem>
+                        <SelectItem value="regular">Regular</SelectItem>
                         <SelectItem value="net_term">Net Term</SelectItem>
                       </SelectContent>
                     </Select>
@@ -603,6 +611,17 @@ export default function CustomerViewPage() {
                                         e.preventDefault();
                                       }
                                     }}
+                                    onBlur={() => {
+                                      if ((price as any) === '' || price === null || price === undefined || isNaN(Number(price)) || Number(price) < 0) {
+                                        setFormData({
+                                          ...formData,
+                                          security_service_price: {
+                                            ...currentServicePrices,
+                                            [name]: 0
+                                          }
+                                        });
+                                      }
+                                    }}
                                     onChange={(e) => {
                                       const val = e.target.value;
                                       if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
@@ -671,7 +690,7 @@ export default function CustomerViewPage() {
                     ) : (
                       <Select
                         value={formData.billing_state}
-                        onValueChange={val => setFormData({ ...formData, billing_state: val, billing_city: "" })}
+                        onValueChange={val => setFormData({ ...formData, billing_state: val })}
                       >
                         <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
                           <SelectValue placeholder="Select State" />
@@ -689,29 +708,13 @@ export default function CustomerViewPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
-                    {!isEditing ? (
-                      <Input
-                        value={formData.billing_city}
-                        disabled
-                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                      />
-                    ) : (
-                      <Select
-                        key={`billing-city-${billingAddressCities.length}`}
-                        value={formData.billing_city}
-                        onValueChange={val => setFormData({ ...formData, billing_city: val })}
-                        disabled={!formData.billing_state}
-                      >
-                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
-                          <SelectValue placeholder="Select City" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {billingAddressCities.map((c) => (
-                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Input
+                      placeholder="Enter city"
+                      value={formData.billing_city}
+                      onChange={e => setFormData({ ...formData, billing_city: e.target.value })}
+                      disabled={!isEditing}
+                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Zip Code</Label>
@@ -777,7 +780,7 @@ export default function CustomerViewPage() {
                     ) : (
                       <Select
                         value={formData.service_state}
-                        onValueChange={val => setFormData({ ...formData, service_state: val, service_city: "" })}
+                        onValueChange={val => setFormData({ ...formData, service_state: val })}
                       >
                         <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
                           <SelectValue placeholder="Select State" />
@@ -795,29 +798,13 @@ export default function CustomerViewPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">City</Label>
-                    {!isEditing || formData.sameAsBilling ? (
-                      <Input
-                        value={formData.service_city}
-                        disabled
-                        className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
-                      />
-                    ) : (
-                      <Select
-                        key={`service-city-${serviceAddressCities.length}`}
-                        value={formData.service_city}
-                        onValueChange={val => setFormData({ ...formData, service_city: val })}
-                        disabled={!formData.service_state}
-                      >
-                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-200">
-                          <SelectValue placeholder="Select City" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {serviceAddressCities.map((c) => (
-                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Input
+                      placeholder="Enter city"
+                      value={formData.sameAsBilling ? formData.billing_city : formData.service_city}
+                      onChange={e => setFormData({ ...formData, service_city: e.target.value })}
+                      disabled={!isEditing || formData.sameAsBilling}
+                      className="h-12 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 border-slate-200"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600 uppercase">Zip Code</Label>
@@ -837,5 +824,17 @@ export default function CustomerViewPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CustomerViewPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="p-4 sm:p-6 max-w-[1200px] mx-auto flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0064cb]" />
+      </div>
+    }>
+      <CustomerViewContent />
+    </React.Suspense>
   );
 }

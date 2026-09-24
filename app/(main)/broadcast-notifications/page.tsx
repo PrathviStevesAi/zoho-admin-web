@@ -23,7 +23,7 @@ export default function BroadcastNotificationsPage() {
     }
 
     if (!sendViaInApp && !sendViaSms) {
-      toast.error("Please select at least one sending method (In-App or SMS)");
+      toast.error("Please select at least one sending method (In-App Notification)");
       return;
     }
 
@@ -40,7 +40,7 @@ export default function BroadcastNotificationsPage() {
         send_to_all: recipientType === "all",
         guard_ids: recipientType === "all" ? [] : selectedGuardIds,
         send_in_app: sendViaInApp,
-        send_sms: sendViaSms,
+        send_sms: false,
       } as any);
 
       if (res.success) {
@@ -100,9 +100,14 @@ export default function BroadcastNotificationsPage() {
           </div>
 
           <div className="space-y-3">
-            <label className="text-[14px] font-bold text-[#0f172a] block flex items-center gap-2">
-              Send Via <span className="text-[13px] text-slate-500 font-medium font-normal">(Select one or both)</span>
-            </label>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="text-[14px] font-bold text-[#0f172a] flex items-center gap-2">
+                Send Via <span className="text-[13px] text-slate-500 font-medium font-normal">(Select one or both)</span>
+              </label>
+              <span className="text-[12px] font-semibold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-md">
+                Text Sms is disable until twilio approved it.
+              </span>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
               <div
@@ -135,25 +140,19 @@ export default function BroadcastNotificationsPage() {
               </div>
 
               <div
-                onClick={() => setSendViaSms(!sendViaSms)}
-                className={`relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer ${sendViaSms
-                  ? "border-emerald-500 shadow-[0_2px_8px_rgba(16,185,129,0.04)]"
-                  : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
+                className="relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] border-slate-200 bg-slate-50/80 opacity-60 cursor-not-allowed select-none"
               >
-                <div className="w-12 h-12 shrink-0 rounded-xl bg-emerald-50/50 flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-emerald-500" strokeWidth={2.5} />
+                <div className="w-12 h-12 shrink-0 rounded-xl bg-slate-200/60 flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-slate-400" strokeWidth={2.5} />
                 </div>
                 <div className="space-y-1.5 flex-1 pr-6">
-                  <h3 className="text-[15px] font-bold text-[#0f172a]">Twilio SMS</h3>
-                  <p className="text-[13px] leading-relaxed text-slate-500 font-medium">
+                  <h3 className="text-[15px] font-bold text-slate-400">Twilio SMS</h3>
+                  <p className="text-[13px] leading-relaxed text-slate-400 font-medium">
                     Send a text message to guards mobile numbers.
                   </p>
                 </div>
                 <div className="absolute top-5 right-5">
-                  <div className={`w-[20px] h-[20px] rounded flex items-center justify-center transition-colors ${sendViaSms ? "bg-[#0064cb]" : "bg-slate-100 border border-slate-200"
-                    }`}>
-                    {sendViaSms && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
+                  <div className="w-[20px] h-[20px] rounded flex items-center justify-center bg-slate-100 border border-slate-200">
                   </div>
                 </div>
               </div>

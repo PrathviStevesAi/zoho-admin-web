@@ -9,7 +9,8 @@ import {
   Loader2,
   Pencil,
   Copy,
-  Clock
+  Clock,
+  Info
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { FormattedDate } from "@/components/ui/formatted-date";
@@ -454,7 +455,7 @@ export function ShiftModule({
           </div>
 
           <div className="p-6 pb-0 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 items-end">
               <div className="space-y-2">
                 <Label className="text-[11px] font-bold text-slate-800 uppercase">Select Service</Label>
                 <Select
@@ -478,6 +479,38 @@ export function ShiftModule({
                     )}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-[11px] font-bold text-slate-800 uppercase tracking-tight">
+                    Travel Guard Assignment
+                  </Label>
+                  <Info className="w-3.5 h-3.5 text-[#0064cb] shrink-0" />
+                </div>
+                <div
+                  onClick={() =>
+                    setAddShiftData((prev: any) => ({
+                      ...prev,
+                      is_travel_guard: !prev?.is_travel_guard,
+                    }))
+                  }
+                  className="flex items-center gap-2 h-11 w-full bg-white border border-slate-200 rounded-lg px-2.5 cursor-pointer hover:border-slate-300 transition-colors"
+                >
+                  <div
+                    className={`w-8 h-[18px] flex items-center rounded-full p-0.5 transition-colors shrink-0 ${
+                      addShiftData?.is_travel_guard ? "bg-[#0064cb]" : "bg-slate-300"
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-3.5 h-3.5 rounded-full shadow-sm transform transition-transform ${
+                        addShiftData?.is_travel_guard ? "translate-x-3.5" : ""
+                      }`}
+                    ></div>
+                  </div>
+                  <span className="text-[11px] leading-[13px] text-slate-700 font-medium select-none">
+                    Yes, this is a Travel Guard assignment
+                  </span>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-400" : "text-slate-800"}`}>Date from</Label>

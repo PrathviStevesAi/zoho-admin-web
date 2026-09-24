@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   DollarSign,
   History,
+  FileText,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ const navGroups: NavGroup[] = [
       { label: "New Work Order", icon: ClipboardList, href: "/new-work-order" },
       { label: "Schedule Calendar", icon: Calendar, href: "/calendar" },
       { label: "Blast Messages", icon: Megaphone, href: "/broadcast-notifications" },
+      { label: "Shift Report", icon: FileText, href: "/shift-report" },
     ],
   },
   {
