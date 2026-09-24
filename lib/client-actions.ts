@@ -570,7 +570,7 @@ export async function clientFetchCommentsAction(
     if (guard) {
       query.append("guard", guard);
     }
-    const data = await clientApiFetch<{ success: boolean; data?: Comment[] } | Comment[]>(`/api/v1/comment/shift/${shiftId}/new?${query.toString()}`);
+    const data = await clientApiFetch<{ success: boolean; data?: Comment[] } | Comment[]>(`/api/v1/shift/comment/${shiftId}/new?${query.toString()}`);
     const commentsList = Array.isArray(data) ? data : (data.data || []);
     return { success: true, data: commentsList };
   } catch (error: unknown) {
