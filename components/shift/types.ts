@@ -55,6 +55,7 @@ export interface ShiftActions {
   is_not_approved?: boolean;
   call_id?: string;
   is_call_recording?: boolean;
+  is_show_clock?: boolean;
 }
 
 export interface AssignedGuard {

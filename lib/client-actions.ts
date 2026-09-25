@@ -899,15 +899,25 @@ export type ShiftReportItem = {
   end_time: string;
   shift_start?: string;
   shift_end?: string;
+  duration?: number;
+  clock_in?: string;
+  clock_out?: string;
+  actual_hours?: number;
   status?: string;
 };
 
 export async function clientFetchShiftReportsAction(params: {
-  start_date: string;
-  end_date: string;
+  start_date?: string;
+  end_date?: string;
   search?: string;
+  invoice_no?: string;
 }): Promise<{
   success: boolean;
+  total_shifts?: number;
+  total_scheduled_hours?: number;
+  total_actual_hours?: number;
+  variance?: number;
+  variance_percentage?: number;
   total?: number;
   data?: ShiftReportItem[];
   error?: string;
@@ -915,17 +925,31 @@ export async function clientFetchShiftReportsAction(params: {
   const query = new URLSearchParams();
   if (params.start_date) query.append("start_date", params.start_date);
   if (params.end_date) query.append("end_date", params.end_date);
-  if (params.search) query.append("search", params.search);
+
+  const combinedSearch = [params.search, params.invoice_no]
+    .filter(Boolean)
+    .map((s) => s!.trim())
+    .filter(Boolean)
+    .join(" ");
+
+  if (combinedSearch) {
+    query.append("search", combinedSearch);
+  }
 
   try {
     const data = await clientApiFetch<any>(
       `/api/v1/shift/reports?${query.toString()}`
     );
-    const total = data.total ?? (Array.isArray(data.data) ? data.data.length : 0);
+    const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
     return {
       success: true,
-      data: Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [],
-      total: total,
+      total_shifts: data?.total_shifts ?? list.length,
+      total_scheduled_hours: data?.total_scheduled_hours ?? 0,
+      total_actual_hours: data?.total_actual_hours ?? 0,
+      variance: data?.variance ?? 0,
+      variance_percentage: data?.variance_percentage ?? 0,
+      total: data?.total_shifts ?? list.length,
+      data: list,
     };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to fetch shift reports" };
