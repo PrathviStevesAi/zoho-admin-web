@@ -180,7 +180,6 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (hasLead || hasStandby) {
         const initialRecipient = hasLead ? "lead" : "standby";
         setCommentsRecipient(initialRecipient);
-        loadComments(false, initialRecipient, res.data);
       } else {
         setComments([]);
       }
@@ -188,7 +187,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       setError(res.error || "Shift not found");
     }
     setIsLoading(false);
-  }, [shiftId, notificationId, loadComments]);
+  }, [shiftId, notificationId]);
 
   const loadReportsDetails = useCallback(async () => {
     if (!shiftId) return;
@@ -210,7 +209,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   const handleRecipientChange = (newRecipient: "lead" | "standby") => {
     setCommentsRecipient(newRecipient);
-    loadComments(false, newRecipient);
+    if (dashboardActiveTab === "comment") {
+      loadComments(false, newRecipient);
+    }
   };
 
   useEffect(() => {
@@ -452,7 +453,11 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       };
     } else {
       console.log("[Comments WebSocket] Not connecting. dashboardActiveTab:", dashboardActiveTab);
-      if (commentsWsRef.current && commentsWsRef.current.readyState === WebSocket.OPEN) {
+      if (
+        commentsWsRef.current &&
+        (commentsWsRef.current.readyState === WebSocket.OPEN ||
+          commentsWsRef.current.readyState === WebSocket.CONNECTING)
+      ) {
         console.log("[Comments WebSocket] Closing existing connection due to tab change.");
         commentsWsRef.current.close();
       }
