@@ -56,6 +56,9 @@ export async function endVideoCallAction(
   try {
     const res = await apiFetch<any>(`/api/v1/twilio/video/end`, {
       method: "POST",
+      headers: {
+        "x-api-key": "trk_live_7f9c2a4d8b1e5f6a9c3d2e7f8a1b4c6d",
+      },
       body: JSON.stringify({
         shift_id: payload.shift_id,
         user_id: payload.user_id || "",
