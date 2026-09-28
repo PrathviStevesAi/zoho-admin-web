@@ -2,96 +2,72 @@
 
 import { apiFetch } from "@/lib/api";
 
-export async function startVideoCallAction(shiftId: string): Promise<{
+export interface TwilioStartVideoCallPayload {
+  shift_id: string;
+  guard_id: string;
+}
+
+export interface TwilioStartVideoCallResponse {
   success: boolean;
-  data?: {
-    call_id: string;
-    room_id: string;
-    token: string;
-    user_id: string;
-    status: string;
-  };
+  message?: string;
+  room_name?: string;
+  token?: string;
   error?: string;
-}> {
+}
+
+export interface TwilioEndVideoCallPayload {
+  shift_id: string;
+  user_id?: string;
+  status?: string;
+}
+
+export interface TwilioEndVideoCallResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export async function startVideoCallAction(
+  payload: TwilioStartVideoCallPayload
+): Promise<TwilioStartVideoCallResponse> {
   try {
-    const res = await apiFetch<any>(`/api/v1/vc/start`, {
+    const res = await apiFetch<any>(`/api/v1/twilio/video/start`, {
       method: "POST",
-      body: JSON.stringify({ shift_id: shiftId }),
+      body: JSON.stringify({
+        shift_id: payload.shift_id,
+        guard_id: payload.guard_id,
+      }),
     });
-    return { success: true, data: res.data };
+    return {
+      success: true,
+      message: res.message || "Video call initiated.",
+      room_name: res.room_name,
+      token: res.token,
+    };
   } catch (error: any) {
     const message = error.message || "Failed to start video call";
     return { success: false, error: message };
   }
 }
 
-export async function joinVideoCallAction(callId: string): Promise<{
-  success: boolean;
-  data?: {
-    call_id: string;
-    room_id: string;
-    token: string;
-    user_id: string;
-    status: string;
-  };
-  error?: string;
-}> {
+export async function endVideoCallAction(
+  payload: TwilioEndVideoCallPayload
+): Promise<TwilioEndVideoCallResponse> {
   try {
-    const res = await apiFetch<any>(`/api/v1/vc/join`, {
+    const res = await apiFetch<any>(`/api/v1/twilio/video/end`, {
       method: "POST",
-      body: JSON.stringify({ call_id: callId }),
+      body: JSON.stringify({
+        shift_id: payload.shift_id,
+        user_id: payload.user_id || "",
+        status: payload.status || "ended",
+      }),
     });
-    return { success: true, data: res.data };
+    return {
+      success: true,
+      message: typeof res === "string" ? res : res?.message || "Video call ended successfully.",
+    };
   } catch (error: any) {
-    const message = error.message || "Failed to join video call";
-    return { success: false, error: message };
-  }
-}
-
-export async function activeVideoCallsAction(): Promise<{
-  success: boolean;
-  data?: any[];
-  error?: string;
-}> {
-  try {
-    const res = await apiFetch<any>(`/api/v1/vc/active`);
-    return { success: true, data: res.data };
-  } catch (error: any) {
-    const message = error.message || "Failed to fetch active calls";
-    return { success: false, error: message };
-  }
-}
-
-export async function inviteMemberAction(callId: string, memberId: string): Promise<{
-  success: boolean;
-  message?: string;
-  error?: string;
-}> {
-  try {
-    const res = await apiFetch<any>(`/api/v1/vc/invite`, {
-      method: "POST",
-      body: JSON.stringify({ call_id: callId, member_id: memberId }),
-    });
-    return { success: true, message: res.message || "Invitation sent successfully" };
-  } catch (error: any) {
-    const message = error.message || "Failed to invite member";
-    return { success: false, error: message };
-  }
-}
-
-export async function endVideoCallAction(shiftId: string): Promise<{
-  success: boolean;
-  message?: string;
-  error?: string;
-}> {
-  try {
-    const res = await apiFetch<any>(`/api/v1/vc/end`, {
-      method: "POST",
-      body: JSON.stringify({ shift_id: shiftId }),
-    });
-    return { success: true, message: res.message || "Ended call successfully" };
-  } catch (error: any) {
-    const message = error.message || "Failed to end call";
+    const message = error.message || "Failed to end video call";
     return { success: false, error: message };
   }
 }

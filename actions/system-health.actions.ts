@@ -18,6 +18,7 @@ export interface SystemHealthResponse {
     firebase?: ServiceStatus;
     smtp?: ServiceStatus;
     google_maps?: ServiceStatus;
+    twilio?: ServiceStatus;
     zegocloud?: ServiceStatus;
     [key: string]: ServiceStatus | undefined;
   };
