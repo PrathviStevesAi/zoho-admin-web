@@ -167,21 +167,81 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     setIsMinimized(false);
   }, []);
 
+  const getResolvedShiftId = useCallback(
+    (explicitId?: string | null): string | null => {
+      if (explicitId) return explicitId;
+      if (activeShiftIdRef.current) return activeShiftIdRef.current;
+      if (serverActiveCall?.shift_id) return serverActiveCall.shift_id;
+      if (roomName && roomName.replace(/^shift_/, "")) return roomName.replace(/^shift_/, "");
+      if (activeRoomRef.current?.name) return activeRoomRef.current.name.replace(/^shift_/, "");
+
+      if (typeof window !== "undefined") {
+        try {
+          const stored =
+            localStorage.getItem("fg_current_shift_id") ||
+            sessionStorage.getItem("fg_current_shift_id");
+          if (stored) return stored;
+
+          const searchParams = new URLSearchParams(window.location.search);
+          const urlShiftId = searchParams.get("shift_id") || searchParams.get("id");
+          if (urlShiftId) return urlShiftId;
+        } catch {
+          // ignore
+        }
+      }
+      return null;
+    },
+    [serverActiveCall?.shift_id, roomName]
+  );
+
   const handleCallEnd = useCallback(
-    async (notifyServer: boolean = true, customMessage?: string) => {
-      if (isCallEndingRef.current) return;
+    async (
+      notifyServer: boolean = true,
+      customMessage?: string,
+      explicitShiftId?: string | null
+    ) => {
+      const shiftId = getResolvedShiftId(explicitShiftId);
+
+      if (isCallEndingRef.current && !notifyServer) {
+        return;
+      }
       isCallEndingRef.current = true;
 
-      const shiftId = activeShiftIdRef.current;
+      // Reset UI state immediately
       setServerActiveCall(null);
       setIsCallOpen(false);
       setIsConnecting(false);
       setIsMinimized(false);
-      cleanupTracksAndRoom();
 
       if (customMessage) {
         toast.info(customMessage);
-      } else if (shiftId && notifyServer) {
+      }
+
+      // Cleanup local tracks and room connection
+      cleanupTracksAndRoom();
+
+      // Broadcast to other tabs immediately
+      if (notifyServer) {
+        try {
+          if (typeof window !== "undefined") {
+            if ("BroadcastChannel" in window) {
+              const bc = new BroadcastChannel("fg_video_call_channel");
+              bc.postMessage({ type: "END_CALL", shift_id: shiftId, timestamp: Date.now() });
+              bc.close();
+            }
+            localStorage.setItem(
+              "fg_video_call_event",
+              JSON.stringify({ type: "END_CALL", shift_id: shiftId, timestamp: Date.now() })
+            );
+          }
+        } catch (e) {
+          console.warn("Cross-tab broadcast error:", e);
+        }
+      }
+
+      // Ensure backend is notified when ending the call
+      if (notifyServer && shiftId) {
+        console.log("[VideoCall] Calling endVideoCallAction with shiftId:", shiftId, "userId:", rawUserId);
         try {
           const res = await endVideoCallAction({
             shift_id: shiftId,
@@ -190,23 +250,36 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           });
           if (res.success && res.message) {
             toast.success(res.message);
+          } else if (!res.success && res.error) {
+            console.warn("[VideoCall] End call API response notice:", res.error);
           }
-        } catch {
-          // Handled silently
+        } catch (err) {
+          console.error("[VideoCall] Failed to call endVideoCallAction:", err);
         }
       }
 
       activeShiftIdRef.current = null;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("fg_current_shift_id");
+          sessionStorage.removeItem("fg_current_shift_id");
+        } catch {
+          // ignore
+        }
+      }
+
       setTimeout(() => {
         isCallEndingRef.current = false;
       }, 1500);
     },
-    [cleanupTracksAndRoom, rawUserId]
+    [cleanupTracksAndRoom, rawUserId, getResolvedShiftId]
   );
 
-  const endCall = useCallback(() => {
-    handleCallEnd(true);
-  }, [handleCallEnd]);
+  const endCall = useCallback(async () => {
+    const shiftId = getResolvedShiftId();
+    console.log("[VideoCall] User explicitly clicked End Call for shift:", shiftId);
+    await handleCallEnd(true, undefined, shiftId);
+  }, [handleCallEnd, getResolvedShiftId]);
 
   const forceEndCall = useCallback(
     async (shiftId: string) => {
@@ -216,6 +289,23 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       setIsConnecting(false);
       setIsMinimized(false);
       cleanupTracksAndRoom();
+
+      try {
+        if (typeof window !== "undefined") {
+          if ("BroadcastChannel" in window) {
+            const bc = new BroadcastChannel("fg_video_call_channel");
+            bc.postMessage({ type: "END_CALL", shift_id: shiftId, timestamp: Date.now() });
+            bc.close();
+          }
+          localStorage.setItem(
+            "fg_video_call_event",
+            JSON.stringify({ type: "END_CALL", shift_id: shiftId, timestamp: Date.now() })
+          );
+        }
+      } catch {
+        // ignore
+      }
+
       try {
         const res = await endVideoCallAction({
           shift_id: shiftId,
@@ -236,6 +326,49 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     [cleanupTracksAndRoom, rawUserId]
   );
 
+  // Cross-tab synchronization via BroadcastChannel and StorageEvent
+  useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        bc = new BroadcastChannel("fg_video_call_channel");
+        bc.onmessage = (event) => {
+          if (event.data?.type === "END_CALL") {
+            console.log("[VideoCall Context] Cross-tab END_CALL received via BroadcastChannel:", event.data);
+            handleCallEnd(false, "Video call ended from another tab");
+          }
+        };
+      }
+    } catch (e) {
+      console.warn("BroadcastChannel error:", e);
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "fg_video_call_event" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed?.type === "END_CALL") {
+            console.log("[VideoCall Context] Cross-tab END_CALL received via StorageEvent:", parsed);
+            handleCallEnd(false, "Video call ended from another tab");
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [handleCallEnd]);
+
   const checkActiveCall = useCallback(async () => {
     if (status !== "authenticated" || !session?.user) return;
     if (isCallEndingRef.current) return;
@@ -255,6 +388,12 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         }
         if (data.data.shift_id) {
           activeShiftIdRef.current = data.data.shift_id;
+          try {
+            localStorage.setItem("fg_current_shift_id", data.data.shift_id);
+            sessionStorage.setItem("fg_current_shift_id", data.data.shift_id);
+          } catch {
+            // ignore
+          }
         }
       } else {
         setServerActiveCall((prev) => (prev ? null : prev));
@@ -411,10 +550,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           console.log("[Video WebSocket] Received message:", event.data);
           const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
           if (data?.event === "remove_vc_call_view") {
-            if (activeRoomRef.current && !isCallEndingRef.current) {
-              console.log("[Video WebSocket] remove_vc_call_view event received. Closing call view.");
-              handleCallEnd(false, "Video call ended by guard");
-            }
+            console.log("[Video WebSocket] remove_vc_call_view event received. Closing call view.");
+            handleCallEnd(false, "Video call ended");
           }
         } catch (err) {
           console.error("[Video WebSocket] Failed to parse message:", err);
@@ -439,6 +576,9 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     shiftNo?: string | number
   ) => {
     if (activeRoomRef.current) {
+      if (shiftId) {
+        activeShiftIdRef.current = shiftId;
+      }
       setIsMinimized(false);
       setIsCallOpen(true);
       return;
@@ -467,6 +607,12 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       setIsCallOpen(true);
       setIsConnecting(true);
       activeShiftIdRef.current = shiftId;
+      try {
+        localStorage.setItem("fg_current_shift_id", shiftId);
+        sessionStorage.setItem("fg_current_shift_id", shiftId);
+      } catch {
+        // ignore
+      }
 
       toast.info("Connecting video call...");
 
@@ -738,19 +884,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     }
   }, [serverActiveCall, startCall]);
 
-  const handleWidgetEndCall = useCallback(async () => {
-    if (activeRoomRef.current) {
-      endCall();
-    } else if (serverActiveCall?.shift_id) {
-      await forceEndCall(serverActiveCall.shift_id);
-      setServerActiveCall(null);
-    } else {
-      setIsCallOpen(false);
-      setIsMinimized(false);
-      setServerActiveCall(null);
-    }
-  }, [endCall, forceEndCall, serverActiveCall]);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -868,69 +1001,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
             {/* Room / Shift Tag */}
             <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-[10px] font-mono text-slate-300 pointer-events-none">
               {displayRoomTitle}
-            </div>
-          </div>
-
-          {/* Quick Floating Controls */}
-          <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-900/90 border-t border-slate-800">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleMic();
-                }}
-                className={`p-2 rounded-xl transition-all cursor-pointer ${
-                  isMicMuted
-                    ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                    : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
-                }`}
-                title={isMicMuted ? "Unmute Mic" : "Mute Mic"}
-              >
-                {isMicMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleVideo();
-                }}
-                className={`p-2 rounded-xl transition-all cursor-pointer ${
-                  isVideoMuted
-                    ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                    : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
-                }`}
-                title={isVideoMuted ? "Turn Camera On" : "Turn Camera Off"}
-              >
-                {isVideoMuted ? <VideoOff className="w-4 h-4" /> : <VideoIcon className="w-4 h-4" />}
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleExpandOrJoin();
-                }}
-                className="px-3 py-1.5 rounded-xl bg-[#0064cb] hover:bg-[#0052ae] text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span>Expand</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleWidgetEndCall();
-                }}
-                className="p-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-all cursor-pointer shadow-sm active:scale-95"
-                title="End Call"
-              >
-                <PhoneOff className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </div>

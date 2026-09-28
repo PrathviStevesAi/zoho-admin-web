@@ -80,6 +80,20 @@ export async function endVideoCallAction(
   payload: TwilioEndVideoCallPayload
 ): Promise<TwilioEndVideoCallResponse> {
   try {
+    let userId = payload.user_id;
+    if (!userId) {
+      try {
+        const session = (await auth()) as any;
+        userId = session?.user?.id || session?.user?.user_id || session?.token?.sub || "";
+      } catch {
+        // ignore
+      }
+    }
+    console.log("[endVideoCallAction] Ending call with payload:", {
+      shift_id: payload.shift_id,
+      user_id: userId,
+      status: payload.status || "ended",
+    });
     const res = await apiFetch<any>(`/api/v1/twilio/video/end`, {
       method: "POST",
       headers: {
@@ -87,15 +101,17 @@ export async function endVideoCallAction(
       },
       body: JSON.stringify({
         shift_id: payload.shift_id,
-        user_id: payload.user_id || "",
+        user_id: userId || "",
         status: payload.status || "ended",
       }),
     });
+    console.log("[endVideoCallAction] End call response:", res);
     return {
       success: true,
       message: typeof res === "string" ? res : res?.message || "Video call ended successfully.",
     };
   } catch (error: any) {
+    console.error("[endVideoCallAction] Error ending video call:", error);
     const message = error.message || "Failed to end video call";
     return { success: false, error: message };
   }
