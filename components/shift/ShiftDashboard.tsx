@@ -1026,7 +1026,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
             toast.error("No guard assigned to this shift yet.");
             return;
           }
-          startCall(guardId as string, shiftId);
+          startCall(guardId as string, shiftId, shift?.shift_no);
         }}
         onJoinVideoCall={async () => {
           toast.info("Incoming/Outgoing calls are now managed automatically.");

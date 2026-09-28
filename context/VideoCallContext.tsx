@@ -27,21 +27,32 @@ import {
 import {
   startVideoCallAction,
   endVideoCallAction,
+  getShiftGuardIdAction,
+  ActiveVideoCallData,
 } from "@/actions/vc.actions";
 
 interface VideoCallContextType {
-  startCall: (guardId: string, shiftId: string) => Promise<void>;
+  startCall: (
+    guardId: string,
+    shiftId: string,
+    shiftNo?: string | number
+  ) => Promise<void>;
   endCall: () => void;
   forceEndCall: (shiftId: string) => Promise<void>;
   isCalling: boolean;
+  isMinimized: boolean;
+  expandCall: () => void;
+  minimizeCall: () => void;
+  serverActiveCall: ActiveVideoCallData | null;
 }
 
 const VideoCallContext = createContext<VideoCallContextType | undefined>(undefined);
 
 export function VideoCallProvider({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   const [isCallOpen, setIsCallOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [remoteParticipant, setRemoteParticipant] = useState<any | null>(null);
   const [isMicMuted, setIsMicMuted] = useState(false);
@@ -50,6 +61,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [roomName, setRoomName] = useState<string>("");
+  const [activeShiftNo, setActiveShiftNo] = useState<string | number | null>(null);
+  const [serverActiveCall, setServerActiveCall] = useState<ActiveVideoCallData | null>(null);
 
   const activeShiftIdRef = useRef<string | null>(null);
   const activeRoomRef = useRef<any | null>(null);
@@ -58,6 +71,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const screenTrackRef = useRef<any | null>(null);
   const localVideoRef = useRef<HTMLDivElement | null>(null);
   const remoteVideoRef = useRef<HTMLDivElement | null>(null);
+  const miniRemoteVideoRef = useRef<HTMLDivElement | null>(null);
   const audioContainerRef = useRef<HTMLDivElement | null>(null);
   const callModalRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -133,14 +147,24 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     if (remoteVideoRef.current) {
       remoteVideoRef.current.innerHTML = "";
     }
+    if (miniRemoteVideoRef.current) {
+      miniRemoteVideoRef.current.innerHTML = "";
+    }
     if (audioContainerRef.current) {
       audioContainerRef.current.innerHTML = "";
+    }
+
+    try {
+      localStorage.removeItem("fg_active_call_session");
+    } catch {
+      // ignore
     }
 
     setRemoteParticipant(null);
     setIsScreenSharing(false);
     setIsMicMuted(false);
     setIsVideoMuted(false);
+    setIsMinimized(false);
   }, []);
 
   const handleCallEnd = useCallback(
@@ -149,9 +173,11 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       isCallEndingRef.current = true;
 
       const shiftId = activeShiftIdRef.current;
-      cleanupTracksAndRoom();
+      setServerActiveCall(null);
       setIsCallOpen(false);
       setIsConnecting(false);
+      setIsMinimized(false);
+      cleanupTracksAndRoom();
 
       if (customMessage) {
         toast.info(customMessage);
@@ -171,6 +197,9 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       }
 
       activeShiftIdRef.current = null;
+      setTimeout(() => {
+        isCallEndingRef.current = false;
+      }, 1500);
     },
     [cleanupTracksAndRoom, rawUserId]
   );
@@ -181,10 +210,12 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
   const forceEndCall = useCallback(
     async (shiftId: string) => {
-      cleanupTracksAndRoom();
+      isCallEndingRef.current = true;
+      setServerActiveCall(null);
       setIsCallOpen(false);
       setIsConnecting(false);
-      isCallEndingRef.current = true;
+      setIsMinimized(false);
+      cleanupTracksAndRoom();
       try {
         const res = await endVideoCallAction({
           shift_id: shiftId,
@@ -196,10 +227,74 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (e) {
         console.warn("forceEndCall error:", e);
+      } finally {
+        setTimeout(() => {
+          isCallEndingRef.current = false;
+        }, 1500);
       }
     },
     [cleanupTracksAndRoom, rawUserId]
   );
+
+  const checkActiveCall = useCallback(async () => {
+    if (status !== "authenticated" || !session?.user) return;
+    if (isCallEndingRef.current) return;
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+    if (isCallOpen && !isMinimized) return;
+
+    try {
+      const res = await fetch("/api/video/active", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (isCallEndingRef.current) return;
+
+      if (data?.has_active_call && data?.data) {
+        setServerActiveCall(data.data);
+        if (data.data.shift_no) {
+          setActiveShiftNo(data.data.shift_no);
+        }
+        if (data.data.shift_id) {
+          activeShiftIdRef.current = data.data.shift_id;
+        }
+      } else {
+        setServerActiveCall((prev) => (prev ? null : prev));
+      }
+    } catch {
+      // Silently handle active check failure
+    }
+  }, [isCallOpen, isMinimized, status, session?.user?.id]);
+
+  const checkActiveCallRef = useRef(checkActiveCall);
+  checkActiveCallRef.current = checkActiveCall;
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+
+    checkActiveCallRef.current();
+    const interval = setInterval(() => {
+      checkActiveCallRef.current();
+    }, 10000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkActiveCallRef.current();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [status]);
+
+  const expandCall = useCallback(() => {
+    setIsMinimized(false);
+  }, []);
+
+  const minimizeCall = useCallback(() => {
+    setIsMinimized(true);
+  }, []);
 
   // Handle participant track subscription
   const attachTrack = (track: any, container: HTMLElement | null) => {
@@ -223,13 +318,45 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Reattach tracks whenever minimized state changes so video stream continues uninterrupted
+  useEffect(() => {
+    if (!remoteParticipant) return;
+
+    remoteParticipant.tracks.forEach((publication: any) => {
+      if (publication.isSubscribed && publication.track && publication.track.kind === "video") {
+        if (!isMinimized && remoteVideoRef.current) {
+          remoteVideoRef.current.innerHTML = "";
+          attachTrack(publication.track, remoteVideoRef.current);
+        } else if (isMinimized && miniRemoteVideoRef.current) {
+          miniRemoteVideoRef.current.innerHTML = "";
+          attachTrack(publication.track, miniRemoteVideoRef.current);
+        }
+      }
+    });
+
+    if (activeRoomRef.current && !isMinimized && localVideoRef.current) {
+      const localVideoTrackPublication = Array.from(
+        activeRoomRef.current.localParticipant.videoTracks.values()
+      )[0] as any;
+      if (localVideoTrackPublication && localVideoTrackPublication.track) {
+        localVideoRef.current.innerHTML = "";
+        attachTrack(localVideoTrackPublication.track, localVideoRef.current);
+      }
+    }
+  }, [isMinimized, remoteParticipant]);
+
   const handleParticipant = (participant: any) => {
     setRemoteParticipant(participant);
 
     participant.tracks.forEach((publication: any) => {
       if (publication.isSubscribed && publication.track) {
-        if (publication.track.kind === "video" && remoteVideoRef.current) {
-          attachTrack(publication.track, remoteVideoRef.current);
+        if (publication.track.kind === "video") {
+          if (remoteVideoRef.current) {
+            attachTrack(publication.track, remoteVideoRef.current);
+          }
+          if (miniRemoteVideoRef.current) {
+            attachTrack(publication.track, miniRemoteVideoRef.current);
+          }
         } else if (publication.track.kind === "audio" && audioContainerRef.current) {
           attachTrack(publication.track, audioContainerRef.current);
         }
@@ -237,8 +364,13 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     });
 
     participant.on("trackSubscribed", (track: any) => {
-      if (track.kind === "video" && remoteVideoRef.current) {
-        attachTrack(track, remoteVideoRef.current);
+      if (track.kind === "video") {
+        if (remoteVideoRef.current) {
+          attachTrack(track, remoteVideoRef.current);
+        }
+        if (miniRemoteVideoRef.current) {
+          attachTrack(track, miniRemoteVideoRef.current);
+        }
       } else if (track.kind === "audio" && audioContainerRef.current) {
         attachTrack(track, audioContainerRef.current);
       }
@@ -279,8 +411,10 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           console.log("[Video WebSocket] Received message:", event.data);
           const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
           if (data?.event === "remove_vc_call_view") {
-            console.log("[Video WebSocket] remove_vc_call_view event received. Closing call view.");
-            handleCallEnd(false, "Video call ended by guard");
+            if (activeRoomRef.current && !isCallEndingRef.current) {
+              console.log("[Video WebSocket] remove_vc_call_view event received. Closing call view.");
+              handleCallEnd(false, "Video call ended by guard");
+            }
           }
         } catch (err) {
           console.error("[Video WebSocket] Failed to parse message:", err);
@@ -299,12 +433,31 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const startCall = async (guardId: string, shiftId: string) => {
+  const startCall = async (
+    guardId: string,
+    shiftId: string,
+    shiftNo?: string | number
+  ) => {
+    if (activeRoomRef.current) {
+      setIsMinimized(false);
+      setIsCallOpen(true);
+      return;
+    }
+
+    if (shiftNo) {
+      setActiveShiftNo(shiftNo);
+    }
     if (!shiftId) {
       toast.error("Shift ID is required to start a video call.");
       return;
     }
-    if (!guardId) {
+
+    let targetGuardId = guardId;
+    if (!targetGuardId) {
+      targetGuardId = (await getShiftGuardIdAction(shiftId)) || "";
+    }
+
+    if (!targetGuardId) {
       toast.error("No guard assigned to this shift.");
       return;
     }
@@ -317,27 +470,25 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
       toast.info("Connecting video call...");
 
-      // 1. Connect the WebSocket for real-time call termination
-      connectVideoWebSocket(shiftId);
-
       let apiRes = await startVideoCallAction({
         shift_id: shiftId,
-        guard_id: guardId,
+        guard_id: targetGuardId,
       });
 
-      // If already on call, reset the previous call and retry once
+      // If already marked on call, reset the previous stale call state and retry start
       if (!apiRes.success && apiRes.error && apiRes.error.toLowerCase().includes("already on call")) {
-        console.warn("User already marked on call. Attempting auto-reset of previous call...");
+        console.warn("User already marked on call. Resetting previous call and obtaining fresh token...");
         await endVideoCallAction({
           shift_id: shiftId,
           user_id: rawUserId,
           status: "ended",
         });
 
-        // Retry start call
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         apiRes = await startVideoCallAction({
           shift_id: shiftId,
-          guard_id: guardId,
+          guard_id: targetGuardId,
         });
       }
 
@@ -348,7 +499,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         setIsConnecting(false);
         activeShiftIdRef.current = null;
         if (videoWsRef.current) {
-          try { videoWsRef.current.close(); } catch (e) {}
+          try { videoWsRef.current.close(); } catch (e) { }
           videoWsRef.current = null;
         }
         return;
@@ -407,6 +558,9 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       activeRoomRef.current = room;
       setIsConnecting(false);
       toast.success("Joined video call room.");
+
+      // Connect the WebSocket for real-time call termination ONLY after room is joined
+      connectVideoWebSocket(shiftId);
 
       // Attach Local Video Track if available
       const localVideoTrackPublication = Array.from(
@@ -566,12 +720,52 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleExpandOrJoin = useCallback(async () => {
+    if (activeRoomRef.current) {
+      setIsMinimized(false);
+      setIsCallOpen(true);
+      return;
+    }
+    if (serverActiveCall?.shift_id) {
+      await startCall(
+        serverActiveCall.guard_id || "",
+        serverActiveCall.shift_id,
+        serverActiveCall.shift_no
+      );
+    } else {
+      setIsMinimized(false);
+      setIsCallOpen(true);
+    }
+  }, [serverActiveCall, startCall]);
+
+  const handleWidgetEndCall = useCallback(async () => {
+    if (activeRoomRef.current) {
+      endCall();
+    } else if (serverActiveCall?.shift_id) {
+      await forceEndCall(serverActiveCall.shift_id);
+      setServerActiveCall(null);
+    } else {
+      setIsCallOpen(false);
+      setIsMinimized(false);
+      setServerActiveCall(null);
+    }
+  }, [endCall, forceEndCall, serverActiveCall]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       cleanupTracksAndRoom();
     };
   }, [cleanupTracksAndRoom]);
+
+  const displayRoomTitle =
+    activeShiftNo || serverActiveCall?.shift_no
+      ? `Room: #${activeShiftNo || serverActiveCall?.shift_no}`
+      : roomName
+      ? `Room: ${roomName}`
+      : "Twilio Secure Room";
+
+  const showLiveWidget = (isCallOpen && isMinimized) || (!isCallOpen && Boolean(serverActiveCall));
 
   return (
     <VideoCallContext.Provider
@@ -580,6 +774,10 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         endCall,
         forceEndCall,
         isCalling: isCallOpen,
+        isMinimized,
+        expandCall,
+        minimizeCall,
+        serverActiveCall,
       }}
     >
       {children}
@@ -587,8 +785,159 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       {/* Hidden audio receiver container for remote participants */}
       <div ref={audioContainerRef} className="hidden" aria-hidden="true" />
 
-      {/* Twilio Video Call Modal UI */}
-      {isCallOpen && (
+      {/* 1. Minimized / Background Active Floating Live Screen Widget */}
+      {showLiveWidget && (
+        <div
+          className="fixed bottom-6 right-6 z-[999999] w-80 sm:w-96 rounded-2xl bg-slate-950/95 border border-slate-700/80 shadow-[0_16px_48px_rgba(0,0,0,0.65)] backdrop-blur-xl overflow-hidden animate-in slide-in-from-bottom-6 fade-in duration-300 select-none font-sans"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-900/90 border-b border-slate-800">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                Live Call
+              </span>
+              <div className="flex items-center gap-1 text-slate-300 text-xs font-mono">
+                <Signal className="w-3 h-3 text-emerald-400" />
+                <span>{callDuration > 0 ? formatDuration(callDuration) : "Active"}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleExpandOrJoin}
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1 text-xs font-medium"
+                title="Expand to Full Video Call"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span className="text-[11px]">Expand</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Mini Live Video Stage */}
+          <div
+            onClick={handleExpandOrJoin}
+            className="relative aspect-video w-full bg-slate-900 flex items-center justify-center cursor-pointer group overflow-hidden"
+            title="Click to expand video call"
+          >
+            {/* Connecting State */}
+            {isConnecting && (
+              <div className="flex flex-col items-center justify-center gap-2 text-center p-4">
+                <div className="w-8 h-8 rounded-full border-2 border-orange-500/20 border-t-orange-500 animate-spin" />
+                <p className="text-xs text-slate-300 font-medium">Connecting call...</p>
+              </div>
+            )}
+
+            {/* Remote Video Container (Guard) */}
+            <div
+              ref={miniRemoteVideoRef}
+              className={`w-full h-full absolute inset-0 flex items-center justify-center overflow-hidden [&>video]:w-full [&>video]:h-full [&>video]:object-cover ${
+                !remoteParticipant || isConnecting ? "hidden" : ""
+              }`}
+            />
+
+            {/* If call is active locally but waiting for guard */}
+            {isCallOpen && !isConnecting && !remoteParticipant && (
+              <div className="flex flex-col items-center justify-center gap-2 text-center p-4">
+                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                  <UserCheck className="w-5 h-5 text-slate-400" />
+                </div>
+                <p className="text-xs text-slate-300 font-medium">Waiting for guard to join...</p>
+              </div>
+            )}
+
+            {/* If call is active on server from duplicate/reopened tab */}
+            {!isCallOpen && Boolean(serverActiveCall) && !isConnecting && (
+              <div className="flex flex-col items-center justify-center gap-2 text-center p-4">
+                <div className="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <p className="text-xs text-slate-200 font-medium">Active Call In Progress</p>
+                <p className="text-[11px] text-slate-400">Click anywhere to open call</p>
+              </div>
+            )}
+
+            {/* Hover overlay hint to expand */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-[1px]">
+              <Maximize2 className="w-4 h-4" />
+              <span>Click to Expand Screen</span>
+            </div>
+
+            {/* Room / Shift Tag */}
+            <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-[10px] font-mono text-slate-300 pointer-events-none">
+              {displayRoomTitle}
+            </div>
+          </div>
+
+          {/* Quick Floating Controls */}
+          <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-900/90 border-t border-slate-800">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMic();
+                }}
+                className={`p-2 rounded-xl transition-all cursor-pointer ${
+                  isMicMuted
+                    ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                    : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
+                }`}
+                title={isMicMuted ? "Unmute Mic" : "Mute Mic"}
+              >
+                {isMicMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleVideo();
+                }}
+                className={`p-2 rounded-xl transition-all cursor-pointer ${
+                  isVideoMuted
+                    ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                    : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
+                }`}
+                title={isVideoMuted ? "Turn Camera On" : "Turn Camera Off"}
+              >
+                {isVideoMuted ? <VideoOff className="w-4 h-4" /> : <VideoIcon className="w-4 h-4" />}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExpandOrJoin();
+                }}
+                className="px-3 py-1.5 rounded-xl bg-[#0064cb] hover:bg-[#0052ae] text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Expand</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleWidgetEndCall();
+                }}
+                className="p-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-all cursor-pointer shadow-sm active:scale-95"
+                title="End Call"
+              >
+                <PhoneOff className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Full Modal Video Call View */}
+      {isCallOpen && !isMinimized && (
         <div
           ref={callModalRef}
           className="fixed inset-0 z-[999999] bg-slate-950 flex flex-col items-center justify-between p-4 sm:p-6 select-none animate-in fade-in duration-300 backdrop-blur-md"
@@ -602,7 +951,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-white text-sm sm:text-base font-semibold tracking-wide">
-                    FastGuard Video Call
+                    Video Call
                   </h3>
                   <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
@@ -610,16 +959,18 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 font-mono">
-                  {roomName ? `Room: ${roomName}` : "Twilio Secure Room"}
+                  {displayRoomTitle}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
               <div className="px-3.5 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700/50 text-slate-200 text-xs sm:text-sm font-mono tracking-wider flex items-center gap-2 shadow-inner">
                 <Signal className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{formatDuration(callDuration)}</span>
               </div>
+
+              {/* Fullscreen button */}
               <button
                 type="button"
                 onClick={toggleFullscreen}
@@ -648,7 +999,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-lg font-medium text-white">
-                    Connecting to Twilio Room...
+                    Connecting to Video Call...
                   </h4>
                   <p className="text-xs sm:text-sm text-slate-400 max-w-sm">
                     Establishing secure encrypted peer connection with the assigned security guard.
