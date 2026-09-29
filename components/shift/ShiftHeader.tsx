@@ -271,7 +271,7 @@ export function ShiftHeader({
           </div>
         </div>
 
-        {shift?.shipping_location?.timezone && (
+        {shift?.action?.is_show_clock && shift?.shipping_location?.timezone && (
           <DigitalClock
             timeZone={shift.shipping_location.timezone}
             city={shift.shipping_location.location?.city}

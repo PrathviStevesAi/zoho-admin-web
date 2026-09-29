@@ -6,13 +6,14 @@ import { cn } from "@/lib/utils"
 
 function Table({
   className,
+  containerClassName,
   scrollbarClass = "custom-scrollbar",
   ...props
-}: React.ComponentProps<"table"> & { scrollbarClass?: string }) {
+}: React.ComponentProps<"table"> & { containerClassName?: string; scrollbarClass?: string }) {
   return (
     <div
       data-slot="table-container"
-      className={cn("relative w-full flex-1 min-h-0 overflow-x-scroll overflow-y-auto", scrollbarClass)}
+      className={cn("relative w-full flex-1 min-h-0 overflow-x-auto", containerClassName, scrollbarClass)}
     >
       <table
         data-slot="table"

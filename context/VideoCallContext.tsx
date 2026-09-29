@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { startVideoCallAction, endVideoCallAction } from "@/actions/vc.actions";
@@ -14,226 +14,166 @@ interface VideoCallContextType {
 
 const VideoCallContext = createContext<VideoCallContextType | undefined>(undefined);
 
-const APP_ID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID);
-const APP_SIGN = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET as string;
+const APP_ID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID) || 1217831928;
+const APP_SIGN = (process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET as string) || "4dc19d36df9dead9bff47a9ec0992d07";
 
 function toZimUserId(uuid: string): string {
-  if (!uuid) return "";
+  if (!uuid) return `admin_${Math.floor(Math.random() * 10000)}`;
   return uuid.replace(/-/g, "");
 }
 
 export function VideoCallProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
 
-  const [zpInstance, setZpInstance] = useState<any>(null);
+  const [isCallOpen, setIsCallOpen] = useState(false);
   const activeShiftIdRef = useRef<string | null>(null);
+  const zpInstanceRef = useRef<any>(null);
+  const callContainerRef = useRef<HTMLDivElement | null>(null);
 
   const rawUserId = session?.user?.id || "";
   const USER_ID = toZimUserId(rawUserId);
   const USER_NAME = session?.user?.name || session?.user?.email || "Admin";
 
-  useEffect(() => {
-
-    if (typeof window === "undefined" || status === "loading" || !USER_ID) return;
-
-    let isMounted = true;
-    let zp: any = null;
-
-    const initZego = async () => {
-      try {
-        const { ZIM } = await import("zego-zim-web");
-        const { ZegoUIKitPrebuilt } = await import("@zegocloud/zego-uikit-prebuilt");
-
-        if (!isMounted) return;
-
-        const token = ZegoUIKitPrebuilt.generateKitTokenForTest(
-          APP_ID,
-          APP_SIGN,
-          "admin_dashboard_room",
-          USER_ID,
-          USER_NAME,
-        );
-
-        zp = ZegoUIKitPrebuilt.create(token);
-
-        zp.addPlugins({ ZIM });
-
-        const handleCallEnd = (...args: any[]) => {
-          console.log("[ZegoUIKit] Call ended/rejected. Event args:", ...args);
-          if (zp && typeof zp.hangUp === "function") {
-            try {
-              zp.hangUp();
-            } catch (err) {
-              console.error("[ZegoUIKit] Failed to hang up:", err);
-            }
-          }
-          
-          if (activeShiftIdRef.current) {
-            endVideoCallAction(activeShiftIdRef.current)
-              .then((res) => {
-                if (res.success) {
-                  toast.success(res.message || "Call ended successfully.");
-                } else {
-                  toast.error(res.error || "Failed to record call end.");
-                }
-              })
-              .catch(console.error);
-            activeShiftIdRef.current = null;
-          }
-        };
-
-        zp.setCallInvitationConfig({
-          enableNotifyWhenAppRunningInBackgroundOrQuit: true,
-          ringtoneConfig: {
-            incomingCallUrl: '',
-            outgoingCallUrl: ''
-          },
-          onCallInvitationEnded: handleCallEnd,
-          onOutgoingCallDeclined: handleCallEnd,
-          onOutgoingCallTimeout: handleCallEnd,
-          onOutgoingCallRejected: handleCallEnd,
-          onSetRoomConfigBeforeJoining: (callType: any) => {
-            return {
-              onUserLeave: (users: any) => {
-                handleCallEnd();
-              }
-            };
-          }
-        });
-
-        if (!isMounted) {
-            zp.destroy();
-            return;
-        }
-
-        setZpInstance(zp);
-        console.log("[ZegoUIKit] Call invitation plugins added successfully for user:", USER_ID);
-      } catch (err: any) {
-        console.error("Failed to initialize Zego plugins", err);
-      }
-    };
-
-    initZego();
-
-    return () => {
-        isMounted = false;
-        if (zp) {
-            zp.destroy();
-        }
-    };
-
-  }, [USER_ID, USER_NAME, status]);
-
-  const startCall = async (guardId: string, shiftId?: string, type: number = 1) => {
-    if (!zpInstance) {
-      toast.error("Call service is still initializing. Please try again.");
-      return;
-    }
-
-    if (!guardId) {
-      toast.error("No guard selected to call.");
-      return;
-    }
-
-    let roomID = "";
+  const handleCallEnd = useCallback(() => {
+    const shiftId = activeShiftIdRef.current;
     if (shiftId) {
-      const toastId = toast.loading("Initializing call...");
-      try {
-        const apiRes = await startVideoCallAction(shiftId);
-        toast.dismiss(toastId);
-        if (!apiRes.success) {
-          toast.error(`Failed to initialize call: ${apiRes.error}`);
-          return;
-        }
-        activeShiftIdRef.current = shiftId;
-        roomID = apiRes.data?.room_id || "";
-      } catch (err: any) {
-        toast.dismiss(toastId);
-        toast.error(`Error connecting to call service: ${err.message}`);
-        return;
-      }
-    }
-
-    try {
-      const zimGuardId = toZimUserId(guardId);
-      const customDataPayload = JSON.stringify({ shift_id: shiftId || "" });
-      const invitationConfig = {
-        callees: [{ userID: zimGuardId, userName: "Guard" }],
-        callType: type === 1 ? 1 : 0,
-        timeout: 60,
-        data: customDataPayload,
-        notificationConfig: {
-          resourcesID: "zego_call",
-          title: type === 1 ? "Incoming Video Call" : "Incoming Voice Call",
-          message: "Admin is calling",
-        }
-      };
-
-      console.log("Zego Web Sending Call Invitation...");
-      console.log("target guardId...", zimGuardId);
-      console.log("customdata...", customDataPayload);
-      console.log("full config...", invitationConfig);
-
-      const res = await zpInstance.sendCallInvitation(invitationConfig);
-
-      console.log(`Call invitation sent to ${zimGuardId}`, res);
-
-      if (res.errorInvitees && res.errorInvitees.length > 0) {
-        toast.error(`Guard is offline or unavailable.`);
-        if (shiftId) {
-          endVideoCallAction(shiftId).catch(console.error);
-          activeShiftIdRef.current = null;
-        }
-      }
-    } catch (err: any) {
-      console.warn("Failed to send call invitation (expected if offline)", err);
-
-      let errorMsg = "Unknown error";
-      try {
-        const parsedErr = typeof err === "string" ? JSON.parse(err) : err;
-        if (parsedErr.code === 6000281) {
-          errorMsg = "The guard is currently offline or not logged into the app.";
-        } else {
-          errorMsg = parsedErr.message || "Failed to start call";
-        }
-      } catch (e) {
-        errorMsg = err?.message || typeof err === "string" ? err : "Unknown error";
-      }
-
-      toast.error(`Failed to call guard: ${errorMsg}`);
-
-      if (shiftId) {
-        endVideoCallAction(shiftId).catch(console.error);
-        activeShiftIdRef.current = null;
-      }
-    }
-  };
-
-  const endCall = async () => {
-    if (activeShiftIdRef.current) {
-      endVideoCallAction(activeShiftIdRef.current)
+      endVideoCallAction(shiftId)
         .then((res) => {
           if (res.success) {
             toast.success(res.message || "Call ended successfully.");
           } else {
-            toast.error(res.error || "Failed to record call end.");
+            toast.info("Call ended.");
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          toast.info("Call ended.");
+        });
       activeShiftIdRef.current = null;
+    } else {
+      toast.info("Call ended.");
     }
+
+    zpInstanceRef.current = null;
+
+    // Small delay to allow Zego's internal telemetry & teardown to finish without throwing createSpan on null
+    setTimeout(() => {
+      setIsCallOpen(false);
+      if (callContainerRef.current) {
+        callContainerRef.current.innerHTML = "";
+      }
+    }, 150);
+  }, []);
+
+  const endCall = useCallback(() => {
+    if (zpInstanceRef.current) {
+      try {
+        if (typeof zpInstanceRef.current.hangUp === "function") {
+          zpInstanceRef.current.hangUp();
+        } else if (typeof zpInstanceRef.current.destroy === "function") {
+          zpInstanceRef.current.destroy();
+        }
+      } catch (err) {
+        console.warn("Zego endCall:", err);
+      }
+    }
+    handleCallEnd();
+  }, [handleCallEnd]);
+
+  const startCall = async (guardId: string, shiftId?: string, type: number = 1) => {
+    let roomId = shiftId ? `shift_${shiftId.replace(/-/g, "")}` : `room_${Date.now()}`;
+
+    if (shiftId) {
+      activeShiftIdRef.current = shiftId;
+      try {
+        const apiRes = await startVideoCallAction(shiftId);
+        if (apiRes.success && apiRes.data?.room_id) {
+          roomId = apiRes.data.room_id;
+        }
+      } catch (err) {
+        console.warn("startVideoCallAction warning:", err);
+      }
+    }
+
+    setIsCallOpen(true);
+
+    // Give DOM time to mount container
+    setTimeout(async () => {
+      try {
+        const { ZegoUIKitPrebuilt } = await import("@zegocloud/zego-uikit-prebuilt");
+
+        if (!callContainerRef.current) return;
+
+        const token = ZegoUIKitPrebuilt.generateKitTokenForTest(
+          APP_ID,
+          APP_SIGN,
+          roomId,
+          USER_ID,
+          USER_NAME
+        );
+
+        const zp = ZegoUIKitPrebuilt.create(token);
+        zpInstanceRef.current = zp;
+
+        zp.joinRoom({
+          container: callContainerRef.current,
+          scenario: {
+            mode: ZegoUIKitPrebuilt.OneONoneCall,
+          },
+          showPreJoinView: false,
+          turnOnMicrophoneWhenJoining: true,
+          turnOnCameraWhenJoining: type === 1,
+          showMyCameraToggleButton: true,
+          showMyMicrophoneToggleButton: true,
+          showAudioVideoSettingsButton: true,
+          showScreenSharingButton: true,
+          showTextChat: false,
+          showUserList: false,
+          maxUsers: 2,
+          layout: "Auto",
+          onLeaveRoom: () => {
+            handleCallEnd();
+          },
+        });
+      } catch (error: any) {
+        console.error("Failed to join Zego call room:", error);
+        toast.error("Failed to launch Zego Call screen.");
+        setIsCallOpen(false);
+      }
+    }, 100);
   };
+
+  useEffect(() => {
+    return () => {
+      if (zpInstanceRef.current) {
+        try {
+          zpInstanceRef.current.destroy();
+        } catch (e) {
+          console.warn("Cleanup error:", e);
+        }
+      }
+    };
+  }, []);
 
   return (
     <VideoCallContext.Provider
       value={{
         startCall,
         endCall,
-        isCalling: false,
-        isCallAccepted: false
+        isCalling: isCallOpen,
+        isCallAccepted: isCallOpen,
       }}
     >
       {children}
+
+      {/* Native Zego Cloud Call Screen Modal */}
+      {isCallOpen && (
+        <div className="fixed inset-0 z-[999999] bg-black/90 flex flex-col items-center justify-center animate-in fade-in duration-200">
+          <div
+            ref={callContainerRef}
+            className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden"
+          />
+        </div>
+      )}
     </VideoCallContext.Provider>
   );
 }

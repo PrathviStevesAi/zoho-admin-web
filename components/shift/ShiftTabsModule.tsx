@@ -121,7 +121,7 @@ export function ShiftTabsModule({
                   onClick={() => {
                     const nextTab = activeTab === tab.id ? "" : tab.id;
                     setActiveTab(nextTab);
-                    if (nextTab && onTabChange) {
+                    if (onTabChange) {
                       onTabChange(nextTab);
                     }
                   }}

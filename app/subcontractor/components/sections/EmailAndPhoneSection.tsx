@@ -185,6 +185,20 @@ export function EmailAndPhoneSection() {
           <p className="text-xs text-green-600 flex items-center font-medium mt-1"><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Verified</p>
         ) : null}
       </div>
+
+      <div className="pt-0 pb-2 mt-1">
+        <div className="flex items-start space-x-2">
+          <input
+            type="checkbox"
+            id="smsNotifications"
+            {...register("smsNotifications")}
+            className="w-4 h-4 mt-0.5 border-slate-300 rounded text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+          />
+          <Label htmlFor="smsNotifications" className="text-md font-normal text-slate-700 leading-tight cursor-pointer">
+            I agree to receive SMS messages from Fast Guard Service regarding my security guard application and assigned security shifts, including onboarding notifications, information about accessing the Fast Guard system, shift reminders, scheduling updates, and attendance confirmation requests. Message frequency varies. Message and data rates may apply. Reply STOP to opt out and HELP for help. Consent is not a condition of employment.
+          </Label>
+        </div>
+      </div>
     </>
   );
 }

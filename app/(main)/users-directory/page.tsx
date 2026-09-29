@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import {
   Users,
   UserPlus,
@@ -10,7 +11,10 @@ import {
   Trash2,
   Check,
   X,
-  MoreVertical
+  MoreVertical,
+  ChevronRight,
+  ArrowLeft,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { fetchStaffAction, deleteStaffAction, updateStaffRoleAction } from "@/actions/auth.actions";
@@ -31,7 +35,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AlertCircle } from "lucide-react";
 
 type TabType = "All Staff" | "Admins" | "Members";
 
@@ -96,7 +99,7 @@ export default function StaffDirectoryPage() {
       toast.success(res.message || "Role updated successfully!", { id: toastId });
       setStaff(prev => prev.map(m => m.id === id ? { ...m, role: selectedRole } : m));
       setEditingRoleId(null);
-      
+
       if (session?.user?.id === id) {
         await updateSession({ role: selectedRole });
       }
@@ -125,74 +128,72 @@ export default function StaffDirectoryPage() {
     };
   }, [staff]);
 
-    if (view === "register") {
-    return (
-      <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto animate-in fade-in duration-500">
-        <MemberRegistrationForm onBack={() => { setView("list"); loadStaff(); }} />
-      </div>
-    );
-  }
-
   return (
-    <div className="p-0 sm:p-4 md:p-8 max-w-[1200px] mx-auto space-y-6 animate-in fade-in duration-500 font-sans">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
-            <Users className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">Fastguard All Staff</h1>
-            <p className="text-[14px] text-slate-500 font-medium">
-              View and manage all staff members in your organization.
-            </p>
-          </div>
+    <div className="p-0 sm:p-4 md:p-6 max-w-[1500px] mx-auto space-y-8 animate-in fade-in duration-500 font-sans">
+      <div className="space-y-1">
+        <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
+          <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">
+            Dashboard
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span className="text-slate-700">User Directory</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span className="text-slate-600 font-medium">All Staff</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard"
+            className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <h1 className="text-2xl font-bold text-slate-900">All Staff Directory</h1>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 mt-4">
+      <div className="w-full">
+        {view === "register" ? (
+          <MemberRegistrationForm onBack={() => { setView("list"); loadStaff(); }} />
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div className="flex items-center gap-6 flex-1 overflow-x-auto pb-[1px]">
           <button
             onClick={() => setActiveTab("All Staff")}
-            className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${
-              activeTab === "All Staff"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+            className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${activeTab === "All Staff"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
           >
             All Staff
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === "All Staff" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
-            }`}>
+            <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "All Staff" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+              }`}>
               {counts.all}
             </span>
           </button>
           <button
             onClick={() => setActiveTab("Admins")}
-            className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${
-              activeTab === "Admins"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+            className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${activeTab === "Admins"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
           >
             Admins
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === "Admins" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
-            }`}>
+            <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "Admins" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+              }`}>
               {counts.admins}
             </span>
           </button>
           <button
             onClick={() => setActiveTab("Members")}
-            className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${
-              activeTab === "Members"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+            className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${activeTab === "Members"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
           >
             Members
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === "Members" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
-            }`}>
+            <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "Members" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+              }`}>
               {counts.members}
             </span>
           </button>
@@ -376,6 +377,9 @@ export default function StaffDirectoryPage() {
             </tbody>
           </table>
         </div>
+      </div>
+      </div>
+      )}
       </div>
 
       {/* Delete Confirmation Modal */}

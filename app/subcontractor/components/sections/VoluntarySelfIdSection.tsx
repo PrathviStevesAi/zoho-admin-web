@@ -248,20 +248,6 @@ export function VoluntarySelfIdSection() {
         </div>
       </div>
 
-      <div className="pt-2 pb-2 mt-1">
-        <h3 className="text-base font-bold text-slate-800 mb-2">SMS Notifications</h3>
-        <div className="flex items-start space-x-2">
-          <input
-            type="checkbox"
-            id="smsNotifications"
-            {...register("smsNotifications")}
-            className="w-4 h-4 mt-0.5 border-slate-300 rounded text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-          />
-          <Label htmlFor="smsNotifications" className="text-sm font-normal text-slate-700 leading-tight cursor-pointer">
-            I agree to receive SMS messages from Fast Guard Service regarding my assigned security shifts, including shift reminders and attendance confirmation requests. Message frequency varies. Message and data rates may apply. Reply STOP to opt out and HELP for help. Consent is not a condition of employment.
-          </Label>
-        </div>
-      </div>
 
       <div className="flex flex-wrap items-center gap-3 pt-3 text-sm text-blue-600">
         <a href="https://fastguardservice.com/privacy-policy-2/" target="_blank" rel="noopener noreferrer" className="hover:underline focus:outline-none cursor-pointer">
