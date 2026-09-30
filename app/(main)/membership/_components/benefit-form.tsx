@@ -70,7 +70,7 @@ export function BenefitForm({
 
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
-    category: initialData?.category || "Gym",
+    category: initialData?.category || "",
     provider: initialData?.provider || "",
     status: (initialData?.status || "Active") as "Active" | "Inactive",
     description: initialData?.description || "",
@@ -209,6 +209,7 @@ export function BenefitForm({
 
     const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) newErrors.name = "Benefit name is required";
+    if (!formData.category) newErrors.category = "Category is required";
     if (!formData.provider.trim()) newErrors.provider = "Provider name is required";
     if (!formData.location.trim()) newErrors.location = "Location is required";
     if (!formData.description.trim()) newErrors.description = "Description is required";
@@ -320,10 +321,13 @@ export function BenefitForm({
                   </Label>
                   <Select
                     value={formData.category}
-                    onValueChange={(val) => setFormData({ ...formData, category: val })}
+                    onValueChange={(val) => {
+                      setFormData({ ...formData, category: val });
+                      clearError("category");
+                    }}
                   >
-                    <SelectTrigger id="category" className="h-10 text-sm">
-                      <SelectValue />
+                    <SelectTrigger id="category" className={cn("h-10 text-sm", errors.category && "border-red-500")}>
+                      <SelectValue placeholder="Select Category" />
                     </SelectTrigger>
                     <SelectContent>
                       {CATEGORIES.map((cat) => (
@@ -333,6 +337,9 @@ export function BenefitForm({
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.category && (
+                    <p className="text-xs text-red-500 font-medium">{errors.category}</p>
+                  )}
                 </div>
               </div>
 
@@ -605,39 +612,38 @@ export function BenefitForm({
                 )}
               </div>
             </div>
+
+            <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onBack}
+                disabled={isSubmitting}
+                className="cursor-pointer h-10 px-6 border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg font-semibold transition-all text-xs sm:text-sm"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!isFormValid || isSubmitting}
+                className="cursor-pointer h-10 px-7 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg font-bold shadow-md shadow-blue-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none text-xs sm:text-sm"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>{isEditing ? "Saving Changes..." : "Creating Benefit..."}</span>
+                  </div>
+                ) : isEditing ? (
+                  "Save Changes"
+                ) : (
+                  "Create Benefit"
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
-
-        <div className="flex items-center justify-center gap-4 mt-6 pb-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onBack}
-            disabled={isSubmitting}
-            className="cursor-pointer h-11 px-8 border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg font-semibold transition-all text-sm"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={!isFormValid || isSubmitting}
-            className="cursor-pointer h-11 px-10 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg font-bold shadow-md shadow-blue-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none text-sm"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="size-4 animate-spin" />
-                <span>{isEditing ? "Saving Changes..." : "Creating Benefit..."}</span>
-              </div>
-            ) : isEditing ? (
-              "Save Changes"
-            ) : (
-              "Create Benefit"
-            )}
-          </Button>
-        </div>
       </form>
     </div>
   );
 }
-
 
