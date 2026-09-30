@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Gift,
   Building,
@@ -55,7 +55,9 @@ export function BenefitOverviewCard({
   const [isEditingBenefit, setIsEditingBenefit] = useState(false);
   const [isSavingBenefit, setIsSavingBenefit] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   const [editBenefitForm, setEditBenefitForm] = useState({
@@ -69,6 +71,16 @@ export function BenefitOverviewCard({
     expiry_date: "",
     status: "active",
   });
+
+  useEffect(() => {
+    if (benefit) {
+      const logo = benefit.business_logo || benefit.image_url || "";
+      if (!isEditingBenefit) {
+        setLogoPreview(logo || null);
+        setImageError(false);
+      }
+    }
+  }, [benefit, isEditingBenefit]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "—";
@@ -92,7 +104,7 @@ export function BenefitOverviewCard({
       if (!isNaN(d.getTime())) {
         return d.toISOString().split("T")[0];
       }
-    } catch {}
+    } catch { }
     return dateStr;
   };
 
@@ -131,35 +143,60 @@ export function BenefitOverviewCard({
 
     const localUrl = URL.createObjectURL(file);
     setLogoPreview(localUrl);
+    setImageError(false);
     setIsUploadingLogo(true);
+    setUploadProgress(0);
 
     try {
+      const folderName =
+        editBenefitForm.benefit_name.trim() ||
+        benefit?.benefit_name ||
+        benefit?.business_partner_name ||
+        "benefits";
       const res = await generateBenefitImageUploadUrlAction({
         file_name: file.name,
-        type: "common",
-        folder_name: "benefits",
+        type: "benefit",
+        folder_name: folderName,
       });
       if (!res.success || !res.data?.signed_url) {
         throw new Error(res.error || "Failed to generate upload URL");
       }
       const signedUrl = res.data.signed_url;
-      const finalUrl =
-        res.data.public_url || res.data.file_path || signedUrl.split("?")[0];
+      const finalUrl = signedUrl || res.data.public_url || res.data.file_path;
 
-      const uploadRes = await fetch(signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!uploadRes.ok) throw new Error("Failed to upload image to server");
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", signedUrl, true);
+      xhr.setRequestHeader("Content-Type", file.type);
 
-      setEditBenefitForm((prev) => ({ ...prev, business_logo: finalUrl }));
-      toast.success("Logo uploaded successfully");
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setUploadProgress(100);
+          setEditBenefitForm((prev) => ({ ...prev, business_logo: finalUrl }));
+          setIsUploadingLogo(false);
+          toast.success("Logo uploaded successfully");
+        } else {
+          setIsUploadingLogo(false);
+          toast.error("Failed to upload image to server");
+        }
+      };
+
+      xhr.onerror = () => {
+        setIsUploadingLogo(false);
+        toast.error("Network error while uploading image");
+      };
+
+      xhr.send(file);
     } catch (err: unknown) {
+      setIsUploadingLogo(false);
       const msg = err instanceof Error ? err.message : "Error uploading logo";
       toast.error(msg);
-    } finally {
-      setIsUploadingLogo(false);
     }
   };
 
@@ -218,17 +255,29 @@ export function BenefitOverviewCard({
 
     setIsSavingBenefit(true);
     try {
-      const res = await updateMembershipAction(membershipId, {
+      const logoToSave =
+        editBenefitForm.business_logo ||
+        benefit.business_logo ||
+        benefit.image_url ||
+        "";
+      const payloadToUpdate = {
         benefit_name: editBenefitForm.benefit_name.trim(),
         category: editBenefitForm.category,
         business_partner_name: editBenefitForm.business_partner_name.trim(),
-        business_logo: editBenefitForm.business_logo,
+        business_logo: logoToSave,
         description: editBenefitForm.description.trim(),
         location: editBenefitForm.location.trim(),
         start_date: editBenefitForm.start_date,
         expiry_date: editBenefitForm.expiry_date,
         status: editBenefitForm.status.toLowerCase(),
+      };
+
+      console.log("===> [Edit Benefit Save Payload]:", {
+        membership_id: membershipId,
+        ...payloadToUpdate,
       });
+
+      const res = await updateMembershipAction(membershipId, payloadToUpdate);
 
       if (res.success) {
         toast.success(res.message || "Benefit updated successfully");
@@ -245,7 +294,10 @@ export function BenefitOverviewCard({
     }
   };
 
-  const isStatusActive = (benefit.status || "active").toLowerCase() === "active";
+  const normalizedStatus = (benefit.status || "active").toLowerCase();
+  const isStatusActive = normalizedStatus === "active";
+  const isStatusExpired = normalizedStatus === "expired";
+  const statusLabel = isStatusActive ? "Active" : isStatusExpired ? "Expired" : "Inactive";
 
   return (
     <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white !gap-0 !py-0">
@@ -298,63 +350,74 @@ export function BenefitOverviewCard({
 
       <CardContent className="p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pb-4 border-b border-slate-100">
-          {isEditingBenefit ? (
-            <div className="relative group w-28 h-28 sm:w-32 sm:h-32 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
-              <input
-                ref={logoFileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleLogoUpload(file);
-                }}
-                className="hidden"
-              />
-              {logoPreview || editBenefitForm.business_logo ? (
-                <img
-                  src={logoPreview || editBenefitForm.business_logo}
-                  alt="Benefit logo"
-                  className={cn(
-                    "w-full h-full object-contain p-1 transition-opacity",
-                    isUploadingLogo && "opacity-30"
-                  )}
-                />
-              ) : (
-                <Gift className="w-12 h-12 text-[#0064cb]" />
-              )}
+          {(() => {
+            const activeLogo =
+              logoPreview ||
+              benefit?.business_logo ||
+              benefit?.image_url ||
+              editBenefitForm.business_logo ||
+              null;
 
-              {isUploadingLogo ? (
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex flex-col items-center justify-center text-white p-2 text-center pointer-events-none z-10">
-                  <Loader2 className="w-5 h-5 animate-spin mb-1 text-white" />
-                  <span className="text-[10px] font-bold text-white tracking-wide">
-                    Uploading...
-                  </span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => logoFileInputRef.current?.click()}
-                  className="absolute inset-0 bg-black/45 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-semibold p-1 text-center"
-                  title="Click to change logo"
-                >
-                  <Camera className="w-4 h-4 mb-1" />
-                  <span>Change Logo</span>
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
-              {benefit.business_logo ? (
-                <img
-                  src={benefit.business_logo}
-                  alt={benefit.business_partner_name || benefit.benefit_name}
-                  className="w-full h-full object-contain p-1"
+            return isEditingBenefit ? (
+              <div className="relative group w-28 h-28 sm:w-32 sm:h-32 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                <input
+                  ref={logoFileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleLogoUpload(file);
+                  }}
+                  className="hidden"
                 />
-              ) : (
-                <Gift className="w-12 h-12 text-[#0064cb]" />
-              )}
-            </div>
-          )}
+                {activeLogo && !imageError ? (
+                  <img
+                    src={activeLogo}
+                    alt="Benefit logo"
+                    onError={() => setImageError(true)}
+                    className={cn(
+                      "w-full h-full object-contain p-1 transition-opacity",
+                      isUploadingLogo && "opacity-30"
+                    )}
+                  />
+                ) : (
+                  <Gift className="w-12 h-12 text-[#0064cb]" />
+                )}
+
+                {isUploadingLogo ? (
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center text-white p-2 text-center pointer-events-none z-10">
+                    <Loader2 className="w-5 h-5 animate-spin mb-1 text-white" />
+                    <span className="text-[10px] font-bold text-white tracking-wide">
+                      {uploadProgress > 0 ? `Uploading ${uploadProgress}%...` : "Uploading..."}
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => logoFileInputRef.current?.click()}
+                    className="absolute inset-0 bg-black/45 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-semibold p-1 text-center"
+                    title="Click to change logo"
+                  >
+                    <Camera className="w-4 h-4 mb-1" />
+                    <span>Change Logo</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                {activeLogo && !imageError ? (
+                  <img
+                    src={activeLogo}
+                    alt={benefit?.business_partner_name || benefit?.benefit_name || "Benefit Logo"}
+                    onError={() => setImageError(true)}
+                    className="w-full h-full object-contain p-1"
+                  />
+                ) : (
+                  <Gift className="w-12 h-12 text-[#0064cb]" />
+                )}
+              </div>
+            );
+          })()}
 
           <div className="space-y-3 min-w-0 flex-1 w-full">
             {isEditingBenefit ? (
@@ -367,7 +430,7 @@ export function BenefitOverviewCard({
                   onChange={(e) =>
                     setEditBenefitForm((prev) => ({ ...prev, benefit_name: e.target.value }))
                   }
-                  placeholder="Enter Benefit Name"
+                  placeholder="e.g. Gym Membership Discount"
                   className="h-9 text-base font-bold text-slate-900 border-slate-200 bg-white"
                 />
               </div>
@@ -396,7 +459,7 @@ export function BenefitOverviewCard({
                         business_partner_name: e.target.value,
                       }))
                     }
-                    placeholder="Provider Name"
+                    placeholder="e.g. ABC Gym"
                     className="h-8 text-xs border-slate-200 bg-white"
                   />
                 </div>
@@ -475,6 +538,12 @@ export function BenefitOverviewCard({
                           <span>Inactive</span>
                         </div>
                       </SelectItem>
+                      <SelectItem value="expired" className="text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                          <span>Expired</span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -487,16 +556,24 @@ export function BenefitOverviewCard({
                     <span
                       className={cn(
                         "w-2 h-2 rounded-full shrink-0",
-                        isStatusActive ? "bg-green-500" : "bg-red-500"
+                        isStatusActive
+                          ? "bg-green-500"
+                          : isStatusExpired
+                            ? "bg-amber-500"
+                            : "bg-red-500"
                       )}
                     />
                     <span
                       className={cn(
                         "text-xs font-bold whitespace-nowrap",
-                        isStatusActive ? "text-green-700" : "text-red-700"
+                        isStatusActive
+                          ? "text-green-700"
+                          : isStatusExpired
+                            ? "text-amber-700"
+                            : "text-red-700"
                       )}
                     >
-                      {isStatusActive ? "Active" : "Inactive"}
+                      {statusLabel}
                     </span>
                   </div>
                 </div>
@@ -510,10 +587,12 @@ export function BenefitOverviewCard({
                   <Input
                     type="date"
                     value={editBenefitForm.start_date}
+                    onKeyDown={(e) => e.preventDefault()}
+                    onClick={(e) => e.currentTarget.showPicker?.()}
                     onChange={(e) =>
                       setEditBenefitForm((prev) => ({ ...prev, start_date: e.target.value }))
                     }
-                    className="h-8 text-xs border-slate-200 bg-white cursor-pointer px-2"
+                    className="h-8 text-xs border-slate-200 bg-white cursor-pointer px-2 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   />
                 </div>
               ) : (
@@ -537,10 +616,12 @@ export function BenefitOverviewCard({
                     type="date"
                     min={editBenefitForm.start_date || undefined}
                     value={editBenefitForm.expiry_date}
+                    onKeyDown={(e) => e.preventDefault()}
+                    onClick={(e) => e.currentTarget.showPicker?.()}
                     onChange={(e) =>
                       setEditBenefitForm((prev) => ({ ...prev, expiry_date: e.target.value }))
                     }
-                    className="h-8 text-xs border-slate-200 bg-white cursor-pointer px-2"
+                    className="h-8 text-xs border-slate-200 bg-white cursor-pointer px-2 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   />
                 </div>
               ) : (
@@ -558,9 +639,9 @@ export function BenefitOverviewCard({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-start">
           {isEditingBenefit ? (
-            <div className="md:col-span-4 p-3.5 bg-slate-50/80 border border-slate-100 rounded-lg space-y-1.5 flex flex-col justify-center">
+            <div className="md:col-span-4 p-3.5 bg-slate-50/80 border border-slate-100 rounded-lg space-y-1.5">
               <Label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
                 Location <span className="text-red-500">*</span>
               </Label>
@@ -577,7 +658,7 @@ export function BenefitOverviewCard({
               </div>
             </div>
           ) : (
-            <div className="md:col-span-4 p-3.5 bg-slate-50/80 border border-slate-100 rounded-lg space-y-1 flex flex-col justify-center">
+            <div className="md:col-span-4 p-3.5 bg-slate-50/80 border border-slate-100 rounded-lg space-y-1">
               <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
                 Location
               </span>
@@ -589,26 +670,35 @@ export function BenefitOverviewCard({
           )}
 
           {isEditingBenefit ? (
-            <div className="md:col-span-8 p-3.5 bg-slate-50/80 border border-slate-100 rounded-lg space-y-1.5 flex flex-col justify-center">
-              <Label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
-                Description & Details <span className="text-red-500">*</span>
-              </Label>
+            <div className="md:col-span-8 p-3.5 bg-slate-50/80 border border-slate-100 rounded-lg space-y-1.5 min-w-0">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
+                  Description & Details <span className="text-red-500">*</span>
+                </Label>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {editBenefitForm.description.length}/250
+                </span>
+              </div>
               <textarea
                 rows={2}
+                maxLength={250}
                 value={editBenefitForm.description}
                 onChange={(e) =>
-                  setEditBenefitForm((prev) => ({ ...prev, description: e.target.value }))
+                  setEditBenefitForm((prev) => ({
+                    ...prev,
+                    description: e.target.value.slice(0, 250),
+                  }))
                 }
-                placeholder="Enter description and details..."
-                className="w-full rounded-md border border-slate-200 p-2 text-xs text-slate-800 bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#0064cb]"
+                placeholder="Enter benefit description, terms, etc."
+                className="w-full rounded-md border border-slate-200 p-2 text-xs text-slate-800 bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#0064cb] resize-none"
               />
             </div>
           ) : (
-            <div className="md:col-span-8 p-3.5 bg-slate-50/80 border border-slate-100 rounded-lg space-y-1 flex flex-col justify-center">
+            <div className="md:col-span-8 p-3.5 bg-slate-50/80 border border-slate-100 rounded-lg space-y-1 min-w-0 overflow-hidden">
               <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
                 Description & Details
               </span>
-              <p className="text-xs text-slate-700 font-medium leading-relaxed">
+              <p className="text-xs text-slate-700 font-medium leading-relaxed break-words whitespace-pre-wrap [overflow-wrap:anywhere] break-all">
                 {benefit.description || "No description provided."}
               </p>
             </div>

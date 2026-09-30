@@ -48,7 +48,7 @@ interface BenefitFormProps {
     name: string;
     category: string;
     provider: string;
-    status: "Active" | "Inactive";
+    status: "Active" | "Inactive" | "Expired";
     description: string;
     discountValue: string;
     assignedGuardsCount: number;
@@ -72,7 +72,7 @@ export function BenefitForm({
     name: initialData?.name || "",
     category: initialData?.category || "",
     provider: initialData?.provider || "",
-    status: (initialData?.status || "Active") as "Active" | "Inactive",
+    status: (initialData?.status || "Active") as "Active" | "Inactive" | "Expired",
     description: initialData?.description || "",
     discountValue: initialData?.discountValue || "",
     imageUrl: initialData?.imageUrl || "",
@@ -118,10 +118,11 @@ export function BenefitForm({
     setUploadProgress(0);
 
     try {
+      const folderName = formData.name.trim() || formData.provider.trim() || "benefits";
       const res = await generateBenefitImageUploadUrlAction({
         file_name: file.name,
-        type: "common",
-        folder_name: "benefits",
+        type: "benefit",
+        folder_name: folderName,
       });
 
       if (!res.success || !res.data?.signed_url) {
@@ -129,10 +130,7 @@ export function BenefitForm({
       }
 
       const signedUrl = res.data.signed_url;
-      const finalUrl =
-        res.data.public_url ||
-        res.data.file_path ||
-        signedUrl.split("?")[0];
+      const finalUrl = signedUrl || res.data.public_url || res.data.file_path;
 
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", signedUrl, true);
@@ -224,21 +222,25 @@ export function BenefitForm({
 
     setIsSubmitting(true);
 
+    const payloadToSave = {
+      name: formData.name.trim(),
+      category: formData.category,
+      provider: formData.provider.trim(),
+      status: formData.status,
+      description: formData.description.trim(),
+      discountValue: formData.discountValue.trim(),
+      assignedGuardsCount: initialData?.assignedGuardsCount || 0,
+      assignedGuardNames: initialData?.assignedGuardNames || [],
+      imageUrl: formData.imageUrl,
+      location: formData.location.trim(),
+      startDate: formData.startDate,
+      expiryDate: formData.expiryDate,
+    };
+
+    console.log("===> [Benefit Form Save Payload]:", payloadToSave);
+
     try {
-      await onSave({
-        name: formData.name.trim(),
-        category: formData.category,
-        provider: formData.provider.trim(),
-        status: formData.status,
-        description: formData.description.trim(),
-        discountValue: formData.discountValue.trim(),
-        assignedGuardsCount: initialData?.assignedGuardsCount || 0,
-        assignedGuardNames: initialData?.assignedGuardNames || [],
-        imageUrl: formData.imageUrl,
-        location: formData.location.trim(),
-        startDate: formData.startDate,
-        expiryDate: formData.expiryDate,
-      });
+      await onSave(payloadToSave);
     } finally {
       setIsSubmitting(false);
     }
@@ -299,7 +301,7 @@ export function BenefitForm({
                   </Label>
                   <Input
                     id="benefitName"
-                    placeholder="Enter Benefit Name"
+                    placeholder="e.g. Gym Membership Discount"
                     value={formData.name}
                     onChange={(e) => {
                       setFormData({ ...formData, name: e.target.value });
@@ -471,7 +473,7 @@ export function BenefitForm({
                 </Label>
                 <Input
                   id="provider"
-                  placeholder="Enter Provider Name"
+                  placeholder="e.g. ABC Gym"
                   value={formData.provider}
                   onChange={(e) => {
                     setFormData({ ...formData, provider: e.target.value });
@@ -512,20 +514,26 @@ export function BenefitForm({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="description" className="text-xs font-semibold text-slate-700">
-                Description / Details <span className="text-red-500">*</span>
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="description" className="text-xs font-semibold text-slate-700">
+                  Description / Details <span className="text-red-500">*</span>
+                </Label>
+                <span className="text-xs text-slate-400 font-medium">
+                  {formData.description.length}/250
+                </span>
+              </div>
               <textarea
                 id="description"
                 rows={3}
-                placeholder="Provide detailed description of the perk, coverage terms, discount details, and guard eligibility..."
+                maxLength={250}
+                placeholder="Enter benefit description, terms, etc."
                 value={formData.description}
                 onChange={(e) => {
-                  setFormData({ ...formData, description: e.target.value });
+                  setFormData({ ...formData, description: e.target.value.slice(0, 250) });
                   clearError("description");
                 }}
                 className={cn(
-                  "w-full rounded-md border border-slate-200 px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#0064cb] placeholder:text-slate-400",
+                  "w-full rounded-md border border-slate-200 px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#0064cb] placeholder:text-slate-400 resize-none break-words [overflow-wrap:anywhere]",
                   errors.description && "border-red-500"
                 )}
               />
@@ -541,7 +549,7 @@ export function BenefitForm({
                 </Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(val: "Active" | "Inactive") =>
+                  onValueChange={(val: "Active" | "Inactive" | "Expired") =>
                     setFormData({ ...formData, status: val })
                   }
                 >
@@ -561,6 +569,12 @@ export function BenefitForm({
                         <span>Inactive</span>
                       </div>
                     </SelectItem>
+                    <SelectItem value="Expired">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-amber-500 inline-block" />
+                        <span>Expired</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -574,6 +588,8 @@ export function BenefitForm({
                   id="startDate"
                   type="date"
                   value={formData.startDate}
+                  onKeyDown={(e) => e.preventDefault()}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
                   onChange={(e) => {
                     setFormData({ ...formData, startDate: e.target.value });
                     clearError("startDate");
@@ -598,6 +614,8 @@ export function BenefitForm({
                   type="date"
                   min={formData.startDate || undefined}
                   value={formData.expiryDate}
+                  onKeyDown={(e) => e.preventDefault()}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
                   onChange={(e) => {
                     setFormData({ ...formData, expiryDate: e.target.value });
                     clearError("expiryDate");

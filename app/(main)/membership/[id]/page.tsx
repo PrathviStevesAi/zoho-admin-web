@@ -16,6 +16,7 @@ import {
   fetchMembershipsAction,
   fetchMembershipGuardsAction,
   removeGuardFromMembershipAction,
+  removeGuardsFromMembershipAction,
   generateBenefitImageUploadUrlAction,
   uploadGuardQrAction,
   MembershipBenefitItem,
@@ -63,14 +64,14 @@ export default function MembershipDetailsPage() {
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
-    guardId: string | null;
+    guardIds: string[];
     guardName: string;
     action: "remove_guard" | "remove_qr";
     title: string;
     description: string;
   }>({
     isOpen: false,
-    guardId: null,
+    guardIds: [],
     guardName: "",
     action: "remove_guard",
     title: "",
@@ -116,7 +117,7 @@ export default function MembershipDetailsPage() {
             return;
           }
         }
-      } catch {}
+      } catch { }
       const msg = err instanceof Error ? err.message : "Error fetching benefit details";
       toast.error(msg);
     } finally {
@@ -163,22 +164,26 @@ export default function MembershipDetailsPage() {
 
   // Delete Action (Guard or QR)
   const handleConfirmDelete = async () => {
-    if (!membershipId || !confirmModal.guardId) return;
+    if (!membershipId || confirmModal.guardIds.length === 0) return;
     setIsDeleting(true);
     try {
-      const res = await removeGuardFromMembershipAction(
+      const res = await removeGuardsFromMembershipAction(
         membershipId,
-        confirmModal.guardId,
+        confirmModal.guardIds,
         confirmModal.action
       );
       if (res.success) {
         toast.success(
           res.message ||
-            (confirmModal.action === "remove_guard"
-              ? "Guard removed successfully"
+          (confirmModal.action === "remove_guard"
+            ? confirmModal.guardIds.length > 1
+              ? "Guards removed successfully"
+              : "Guard removed successfully"
+            : confirmModal.guardIds.length > 1
+              ? "QR codes removed successfully"
               : "QR code removed successfully")
         );
-        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        setConfirmModal((prev) => ({ ...prev, isOpen: false, guardIds: [] }));
         await Promise.all([loadBenefitDetails(), loadAssignedGuards()]);
       } else {
         toast.error(res.error || "Failed to perform delete");
@@ -206,16 +211,18 @@ export default function MembershipDetailsPage() {
 
     setUploadingQrGuardId(guardId);
     try {
+      const folderName = benefit?.benefit_name || "benefits";
       const res = await generateBenefitImageUploadUrlAction({
         file_name: file.name,
-        type: "common",
-        folder_name: "qr-codes",
+        type: "benefit",
+        folder_name: folderName,
+        guard_id: guardId,
       });
       if (!res.success || !res.data?.signed_url) {
         throw new Error(res.error || "Failed to generate upload URL");
       }
       const signedUrl = res.data.signed_url;
-      const finalUrl = res.data.public_url || res.data.file_path || signedUrl.split("?")[0];
+      const finalUrl = signedUrl || res.data.public_url || res.data.file_path;
 
       const uploadRes = await fetch(signedUrl, {
         method: "PUT",
@@ -367,7 +374,7 @@ export default function MembershipDetailsPage() {
           onRemoveQr={(guardId, guardName) =>
             setConfirmModal({
               isOpen: true,
-              guardId,
+              guardIds: [guardId],
               guardName,
               action: "remove_qr",
               title: "Remove QR Code",
@@ -377,11 +384,31 @@ export default function MembershipDetailsPage() {
           onRemoveGuard={(guardId, guardName) =>
             setConfirmModal({
               isOpen: true,
-              guardId,
+              guardIds: [guardId],
               guardName,
               action: "remove_guard",
               title: "Remove Guard",
               description: `Are you sure you want to remove ${guardName} from this membership benefit?`,
+            })
+          }
+          onRemoveMultipleGuards={(guardIds, countLabel) =>
+            setConfirmModal({
+              isOpen: true,
+              guardIds,
+              guardName: countLabel || `${guardIds.length} guards`,
+              action: "remove_guard",
+              title: "Remove Assigned Guards",
+              description: `Are you sure you want to remove ${countLabel || `all ${guardIds.length} guards`} from this membership benefit?`,
+            })
+          }
+          onRemoveMultipleQrs={(guardIds, countLabel) =>
+            setConfirmModal({
+              isOpen: true,
+              guardIds,
+              guardName: countLabel || `${guardIds.length} guards`,
+              action: "remove_qr",
+              title: "Remove QR Codes",
+              description: `Are you sure you want to remove QR codes for ${countLabel || `all ${guardIds.length} guards`}?`,
             })
           }
           uploadingQrGuardId={uploadingQrGuardId}

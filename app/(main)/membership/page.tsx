@@ -57,7 +57,7 @@ export interface Benefit {
   provider: string;
   assignedGuardsCount: number;
   assignedGuardNames?: string[];
-  status: "Active" | "Inactive";
+  status: "Active" | "Inactive" | "Expired";
   description?: string;
   discountValue?: string;
   imageUrl?: string;
@@ -111,7 +111,8 @@ function transformApiItem(item: MembershipBenefitItem): Benefit {
     : [];
 
   const rawStatus = (item.status || "active").toLowerCase();
-  const status: "Active" | "Inactive" = rawStatus === "inactive" ? "Inactive" : "Active";
+  const status: "Active" | "Inactive" | "Expired" =
+    rawStatus === "expired" ? "Expired" : rawStatus === "inactive" ? "Inactive" : "Active";
 
   return {
     id: item.id || String(Math.random()),
@@ -137,7 +138,7 @@ export default function MembershipPage() {
   const [, setIsRefreshing] = useState(false);
   const [view, setView] = useState<"list" | "add" | "edit">("list");
   const [editingBenefit, setEditingBenefit] = useState<Benefit | null>(null);
-  const [activeTab, setActiveTab] = useState<"all" | "active" | "inactive">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "active" | "inactive" | "expired">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [isAssignGuardsOpen, setIsAssignGuardsOpen] = useState(false);
@@ -187,6 +188,7 @@ export default function MembershipPage() {
     return benefits.filter((b) => {
       if (activeTab === "active" && b.status !== "Active") return false;
       if (activeTab === "inactive" && b.status !== "Inactive") return false;
+      if (activeTab === "expired" && b.status !== "Expired") return false;
       if (
         selectedCategory !== "All Categories" &&
         b.category.toLowerCase() !== selectedCategory.toLowerCase()
@@ -208,6 +210,7 @@ export default function MembershipPage() {
   const totalCount = benefits.length;
   const activeCount = benefits.filter((b) => b.status === "Active").length;
   const inactiveCount = benefits.filter((b) => b.status === "Inactive").length;
+  const expiredCount = benefits.filter((b) => b.status === "Expired").length;
 
   const handleOpenAdd = () => {
     setEditingBenefit(null);
@@ -223,7 +226,7 @@ export default function MembershipPage() {
     name: string;
     category: string;
     provider: string;
-    status: "Active" | "Inactive";
+    status: "Active" | "Inactive" | "Expired";
     description: string;
     discountValue: string;
     assignedGuardsCount: number;
@@ -438,6 +441,17 @@ export default function MembershipPage() {
             >
               Inactive ({inactiveCount})
             </button>
+            <button
+              onClick={() => setActiveTab("expired")}
+              className={cn(
+                "pb-3 text-sm font-semibold transition-all relative cursor-pointer",
+                activeTab === "expired"
+                  ? "text-[#0064cb] border-b-2 border-[#0064cb]"
+                  : "text-slate-500 hover:text-slate-800"
+              )}
+            >
+              Expired ({expiredCount})
+            </button>
           </div>
 
           <div className="p-4 sm:p-6 pb-4 flex flex-col sm:flex-row items-center gap-4 justify-between border-b border-slate-100">
@@ -570,7 +584,9 @@ export default function MembershipPage() {
                               "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border whitespace-nowrap",
                               benefit.status === "Active"
                                 ? "bg-green-50 text-green-600 border-green-200"
-                                : "bg-red-50 text-red-600 border-red-200"
+                                : benefit.status === "Expired"
+                                  ? "bg-amber-50 text-amber-600 border-amber-200"
+                                  : "bg-red-50 text-red-600 border-red-200"
                             )}
                           >
                             {benefit.status}

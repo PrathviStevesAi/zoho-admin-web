@@ -37,11 +37,20 @@ export async function fetchMembershipsAction(): Promise<FetchMembershipsResponse
       message?: string;
     }>(`/api/v1/membership/list`);
 
-    const data = Array.isArray(res?.data)
+    const rawData = Array.isArray(res?.data)
       ? res.data
       : Array.isArray(res)
         ? res
         : [];
+    const data = rawData.map((item: any) => {
+      const logo =
+        item.business_logo || item.image_url || item.logo || item.image || item.imageUrl || "";
+      return {
+        ...item,
+        business_logo: logo,
+        image_url: logo,
+      };
+    });
     const total = typeof res?.total === "number" ? res.total : data.length;
 
     return {
@@ -72,23 +81,51 @@ export interface CreateMembershipPayload {
   status: string;
 }
 
+function extractFilePath(urlOrPath?: string): string {
+  if (!urlOrPath) return "";
+  const trimmed = urlOrPath.trim();
+  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+    return trimmed.split("?")[0].replace(/^\/+/, "");
+  }
+  const cleanUrl = trimmed.split("?")[0];
+  const benefitsIdx = cleanUrl.indexOf("benefits/");
+  if (benefitsIdx !== -1) {
+    return cleanUrl.slice(benefitsIdx);
+  }
+  const qrIdx = cleanUrl.indexOf("qr-codes/");
+  if (qrIdx !== -1) {
+    return cleanUrl.slice(qrIdx);
+  }
+  const match = cleanUrl.match(/\/storage\/v1\/object\/(?:sign|public)\/[^/]+\/(.+)$/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  return cleanUrl;
+}
+
 export async function createMembershipAction(
   payload: CreateMembershipPayload
 ): Promise<{ success: boolean; data?: any; membership_id?: string; message?: string; error?: string }> {
   try {
+    const cleanLogo = extractFilePath(payload.business_logo || "");
+    const body = {
+      benefit_name: payload.benefit_name,
+      category: payload.category,
+      business_partner_name: payload.business_partner_name,
+      business_logo: cleanLogo,
+      description: payload.description,
+      location: payload.location,
+      start_date: payload.start_date,
+      expiry_date: payload.expiry_date,
+      status: payload.status.toLowerCase(),
+    };
+    console.log("===> [createMembershipAction POST API Payload]:", {
+      url: `/api/v1/membership`,
+      body,
+    });
     const res = await apiFetch<any>(`/api/v1/membership`, {
       method: "POST",
-      body: JSON.stringify({
-        benefit_name: payload.benefit_name,
-        category: payload.category,
-        business_partner_name: payload.business_partner_name,
-        business_logo: payload.business_logo || "",
-        description: payload.description,
-        location: payload.location,
-        start_date: payload.start_date,
-        expiry_date: payload.expiry_date,
-        status: payload.status.toLowerCase(),
-      }),
+      body: JSON.stringify(body),
     });
     const membership_id =
       res?.membership_id ||
@@ -111,6 +148,9 @@ export async function generateBenefitImageUploadUrlAction(payload: {
   file_name: string;
   type?: string;
   folder_name?: string;
+  guard_id?: string;
+  guard_email?: string;
+  shift_id?: string;
 }): Promise<{
   success: boolean;
   data?: {
@@ -122,13 +162,18 @@ export async function generateBenefitImageUploadUrlAction(payload: {
   error?: string;
 }> {
   try {
+    const body: Record<string, any> = {
+      file_name: payload.file_name,
+      type: payload.type || "benefit",
+      folder_name: payload.folder_name || "benefits",
+    };
+    if (payload.guard_id) body.guard_id = payload.guard_id;
+    if (payload.guard_email) body.guard_email = payload.guard_email;
+    if (payload.shift_id) body.shift_id = payload.shift_id;
+
     const res = await apiFetch<any>(`/api/v1/shift/media/generate-upload-url`, {
       method: "POST",
-      body: JSON.stringify({
-        file_name: payload.file_name,
-        type: payload.type || "common",
-        folder_name: payload.folder_name || "benefits",
-      }),
+      body: JSON.stringify(body),
     });
 
     const data = res?.data || res;
@@ -148,8 +193,20 @@ export async function fetchMembershipByIdAction(
 ): Promise<{ success: boolean; data?: MembershipBenefitItem; error?: string }> {
   try {
     const res = await apiFetch<any>(`/api/v1/membership/${membership_id}`);
-    const data = res?.data || res;
-    if (data && (data.id || data.benefit_name)) {
+    const rawData = res?.data || res;
+    if (rawData && (rawData.id || rawData.benefit_name || rawData.business_partner_name)) {
+      const logo =
+        rawData.business_logo ||
+        rawData.image_url ||
+        rawData.logo ||
+        rawData.image ||
+        rawData.imageUrl ||
+        "";
+      const data: MembershipBenefitItem = {
+        ...rawData,
+        business_logo: logo,
+        image_url: logo,
+      };
       return {
         success: res?.success ?? true,
         data,
@@ -162,12 +219,22 @@ export async function fetchMembershipByIdAction(
         (item: any) => item.id === membership_id || item.membership_id === membership_id
       );
       if (found) {
-        return { success: true, data: found };
+        const logo =
+          found.business_logo ||
+          found.image_url ||
+          (found as any).logo ||
+          (found as any).image ||
+          (found as any).imageUrl ||
+          "";
+        return {
+          success: true,
+          data: { ...found, business_logo: logo, image_url: logo },
+        };
       }
     }
     return {
       success: res?.success ?? true,
-      data,
+      data: rawData,
     };
   } catch (error: unknown) {
     // If /api/v1/membership/{id} returns 404 or fails, fallback to fetching all memberships
@@ -178,7 +245,17 @@ export async function fetchMembershipByIdAction(
           (item: any) => item.id === membership_id || item.membership_id === membership_id
         );
         if (found) {
-          return { success: true, data: found };
+          const logo =
+            found.business_logo ||
+            found.image_url ||
+            (found as any).logo ||
+            (found as any).image ||
+            (found as any).imageUrl ||
+            "";
+          return {
+            success: true,
+            data: { ...found, business_logo: logo, image_url: logo },
+          };
         }
       }
     } catch {
@@ -191,12 +268,27 @@ export async function fetchMembershipByIdAction(
 
 export async function updateMembershipAction(
   membership_id: string,
-  payload: Partial<CreateMembershipPayload>
+  payload: Partial<CreateMembershipPayload> & { image_url?: string }
 ): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
   try {
+    const logo =
+      payload.business_logo !== undefined
+        ? payload.business_logo
+        : payload.image_url !== undefined
+          ? payload.image_url
+          : undefined;
+    const cleanLogo = logo !== undefined ? extractFilePath(logo) : undefined;
+    const bodyPayload: any = {
+      ...payload,
+      ...(cleanLogo !== undefined ? { business_logo: cleanLogo, image_url: cleanLogo } : {}),
+    };
+    console.log("===> [updateMembershipAction PATCH API Payload]:", {
+      url: `/api/v1/membership/${membership_id}`,
+      body: bodyPayload,
+    });
     const res = await apiFetch<any>(`/api/v1/membership/${membership_id}`, {
       method: "PATCH",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(bodyPayload),
     });
     return {
       success: res?.success ?? true,
@@ -253,14 +345,18 @@ export async function assignGuardsToMembershipAction(
   }
 }
 
-export async function removeGuardFromMembershipAction(
+export async function removeGuardsFromMembershipAction(
   membership_id: string,
-  guard_id: string,
+  guard_ids: string[],
   action: "remove_guard" | "remove_qr" = "remove_guard"
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
+    const params = new URLSearchParams();
+    guard_ids.forEach((id) => params.append("guard_ids", id));
+    params.append("action", action);
+
     const res = await apiFetch<any>(
-      `/api/v1/membership/${membership_id}/guard/${guard_id}?action=${action}`,
+      `/api/v1/membership/${membership_id}/guards?${params.toString()}`,
       {
         method: "DELETE",
       }
@@ -270,8 +366,12 @@ export async function removeGuardFromMembershipAction(
       message:
         res?.message ||
         (action === "remove_qr"
-          ? "QR code removed successfully"
-          : "Guard removed successfully"),
+          ? guard_ids.length > 1
+            ? "QR codes removed successfully"
+            : "QR code removed successfully"
+          : guard_ids.length > 1
+            ? "Guards removed successfully"
+            : "Guard removed successfully"),
     };
   } catch (error: unknown) {
     const message =
@@ -284,18 +384,27 @@ export async function removeGuardFromMembershipAction(
   }
 }
 
+export async function removeGuardFromMembershipAction(
+  membership_id: string,
+  guard_id: string,
+  action: "remove_guard" | "remove_qr" = "remove_guard"
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  return removeGuardsFromMembershipAction(membership_id, [guard_id], action);
+}
+
 export async function uploadGuardQrAction(
   membership_id: string,
   guard_id: string,
   qr_code_url: string
 ): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
   try {
+    const cleanQr = extractFilePath(qr_code_url);
     const res = await apiFetch<any>(`/api/v1/membership/upload-qr`, {
       method: "POST",
       body: JSON.stringify({
         membership_id,
         guard_id,
-        qr_code_url,
+        qr_code_url: cleanQr,
       }),
     });
     return {

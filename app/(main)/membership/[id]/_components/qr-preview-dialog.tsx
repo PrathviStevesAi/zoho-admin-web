@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { QrCode, ExternalLink } from "lucide-react";
+import { QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -51,19 +51,11 @@ export function QrPreviewDialog({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {url && (
-            <Button
-              onClick={() => window.open(url, "_blank")}
-              className="flex-1 bg-[#0064cb] hover:bg-[#0052ae] text-white text-xs font-semibold h-9 rounded-lg cursor-pointer"
-            >
-              <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Open in New Tab
-            </Button>
-          )}
+        <div className="flex items-center justify-center">
           <Button
             variant="outline"
             onClick={onClose}
-            className="h-9 px-4 text-xs font-semibold text-slate-700 border-slate-200 cursor-pointer hover:bg-slate-50"
+            className="w-full h-9 px-6 text-xs font-semibold text-slate-700 border-slate-200 cursor-pointer hover:bg-slate-50 rounded-lg"
           >
             Close
           </Button>

@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   Users,
   UserPlus,
@@ -8,18 +6,25 @@ import {
   XCircle,
   QrCode,
   X,
-  Eye,
   Upload,
   Trash2,
   Loader2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  UserX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -53,6 +58,8 @@ interface AssignedGuardsCardProps {
   onUploadQr: (guardId: string, file: File) => void;
   onRemoveQr: (guardId: string, guardName: string) => void;
   onRemoveGuard: (guardId: string, guardName: string) => void;
+  onRemoveMultipleGuards?: (guardIds: string[], countLabel?: string) => void;
+  onRemoveMultipleQrs?: (guardIds: string[], countLabel?: string) => void;
   uploadingQrGuardId: string | null;
 }
 
@@ -72,10 +79,23 @@ export function AssignedGuardsCard({
   onUploadQr,
   onRemoveQr,
   onRemoveGuard,
+  onRemoveMultipleGuards,
+  onRemoveMultipleQrs,
   uploadingQrGuardId,
 }: AssignedGuardsCardProps) {
   const guardQrInputRef = useRef<HTMLInputElement>(null);
-  const [activeQrGuardId, setActiveQrGuardId] = React.useState<string | null>(null);
+  const [activeQrGuardId, setActiveQrGuardId] = useState<string | null>(null);
+
+  const isFiltered = assignedStatus !== "all_guards" || Boolean(assignedSearch?.trim());
+
+  const allCurrentGuardIds = assignedGuards
+    .map((g) => g.guard_id)
+    .filter(Boolean);
+
+  const guardsWithQrIds = assignedGuards
+    .filter((g) => Boolean(g.qr_code_url) || (g.status || "").toLowerCase() === "uploaded_qr")
+    .map((g) => g.guard_id)
+    .filter(Boolean);
 
   const handleTriggerUpload = (guardId: string) => {
     setActiveQrGuardId(guardId);
@@ -94,7 +114,6 @@ export function AssignedGuardsCard({
 
   return (
     <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white !gap-0 !py-0">
-      {/* Header */}
       <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-[#0064cb]/10 flex items-center justify-center text-[#0064cb]">
@@ -109,6 +128,53 @@ export function AssignedGuardsCard({
         </div>
 
         <div className="flex items-center gap-2.5">
+          {assignedGuards.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-9 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg font-semibold transition-all active:scale-95 text-xs px-3.5 min-w-[165px] flex items-center justify-between gap-2 cursor-pointer shadow-xs"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                    <span>Delete All</span>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-red-500 opacity-80" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[165px] bg-white border-slate-200 shadow-xl z-[200] p-1"
+              >
+                <DropdownMenuItem
+                  onClick={() =>
+                    onRemoveMultipleGuards?.(
+                      allCurrentGuardIds,
+                      `all (${allCurrentGuardIds.length}) assigned guards`
+                    )
+                  }
+                  className="text-xs font-semibold text-red-600 hover:bg-red-50 focus:bg-red-50 cursor-pointer flex items-center gap-2 py-2 px-2.5 rounded-md"
+                >
+                  <UserX className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                  <span>Delete All Guards</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    onRemoveMultipleQrs?.(
+                      guardsWithQrIds,
+                      `all (${guardsWithQrIds.length}) QR codes`
+                    )
+                  }
+                  disabled={guardsWithQrIds.length === 0}
+                  className="text-xs font-semibold text-red-600 hover:bg-red-50 focus:bg-red-50 cursor-pointer flex items-center gap-2 py-2 px-2.5 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                  <span>Delete All QR Codes</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           <Button
             onClick={onOpenAssignGuards}
             className="h-9 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg font-bold shadow-md shadow-blue-200 transition-all active:scale-95 text-xs px-4 flex items-center gap-1.5 cursor-pointer"
@@ -118,7 +184,6 @@ export function AssignedGuardsCard({
         </div>
       </div>
 
-      {/* Search & Filter Controls */}
       <div className="p-4 sm:p-6 pb-4 flex flex-col sm:flex-row items-center gap-4 justify-between border-b border-slate-100 bg-white">
         <div className="relative w-full sm:w-[320px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
@@ -159,12 +224,11 @@ export function AssignedGuardsCard({
         </div>
       </div>
 
-      {/* Table */}
       <CardContent className="p-0 flex-1 flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[620px] flex-1">
           <Table className="min-w-[800px]">
             <TableHeader>
-              <TableRow className="hover:bg-transparent border-slate-100">
+              <TableRow className="hover:bg-transparent border-slate-100 bg-slate-50/40">
                 <TableHead className="py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                   #
                 </TableHead>
@@ -214,21 +278,29 @@ export function AssignedGuardsCard({
                 ))
               ) : assignedGuards.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-52 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2.5">
-                      <Users className="w-10 h-10 text-slate-200" />
-                      <p className="text-sm font-medium text-slate-700">No assigned guards found</p>
-                      <p className="text-xs text-slate-400 max-w-xs">
-                        Click the &ldquo;Add Guards&rdquo; button above to assign guards to this membership benefit.
+                  <TableCell colSpan={6} className={cn("text-center", isFiltered ? "h-36" : "h-52")}>
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Users className="w-9 h-9 text-slate-200" />
+                      <p className="text-sm font-medium text-slate-700">
+                        {assignedStatus !== "all_guards"
+                          ? "No assigned guards found this status"
+                          : "No assigned guards found"}
                       </p>
-                      <Button
-                        onClick={onOpenAssignGuards}
-                        variant="outline"
-                        size="sm"
-                        className="mt-1 h-8 text-xs font-bold text-[#0064cb] border-[#0064cb]/30 hover:bg-blue-50 cursor-pointer"
-                      >
-                        <UserPlus className="w-3.5 h-3.5 mr-1" /> Assign Guards Now
-                      </Button>
+                      {!isFiltered && (
+                        <>
+                          <p className="text-xs text-slate-400 max-w-xs">
+                            Click the &ldquo;Add Guards&rdquo; button above to assign guards to this membership benefit.
+                          </p>
+                          <Button
+                            onClick={onOpenAssignGuards}
+                            variant="outline"
+                            size="sm"
+                            className="mt-1 h-8 text-xs font-bold text-[#0064cb] border-[#0064cb]/30 hover:bg-blue-50 cursor-pointer"
+                          >
+                            <UserPlus className="w-3.5 h-3.5 mr-1" /> Assign Guards Now
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -310,15 +382,7 @@ export function AssignedGuardsCard({
 
                       <TableCell className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {guard.qr_code_url ? (
-                            <button
-                              onClick={() => onViewQr(guard.qr_code_url!, guard.full_name || "Guard")}
-                              className="w-8 h-8 rounded-full bg-blue-50 text-[#0064cb] hover:bg-blue-100 flex items-center justify-center transition-all cursor-pointer shadow-xs border border-blue-100"
-                              title="View QR Code"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          ) : (
+                          {!guard.qr_code_url && (
                             <button
                               onClick={() => handleTriggerUpload(guard.guard_id)}
                               disabled={uploadingQrGuardId === guard.guard_id}

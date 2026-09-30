@@ -9,6 +9,7 @@ import React, {
   useCallback,
 } from "react";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import {
   Mic,
@@ -369,8 +370,22 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     };
   }, [handleCallEnd]);
 
+  const pathname = usePathname();
+
+  const isAllowedVideoActiveRoute = Boolean(
+    pathname && (
+      pathname === "/" ||
+      pathname === "/dashboard" ||
+      pathname.startsWith("/dashboard/") ||
+      pathname === "/shift/view" ||
+      pathname.startsWith("/shift/view/") ||
+      pathname.startsWith("/shift/view")
+    )
+  );
+
   const checkActiveCall = useCallback(async () => {
     if (status !== "authenticated" || !session?.user) return;
+    if (!isAllowedVideoActiveRoute) return;
     if (isCallEndingRef.current) return;
     if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
     if (isCallOpen && !isMinimized) return;
@@ -401,13 +416,13 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Silently handle active check failure
     }
-  }, [isCallOpen, isMinimized, status, session?.user?.id]);
+  }, [isCallOpen, isMinimized, status, session?.user?.id, isAllowedVideoActiveRoute]);
 
   const checkActiveCallRef = useRef(checkActiveCall);
   checkActiveCallRef.current = checkActiveCall;
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status !== "authenticated" || !isAllowedVideoActiveRoute) return;
 
     checkActiveCallRef.current();
     const interval = setInterval(() => {
@@ -425,7 +440,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [status]);
+  }, [status, isAllowedVideoActiveRoute]);
 
   const expandCall = useCallback(() => {
     setIsMinimized(false);
