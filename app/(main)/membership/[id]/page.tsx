@@ -19,6 +19,7 @@ import {
   removeGuardsFromMembershipAction,
   generateBenefitImageUploadUrlAction,
   uploadGuardQrAction,
+  uploadFileToSignedUrlAction,
   MembershipBenefitItem,
   MembershipAssignedGuardItem,
 } from "@/actions/membership.actions";
@@ -33,12 +34,8 @@ export default function MembershipDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const membershipId = params.id as string;
-
-  // Benefit Details State
   const [benefit, setBenefit] = useState<MembershipBenefitItem | null>(null);
   const [isLoadingBenefit, setIsLoadingBenefit] = useState(true);
-
-  // Assigned Guards State
   const [assignedGuards, setAssignedGuards] = useState<MembershipAssignedGuardItem[]>([]);
   const [isLoadingAssignedGuards, setIsLoadingAssignedGuards] = useState(true);
   const [assignedSearch, setAssignedSearch] = useState("");
@@ -47,11 +44,8 @@ export default function MembershipDetailsPage() {
   const [assignedPageSize] = useState(10);
   const [assignedTotal, setAssignedTotal] = useState(0);
   const debouncedAssignedSearch = useDebounceValue(assignedSearch, 400);
-
-  // Modals State
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [uploadingQrGuardId, setUploadingQrGuardId] = useState<string | null>(null);
-
   const [qrModal, setQrModal] = useState<{
     isOpen: boolean;
     url: string | null;
@@ -224,12 +218,28 @@ export default function MembershipDetailsPage() {
       const signedUrl = res.data.signed_url;
       const finalUrl = signedUrl || res.data.public_url || res.data.file_path;
 
-      const uploadRes = await fetch(signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!uploadRes.ok) throw new Error("Failed to upload image to server");
+      let directUploadFailed = false;
+      try {
+        const uploadRes = await fetch(signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        if (!uploadRes.ok) {
+          directUploadFailed = true;
+        }
+      } catch {
+        directUploadFailed = true;
+      }
+
+      if (directUploadFailed) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const serverUploadRes = await uploadFileToSignedUrlAction(signedUrl, formData);
+        if (!serverUploadRes.success) {
+          throw new Error(serverUploadRes.error || "Failed to upload image to server");
+        }
+      }
 
       const updateRes = await uploadGuardQrAction(membershipId, guardId, finalUrl);
       if (updateRes.success) {

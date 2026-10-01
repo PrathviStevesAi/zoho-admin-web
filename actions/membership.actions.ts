@@ -144,6 +144,63 @@ export async function createMembershipAction(
   }
 }
 
+function sanitizeStorageFolderName(name?: string): string {
+  if (!name || typeof name !== "string") return "benefits";
+  const cleaned = name
+    .replace(/%/g, "percent")
+    .replace(/[#?&+\\/:*?"<>|]/g, "")
+    .replace(/[^a-zA-Z0-9_\-\s]/g, "")
+    .trim()
+    .replace(/\s+/g, "_");
+  return cleaned || "benefits";
+}
+
+function sanitizeStorageFileName(fileName: string): string {
+  if (!fileName || typeof fileName !== "string") return "file";
+  const lastDot = fileName.lastIndexOf(".");
+  if (lastDot === -1) {
+    return fileName.replace(/%/g, "percent").replace(/[^a-zA-Z0-9._\-]/g, "_");
+  }
+  const base = fileName.slice(0, lastDot);
+  const ext = fileName.slice(lastDot);
+  const cleanBase = base
+    .replace(/%/g, "percent")
+    .replace(/[^a-zA-Z0-9_\-]/g, "_")
+    .replace(/_+/g, "_");
+  return `${cleanBase || "file"}${ext}`;
+}
+
+export async function uploadFileToSignedUrlAction(
+  signedUrl: string,
+  formData: FormData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const file = formData.get("file") as File;
+    if (!file) {
+      return { success: false, error: "No file provided for upload" };
+    }
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const uploadRes = await fetch(signedUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+      },
+      body: buffer,
+    });
+    if (!uploadRes.ok) {
+      const errText = await uploadRes.text().catch(() => "");
+      return {
+        success: false,
+        error: `Storage upload failed with status ${uploadRes.status}${errText ? `: ${errText}` : ""}`,
+      };
+    }
+    return { success: true };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Failed to upload file to storage";
+    return { success: false, error: msg };
+  }
+}
+
 export async function generateBenefitImageUploadUrlAction(payload: {
   file_name: string;
   type?: string;
@@ -162,10 +219,13 @@ export async function generateBenefitImageUploadUrlAction(payload: {
   error?: string;
 }> {
   try {
+    const cleanFileName = sanitizeStorageFileName(payload.file_name);
+    const cleanFolderName = sanitizeStorageFolderName(payload.folder_name);
+
     const body: Record<string, any> = {
-      file_name: payload.file_name,
+      file_name: cleanFileName,
       type: payload.type || "benefit",
-      folder_name: payload.folder_name || "benefits",
+      folder_name: cleanFolderName,
     };
     if (payload.guard_id) body.guard_id = payload.guard_id;
     if (payload.guard_email) body.guard_email = payload.guard_email;
