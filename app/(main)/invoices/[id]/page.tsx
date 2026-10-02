@@ -1046,6 +1046,7 @@ export default function InvoiceDetailsPage() {
       ) : isAvailableGuardsOpen ? (
         <AvailableGuardsModule
           invoiceId={id}
+          invoice={invoice}
           guards={availableGuards}
           shifts={shifts}
           totalGuards={totalAvailableGuards}

@@ -14,6 +14,14 @@ interface GuardsTableProps {
 }
 
 export function GuardsTable({ guards, currentPage, pageSize, onView, loading }: GuardsTableProps) {
+  const safeGuards = Array.isArray(guards) ? guards.filter(g => g && typeof g === "object") : [];
+
+  const getSafeString = (val: any, fallback = "-") => {
+    if (typeof val === "string") return val.trim() || fallback;
+    if (typeof val === "number") return String(val);
+    return fallback;
+  };
+
   return (
     <div className="mt-4 pt-4">
       <div className="overflow-x-auto">
@@ -44,32 +52,44 @@ export function GuardsTable({ guards, currentPage, pageSize, onView, loading }: 
                   <TableCell className="px-4 py-4"><Skeleton className="h-8 w-14 rounded-lg" /></TableCell>
                 </TableRow>
               ))
-            ) : guards.length === 0 ? (
+            ) : safeGuards.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8 text-slate-500 font-medium">No more data</TableCell>
               </TableRow>
             ) : (
-              guards.map((guard, idx) => (
-                <TableRow key={guard.id} className="hover:bg-slate-50/50 border-b border-x border-slate-200 transition-colors">
-                  <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{idx + 1 + (currentPage - 1) * pageSize}</TableCell>
-                  <TableCell className="px-4 py-4 text-sm font-bold text-slate-700">{`${guard.first_name || ""} ${guard.last_name || ""}`.trim()}</TableCell>
-                  <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{guard.phone_number}</TableCell>
-                  <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{guard.city}</TableCell>
-                  <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{guard.state}</TableCell>
-                  <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{guard.country}</TableCell>
-                  <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{guard.created_at ? <FormattedDate date={guard.created_at} includeTime={false} /> : ""}</TableCell>
-                  <TableCell className="px-4 py-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => onView?.(guard)}
-                      className="h-8 px-3 text-[#0064cb] border-[#0064cb] hover:bg-[#0064cb]/10 text-xs rounded-lg transition-colors cursor-pointer"
-                    >
-                      View
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+              safeGuards.map((guard, idx) => {
+                const firstName = typeof guard.first_name === "string" ? guard.first_name : "";
+                const lastName = typeof guard.last_name === "string" ? guard.last_name : "";
+                const fullName = `${firstName} ${lastName}`.trim() || "-";
+
+                return (
+                  <TableRow key={guard.id || idx} className="hover:bg-slate-50/50 border-b border-x border-slate-200 transition-colors">
+                    <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{idx + 1 + (currentPage - 1) * pageSize}</TableCell>
+                    <TableCell className="px-4 py-4 text-sm font-bold text-slate-700">{fullName}</TableCell>
+                    <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{getSafeString(guard.phone_number)}</TableCell>
+                    <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{getSafeString(guard.city)}</TableCell>
+                    <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{getSafeString(guard.state)}</TableCell>
+                    <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">{getSafeString(guard.country)}</TableCell>
+                    <TableCell className="px-4 py-4 text-sm font-medium text-slate-700">
+                      {guard.created_at && (typeof guard.created_at === "string" || guard.created_at instanceof Date) ? (
+                        <FormattedDate date={guard.created_at} includeTime={false} />
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableCell className="px-4 py-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => onView?.(guard)}
+                        className="h-8 px-3 text-[#0064cb] border-[#0064cb] hover:bg-[#0064cb]/10 text-xs rounded-lg transition-colors cursor-pointer"
+                      >
+                        View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

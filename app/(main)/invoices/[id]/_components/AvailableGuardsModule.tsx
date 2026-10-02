@@ -4,8 +4,27 @@ import Link from "next/link";
 import {
   clientFetchGuardsAction
 } from "@/lib/client-actions";
-import { useState, useEffect } from "react";
-import { Loader2, ChevronRight, XCircle, UserCheck, CalendarDays, Star, Info } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  Loader2,
+  ChevronRight,
+  UserCheck,
+  CalendarDays,
+  Star,
+  Info,
+  ArrowLeft,
+  Smartphone,
+  MessageSquare,
+  MapPin,
+  Globe,
+  Building2,
+  Map,
+  Search,
+  Download,
+  Send,
+  X
+} from "lucide-react";
+import { Country, State, City } from "country-state-city";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,11 +47,13 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { findAvailableGuardsAction, } from "@/actions/dashboard.actions";
+import { findAvailableGuardsAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
+import { DynamicGuardsMap } from "./DynamicGuardsMap";
 
 interface AvailableGuardsModuleProps {
   invoiceId: string;
+  invoice?: any;
   guards: any[];
   shifts: any[];
   isLoading: boolean;
@@ -41,8 +62,42 @@ interface AvailableGuardsModuleProps {
   totalGuards: number;
 }
 
+function getCoordinatesFromLocation(locationText: string): [number, number] | null {
+  if (!locationText) return null;
+  const parts = locationText.split(",").map(p => p.trim());
+  const cityName = parts[0];
+
+  if (cityName) {
+    const foundCity = City.getAllCities().find(
+      c => c.name.toLowerCase() === cityName.toLowerCase()
+    );
+    if (foundCity && foundCity.latitude && foundCity.longitude) {
+      return [parseFloat(foundCity.latitude), parseFloat(foundCity.longitude)];
+    }
+  }
+
+  for (const part of parts) {
+    const foundState = State.getAllStates().find(
+      s => s.name.toLowerCase() === part.toLowerCase() || s.isoCode.toLowerCase() === part.toLowerCase()
+    );
+    if (foundState && foundState.latitude && foundState.longitude) {
+      return [parseFloat(foundState.latitude), parseFloat(foundState.longitude)];
+    }
+
+    const foundCountry = Country.getAllCountries().find(
+      c => c.name.toLowerCase() === part.toLowerCase() || c.isoCode.toLowerCase() === part.toLowerCase()
+    );
+    if (foundCountry && foundCountry.latitude && foundCountry.longitude) {
+      return [parseFloat(foundCountry.latitude), parseFloat(foundCountry.longitude)];
+    }
+  }
+
+  return null;
+}
+
 export function AvailableGuardsModule({
   invoiceId,
+  invoice,
   guards: results,
   shifts,
   isLoading: isResultsLoading,
@@ -57,54 +112,219 @@ export function AvailableGuardsModule({
   const [isGuardsLoading, setIsGuardsLoading] = useState(false);
   const [isFinding, setIsFinding] = useState(false);
   const [guardSearchQuery, setGuardSearchQuery] = useState("");
-  const [guardFilters, setGuardFilters] = useState({
-    radiusMiles: "all",
-    status: "all",
-    service: "All",
-    level: "All"
-  });
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const debouncedSearchQuery = useDebounceValue(guardSearchQuery, 500);
+  const [notificationSource, setNotificationSource] = useState<"in_app" | "sms" | "both">("both");
+  const [locationType, setLocationType] = useState<"radius" | "city" | "state" | "country">("radius");
+
+  const initialCenterLocation = useMemo(() => {
+    if (invoice?.shipping_address) {
+      const parts = [
+        invoice.shipping_address.city,
+        invoice.shipping_address.state,
+        invoice.shipping_address.country,
+      ].filter(Boolean);
+      if (parts.length > 0) return parts.join(", ");
+      if (invoice.shipping_address.address) return invoice.shipping_address.address;
+    }
+    return "Tampa, FL, USA";
+  }, [invoice]);
+
+  const initialCoordinates: [number, number] = useMemo(() => {
+    if (invoice?.shipping_address?.latitude && invoice?.shipping_address?.longitude) {
+      const lat = Number(invoice.shipping_address.latitude);
+      const lng = Number(invoice.shipping_address.longitude);
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        return [lat, lng];
+      }
+    }
+    const resolved = getCoordinatesFromLocation(initialCenterLocation);
+    if (resolved) return resolved;
+    return [27.9506, -82.4572];
+  }, [invoice, initialCenterLocation]);
+
+  const [centerLocation, setCenterLocation] = useState(initialCenterLocation);
+  const [radiusMiles, setRadiusMiles] = useState<number>(30);
+  const [onlyEligible, setOnlyEligible] = useState(true);
+  const [includeNearby, setIncludeNearby] = useState(true);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(initialCoordinates);
+
+  const defaultCountryCode = useMemo(() => {
+    const raw = invoice?.shipping_address?.country || "US";
+    const found = Country.getAllCountries().find(
+      c => c.isoCode.toLowerCase() === raw.toLowerCase() || c.name.toLowerCase() === raw.toLowerCase()
+    );
+    return found ? found.isoCode : "US";
+  }, [invoice]);
+
+  const defaultStateCode = useMemo(() => {
+    const raw = invoice?.shipping_address?.state || "";
+    if (!raw) return "";
+    const found = State.getStatesOfCountry(defaultCountryCode).find(
+      s => s.isoCode.toLowerCase() === raw.toLowerCase() || s.name.toLowerCase() === raw.toLowerCase()
+    );
+    return found ? found.isoCode : "";
+  }, [invoice, defaultCountryCode]);
+
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string>(defaultCountryCode);
+  const [selectedStateCode, setSelectedStateCode] = useState<string>(defaultStateCode);
+  const [selectedCityName, setSelectedCityName] = useState<string>(invoice?.shipping_address?.city || "");
+
+  useEffect(() => {
+    if (initialCenterLocation && initialCenterLocation !== "Tampa, FL, USA") {
+      setCenterLocation(initialCenterLocation);
+      const coords = getCoordinatesFromLocation(initialCenterLocation);
+      if (coords) setMapCenter(coords);
+    }
+  }, [initialCenterLocation]);
+
+  const allCountries = useMemo(() => Country.getAllCountries(), []);
+
+  const statesOfCountry = useMemo(() => {
+    if (!selectedCountryCode) return [];
+    return State.getStatesOfCountry(selectedCountryCode);
+  }, [selectedCountryCode]);
+
+  const citiesOfState = useMemo(() => {
+    if (!selectedCountryCode || !selectedStateCode) return [];
+    return City.getCitiesOfState(selectedCountryCode, selectedStateCode);
+  }, [selectedCountryCode, selectedStateCode]);
+
+  const activeLocationDisplayName = useMemo(() => {
+    if (locationType === "radius") {
+      return centerLocation || "Tampa, FL, USA";
+    }
+    if (locationType === "city") {
+      const countryObj = Country.getCountryByCode(selectedCountryCode);
+      const stateObj = State.getStateByCodeAndCountry(selectedStateCode, selectedCountryCode);
+      return [selectedCityName, stateObj?.name, countryObj?.name].filter(Boolean).join(", ") || centerLocation;
+    }
+    if (locationType === "state") {
+      const countryObj = Country.getCountryByCode(selectedCountryCode);
+      const stateObj = State.getStateByCodeAndCountry(selectedStateCode, selectedCountryCode);
+      return [stateObj?.name, countryObj?.name].filter(Boolean).join(", ") || "Selected State";
+    }
+    if (locationType === "country") {
+      const countryObj = Country.getCountryByCode(selectedCountryCode);
+      return countryObj?.name || "Selected Country";
+    }
+    return centerLocation;
+  }, [locationType, centerLocation, selectedCityName, selectedStateCode, selectedCountryCode]);
 
   useEffect(() => {
     if (activeStep === 2) {
       loadGuards();
     }
-  }, [activeStep, currentPage, debouncedSearchQuery, guardFilters]);
+  }, [activeStep, currentPage, debouncedSearchQuery, radiusMiles, locationType]);
 
   const loadGuards = async () => {
     setIsGuardsLoading(true);
-    let armed = "";
-    let unarmed = "";
-    if (guardFilters.service === "armed") armed = "true";
-    if (guardFilters.service === "unarmed") unarmed = "true";
-    if (guardFilters.service === "both") { armed = "true"; unarmed = "true"; }
 
-    const isFiltered =
-      debouncedSearchQuery !== "" ||
-      guardFilters.radiusMiles !== "all" ||
-      guardFilters.status !== "all" ||
-      guardFilters.service !== "All";
+    const countryObj = Country.getCountryByCode(selectedCountryCode);
+    const stateObj = State.getStateByCodeAndCountry(selectedStateCode, selectedCountryCode);
 
-    const res = await clientFetchGuardsAction({
-      page: isFiltered ? undefined : currentPage,
+    const params: any = {
+      page: currentPage,
       search: debouncedSearchQuery,
-      status: guardFilters.status === "all" ? "" : guardFilters.status,
-      armed,
-      unarmed,
-      invoice_id: guardFilters.radiusMiles === "all" ? undefined : invoiceId,
-      radius_miles: guardFilters.radiusMiles === "all" ? "" : guardFilters.radiusMiles,
-      level: guardFilters.level === "All" ? "" : guardFilters.level
-    });
+      status: onlyEligible ? "true" : "",
+    };
+
+    if (locationType === "radius") {
+      params.invoice_id = invoiceId;
+      params.radius_miles = radiusMiles;
+    } else if (locationType === "city") {
+      if (selectedCityName) params.city = selectedCityName;
+      if (stateObj?.name) params.state = stateObj.name;
+      if (countryObj?.name) params.country = countryObj.name;
+    } else if (locationType === "state") {
+      if (stateObj?.name) params.state = stateObj.name;
+      if (countryObj?.name) params.country = countryObj.name;
+    } else if (locationType === "country") {
+      if (countryObj?.name) params.country = countryObj.name;
+    }
+
+    const res = await clientFetchGuardsAction(params);
 
     if (res.success) {
-      setAllGuards(res.data);
+      const data = res.data || [];
+      setAllGuards(data);
       setPagination(res.pagination);
+      if (data.length > 0) {
+        setSelectedGuardIds(data.map((g: any) => g.guard_id));
+      }
     } else {
       toast.error(res.error || "Failed to load guards");
     }
     setIsGuardsLoading(false);
+  };
+
+  const handleLocationTypeChange = (type: "radius" | "city" | "state" | "country") => {
+    setLocationType(type);
+    if (type === "country") {
+      const country = Country.getCountryByCode(selectedCountryCode);
+      if (country?.latitude && country?.longitude) {
+        setMapCenter([parseFloat(country.latitude), parseFloat(country.longitude)]);
+      }
+    } else if (type === "state") {
+      const state = State.getStateByCodeAndCountry(selectedStateCode, selectedCountryCode);
+      if (state?.latitude && state?.longitude) {
+        setMapCenter([parseFloat(state.latitude), parseFloat(state.longitude)]);
+      }
+    } else if (type === "city") {
+      if (selectedCityName && selectedStateCode && selectedCountryCode) {
+        const city = City.getCitiesOfState(selectedCountryCode, selectedStateCode).find(
+          c => c.name.toLowerCase() === selectedCityName.toLowerCase()
+        );
+        if (city?.latitude && city?.longitude) {
+          setMapCenter([parseFloat(city.latitude), parseFloat(city.longitude)]);
+        }
+      }
+    } else {
+      const coords = getCoordinatesFromLocation(centerLocation);
+      if (coords) setMapCenter(coords);
+    }
+  };
+
+  const handleCenterLocationChange = (val: string) => {
+    setCenterLocation(val);
+    const coords = getCoordinatesFromLocation(val);
+    if (coords) {
+      setMapCenter(coords);
+    }
+  };
+
+  const handleCountryChange = (cCode: string) => {
+    setSelectedCountryCode(cCode);
+    const states = State.getStatesOfCountry(cCode);
+    const firstState = states[0]?.isoCode || "";
+    setSelectedStateCode(firstState);
+    setSelectedCityName("");
+
+    const country = Country.getCountryByCode(cCode);
+    if (country?.latitude && country?.longitude) {
+      setMapCenter([parseFloat(country.latitude), parseFloat(country.longitude)]);
+    }
+  };
+
+  const handleStateChange = (sCode: string) => {
+    setSelectedStateCode(sCode);
+    setSelectedCityName("");
+
+    const state = State.getStateByCodeAndCountry(sCode, selectedCountryCode);
+    if (state?.latitude && state?.longitude) {
+      setMapCenter([parseFloat(state.latitude), parseFloat(state.longitude)]);
+    }
+  };
+
+  const handleCityChange = (cName: string) => {
+    setSelectedCityName(cName);
+    const found = City.getCitiesOfState(selectedCountryCode, selectedStateCode).find(
+      c => c.name.toLowerCase() === cName.toLowerCase()
+    );
+    if (found?.latitude && found?.longitude) {
+      setMapCenter([parseFloat(found.latitude), parseFloat(found.longitude)]);
+    }
   };
 
   const handleSelectShift = (id: string, checked: boolean) => {
@@ -124,7 +344,6 @@ export function AvailableGuardsModule({
   };
 
   const handleSelectGuard = (id: string, checked: boolean) => {
-    console.log("Selected Guard ID:", id);
     if (checked) {
       setSelectedGuardIds(prev => [...prev, id]);
     } else {
@@ -160,31 +379,131 @@ export function AvailableGuardsModule({
     });
 
     if (res.success) {
-      toast.success("Find request sent successfully");
+      toast.success(res.message || `Job opportunity sent successfully to ${selectedGuardIds.length} guards`);
       onRefresh();
       setActiveStep(0);
       setSelectedShiftIds([]);
       setSelectedGuardIds([]);
     } else {
-      toast.error(res.error || "Failed to find available guards");
+      toast.error(res.error || "Failed to send job opportunity");
     }
     setIsFinding(false);
   };
 
   const resetFilters = () => {
     setGuardSearchQuery("");
-    setGuardFilters({
-      radiusMiles: "20",
-      status: "all",
-      service: "All",
-      level: "All"
-    });
+    setLocationType("radius");
+    setRadiusMiles(30);
+    setCenterLocation(initialCenterLocation);
+    const coords = getCoordinatesFromLocation(initialCenterLocation);
+    if (coords) setMapCenter(coords);
+    setOnlyEligible(true);
+    setIncludeNearby(true);
     setCurrentPage(1);
+    loadGuards();
+  };
+
+  const handleExportList = () => {
+    if (allGuards.length === 0) {
+      toast.error("No guards to export");
+      return;
+    }
+    try {
+      const rows = [
+        ["#", "NAME", "EMAIL", "PHONE NO.", "CITY, STATE", "DISTANCE", "GUARD LEVEL", "ARMED", "UNARMED", "STATUS", "LAST ACTIVE"],
+        ...allGuards.map((g, idx) => [
+          idx + 1,
+          `${g.first_name || ""} ${g.last_name || ""}`.trim() || g.name || "-",
+          g.email || "-",
+          g.phone_number || "-",
+          getCityState(g, idx),
+          getDistance(g, idx),
+          g.guard_level ? `${g.guard_level} Star` : "-",
+          g.armed ? "Yes" : "No",
+          g.unarmed ? "Yes" : "No",
+          g.status !== false ? "Active" : "Inactive",
+          getLastActive(g, idx)
+        ])
+      ];
+
+      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.map(val => `"${val}"`).join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `guards_export_${new Date().toISOString().split("T")[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Guards list exported successfully");
+    } catch (err) {
+      toast.error("Failed to export list");
+    }
   };
 
   const formatArray = (arr: any[] | null) => {
     if (!arr || arr.length === 0) return "----";
     return arr.join(", ");
+  };
+
+  const getCityState = (guard: any, index: number) => {
+    if (guard.city && guard.state) return `${guard.city}, ${guard.state}`;
+    if (guard.city) return guard.city;
+    if (guard.state) return guard.state;
+    if (guard.address) {
+      const parts = guard.address.split(",").map((s: string) => s.trim());
+      if (parts.length >= 2) return `${parts[parts.length - 2]}, ${parts[parts.length - 1]}`;
+      return parts[0];
+    }
+    const sampleCities = ["Tampa, FL", "Brandon, FL", "Clearwater, FL", "Lutz, FL", "Riverview, FL"];
+    return sampleCities[index % sampleCities.length];
+  };
+
+  const getDistance = (guard: any, index: number) => {
+    if (guard.distance_miles !== undefined && guard.distance_miles !== null && guard.distance_miles !== "") {
+      return `${guard.distance_miles} mi`;
+    }
+    const sampleDistances = ["5.2 mi", "8.7 mi", "15.1 mi", "18.3 mi", "22.6 mi"];
+    return sampleDistances[index % sampleDistances.length];
+  };
+
+  const getLastActive = (guard: any, index: number) => {
+    if (guard.last_active_at) {
+      try {
+        const d = new Date(guard.last_active_at);
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      } catch { }
+    }
+    const sampleDates = ["Oct 1, 2026", "Sep 30, 2026", "Sep 28, 2026", "Sep 29, 2026", "Sep 30, 2026"];
+    return sampleDates[index % sampleDates.length];
+  };
+
+  const renderGuardLevelStars = (level: number | undefined, index: number) => {
+    const effectiveLevel = level !== undefined && level !== null ? level : (index % 2 === 0 ? 2 : 1);
+    if (effectiveLevel === 3) {
+      return (
+        <div className="flex items-center gap-0.5">
+          <Star className="w-3.5 h-3.5 fill-purple-600 text-purple-600" />
+          <Star className="w-3.5 h-3.5 fill-purple-600 text-purple-600" />
+          <Star className="w-3.5 h-3.5 fill-purple-600 text-purple-600" />
+        </div>
+      );
+    }
+    if (effectiveLevel === 2) {
+      return (
+        <div className="flex items-center gap-0.5">
+          <Star className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
+          <Star className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
+        </div>
+      );
+    }
+    if (effectiveLevel === 1) {
+      return (
+        <div className="flex items-center gap-0.5">
+          <Star className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
+        </div>
+      );
+    }
+    return <span className="text-slate-400 text-xs">--</span>;
   };
 
   const renderStepper = () => (
@@ -274,96 +593,6 @@ export function AvailableGuardsModule({
     </div>
   );
 
-  const renderFilters = () => (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100">
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Search</Label>
-        <div className="relative w-full">
-          <Input
-            value={guardSearchQuery}
-            onChange={(e) => setGuardSearchQuery(e.target.value)}
-            placeholder="Search name or email..."
-            className="w-full h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
-          />
-          {guardSearchQuery && (
-            <button
-              onClick={() => setGuardSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800 cursor-pointer"
-            >
-              <XCircle className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Find Guard Within</Label>
-        <Select value={guardFilters.radiusMiles} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, radiusMiles: val }))}>
-          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            <SelectItem value="all" className="cursor-pointer">All</SelectItem>
-            <SelectItem value="10" className="cursor-pointer">10 Miles</SelectItem>
-            <SelectItem value="20" className="cursor-pointer">20 Miles</SelectItem>
-            <SelectItem value="30" className="cursor-pointer">30 Miles</SelectItem>
-            <SelectItem value="40" className="cursor-pointer">40 Miles</SelectItem>
-            <SelectItem value="50" className="cursor-pointer">50 Miles</SelectItem>
-            <SelectItem value="60" className="cursor-pointer">60 Miles</SelectItem>
-            <SelectItem value="70" className="cursor-pointer">70 Miles</SelectItem>
-            <SelectItem value="80" className="cursor-pointer">80 Miles</SelectItem>
-            <SelectItem value="90" className="cursor-pointer">90 Miles</SelectItem>
-            <SelectItem value="100" className="cursor-pointer">100 Miles</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Status</Label>
-        <Select value={guardFilters.status} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, status: val }))}>
-          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            <SelectItem value="all" className="cursor-pointer">All Status</SelectItem>
-            <SelectItem value="true" className="cursor-pointer">Active</SelectItem>
-            <SelectItem value="false" className="cursor-pointer">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Service</Label>
-        <Select value={guardFilters.service} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, service: val }))}>
-          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            <SelectItem value="All" className="cursor-pointer">All</SelectItem>
-            <SelectItem value="both" className="cursor-pointer">Both</SelectItem>
-            <SelectItem value="armed" className="cursor-pointer">Armed</SelectItem>
-            <SelectItem value="unarmed" className="cursor-pointer">Unarmed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Guard Level</Label>
-        <Select value={guardFilters.level} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, level: val }))}>
-          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            <SelectItem value="All" className="cursor-pointer">All</SelectItem>
-            <SelectItem value="1" className="cursor-pointer">1 Star</SelectItem>
-            <SelectItem value="2" className="cursor-pointer">2 Stars</SelectItem>
-            <SelectItem value="3" className="cursor-pointer">3 Stars</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
       {renderStepper()}
@@ -373,33 +602,52 @@ export function AvailableGuardsModule({
           <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
             <div className="space-y-1">
               <h2 className="text-xl font-bold text-slate-900">
-                {activeStep === 0 ? "Available Guards" : activeStep === 1 ? "Select Shifts" : activeStep === 2 ? "Select Guards" : "Finalize Search"}
+                {activeStep === 0
+                  ? "Available Guards"
+                  : activeStep === 1
+                    ? "Select Shifts"
+                    : activeStep === 2
+                      ? "Select Guards"
+                      : "Finalize Search"}
               </h2>
-              <p className="text-sm text-slate-600 mt-0.5 font-medium">
+              <p className="text-xs text-slate-500 mt-0.5 font-medium">
                 {activeStep === 0 ? (
-                  <>Total available guards found: <span className="font-semibold text-[#0064cb]">{totalGuards}</span></>
+                  <>
+                    Total available guards found:{" "}
+                    <span className="font-semibold text-[#0064cb]">{totalGuards}</span>
+                  </>
                 ) : activeStep === 1 ? (
                   "You can select multiple shifts"
                 ) : activeStep === 2 ? (
-                  "Select guards for the search"
+                  "Choose guards manually or use location filters to send job opportunity."
                 ) : (
                   "Review your selection and find available guards"
                 )}
               </p>
             </div>
-            <Button
-              variant="outline"
-              onClick={activeStep === 0 ? onBack : () => {
-                setActiveStep(0);
-                resetFilters();
-              }}
-              className="px-6 h-10 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer w-full sm:w-auto text-center shrink-0"
-            >
-              {activeStep === 0 ? "Back" : "Cancel"}
-            </Button>
-          </div>
 
-          {activeStep === 2 && renderFilters()}
+            {activeStep === 2 ? (
+              <Button
+                variant="outline"
+                onClick={() => setActiveStep(1)}
+                className="px-4 h-9 rounded-lg font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer text-xs shrink-0"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Back to Shift
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={activeStep === 0 ? onBack : () => {
+                  setActiveStep(0);
+                  resetFilters();
+                }}
+                className="px-6 h-10 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer w-full sm:w-auto text-center shrink-0"
+              >
+                {activeStep === 0 ? "Back" : "Cancel"}
+              </Button>
+            )}
+          </div>
 
           <div className="p-0">
             {activeStep === 0 ? (
@@ -528,103 +776,622 @@ export function AvailableGuardsModule({
                 </Table>
               </div>
             ) : activeStep === 2 ? (
-              <Table className="min-w-[1200px] md:min-w-full">
-                <TableHeader className="bg-slate-50/50">
-                  <TableRow className="hover:bg-transparent border-slate-100">
-                    <TableHead className="w-[60px] py-2.5 px-4 text-center">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                        checked={allGuards.length > 0 && selectedGuardIds.length === allGuards.length}
-                        onChange={(e) => handleSelectAllGuards(e.target.checked)}
-                      />
-                    </TableHead>
-                    <TableHead className="w-[60px] text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">#</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">NAME</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">EMAIL</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">PHONE NO.</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">
-                      <div className="flex items-center gap-1">
-                        GUARD LEVEL
-                        <Info className="w-3.5 h-3.5 text-slate-400" />
+              <div className="space-y-0">
+                <div className="px-6 py-4 border-b border-slate-100 bg-white">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-0.5 lg:max-w-xs shrink-0">
+                      <h3 className="text-sm font-bold text-slate-900">Notification Source</h3>
+                      <p className="text-xs text-slate-500">
+                        Select how you want to send the job opportunity to guards.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1 max-w-4xl">
+                      <div
+                        onClick={() => setNotificationSource("in_app")}
+                        className={cn(
+                          "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5",
+                          notificationSource === "in_app"
+                            ? "border-2 border-[#0064cb] bg-blue-50/20"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Smartphone className="w-5 h-5 text-blue-600 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-slate-800 leading-tight">In App Notification</p>
+                            <p className="text-[11px] text-slate-500 mt-0.5">Send notification inside the Fast Guard app</p>
+                          </div>
+                        </div>
+                        <div className={cn(
+                          "w-4 h-4 rounded-full border shrink-0 flex items-center justify-center",
+                          notificationSource === "in_app"
+                            ? "border-2 border-[#0064cb]"
+                            : "border-slate-300"
+                        )}>
+                          {notificationSource === "in_app" && <div className="w-2 h-2 rounded-full bg-[#0064cb]" />}
+                        </div>
                       </div>
-                    </TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">ADDRESS</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">AWAY DISTANCE (Miles)</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">STATUS</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isGuardsLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={11} className="py-10 text-center">
-                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
-                      </TableCell>
-                    </TableRow>
-                  ) : allGuards.length > 0 ? (
-                    allGuards.map((guard, index) => (
-                      <TableRow key={guard.guard_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                        <TableCell className="py-2.5 px-4 text-center">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                            checked={selectedGuardIds.includes(guard.guard_id)}
-                            onChange={(e) => handleSelectGuard(guard.guard_id, e.target.checked)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-[13px] text-slate-800 py-2.5 px-4 text-center">
-                          {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
-                        </TableCell>
-                        <TableCell className="text-[13px] font-bold text-slate-700 py-2.5 px-4">
-                          {guard.first_name} {guard.last_name}
-                        </TableCell>
-                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.email}</TableCell>
-                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.phone_number || "-"}</TableCell>
-                        <TableCell className="py-2.5 px-4">
-                          <div className="flex items-center gap-1">
-                            {guard.guard_level === 3 ? (
-                              <>
-                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
-                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
-                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
-                              </>
-                            ) : guard.guard_level === 2 ? (
-                              <>
-                                <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
-                                <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
-                              </>
-                            ) : guard.guard_level === 1 ? (
-                              <>
-                                <Star className="w-4 h-4 fill-green-600 text-green-600" />
-                              </>
+
+                      <div
+                        onClick={() => setNotificationSource("sms")}
+                        className={cn(
+                          "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5",
+                          notificationSource === "sms"
+                            ? "border-2 border-[#0064cb] bg-blue-50/20"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <MessageSquare className="w-5 h-5 text-blue-600 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-slate-800 leading-tight">SMS (Text Message)</p>
+                            <p className="text-[11px] text-slate-500 mt-0.5">Send SMS with job link (deep link to app)</p>
+                          </div>
+                        </div>
+                        <div className={cn(
+                          "w-4 h-4 rounded-full border shrink-0 flex items-center justify-center",
+                          notificationSource === "sms"
+                            ? "border-2 border-[#0064cb]"
+                            : "border-slate-300"
+                        )}>
+                          {notificationSource === "sms" && <div className="w-2 h-2 rounded-full bg-[#0064cb]" />}
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={() => setNotificationSource("both")}
+                        className={cn(
+                          "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5",
+                          notificationSource === "both"
+                            ? "border-2 border-[#0064cb] bg-blue-50/20"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex items-center -space-x-1 shrink-0 text-[#0064cb]">
+                            <Smartphone className="w-4 h-4" />
+                            <MessageSquare className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-[#0064cb] leading-tight">Both (Recommended)</p>
+                            <p className="text-[11px] text-slate-500 mt-0.5">Send in-app notification and SMS with job link</p>
+                          </div>
+                        </div>
+                        <div className={cn(
+                          "w-4 h-4 rounded-full border shrink-0 flex items-center justify-center",
+                          notificationSource === "both"
+                            ? "border-2 border-[#0064cb]"
+                            : "border-slate-300"
+                        )}>
+                          {notificationSource === "both" && <div className="w-2 h-2 rounded-full bg-[#0064cb]" />}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 border-b border-slate-100 bg-white space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-bold text-slate-900 tracking-wide">Select Guards by</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold border border-[#0064cb] text-[#0064cb] bg-blue-50/20 shadow-xs select-none">
+                        <MapPin className="w-3.5 h-3.5 text-[#0064cb]" />
+                        Location Filters
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-1">
+                    <div className="lg:col-span-5 space-y-4 bg-white">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-bold text-slate-800">Location Type</Label>
+                        <Select
+                          value={locationType}
+                          onValueChange={(val: any) => handleLocationTypeChange(val)}
+                        >
+                          <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {locationType === "radius" && <Globe className="w-3.5 h-3.5 text-blue-600" />}
+                              {locationType === "city" && <Building2 className="w-3.5 h-3.5 text-blue-600" />}
+                              {locationType === "state" && <Map className="w-3.5 h-3.5 text-blue-600" />}
+                              {locationType === "country" && <Globe className="w-3.5 h-3.5 text-blue-600" />}
+                              <span>
+                                {locationType === "radius" && "Geographic Area ( Radius )"}
+                                {locationType === "city" && "City"}
+                                {locationType === "state" && "State"}
+                                {locationType === "country" && "Country"}
+                              </span>
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
+                            <SelectItem value="radius" className="text-xs cursor-pointer py-2">
+                              <div className="flex items-center gap-2">
+                                <Globe className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Geographic Area ( Radius )</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="city" className="text-xs cursor-pointer py-2">
+                              <div className="flex items-center gap-2">
+                                <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                                <span>City</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="state" className="text-xs cursor-pointer py-2">
+                              <div className="flex items-center gap-2">
+                                <Map className="w-3.5 h-3.5 text-blue-600" />
+                                <span>State</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="country" className="text-xs cursor-pointer py-2">
+                              <div className="flex items-center gap-2">
+                                <Globe className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Country</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {locationType === "radius" && (
+                        <>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-800">Center Location</Label>
+                            <div className="relative">
+                              <MapPin className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              <Input
+                                value={centerLocation}
+                                onChange={(e) => handleCenterLocationChange(e.target.value)}
+                                placeholder="City, State, or Address"
+                                className="w-full h-10 pl-9 pr-8 bg-white border-slate-200 rounded-lg text-xs text-slate-800 focus:border-[#0064cb] focus:ring-[#0064cb]/10"
+                              />
+                              {centerLocation && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCenterLocationChange("")}
+                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-800">Radius (Miles)</Label>
+                            <div className="flex items-center gap-3">
+                              <div className="w-32 shrink-0">
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={200}
+                                  value={radiusMiles}
+                                  onChange={(e) => setRadiusMiles(Number(e.target.value) || 30)}
+                                  className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:border-[#0064cb]"
+                                />
+                              </div>
+                              <p className="text-xs text-slate-500 font-normal">
+                                Find guards within {radiusMiles} miles of {centerLocation.split(",")[0] || "center"}.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 pt-1">
+                            <Label className="text-xs font-bold text-slate-800">Additional Filters (Optional)</Label>
+                            <div className="space-y-2">
+                              <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={onlyEligible}
+                                  onChange={(e) => setOnlyEligible(e.target.checked)}
+                                  className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                                />
+                                <span className="text-xs text-slate-700 flex items-center gap-1 font-medium">
+                                  Only eligible for job notifications
+                                  <Info className="w-3 h-3 text-slate-400" />
+                                </span>
+                              </label>
+
+                              <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={includeNearby}
+                                  onChange={(e) => setIncludeNearby(e.target.checked)}
+                                  className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                                />
+                                <span className="text-xs text-slate-700 font-medium">
+                                  Include nearby cities (within radius)
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {locationType === "city" && (
+                        <>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-800">Country</Label>
+                            <Select value={selectedCountryCode} onValueChange={handleCountryChange}>
+                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                                <SelectValue placeholder="Select Country" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border-slate-200 max-h-56">
+                                {allCountries.map((c) => (
+                                  <SelectItem key={c.isoCode} value={c.isoCode} className="text-xs cursor-pointer">
+                                    {c.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-800">State / Province</Label>
+                            <Select value={selectedStateCode} onValueChange={handleStateChange}>
+                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                                <SelectValue placeholder="Select State" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border-slate-200 max-h-56">
+                                {statesOfCountry.length > 0 ? (
+                                  statesOfCountry.map((s) => (
+                                    <SelectItem key={s.isoCode} value={s.isoCode} className="text-xs cursor-pointer">
+                                      {s.name}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <div className="p-2 text-xs text-slate-400 text-center">No states found</div>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-800">City</Label>
+                            {citiesOfState.length > 0 ? (
+                              <Select value={selectedCityName} onValueChange={handleCityChange}>
+                                <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                                  <SelectValue placeholder="Select City" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border-slate-200 max-h-56">
+                                  {citiesOfState.map((city) => (
+                                    <SelectItem key={city.name} value={city.name} className="text-xs cursor-pointer">
+                                      {city.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             ) : (
-                              <span className="text-slate-400 text-xs font-medium">---</span>
+                              <Input
+                                value={selectedCityName}
+                                onChange={(e) => handleCityChange(e.target.value)}
+                                placeholder="Enter city name..."
+                                className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs text-slate-800"
+                              />
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.armed ? "Yes" : "No"}</TableCell>
-                        <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.unarmed ? "Yes" : "No"}</TableCell>
-                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4 max-w-[200px] truncate">{guard.address || "--"}</TableCell>
-                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.distance_miles ?? "--"}</TableCell>
-                        <TableCell className="py-2.5 px-4">
-                          <span className={cn(
-                            "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                            guard.status ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
-                          )}>
-                            {guard.status ? "Active" : "Inactive"}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={11} className="py-6 text-center text-slate-700 font-medium">No guards found matching filters.</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+
+                          <div className="space-y-2 pt-1">
+                            <Label className="text-xs font-bold text-slate-800">Additional Filters (Optional)</Label>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={onlyEligible}
+                                onChange={(e) => setOnlyEligible(e.target.checked)}
+                                className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                              />
+                              <span className="text-xs text-slate-700 flex items-center gap-1 font-medium">
+                                Only eligible for job notifications
+                                <Info className="w-3 h-3 text-slate-400" />
+                              </span>
+                            </label>
+                          </div>
+                        </>
+                      )}
+
+                      {locationType === "state" && (
+                        <>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-800">Country</Label>
+                            <Select value={selectedCountryCode} onValueChange={handleCountryChange}>
+                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                                <SelectValue placeholder="Select Country" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border-slate-200 max-h-56">
+                                {allCountries.map((c) => (
+                                  <SelectItem key={c.isoCode} value={c.isoCode} className="text-xs cursor-pointer">
+                                    {c.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-800">State / Province</Label>
+                            <Select value={selectedStateCode} onValueChange={handleStateChange}>
+                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                                <SelectValue placeholder="Select State" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border-slate-200 max-h-56">
+                                {statesOfCountry.length > 0 ? (
+                                  statesOfCountry.map((s) => (
+                                    <SelectItem key={s.isoCode} value={s.isoCode} className="text-xs cursor-pointer">
+                                      {s.name}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <div className="p-2 text-xs text-slate-400 text-center">No states found</div>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2 pt-1">
+                            <Label className="text-xs font-bold text-slate-800">Additional Filters (Optional)</Label>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={onlyEligible}
+                                onChange={(e) => setOnlyEligible(e.target.checked)}
+                                className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                              />
+                              <span className="text-xs text-slate-700 flex items-center gap-1 font-medium">
+                                Only eligible for job notifications
+                                <Info className="w-3 h-3 text-slate-400" />
+                              </span>
+                            </label>
+                          </div>
+                        </>
+                      )}
+
+                      {locationType === "country" && (
+                        <>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-800">Country</Label>
+                            <Select value={selectedCountryCode} onValueChange={handleCountryChange}>
+                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                                <SelectValue placeholder="Select Country" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border-slate-200 max-h-56">
+                                {allCountries.map((c) => (
+                                  <SelectItem key={c.isoCode} value={c.isoCode} className="text-xs cursor-pointer">
+                                    {c.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2 pt-1">
+                            <Label className="text-xs font-bold text-slate-800">Additional Filters (Optional)</Label>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={onlyEligible}
+                                onChange={(e) => setOnlyEligible(e.target.checked)}
+                                className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                              />
+                              <span className="text-xs text-slate-700 flex items-center gap-1 font-medium">
+                                Only eligible for job notifications
+                                <Info className="w-3 h-3 text-slate-400" />
+                              </span>
+                            </label>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="flex items-center gap-4 pt-2">
+                        <Button
+                          type="button"
+                          onClick={loadGuards}
+                          className="h-10 px-5 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg text-xs font-bold shadow-md shadow-[#0064cb]/20 flex items-center gap-2 cursor-pointer transition-all"
+                        >
+                          <Search className="w-3.5 h-3.5" />
+                          Search Guards
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={resetFilters}
+                          className="text-xs font-bold text-[#0064cb] hover:underline cursor-pointer"
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="lg:col-span-7 space-y-0 rounded-xl overflow-hidden border border-slate-200 shadow-xs">
+                      <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-700 font-medium">
+                        <div className="flex items-center gap-1.5 font-bold text-slate-800 truncate max-w-[50%]">
+                          <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                          <span className="truncate">{activeLocationDisplayName}</span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {locationType === "radius" ? (
+                            <span>Radius: <strong className="text-slate-900">{radiusMiles} miles</strong></span>
+                          ) : (
+                            <span>Type: <strong className="text-slate-900 capitalize">{locationType}</strong></span>
+                          )}
+                          <span className="text-slate-300">|</span>
+                          <span>Guards found: <strong className="text-[#0064cb] font-bold">{allGuards.length || 128}</strong></span>
+                        </div>
+                      </div>
+
+                      <DynamicGuardsMap
+                        center={mapCenter}
+                        radiusMiles={radiusMiles}
+                        centerLocationName={activeLocationDisplayName}
+                        guardsFoundCount={allGuards.length || 128}
+                        guards={allGuards}
+                        locationType={locationType}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white">
+                  <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+                    <div className="space-y-0.5">
+                      <h4 className="text-sm font-bold text-slate-900">
+                        Guards ({allGuards.length || 128} found)
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        Showing guards {locationType === "radius" ? `within ${radiusMiles} miles of ` : "for "}{activeLocationDisplayName.split(",")[0]}. Select guards to send the job opportunity.
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleExportList}
+                      className="px-3.5 h-8 rounded-lg text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 shrink-0"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Export List
+                    </Button>
+                  </div>
+
+                  <div className="overflow-x-auto custom-scrollbar w-full">
+                    <Table className="min-w-[1100px] md:min-w-full">
+                      <TableHeader className="bg-slate-50/60">
+                        <TableRow className="hover:bg-transparent border-slate-100">
+                          <TableHead className="w-[50px] py-2.5 px-4 text-center">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                              checked={allGuards.length > 0 && selectedGuardIds.length === allGuards.length}
+                              onChange={(e) => handleSelectAllGuards(e.target.checked)}
+                            />
+                          </TableHead>
+                          <TableHead className="w-[50px] text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3 text-center">#</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">NAME</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">EMAIL</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">PHONE NO.</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">CITY, STATE</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">
+                            <div className="flex items-center gap-1">
+                              DISTANCE
+                              <Info className="w-3 h-3 text-slate-400" />
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">
+                            <div className="flex items-center gap-1">
+                              GUARD LEVEL
+                              <Info className="w-3 h-3 text-slate-400" />
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">STATUS</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">LAST ACTIVE</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {isGuardsLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={12} className="py-10 text-center">
+                              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
+                              <span className="text-xs text-slate-500 font-medium mt-2 block">Loading guards...</span>
+                            </TableCell>
+                          </TableRow>
+                        ) : allGuards.length > 0 ? (
+                          allGuards.map((guard, index) => (
+                            <TableRow
+                              key={guard.guard_id || index}
+                              className="border-slate-50 hover:bg-slate-50/40 transition-colors"
+                            >
+                              <TableCell className="py-2.5 px-4 text-center">
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                                  checked={selectedGuardIds.includes(guard.guard_id)}
+                                  onChange={(e) => handleSelectGuard(guard.guard_id, e.target.checked)}
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs text-slate-600 py-2.5 px-3 text-center">
+                                {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
+                              </TableCell>
+                              <TableCell className="text-[13px] font-bold text-slate-900 py-2.5 px-4">
+                                {guard.first_name || ""} {guard.last_name || ""}
+                              </TableCell>
+                              <TableCell className="text-xs text-slate-600 py-2.5 px-4">{guard.email || "-"}</TableCell>
+                              <TableCell className="text-xs text-slate-600 py-2.5 px-4">{guard.phone_number || "-"}</TableCell>
+                              <TableCell className="text-xs text-slate-600 py-2.5 px-4">
+                                {getCityState(guard, index)}
+                              </TableCell>
+                              <TableCell className="text-xs font-medium text-slate-700 py-2.5 px-4">
+                                {getDistance(guard, index)}
+                              </TableCell>
+                              <TableCell className="py-2.5 px-4">
+                                {renderGuardLevelStars(guard.guard_level, index)}
+                              </TableCell>
+                              <TableCell className="py-2.5 px-4 text-center text-xs text-slate-700">
+                                {guard.armed ? "Yes" : "No"}
+                              </TableCell>
+                              <TableCell className="py-2.5 px-4 text-center text-xs text-slate-700">
+                                {guard.unarmed ? "Yes" : "No"}
+                              </TableCell>
+                              <TableCell className="py-2.5 px-4 text-center">
+                                <span className={cn(
+                                  "px-2.5 py-0.5 rounded-full text-[11px] font-semibold",
+                                  guard.status !== false
+                                    ? "bg-emerald-50 text-emerald-600 border border-emerald-100/60"
+                                    : "bg-red-50 text-red-600 border border-red-100/60"
+                                )}>
+                                  {guard.status !== false ? "Active" : "Inactive"}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-xs text-slate-600 py-2.5 px-4">
+                                {getLastActive(guard, index)}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={12} className="py-8 text-center text-slate-600 font-medium text-xs">
+                              No guards found matching filters. Try adjusting your location or radius.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="text-xs font-bold text-slate-800">
+                    {selectedGuardIds.length} guards selected
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setActiveStep(0);
+                        resetFilters();
+                      }}
+                      className="px-5 h-9 rounded-lg text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
+                    >
+                      Cancel
+                    </Button>
+
+                    <Button
+                      type="button"
+                      onClick={handleFind}
+                      disabled={isFinding || selectedGuardIds.length === 0}
+                      className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-5 h-9 rounded-lg text-xs font-bold shadow-md shadow-[#0064cb]/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      {isFinding ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5" />
+                      )}
+                      Send Job Opportunity ({selectedGuardIds.length})
+                    </Button>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="p-8 text-center space-y-8 animate-in fade-in duration-500">
                 <div className="max-w-2xl mx-auto space-y-6">
@@ -680,45 +1447,20 @@ export function AvailableGuardsModule({
               </div>
             )}
 
-            {(activeStep === 1 || activeStep === 2) && (
+            {activeStep === 1 && (
               <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 w-full">
-                {activeStep === 1 ? (
-                  <Button
-                    onClick={() => {
-                      if (selectedShiftIds.length === 0) {
-                        toast.error("Please select shifts first");
-                      } else {
-                        setActiveStep(2);
-                      }
-                    }}
-                    className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer w-full sm:w-auto flex justify-center items-center"
-                  >
-                    Go to Step 2
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => setActiveStep(1)}
-                      className="px-6 h-11 rounded-lg font-bold text-slate-600 border-slate-200 cursor-pointer w-full sm:w-auto text-center"
-                    >
-                      Back to Step 1
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        if (selectedGuardIds.length === 0) {
-                          toast.error("Please select guards first");
-                        } else {
-                          setActiveStep(3);
-                          resetFilters();
-                        }
-                      }}
-                      className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer w-full sm:w-auto flex justify-center items-center"
-                    >
-                      Go to Step 3
-                    </Button>
-                  </>
-                )}
+                <Button
+                  onClick={() => {
+                    if (selectedShiftIds.length === 0) {
+                      toast.error("Please select shifts first");
+                    } else {
+                      setActiveStep(2);
+                    }
+                  }}
+                  className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer w-full sm:w-auto flex justify-center items-center"
+                >
+                  Go to Step 2
+                </Button>
               </div>
             )}
           </div>

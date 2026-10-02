@@ -121,12 +121,28 @@ function GuardBankContent() {
             ...(token && { Authorization: `Bearer ${token}` })
           }
         });
-        const data = await res.json();
-        if (data.success) {
-          setLocations(data.data || { countries: [], states: [], cities: [] });
+
+        if (!res.ok) {
+          setLocations({ countries: [], states: [], cities: [] });
+          return;
+        }
+
+        const data = await res.json().catch(() => null);
+        if (data && data.success && data.data && typeof data.data === "object" && !Array.isArray(data.data)) {
+          const sanitizeStrings = (arr: any) =>
+            Array.isArray(arr) ? arr.filter((x: any) => typeof x === "string" && x.trim() !== "") : [];
+
+          setLocations({
+            countries: sanitizeStrings(data.data.countries),
+            states: sanitizeStrings(data.data.states),
+            cities: sanitizeStrings(data.data.cities),
+          });
+        } else {
+          setLocations({ countries: [], states: [], cities: [] });
         }
       } catch (error) {
         console.error("Failed to fetch locations:", error);
+        setLocations({ countries: [], states: [], cities: [] });
       }
     };
 
@@ -149,13 +165,13 @@ function GuardBankContent() {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
       let url = `${baseUrl}/api/v1/guard/bank/application?status=${status}&page=${currentPage}&page_size=${pageSize}`;
       if (selectedCountry && selectedCountry !== "all") {
-        url += `&country=${selectedCountry}`;
+        url += `&country=${encodeURIComponent(selectedCountry)}`;
       }
       if (selectedState && selectedState !== "all") {
-        url += `&state=${selectedState}`;
+        url += `&state=${encodeURIComponent(selectedState)}`;
       }
       if (selectedCity && selectedCity !== "all") {
-        url += `&city=${selectedCity}`;
+        url += `&city=${encodeURIComponent(selectedCity)}`;
       }
       if (debouncedSearch) {
         url += `&search=${encodeURIComponent(debouncedSearch)}`;
@@ -171,16 +187,27 @@ function GuardBankContent() {
           ...(token && { Authorization: `Bearer ${token}` })
         }
       });
-      const data = await res.json();
-      if (data.success) {
-        setGuardsData(data.data);
-        setTotalCount(data.total || 0);
+
+      if (!res.ok) {
+        setGuardsData([]);
+        setTotalCount(0);
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+      if (data && data.success && Array.isArray(data.data)) {
+        // Sanitize guards data to ensure only valid guard objects are kept
+        const cleanGuards = data.data.filter((g: any) => g && typeof g === "object" && !("success" in g && !g.id));
+        setGuardsData(cleanGuards);
+        setTotalCount(typeof data.total === "number" ? data.total : (data.pagination?.total || cleanGuards.length));
       } else {
         setGuardsData([]);
         setTotalCount(0);
       }
     } catch (error) {
       console.error("Failed to fetch guards:", error);
+      setGuardsData([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }

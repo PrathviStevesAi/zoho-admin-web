@@ -22,14 +22,29 @@ interface GuardCardProps {
 export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
   const router = useRouter();
 
+  if (!guard || typeof guard !== "object") return null;
+
+  const firstName = typeof guard.first_name === "string" ? guard.first_name : "";
+  const lastName = typeof guard.last_name === "string" ? guard.last_name : "";
+  const fullName = `${firstName} ${lastName}`.trim() || "Unknown Guard";
+
+  const city = typeof guard.city === "string" ? guard.city : "";
+  const state = typeof guard.state === "string" ? guard.state : "";
+  const country = typeof guard.country === "string" ? guard.country : "";
+  const locationText = [state, country].filter(Boolean).join(", ") || "-";
+
+  const email = typeof guard.email === "string" ? guard.email : "-";
+  const phoneNumber = typeof guard.phone_number === "string" || typeof guard.phone_number === "number" ? String(guard.phone_number) : "-";
+  const performedBy = typeof guard.performed_by === "string" ? guard.performed_by : "";
+
   const getPerformedBySection = () => {
-    if (!guard.performed_by) return null;
+    if (!performedBy) return null;
 
     if (status === "record_touched") {
       return (
         <div className="flex items-center gap-2 text-[12px] text-black">
           <Eye className="w-3.5 h-3.5 text-teal-600" />
-          <span className="truncate" title={guard.performed_by}>{guard.performed_by}</span>
+          <span className="truncate" title={performedBy}>{performedBy}</span>
         </div>
       );
     }
@@ -38,7 +53,7 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
       return (
         <div className="flex items-center gap-2 text-[12px] text-black">
           <UserCheck className="w-3.5 h-3.5 text-green-600" />
-          <span className="truncate" title={guard.performed_by}>{guard.performed_by}</span>
+          <span className="truncate" title={performedBy}>{performedBy}</span>
         </div>
       );
     }
@@ -47,7 +62,7 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
       return (
         <div className="flex items-center gap-2 text-[12px] text-black">
           <UserX className="w-3.5 h-3.5 text-red-600" />
-          <span className="truncate" title={guard.performed_by}>{guard.performed_by}</span>
+          <span className="truncate" title={performedBy}>{performedBy}</span>
         </div>
       );
     }
@@ -56,7 +71,9 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
   };
 
   const handleCardClick = () => {
-    router.push(`/guard-bank/${guard.id}`);
+    if (guard.id) {
+      router.push(`/guard-bank/${guard.id}`);
+    }
   };
 
   return (
@@ -67,7 +84,7 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onDelete?.(guard.id);
+          if (guard.id) onDelete?.(guard.id);
         }}
         className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-md transition-colors cursor-pointer z-10"
       >
@@ -81,27 +98,27 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
 
         <div className="space-y-1.5 flex-1 pr-8">
           <h4 className="font-bold text-slate-800 text-[15px]">
-            {`${guard.first_name || ""} ${guard.last_name || ""}`.trim()}
+            {fullName}
           </h4>
 
           <div className="flex items-center gap-2 text-[12px] text-slate-600">
             <Building2 className="w-3.5 h-3.5 text-[#0064cb]" />
-            <span className="font-bold text-[#0064cb]">{guard.city}</span>
+            <span className="font-bold text-[#0064cb]">{city || "-"}</span>
           </div>
 
           <div className="flex items-center gap-2 text-[12px] text-slate-600">
             <MapPin className="w-3.5 h-3.5 text-[#0064cb]" />
-            <span className="font-bold text-[#0064cb]">{guard.state}, {guard.country}</span>
+            <span className="font-bold text-[#0064cb]">{locationText}</span>
           </div>
 
           <div className="flex items-center gap-2 text-[12px] text-black">
             <Mail className="w-3.5 h-3.5 text-slate-400" />
-            <span className="truncate" title={guard.email}>{guard.email}</span>
+            <span className="truncate" title={email}>{email}</span>
           </div>
 
           <div className="flex items-center gap-2 text-[12px] text-black">
             <Phone className="w-3.5 h-3.5 text-slate-400" />
-            <span>{guard.phone_number}</span>
+            <span>{phoneNumber}</span>
           </div>
 
           {getPerformedBySection()}

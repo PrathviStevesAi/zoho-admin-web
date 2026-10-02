@@ -45,20 +45,37 @@ export function GuardFilters({
     value: string,
     onChange: (val: string) => void,
     placeholder: string,
-    options: string[],
+    options: any[],
     allLabel: string
   ) => {
     if (!mounted) {
       return <div className="h-10 border border-slate-200 rounded-md animate-pulse bg-slate-50" />;
     }
+
+    const safeOptions: string[] = Array.isArray(options)
+      ? options
+          .map((opt: any) => {
+            if (typeof opt === "string") return opt.trim();
+            if (typeof opt === "number") return String(opt);
+            if (opt && typeof opt === "object") {
+              if (typeof opt.name === "string") return opt.name.trim();
+              if (typeof opt.label === "string") return opt.label.trim();
+              if (typeof opt.value === "string") return opt.value.trim();
+              return "";
+            }
+            return "";
+          })
+          .filter((opt) => typeof opt === "string" && opt.length > 0)
+      : [];
+
     return (
-      <Select value={value} onValueChange={onChange}>
+      <Select value={typeof value === "string" ? value : "all"} onValueChange={onChange}>
         <SelectTrigger className="h-10 border-slate-200 bg-slate-50">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{allLabel}</SelectItem>
-          {options.map((opt) => (
+          {safeOptions.map((opt) => (
             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
           ))}
         </SelectContent>
@@ -73,21 +90,21 @@ export function GuardFilters({
         <Input
           placeholder={searchPlaceholder}
           className="h-10 bg-slate-50 border-slate-200"
-          value={search}
+          value={typeof search === "string" ? search : ""}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
       <div className="space-y-1.5">
         <label className={labelClass}>Country</label>
-        {renderSelect(selectedCountry, setSelectedCountry, "All Countries", locations.countries, "All Countries")}
+        {renderSelect(selectedCountry, setSelectedCountry, "All Countries", locations?.countries || [], "All Countries")}
       </div>
       <div className="space-y-1.5">
         <label className={labelClass}>State</label>
-        {renderSelect(selectedState, setSelectedState, "All States", locations.states, "All States")}
+        {renderSelect(selectedState, setSelectedState, "All States", locations?.states || [], "All States")}
       </div>
       <div className="space-y-1.5">
         <label className={labelClass}>City</label>
-        {renderSelect(selectedCity, setSelectedCity, "All Cities", locations.cities, "All Cities")}
+        {renderSelect(selectedCity, setSelectedCity, "All Cities", locations?.cities || [], "All Cities")}
       </div>
     </div>
   );
