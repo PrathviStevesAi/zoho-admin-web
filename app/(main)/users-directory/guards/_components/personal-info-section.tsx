@@ -11,23 +11,8 @@ import { ChevronDown, CheckCircle2, Loader2 } from "lucide-react";
 import { verifySubcontractorApplicationAction } from "@/actions/subcontractor.actions";
 import { Country, State, City } from "country-state-city";
 import { US_STATE_CITY_DATA } from "@/app/subcontractor/components/StaticData";
-
-const ALLOWED_COUNTRIES: Record<string, string> = {
-  US: "United States",
-  CA: "Canada",
-  AR: "Argentina",
-  BO: "Bolivia",
-  BR: "Brazil",
-  CL: "Chile",
-  CO: "Colombia",
-  EC: "Ecuador",
-  GY: "Guyana",
-  PY: "Paraguay",
-  PE: "Peru",
-  SR: "Suriname",
-  UY: "Uruguay",
-  VE: "Venezuela",
-};
+import { CityAutocomplete } from "@/components/ui/city-autocomplete";
+import { lookupPostalCode, ALLOWED_COUNTRY_CODES } from "@/lib/postal-lookup";
 
 export function PersonalInfoSection({ formData, setFormData, countries, selectedCountry, setIsDropdownOpen, isDropdownOpen }: any) {
   const [isEmailVerifying, setIsEmailVerifying] = useState(false);
@@ -38,9 +23,11 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
   const [countryOptions, setCountryOptions] = useState<any[]>([]);
   const [stateOptions, setStateOptions] = useState<any[]>([]);
   const [cityOptions, setCityOptions] = useState<any[]>([]);
+  const [isZipLoading, setIsZipLoading] = useState(false);
+  const [zipLocationMessage, setZipLocationMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const allCountries = Country.getAllCountries().filter(c => Object.keys(ALLOWED_COUNTRIES).includes(c.isoCode));
+    const allCountries = Country.getAllCountries().filter(c => ALLOWED_COUNTRY_CODES.includes(c.isoCode));
     setCountryOptions(allCountries);
   }, []);
 
@@ -59,20 +46,50 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
   }, [formData.addressCountry]);
 
   useEffect(() => {
-    if (formData.addressCountry === "US" && formData.addressState) {
-      const stateData = Object.values(US_STATE_CITY_DATA).find((s: any) => s.short_code === formData.addressState) as any;
-      if (stateData) {
-        const usCities = stateData.cities.map((city: string) => ({ name: city }));
-        setCityOptions(usCities);
-      } else {
-        setCityOptions([]);
+    if (formData.addressCountry && formData.addressState) {
+      let stateCode = formData.addressState;
+      if (formData.addressState.length > 2) {
+        const found = stateOptions.find(
+          (s) => s.name.toLowerCase() === formData.addressState.toLowerCase() || s.isoCode === formData.addressState
+        );
+        if (found) stateCode = found.isoCode;
       }
-    } else if (formData.addressCountry && formData.addressState) {
-      setCityOptions(City.getCitiesOfState(formData.addressCountry, formData.addressState));
+      setCityOptions(City.getCitiesOfState(formData.addressCountry, stateCode) || []);
+    } else if (formData.addressCountry === "US") {
+      setCityOptions(City.getCitiesOfCountry("US") || []);
     } else {
       setCityOptions([]);
     }
-  }, [formData.addressState, formData.addressCountry]);
+  }, [formData.addressState, formData.addressCountry, stateOptions]);
+
+  const handleZipLookup = async (zipValue: string) => {
+    const rawPostal = (zipValue || "").trim();
+    if (rawPostal.length < 3) {
+      setZipLocationMessage(null);
+      return;
+    }
+    setIsZipLoading(true);
+    try {
+      const res = await lookupPostalCode(rawPostal, formData.addressCountry || "US");
+      if (res) {
+        setFormData((prev: any) => ({
+          ...prev,
+          ...(res.country && { addressCountry: res.country, countryError: "" }),
+          ...(res.stateCode && { addressState: res.stateCode, stateError: "" }),
+          ...(res.cityName && { city: res.cityName }),
+        }));
+        if (res.formattedMessage) {
+          setZipLocationMessage(res.formattedMessage);
+        }
+      } else {
+        setZipLocationMessage(null);
+      }
+    } catch (err) {
+      console.error("Postal lookup error:", err);
+    } finally {
+      setIsZipLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!formData.email) {
@@ -123,7 +140,7 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
   }, [formData.phone, selectedCountry.dialCode]);
 
   return (
-    <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm h-full flex flex-col">
+    <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm h-full flex flex-col relative z-20 overflow-visible">
       <h3 className="text-lg font-bold text-slate-900 mb-6">Personal & Contact Information</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
@@ -249,7 +266,10 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
           <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Country <span className="text-red-500">*</span></label>
           <Select
             value={formData.addressCountry}
-            onValueChange={(val) => setFormData({ ...formData, addressCountry: val, addressState: "", city: "", countryError: "" })}
+            onValueChange={(val) => {
+              setFormData({ ...formData, addressCountry: val, addressState: "", city: "", countryError: "" });
+              setZipLocationMessage(null);
+            }}
           >
             <SelectTrigger className={`h-11 bg-slate-50/50 ${formData.countryError ? "border-red-500 ring-1 ring-red-500" : ""}`}><SelectValue placeholder="Select Country" /></SelectTrigger>
             <SelectContent>
@@ -261,6 +281,39 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
             </SelectContent>
           </Select>
           {formData.countryError && <p className="text-xs text-red-500 font-medium mt-1">{formData.countryError}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">ZIP Code</label>
+          <div className="relative">
+            <Input
+              placeholder="Enter ZIP code"
+              value={formData.zipCode}
+              maxLength={15}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s\-]/g, "");
+                setFormData({ ...formData, zipCode: cleaned });
+                if (cleaned.length >= 4) {
+                  handleZipLookup(cleaned);
+                }
+              }}
+              onBlur={() => {
+                if (formData.zipCode) handleZipLookup(formData.zipCode);
+              }}
+              className="h-11 bg-slate-50/50 pr-8"
+            />
+            {isZipLoading && (
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+              </div>
+            )}
+          </div>
+          {zipLocationMessage && (
+            <p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-green-500 inline-block" />
+              {zipLocationMessage}
+            </p>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -284,30 +337,16 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
 
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">City</label>
-          <Select
-            value={formData.city}
-            onValueChange={(val) => setFormData({ ...formData, city: val })}
-            disabled={!formData.addressState}
-          >
-            <SelectTrigger className="h-11 bg-slate-50/50"><SelectValue placeholder="Select City" /></SelectTrigger>
-            <SelectContent>
-              {cityOptions.map((c) => (
-                <SelectItem key={c.name} value={c.name}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">ZIP Code</label>
-          <Input
-            placeholder="Enter ZIP code"
-            value={formData.zipCode}
-            maxLength={10}
-            onChange={(e) => setFormData({ ...formData, zipCode: e.target.value.replace(/[^a-zA-Z0-9]/g, "") })}
+          <CityAutocomplete
+            name="city"
+            value={formData.city || ""}
+            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+            onSelectOption={(opt) => setFormData({ ...formData, city: opt.name })}
+            options={cityOptions}
+            disabled={!formData.addressState && !formData.addressCountry}
+            placeholder="Select or enter city"
             className="h-11 bg-slate-50/50"
+            showStateBadge={!formData.addressState}
           />
         </div>
         <div className="space-y-1.5">

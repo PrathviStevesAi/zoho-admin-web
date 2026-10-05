@@ -99,20 +99,21 @@ export default function GuardDetailPage() {
   }, [editForm.country]);
 
   useEffect(() => {
-    if (editForm.country === "US" && editForm.state) {
-      const stateData = Object.values(US_STATE_CITY_DATA).find(s => s.short_code === editForm.state);
-      if (stateData) {
-        const usCities = stateData.cities.map(city => ({ name: city }));
-        setCities(usCities);
-      } else {
-        setCities([]);
+    if (editForm.country && editForm.state) {
+      let stateCode = editForm.state;
+      if (editForm.state.length > 2) {
+        const found = states.find(
+          (s) => s.name.toLowerCase() === editForm.state.toLowerCase() || s.isoCode === editForm.state
+        );
+        if (found) stateCode = found.isoCode;
       }
-    } else if (editForm.country && editForm.state) {
-      setCities(City.getCitiesOfState(editForm.country, editForm.state));
+      setCities(City.getCitiesOfState(editForm.country, stateCode) || []);
+    } else if (editForm.country === "US") {
+      setCities(City.getCitiesOfCountry("US") || []);
     } else {
       setCities([]);
     }
-  }, [editForm.state, editForm.country]);
+  }, [editForm.state, editForm.country, states]);
 
   const [selectedPhoneCountry, setSelectedPhoneCountry] = useState(phoneCountries[11]);
   const [isPhoneDropdownOpen, setIsPhoneDropdownOpen] = useState(false);
