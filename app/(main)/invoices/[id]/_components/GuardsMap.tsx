@@ -21,7 +21,7 @@ interface GuardsMapProps {
   centerLocationName: string;
   guardsFoundCount: number;
   guards?: any[];
-  locationType?: "radius" | "city" | "state" | "country";
+  locationType?: "radius" | "city" | "state" | "country" | "all";
 }
 
 // Controller component inside MapContainer for zoom and pan
@@ -32,14 +32,15 @@ function MapController({
 }: {
   center: [number, number];
   radiusMiles?: number;
-  locationType?: "radius" | "city" | "state" | "country";
+  locationType?: "radius" | "city" | "state" | "country" | "all";
 }) {
   const map = useMap();
 
   useEffect(() => {
+    map.invalidateSize();
     if (center && center[0] && center[1]) {
       let zoom = 10;
-      if (locationType === "country") {
+      if (locationType === "country" || locationType === "all") {
         zoom = 4;
       } else if (locationType === "state") {
         zoom = 7;
@@ -142,57 +143,117 @@ const createDistanceBadgeIcon = (text: string) =>
     iconAnchor: [35, 12],
   });
 
-// Guard dot icon
-const createGuardDotIcon = (color: string) =>
-  new L.DivIcon({
+// Guard marker icon with blinking guard badge above dot
+const createGuardMarkerIcon = (isEligible: boolean) => {
+  const color = isEligible ? "#16a34a" : "#3b82f6";
+  const glowColor = isEligible ? "rgba(22, 163, 74, 0.5)" : "rgba(59, 130, 246, 0.5)";
+
+  return new L.DivIcon({
     className: "custom-leaflet-icon",
     html: `
+      <style>
+        @keyframes guardPinBlink {
+          0%, 100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          50% {
+            opacity: 0.3;
+            transform: translateY(-2px) scale(0.92);
+          }
+        }
+        @keyframes guardRadarPulse {
+          0% {
+            transform: scale(0.7);
+            opacity: 0.85;
+          }
+          70%, 100% {
+            transform: scale(2.4);
+            opacity: 0;
+          }
+        }
+      </style>
       <div style="
-        background-color: ${color}; 
-        width: 11px; 
-        height: 11px; 
-        border-radius: 50%; 
-        border: 2px solid white; 
-        box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 32px;
+        height: 42px;
         cursor: pointer;
-        transition: transform 0.15s ease;
-      "></div>
-    `,
-    iconSize: [11, 11],
-    iconAnchor: [5.5, 5.5],
-  });
+      ">
+        <!-- Blinking Guard Icon Badge Above the Dot with Centered Right Tick -->
+        <div style="
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          background-color: ${color};
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 8px ${glowColor}, 0 1px 3px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: guardPinBlink 1.2s ease-in-out infinite;
+          z-index: 2;
+        ">
+          <!-- Centered Right Tick SVG -->
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="display: block; margin: auto;">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
 
-// Deterministic mock positions around center
-const PRESET_OFFSETS: [number, number, boolean][] = [
-  [-0.04, 0.06, true],
-  [0.08, -0.09, true],
-  [-0.12, -0.15, true],
-  [0.15, 0.04, true],
-  [-0.02, -0.05, true],
-  [0.05, 0.14, true],
-  [-0.18, 0.08, true],
-  [0.11, -0.22, true],
-  [-0.07, -0.19, true],
-  [0.21, -0.05, true],
-  [-0.14, 0.18, true],
-  [0.02, 0.22, true],
-  [-0.24, -0.10, true],
-  [0.17, 0.19, true],
-  [-0.09, 0.02, true],
-  [0.06, -0.16, true],
-  [-0.03, 0.26, false],
-  [0.26, 0.08, false],
-  [-0.16, -0.28, false],
-  [0.19, -0.26, true],
-  [-0.28, 0.12, true],
-  [0.08, 0.28, true],
-  [-0.11, -0.12, true],
-  [0.13, 0.11, true],
-];
+        <!-- Pointer triangle -->
+        <div style="
+          width: 0;
+          height: 0;
+          border-left: 3.5px solid transparent;
+          border-right: 3.5px solid transparent;
+          border-top: 4px solid ${color};
+          margin-top: -1px;
+          z-index: 1;
+        "></div>
+
+        <!-- Dot Container at coordinate position with radar ripple -->
+        <div style="
+          position: absolute;
+          bottom: 2px;
+          width: 14px;
+          height: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          <!-- Radar Pulse -->
+          <div style="
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: ${color};
+            animation: guardRadarPulse 1.6s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+            pointer-events: none;
+          "></div>
+          <!-- Center Dot -->
+          <div style="
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: ${color};
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            z-index: 3;
+          "></div>
+        </div>
+      </div>
+    `,
+    iconSize: [32, 42],
+    iconAnchor: [16, 40],
+  });
+};
 
 export default function GuardsMap({
   center,
-  radiusMiles = 30,
+  radiusMiles = 50,
   centerLocationName,
   guardsFoundCount,
   guards = [],
@@ -206,7 +267,7 @@ export default function GuardsMap({
 
   if (!mounted) {
     return (
-      <div className="h-[360px] w-full rounded-xl bg-slate-100 flex items-center justify-center">
+      <div className="h-[360px] w-full bg-slate-100 flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-[#0064cb] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -219,7 +280,7 @@ export default function GuardsMap({
     center[1],
   ];
 
-  // Map markers: combine actual guards with visual distribution
+  // Map markers: only actual guards returned from dynamic API
   const guardMarkers: GuardLocation[] = [];
 
   // Add actual guards if available
@@ -241,37 +302,10 @@ export default function GuardsMap({
     }
   });
 
-  // Scale factor for scatter markers
-  const scaleFactor =
-    locationType === "country"
-      ? 8
-      : locationType === "state"
-      ? 2.5
-      : locationType === "city"
-      ? 0.35
-      : radiusMiles / 30;
-
-  PRESET_OFFSETS.forEach(([dLat, dLng, isEligible], idx) => {
-    const matchedGuard = guards[idx];
-    const name = matchedGuard
-      ? `${matchedGuard.first_name || ""} ${matchedGuard.last_name || ""}`.trim() || `Guard #${idx + 1}`
-      : `Guard #${idx + 1}`;
-    const distance = matchedGuard?.distance_miles ? `${matchedGuard.distance_miles} mi` : `${(idx * 1.5 + 2).toFixed(1)} mi`;
-
-    guardMarkers.push({
-      id: `scatter-${idx}`,
-      name,
-      lat: center[0] + dLat * scaleFactor,
-      lng: center[1] + dLng * scaleFactor,
-      isEligible: idx % 6 !== 0 ? isEligible : false,
-      distance,
-    });
-  });
-
   const mapKey = `${center[0].toFixed(3)}-${center[1].toFixed(3)}-${locationType}-${radiusMiles}`;
 
   return (
-    <div className="relative w-full h-[360px] rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+    <div className="relative w-full h-[360px] overflow-hidden">
       <MapContainer
         key={mapKey}
         center={center}
@@ -313,14 +347,14 @@ export default function GuardsMap({
           </>
         )}
 
-        {/* Guard Dots */}
+        {/* Guard Dots with Blinking Guard Badge Icon Above */}
         {guardMarkers.map((gm) => (
           <Marker
             key={gm.id}
             position={[gm.lat, gm.lng]}
-            icon={createGuardDotIcon(gm.isEligible ? "#16a34a" : "#3b82f6")}
+            icon={createGuardMarkerIcon(gm.isEligible)}
           >
-            <Tooltip direction="top" offset={[0, -8]} opacity={0.95}>
+            <Tooltip direction="top" offset={[0, -24]} opacity={0.95}>
               <div className="text-xs">
                 <p className="font-bold text-slate-800">{gm.name}</p>
                 <p className="text-[11px] text-slate-500">
@@ -333,17 +367,27 @@ export default function GuardsMap({
         ))}
       </MapContainer>
 
-      {/* Map Legend */}
-      <div className="absolute bottom-8 right-3 z-[1000] bg-white/95 backdrop-blur-xs px-3.5 py-2 rounded-lg shadow-md border border-slate-200/90 text-[11px] space-y-1.5 pointer-events-auto">
-        <div className="flex items-center gap-2 font-medium text-slate-700">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#16a34a] border border-white shadow-xs"></span>
-          <span>Eligible guard</span>
+      {/* Map Legend (only shown when guards are on map) */}
+      {guardMarkers.length > 0 && (
+        <div className="absolute bottom-8 right-3 z-[1000] bg-white/95 backdrop-blur-xs px-3.5 py-2.5 rounded-lg shadow-md border border-slate-200/90 text-[11px] space-y-2 pointer-events-auto">
+          <div className="flex items-center gap-2 font-medium text-slate-700">
+            <span className="w-4 h-4 rounded-full bg-[#16a34a] border border-white shadow-xs flex items-center justify-center shrink-0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="block m-auto">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+            <span>Eligible guard</span>
+          </div>
+          <div className="flex items-center gap-2 font-medium text-slate-700">
+            <span className="w-4 h-4 rounded-full bg-[#3b82f6] border border-white shadow-xs flex items-center justify-center shrink-0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="block m-auto">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+            <span>Other guard</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 font-medium text-slate-700">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6] border border-white shadow-xs"></span>
-          <span>Other guard</span>
-        </div>
-      </div>
+      )}
 
       {/* Google Attribution */}
       <div className="absolute bottom-1.5 left-2.5 z-[1000] text-[12px] font-bold text-slate-500 tracking-tight select-none pointer-events-none opacity-80 flex items-center">

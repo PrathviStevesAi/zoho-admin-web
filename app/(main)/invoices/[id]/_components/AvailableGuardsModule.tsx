@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import {
-  clientFetchGuardsAction
+  clientFetchGuardsNewAction,
+  FetchGuardsByLocationParams
 } from "@/lib/client-actions";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Loader2,
   ChevronRight,
@@ -22,7 +23,10 @@ import {
   Search,
   Download,
   Send,
-  X
+  X,
+  Shield,
+  ShieldAlert,
+  ShieldCheck
 } from "lucide-react";
 import { Country, State, City } from "country-state-city";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,30 +69,37 @@ interface AvailableGuardsModuleProps {
 function getCoordinatesFromLocation(locationText: string): [number, number] | null {
   if (!locationText) return null;
   const parts = locationText.split(",").map(p => p.trim());
-  const cityName = parts[0];
 
-  if (cityName) {
-    const foundCity = City.getAllCities().find(
-      c => c.name.toLowerCase() === cityName.toLowerCase()
-    );
-    if (foundCity && foundCity.latitude && foundCity.longitude) {
-      return [parseFloat(foundCity.latitude), parseFloat(foundCity.longitude)];
+  // Check each part for city match
+  for (const rawPart of parts) {
+    const part = rawPart.split("-")[0].trim();
+    if (part) {
+      const foundCity = City.getAllCities().find(
+        c => c.name.toLowerCase() === part.toLowerCase()
+      );
+      if (foundCity && foundCity.latitude && foundCity.longitude) {
+        return [parseFloat(foundCity.latitude), parseFloat(foundCity.longitude)];
+      }
     }
   }
 
-  for (const part of parts) {
-    const foundState = State.getAllStates().find(
-      s => s.name.toLowerCase() === part.toLowerCase() || s.isoCode.toLowerCase() === part.toLowerCase()
-    );
-    if (foundState && foundState.latitude && foundState.longitude) {
-      return [parseFloat(foundState.latitude), parseFloat(foundState.longitude)];
-    }
+  // Check each part for state or country match
+  for (const rawPart of parts) {
+    const part = rawPart.split("-")[0].trim();
+    if (part) {
+      const foundState = State.getAllStates().find(
+        s => s.name.toLowerCase() === part.toLowerCase() || s.isoCode.toLowerCase() === part.toLowerCase()
+      );
+      if (foundState && foundState.latitude && foundState.longitude) {
+        return [parseFloat(foundState.latitude), parseFloat(foundState.longitude)];
+      }
 
-    const foundCountry = Country.getAllCountries().find(
-      c => c.name.toLowerCase() === part.toLowerCase() || c.isoCode.toLowerCase() === part.toLowerCase()
-    );
-    if (foundCountry && foundCountry.latitude && foundCountry.longitude) {
-      return [parseFloat(foundCountry.latitude), parseFloat(foundCountry.longitude)];
+      const foundCountry = Country.getAllCountries().find(
+        c => c.name.toLowerCase() === part.toLowerCase() || c.isoCode.toLowerCase() === part.toLowerCase()
+      );
+      if (foundCountry && foundCountry.latitude && foundCountry.longitude) {
+        return [parseFloat(foundCountry.latitude), parseFloat(foundCountry.longitude)];
+      }
     }
   }
 
@@ -116,39 +127,75 @@ export function AvailableGuardsModule({
   const [pagination, setPagination] = useState<any>(null);
   const debouncedSearchQuery = useDebounceValue(guardSearchQuery, 500);
   const [notificationSource, setNotificationSource] = useState<"in_app" | "sms" | "both">("both");
-  const [locationType, setLocationType] = useState<"radius" | "city" | "state" | "country">("radius");
+  const [locationType, setLocationType] = useState<"radius" | "city" | "state" | "country" | "all">("radius");
+  const [serviceFilter, setServiceFilter] = useState<"both" | "armed" | "unarmed">("both");
 
   const initialCenterLocation = useMemo(() => {
+    // 1. Check history for "Site Location"
+    if (Array.isArray(invoice?.history)) {
+      for (const h of invoice.history) {
+        if (h?.details?.["Site Location"]) {
+          return h.details["Site Location"];
+        }
+      }
+    }
+    // 2. Format from shipping_address (street, city, state, country - zip)
     if (invoice?.shipping_address) {
+      if (typeof invoice.shipping_address === "string") return invoice.shipping_address;
+      const addr = invoice.shipping_address;
+      const countryZip = addr.country && addr.zip
+        ? `${addr.country} - ${addr.zip}`
+        : (addr.country || addr.zip || "");
       const parts = [
-        invoice.shipping_address.city,
-        invoice.shipping_address.state,
-        invoice.shipping_address.country,
+        addr.street || addr.address,
+        addr.city,
+        addr.state,
+        countryZip
       ].filter(Boolean);
       if (parts.length > 0) return parts.join(", ");
-      if (invoice.shipping_address.address) return invoice.shipping_address.address;
     }
     return "Tampa, FL, USA";
   }, [invoice]);
 
+  const defaultRadius = 50;
+
   const initialCoordinates: [number, number] = useMemo(() => {
+    // 1. Check direct invoice latitude & longitude
+    if (invoice?.latitude !== undefined && invoice?.latitude !== null && invoice?.longitude !== undefined && invoice?.longitude !== null) {
+      const lat = Number(invoice.latitude);
+      const lng = Number(invoice.longitude);
+      if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
+        return [lat, lng];
+      }
+    }
+    // 2. Check shipping_address latitude & longitude
     if (invoice?.shipping_address?.latitude && invoice?.shipping_address?.longitude) {
       const lat = Number(invoice.shipping_address.latitude);
       const lng = Number(invoice.shipping_address.longitude);
-      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+      if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
         return [lat, lng];
       }
     }
     const resolved = getCoordinatesFromLocation(initialCenterLocation);
     if (resolved) return resolved;
-    return [27.9506, -82.4572];
+    return [22.7041853, 75.8427014];
   }, [invoice, initialCenterLocation]);
 
   const [centerLocation, setCenterLocation] = useState(initialCenterLocation);
-  const [radiusMiles, setRadiusMiles] = useState<number>(30);
+  const [radiusMiles, setRadiusMiles] = useState<number>(50);
   const [onlyEligible, setOnlyEligible] = useState(true);
   const [includeNearby, setIncludeNearby] = useState(true);
   const [mapCenter, setMapCenter] = useState<[number, number]>(initialCoordinates);
+
+  useEffect(() => {
+    if (invoice?.latitude !== undefined && invoice?.latitude !== null && invoice?.longitude !== undefined && invoice?.longitude !== null) {
+      const lat = Number(invoice.latitude);
+      const lng = Number(invoice.longitude);
+      if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
+        setMapCenter([lat, lng]);
+      }
+    }
+  }, [invoice?.latitude, invoice?.longitude]);
 
   const defaultCountryCode = useMemo(() => {
     const raw = invoice?.shipping_address?.country || "US";
@@ -169,7 +216,150 @@ export function AvailableGuardsModule({
 
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>(defaultCountryCode);
   const [selectedStateCode, setSelectedStateCode] = useState<string>(defaultStateCode);
-  const [selectedCityName, setSelectedCityName] = useState<string>(invoice?.shipping_address?.city || "");
+  const [selectedCities, setSelectedCities] = useState<string[]>(() => {
+    const c = invoice?.shipping_address?.city;
+    return c ? [c] : ["Indore"];
+  });
+  const [cityInput, setCityInput] = useState("");
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const cityInputRef = useRef<HTMLInputElement>(null);
+  const cityContainerRef = useRef<HTMLDivElement>(null);
+
+  const [selectedStates, setSelectedStates] = useState<string[]>(() => {
+    const s = invoice?.shipping_address?.state;
+    return s ? [s] : ["Madhya Pradesh"];
+  });
+  const [stateInput, setStateInput] = useState("");
+  const [showStateSuggestions, setShowStateSuggestions] = useState(false);
+  const stateInputRef = useRef<HTMLInputElement>(null);
+  const stateContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (cityContainerRef.current && !cityContainerRef.current.contains(e.target as Node)) {
+        setShowCitySuggestions(false);
+      }
+      if (stateContainerRef.current && !stateContainerRef.current.contains(e.target as Node)) {
+        setShowStateSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    if (invoice?.shipping_address?.city) {
+      const c = invoice.shipping_address.city;
+      setSelectedCities(prev => (prev.length === 0 || (prev.length === 1 && prev[0] === "Indore") ? [c] : prev));
+    }
+  }, [invoice?.shipping_address?.city]);
+
+  useEffect(() => {
+    if (invoice?.shipping_address?.state) {
+      const s = invoice.shipping_address.state;
+      setSelectedStates(prev => (prev.length === 0 || (prev.length === 1 && prev[0] === "Madhya Pradesh") ? [s] : prev));
+    }
+  }, [invoice?.shipping_address?.state]);
+
+  const handleAddCity = (rawName: string) => {
+    const parts = rawName.split(",").map(p => p.trim()).filter(Boolean);
+    if (parts.length === 0) return;
+
+    let updated = [...selectedCities];
+    let lastCoords: [number, number] | null = null;
+    for (const part of parts) {
+      if (!updated.some(c => c.toLowerCase() === part.toLowerCase())) {
+        updated.push(part);
+        const coords = getCoordinatesFromLocation(part);
+        if (coords) lastCoords = coords;
+      }
+    }
+    setSelectedCities(updated);
+    if (lastCoords) setMapCenter(lastCoords);
+    setCityInput("");
+    setShowCitySuggestions(false);
+  };
+
+  const handleRemoveCity = (nameToRemove: string) => {
+    const updated = selectedCities.filter(c => c.toLowerCase() !== nameToRemove.toLowerCase());
+    setSelectedCities(updated);
+    if (updated.length > 0) {
+      const coords = getCoordinatesFromLocation(updated[updated.length - 1]);
+      if (coords) setMapCenter(coords);
+    }
+  };
+
+  const filteredCitySuggestions = useMemo(() => {
+    const q = cityInput.trim().toLowerCase();
+    if (!q || q.length < 2) return [];
+
+    const matches: { name: string; state?: string; country?: string }[] = [];
+    const seen = new Set<string>();
+
+    const all = City.getAllCities();
+    for (let i = 0; i < all.length; i++) {
+      const c = all[i];
+      const lower = c.name.toLowerCase();
+      if (lower.startsWith(q) || lower.includes(q)) {
+        if (!seen.has(lower) && !selectedCities.some(sc => sc.toLowerCase() === lower)) {
+          seen.add(lower);
+          matches.push({ name: c.name, state: c.stateCode, country: c.countryCode });
+          if (matches.length >= 8) break;
+        }
+      }
+    }
+    return matches;
+  }, [cityInput, selectedCities]);
+
+  const handleAddState = (rawName: string) => {
+    const parts = rawName.split(",").map(p => p.trim()).filter(Boolean);
+    if (parts.length === 0) return;
+
+    let updated = [...selectedStates];
+    let lastCoords: [number, number] | null = null;
+    for (const part of parts) {
+      if (!updated.some(s => s.toLowerCase() === part.toLowerCase())) {
+        updated.push(part);
+        const coords = getCoordinatesFromLocation(part);
+        if (coords) lastCoords = coords;
+      }
+    }
+    setSelectedStates(updated);
+    if (lastCoords) setMapCenter(lastCoords);
+    setStateInput("");
+    setShowStateSuggestions(false);
+  };
+
+  const handleRemoveState = (nameToRemove: string) => {
+    const updated = selectedStates.filter(s => s.toLowerCase() !== nameToRemove.toLowerCase());
+    setSelectedStates(updated);
+    if (updated.length > 0) {
+      const coords = getCoordinatesFromLocation(updated[updated.length - 1]);
+      if (coords) setMapCenter(coords);
+    }
+  };
+
+  const filteredStateSuggestions = useMemo(() => {
+    const q = stateInput.trim().toLowerCase();
+    if (!q || q.length < 1) return [];
+
+    const matches: { name: string; country?: string }[] = [];
+    const seen = new Set<string>();
+
+    const all = State.getAllStates();
+    for (let i = 0; i < all.length; i++) {
+      const s = all[i];
+      const lower = s.name.toLowerCase();
+      if (lower.startsWith(q) || lower.includes(q)) {
+        if (!seen.has(lower) && !selectedStates.some(st => st.toLowerCase() === lower)) {
+          seen.add(lower);
+          matches.push({ name: s.name, country: s.countryCode });
+          if (matches.length >= 8) break;
+        }
+      }
+    }
+    return matches;
+  }, [stateInput, selectedStates]);
 
   useEffect(() => {
     if (initialCenterLocation && initialCenterLocation !== "Tampa, FL, USA") {
@@ -186,65 +376,83 @@ export function AvailableGuardsModule({
     return State.getStatesOfCountry(selectedCountryCode);
   }, [selectedCountryCode]);
 
-  const citiesOfState = useMemo(() => {
-    if (!selectedCountryCode || !selectedStateCode) return [];
-    return City.getCitiesOfState(selectedCountryCode, selectedStateCode);
-  }, [selectedCountryCode, selectedStateCode]);
 
   const activeLocationDisplayName = useMemo(() => {
     if (locationType === "radius") {
-      return centerLocation || "Tampa, FL, USA";
+      return centerLocation || "Site Location";
     }
     if (locationType === "city") {
-      const countryObj = Country.getCountryByCode(selectedCountryCode);
-      const stateObj = State.getStateByCodeAndCountry(selectedStateCode, selectedCountryCode);
-      return [selectedCityName, stateObj?.name, countryObj?.name].filter(Boolean).join(", ") || centerLocation;
+      return selectedCities.length > 0 ? selectedCities.join(", ") : "Selected Cities";
     }
     if (locationType === "state") {
-      const countryObj = Country.getCountryByCode(selectedCountryCode);
-      const stateObj = State.getStateByCodeAndCountry(selectedStateCode, selectedCountryCode);
-      return [stateObj?.name, countryObj?.name].filter(Boolean).join(", ") || "Selected State";
+      return selectedStates.length > 0 ? selectedStates.join(", ") : "Selected States";
     }
     if (locationType === "country") {
       const countryObj = Country.getCountryByCode(selectedCountryCode);
       return countryObj?.name || "Selected Country";
     }
+    if (locationType === "all") {
+      return "All Available Locations";
+    }
     return centerLocation;
-  }, [locationType, centerLocation, selectedCityName, selectedStateCode, selectedCountryCode]);
+  }, [locationType, centerLocation, selectedCities, selectedStates, selectedCountryCode]);
+
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
-    if (activeStep === 2) {
+    if (hasSearched && activeStep === 2) {
       loadGuards();
     }
-  }, [activeStep, currentPage, debouncedSearchQuery, radiusMiles, locationType]);
+  }, [currentPage]);
 
   const loadGuards = async () => {
     setIsGuardsLoading(true);
+    setHasSearched(true);
 
     const countryObj = Country.getCountryByCode(selectedCountryCode);
     const stateObj = State.getStateByCodeAndCountry(selectedStateCode, selectedCountryCode);
 
-    const params: any = {
+    const params: FetchGuardsByLocationParams = {
+      account_status: "active",
       page: currentPage,
-      search: debouncedSearchQuery,
-      status: onlyEligible ? "true" : "",
+      search: debouncedSearchQuery || undefined,
+      service: serviceFilter,
     };
 
     if (locationType === "radius") {
-      params.invoice_id = invoiceId;
-      params.radius_miles = radiusMiles;
+      params.location_type = "geographic_area";
+      params.radius = radiusMiles;
+      if (centerLocation) {
+        params.location = centerLocation;
+      }
     } else if (locationType === "city") {
-      if (selectedCityName) params.city = selectedCityName;
-      if (stateObj?.name) params.state = stateObj.name;
-      if (countryObj?.name) params.country = countryObj.name;
+      params.location_type = "cities";
+      const activeCities = [...selectedCities];
+      if (cityInput.trim() && !activeCities.some(c => c.toLowerCase() === cityInput.trim().toLowerCase())) {
+        activeCities.push(cityInput.trim());
+        setSelectedCities(activeCities);
+        setCityInput("");
+      }
+      if (activeCities.length > 0) {
+        params.cities = activeCities;
+      }
     } else if (locationType === "state") {
-      if (stateObj?.name) params.state = stateObj.name;
-      if (countryObj?.name) params.country = countryObj.name;
+      params.location_type = "states";
+      const activeStates = [...selectedStates];
+      if (stateInput.trim() && !activeStates.some(s => s.toLowerCase() === stateInput.trim().toLowerCase())) {
+        activeStates.push(stateInput.trim());
+        setSelectedStates(activeStates);
+        setStateInput("");
+      }
+      if (activeStates.length > 0) {
+        params.states = activeStates;
+      }
     } else if (locationType === "country") {
-      if (countryObj?.name) params.country = countryObj.name;
+      params.location_type = "country";
+      if (countryObj?.name) params.country = [countryObj.name];
     }
 
-    const res = await clientFetchGuardsAction(params);
+    const res = await clientFetchGuardsNewAction(params);
 
     if (res.success) {
       const data = res.data || [];
@@ -252,6 +460,8 @@ export function AvailableGuardsModule({
       setPagination(res.pagination);
       if (data.length > 0) {
         setSelectedGuardIds(data.map((g: any) => g.guard_id));
+      } else {
+        setSelectedGuardIds([]);
       }
     } else {
       toast.error(res.error || "Failed to load guards");
@@ -259,7 +469,7 @@ export function AvailableGuardsModule({
     setIsGuardsLoading(false);
   };
 
-  const handleLocationTypeChange = (type: "radius" | "city" | "state" | "country") => {
+  const handleLocationTypeChange = (type: "radius" | "city" | "state" | "country" | "all") => {
     setLocationType(type);
     if (type === "country") {
       const country = Country.getCountryByCode(selectedCountryCode);
@@ -267,19 +477,17 @@ export function AvailableGuardsModule({
         setMapCenter([parseFloat(country.latitude), parseFloat(country.longitude)]);
       }
     } else if (type === "state") {
-      const state = State.getStateByCodeAndCountry(selectedStateCode, selectedCountryCode);
-      if (state?.latitude && state?.longitude) {
-        setMapCenter([parseFloat(state.latitude), parseFloat(state.longitude)]);
+      if (selectedStates.length > 0) {
+        const coords = getCoordinatesFromLocation(selectedStates[0]);
+        if (coords) setMapCenter(coords);
       }
     } else if (type === "city") {
-      if (selectedCityName && selectedStateCode && selectedCountryCode) {
-        const city = City.getCitiesOfState(selectedCountryCode, selectedStateCode).find(
-          c => c.name.toLowerCase() === selectedCityName.toLowerCase()
-        );
-        if (city?.latitude && city?.longitude) {
-          setMapCenter([parseFloat(city.latitude), parseFloat(city.longitude)]);
-        }
+      if (selectedCities.length > 0) {
+        const coords = getCoordinatesFromLocation(selectedCities[0]);
+        if (coords) setMapCenter(coords);
       }
+    } else if (type === "all") {
+      setMapCenter([39.8283, -98.5795]);
     } else {
       const coords = getCoordinatesFromLocation(centerLocation);
       if (coords) setMapCenter(coords);
@@ -299,7 +507,6 @@ export function AvailableGuardsModule({
     const states = State.getStatesOfCountry(cCode);
     const firstState = states[0]?.isoCode || "";
     setSelectedStateCode(firstState);
-    setSelectedCityName("");
 
     const country = Country.getCountryByCode(cCode);
     if (country?.latitude && country?.longitude) {
@@ -309,21 +516,10 @@ export function AvailableGuardsModule({
 
   const handleStateChange = (sCode: string) => {
     setSelectedStateCode(sCode);
-    setSelectedCityName("");
 
     const state = State.getStateByCodeAndCountry(sCode, selectedCountryCode);
     if (state?.latitude && state?.longitude) {
       setMapCenter([parseFloat(state.latitude), parseFloat(state.longitude)]);
-    }
-  };
-
-  const handleCityChange = (cName: string) => {
-    setSelectedCityName(cName);
-    const found = City.getCitiesOfState(selectedCountryCode, selectedStateCode).find(
-      c => c.name.toLowerCase() === cName.toLowerCase()
-    );
-    if (found?.latitude && found?.longitude) {
-      setMapCenter([parseFloat(found.latitude), parseFloat(found.longitude)]);
     }
   };
 
@@ -367,40 +563,56 @@ export function AvailableGuardsModule({
     }
     if (selectedGuardIds.length === 0) {
       toast.error("Please select at least one guard");
-      setActiveStep(2);
       return;
     }
 
     setIsFinding(true);
-    const res = await findAvailableGuardsAction({
-      invoice_id: invoiceId,
-      shift_ids: selectedShiftIds,
-      guard_ids: selectedGuardIds
-    });
+    try {
+      const res = await findAvailableGuardsAction({
+        invoice_id: invoiceId,
+        shift_ids: selectedShiftIds,
+        guard_ids: selectedGuardIds,
+        location: activeLocationDisplayName || centerLocation || "",
+        source: notificationSource || "both",
+      });
 
-    if (res.success) {
-      toast.success(res.message || `Job opportunity sent successfully to ${selectedGuardIds.length} guards`);
-      onRefresh();
-      setActiveStep(0);
-      setSelectedShiftIds([]);
-      setSelectedGuardIds([]);
-    } else {
-      toast.error(res.error || "Failed to send job opportunity");
+      if (res.success) {
+        toast.success(res.message || `Job opportunity sent successfully to ${selectedGuardIds.length} guard(s)`);
+        if (onRefresh) onRefresh();
+        setActiveStep(0);
+        setSelectedShiftIds([]);
+        setSelectedGuardIds([]);
+      } else {
+        toast.error(res.error || "Failed to send job opportunity");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to send job opportunity");
+    } finally {
+      setIsFinding(false);
     }
-    setIsFinding(false);
   };
 
   const resetFilters = () => {
     setGuardSearchQuery("");
     setLocationType("radius");
-    setRadiusMiles(30);
+    setServiceFilter("both");
+    setRadiusMiles(50);
     setCenterLocation(initialCenterLocation);
-    const coords = getCoordinatesFromLocation(initialCenterLocation);
-    if (coords) setMapCenter(coords);
+    if (invoice?.latitude && invoice?.longitude) {
+      setMapCenter([Number(invoice.latitude), Number(invoice.longitude)]);
+    } else {
+      const coords = getCoordinatesFromLocation(initialCenterLocation);
+      if (coords) setMapCenter(coords);
+    }
+    setSelectedCities(invoice?.shipping_address?.city ? [invoice.shipping_address.city] : ["Indore"]);
+    setCityInput("");
+    setSelectedStates(invoice?.shipping_address?.state ? [invoice.shipping_address.state] : ["Madhya Pradesh"]);
+    setStateInput("");
     setOnlyEligible(true);
     setIncludeNearby(true);
     setCurrentPage(1);
-    loadGuards();
+    setAllGuards([]);
+    setHasSearched(false);
   };
 
   const handleExportList = () => {
@@ -409,20 +621,27 @@ export function AvailableGuardsModule({
       return;
     }
     try {
+      const headers = [
+        "#",
+        "NAME",
+        "EMAIL",
+        "CITY, STATE",
+        ...(locationType === "radius" ? ["DISTANCE"] : []),
+        "ARMED",
+        "UNARMED",
+        "STATUS"
+      ];
       const rows = [
-        ["#", "NAME", "EMAIL", "PHONE NO.", "CITY, STATE", "DISTANCE", "GUARD LEVEL", "ARMED", "UNARMED", "STATUS", "LAST ACTIVE"],
+        headers,
         ...allGuards.map((g, idx) => [
           idx + 1,
           `${g.first_name || ""} ${g.last_name || ""}`.trim() || g.name || "-",
           g.email || "-",
-          g.phone_number || "-",
           getCityState(g, idx),
-          getDistance(g, idx),
-          g.guard_level ? `${g.guard_level} Star` : "-",
+          ...(locationType === "radius" ? [getDistance(g)] : []),
           g.armed ? "Yes" : "No",
           g.unarmed ? "Yes" : "No",
-          g.status !== false ? "Active" : "Inactive",
-          getLastActive(g, idx)
+          g.status !== false ? "Active" : "Inactive"
         ])
       ];
 
@@ -445,25 +664,23 @@ export function AvailableGuardsModule({
     return arr.join(", ");
   };
 
-  const getCityState = (guard: any, index: number) => {
+  const getCityState = (guard: any, index?: number) => {
     if (guard.city && guard.state) return `${guard.city}, ${guard.state}`;
     if (guard.city) return guard.city;
     if (guard.state) return guard.state;
-    if (guard.address) {
-      const parts = guard.address.split(",").map((s: string) => s.trim());
-      if (parts.length >= 2) return `${parts[parts.length - 2]}, ${parts[parts.length - 1]}`;
-      return parts[0];
-    }
-    const sampleCities = ["Tampa, FL", "Brandon, FL", "Clearwater, FL", "Lutz, FL", "Riverview, FL"];
-    return sampleCities[index % sampleCities.length];
+    if (guard.address) return guard.address;
+    return "-";
   };
 
-  const getDistance = (guard: any, index: number) => {
-    if (guard.distance_miles !== undefined && guard.distance_miles !== null && guard.distance_miles !== "") {
-      return `${guard.distance_miles} mi`;
+  const getDistance = (guard: any) => {
+    if (guard?.distance_miles !== undefined && guard?.distance_miles !== null && guard?.distance_miles !== "") {
+      const val = guard.distance_miles;
+      if (typeof val === "number") {
+        return `${val.toFixed(1)} mi`;
+      }
+      return typeof val === "string" && val.endsWith("mi") ? val : `${val} mi`;
     }
-    const sampleDistances = ["5.2 mi", "8.7 mi", "15.1 mi", "18.3 mi", "22.6 mi"];
-    return sampleDistances[index % sampleDistances.length];
+    return "-";
   };
 
   const getLastActive = (guard: any, index: number) => {
@@ -556,39 +773,6 @@ export function AvailableGuardsModule({
           </div>
           <span className="text-xs font-bold tracking-wider hidden sm:inline">Select Guard</span>
         </button>
-
-        <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-
-        <button
-          onClick={() => {
-            if (selectedShiftIds.length === 0) {
-              toast.error("Please select shifts first");
-              return;
-            }
-            if (selectedGuardIds.length === 0) {
-              toast.error("Please select guards first");
-              return;
-            }
-            setActiveStep(3);
-          }}
-          disabled={activeStep === 3 || activeStep === 0 || activeStep === 1}
-          className={cn(
-            "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 rounded-full transition-all",
-            activeStep === 3
-              ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
-              : activeStep === 2
-                ? "bg-white text-slate-600 border border-slate-200 hover:border-[#0064cb] hover:text-[#0064cb] cursor-pointer"
-                : "bg-slate-50 text-slate-700 border border-slate-300 opacity-60 cursor-not-allowed"
-          )}
-        >
-          <div className={cn(
-            "w-5.5 h-5.5 rounded-full flex items-center justify-center font-bold text-[11px]",
-            activeStep === 3 ? "bg-white/20" : "bg-slate-100"
-          )}>
-            3
-          </div>
-          <span className="text-xs font-bold tracking-wider hidden sm:inline">Find</span>
-        </button>
       </div>
     </div>
   );
@@ -606,9 +790,7 @@ export function AvailableGuardsModule({
                   ? "Available Guards"
                   : activeStep === 1
                     ? "Select Shifts"
-                    : activeStep === 2
-                      ? "Select Guards"
-                      : "Finalize Search"}
+                    : "Select Guards"}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
                 {activeStep === 0 ? (
@@ -618,10 +800,8 @@ export function AvailableGuardsModule({
                   </>
                 ) : activeStep === 1 ? (
                   "You can select multiple shifts"
-                ) : activeStep === 2 ? (
-                  "Choose guards manually or use location filters to send job opportunity."
                 ) : (
-                  "Review your selection and find available guards"
+                  "Choose guards manually or use location filters to send job opportunity."
                 )}
               </p>
             </div>
@@ -871,19 +1051,9 @@ export function AvailableGuardsModule({
                   </div>
                 </div>
 
-                <div className="p-6 border-b border-slate-100 bg-white space-y-4">
-                  <div className="space-y-2">
-                    <h3 className="text-xs font-bold text-slate-900 tracking-wide">Select Guards by</h3>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold border border-[#0064cb] text-[#0064cb] bg-blue-50/20 shadow-xs select-none">
-                        <MapPin className="w-3.5 h-3.5 text-[#0064cb]" />
-                        Location Filters
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-1">
-                    <div className="lg:col-span-5 space-y-4 bg-white">
+                <div className="p-6 border-b border-slate-100 bg-white">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <div className="lg:col-span-4 space-y-4 bg-white">
                       <div className="space-y-1.5">
                         <Label className="text-xs font-bold text-slate-800">Location Type</Label>
                         <Select
@@ -896,11 +1066,13 @@ export function AvailableGuardsModule({
                               {locationType === "city" && <Building2 className="w-3.5 h-3.5 text-blue-600" />}
                               {locationType === "state" && <Map className="w-3.5 h-3.5 text-blue-600" />}
                               {locationType === "country" && <Globe className="w-3.5 h-3.5 text-blue-600" />}
+                              {locationType === "all" && <UserCheck className="w-3.5 h-3.5 text-blue-600" />}
                               <span>
                                 {locationType === "radius" && "Geographic Area ( Radius )"}
                                 {locationType === "city" && "City"}
                                 {locationType === "state" && "State"}
                                 {locationType === "country" && "Country"}
+                                {locationType === "all" && "All Locations (All Guards)"}
                               </span>
                             </div>
                           </SelectTrigger>
@@ -929,6 +1101,51 @@ export function AvailableGuardsModule({
                                 <span>Country</span>
                               </div>
                             </SelectItem>
+                            <SelectItem value="all" className="text-xs cursor-pointer py-2">
+                              <div className="flex items-center gap-2">
+                                <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                                <span>All Locations (All Guards)</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-bold text-slate-800">Service</Label>
+                        <Select
+                          value={serviceFilter}
+                          onValueChange={(val: "both" | "armed" | "unarmed") => setServiceFilter(val)}
+                        >
+                          <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Shield className="w-3.5 h-3.5 text-blue-600" />
+                              <span>
+                                {serviceFilter === "both" && "Both"}
+                                {serviceFilter === "armed" && "Armed"}
+                                {serviceFilter === "unarmed" && "Unarmed"}
+                              </span>
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
+                            <SelectItem value="both" className="text-xs cursor-pointer py-2">
+                              <div className="flex items-center gap-2">
+                                <Shield className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Both</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="armed" className="text-xs cursor-pointer py-2">
+                              <div className="flex items-center gap-2">
+                                <ShieldAlert className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Armed</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="unarmed" className="text-xs cursor-pointer py-2">
+                              <div className="flex items-center gap-2">
+                                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Unarmed</span>
+                              </div>
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -936,13 +1153,13 @@ export function AvailableGuardsModule({
                       {locationType === "radius" && (
                         <>
                           <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-800">Center Location</Label>
+                            <Label className="text-xs font-bold text-slate-800">Site Location</Label>
                             <div className="relative">
                               <MapPin className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                               <Input
                                 value={centerLocation}
                                 onChange={(e) => handleCenterLocationChange(e.target.value)}
-                                placeholder="City, State, or Address"
+                                placeholder="Site Location or Address"
                                 className="w-full h-10 pl-9 pr-8 bg-white border-slate-200 rounded-lg text-xs text-slate-800 focus:border-[#0064cb] focus:ring-[#0064cb]/10"
                               />
                               {centerLocation && (
@@ -960,189 +1177,196 @@ export function AvailableGuardsModule({
                           <div className="space-y-1.5">
                             <Label className="text-xs font-bold text-slate-800">Radius (Miles)</Label>
                             <div className="flex items-center gap-3">
-                              <div className="w-32 shrink-0">
+                              <div className="relative w-36 shrink-0 flex items-center">
                                 <Input
                                   type="number"
-                                  min={1}
-                                  max={200}
+                                  min={5}
+                                  max={5000}
+                                  step={5}
                                   value={radiusMiles}
-                                  onChange={(e) => setRadiusMiles(Number(e.target.value) || 30)}
-                                  className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:border-[#0064cb]"
+                                  onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    setRadiusMiles(val > 0 ? val : 50);
+                                  }}
+                                  className="w-full h-10 pr-14 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:border-[#0064cb]"
                                 />
+                                <div className="absolute right-1 flex items-center gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setRadiusMiles((prev) => Math.max(5, prev - 5))}
+                                    className="w-6 h-7 flex items-center justify-center rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                                    title="Decrease by 5 miles"
+                                  >
+                                    -
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRadiusMiles((prev) => prev + 5)}
+                                    className="w-6 h-7 flex items-center justify-center rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                                    title="Increase by 5 miles"
+                                  >
+                                    +
+                                  </button>
+                                </div>
                               </div>
                               <p className="text-xs text-slate-500 font-normal">
-                                Find guards within {radiusMiles} miles of {centerLocation.split(",")[0] || "center"}.
+                                Find guards within {radiusMiles} miles.
                               </p>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2 pt-1">
-                            <Label className="text-xs font-bold text-slate-800">Additional Filters (Optional)</Label>
-                            <div className="space-y-2">
-                              <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <input
-                                  type="checkbox"
-                                  checked={onlyEligible}
-                                  onChange={(e) => setOnlyEligible(e.target.checked)}
-                                  className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                                />
-                                <span className="text-xs text-slate-700 flex items-center gap-1 font-medium">
-                                  Only eligible for job notifications
-                                  <Info className="w-3 h-3 text-slate-400" />
-                                </span>
-                              </label>
-
-                              <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <input
-                                  type="checkbox"
-                                  checked={includeNearby}
-                                  onChange={(e) => setIncludeNearby(e.target.checked)}
-                                  className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                                />
-                                <span className="text-xs text-slate-700 font-medium">
-                                  Include nearby cities (within radius)
-                                </span>
-                              </label>
                             </div>
                           </div>
                         </>
                       )}
 
                       {locationType === "city" && (
-                        <>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-800">Country</Label>
-                            <Select value={selectedCountryCode} onValueChange={handleCountryChange}>
-                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                                <SelectValue placeholder="Select Country" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border-slate-200 max-h-56">
-                                {allCountries.map((c) => (
-                                  <SelectItem key={c.isoCode} value={c.isoCode} className="text-xs cursor-pointer">
-                                    {c.name}
-                                  </SelectItem>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-bold text-slate-800">City</Label>
+                          <div
+                            ref={cityContainerRef}
+                            onClick={() => cityInputRef.current?.focus()}
+                            className="relative min-h-10 bg-white border border-slate-200 rounded-lg p-2 flex flex-wrap items-center gap-1.5 focus-within:border-[#0064cb] focus-within:ring-1 focus-within:ring-[#0064cb] cursor-text transition-all"
+                          >
+                            {selectedCities.map((cityName) => (
+                              <span
+                                key={cityName}
+                                className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
+                              >
+                                <span>{cityName}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveCity(cityName);
+                                  }}
+                                  className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                                  title={`Remove ${cityName}`}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                            <input
+                              ref={cityInputRef}
+                              type="text"
+                              value={cityInput}
+                              onChange={(e) => {
+                                setCityInput(e.target.value);
+                                setShowCitySuggestions(true);
+                              }}
+                              onFocus={() => {
+                                if (cityInput.trim().length >= 2) setShowCitySuggestions(true);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === ",") {
+                                  e.preventDefault();
+                                  if (cityInput.trim()) {
+                                    handleAddCity(cityInput.trim());
+                                  }
+                                } else if (e.key === "Backspace" && !cityInput && selectedCities.length > 0) {
+                                  handleRemoveCity(selectedCities[selectedCities.length - 1]);
+                                }
+                              }}
+                              placeholder={selectedCities.length === 0 ? "Type city name and press Enter..." : "Add city..."}
+                              className="flex-1 min-w-[120px] bg-transparent text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none border-none p-0.5 h-6"
+                            />
+
+                            {showCitySuggestions && filteredCitySuggestions.length > 0 && (
+                              <div className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-52 overflow-y-auto py-1">
+                                {filteredCitySuggestions.map((item, idx) => (
+                                  <button
+                                    key={`${item.name}-${item.state}-${idx}`}
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleAddCity(item.name);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center justify-between text-slate-700 cursor-pointer transition-colors"
+                                  >
+                                    <span className="font-semibold text-slate-900">{item.name}</span>
+                                    <span className="text-[11px] text-slate-400 font-medium">
+                                      {[item.state, item.country].filter(Boolean).join(", ")}
+                                    </span>
+                                  </button>
                                 ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-800">State / Province</Label>
-                            <Select value={selectedStateCode} onValueChange={handleStateChange}>
-                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                                <SelectValue placeholder="Select State" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border-slate-200 max-h-56">
-                                {statesOfCountry.length > 0 ? (
-                                  statesOfCountry.map((s) => (
-                                    <SelectItem key={s.isoCode} value={s.isoCode} className="text-xs cursor-pointer">
-                                      {s.name}
-                                    </SelectItem>
-                                  ))
-                                ) : (
-                                  <div className="p-2 text-xs text-slate-400 text-center">No states found</div>
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-800">City</Label>
-                            {citiesOfState.length > 0 ? (
-                              <Select value={selectedCityName} onValueChange={handleCityChange}>
-                                <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                                  <SelectValue placeholder="Select City" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border-slate-200 max-h-56">
-                                  {citiesOfState.map((city) => (
-                                    <SelectItem key={city.name} value={city.name} className="text-xs cursor-pointer">
-                                      {city.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              <Input
-                                value={selectedCityName}
-                                onChange={(e) => handleCityChange(e.target.value)}
-                                placeholder="Enter city name..."
-                                className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs text-slate-800"
-                              />
+                              </div>
                             )}
                           </div>
-
-                          <div className="space-y-2 pt-1">
-                            <Label className="text-xs font-bold text-slate-800">Additional Filters (Optional)</Label>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                              <input
-                                type="checkbox"
-                                checked={onlyEligible}
-                                onChange={(e) => setOnlyEligible(e.target.checked)}
-                                className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                              />
-                              <span className="text-xs text-slate-700 flex items-center gap-1 font-medium">
-                                Only eligible for job notifications
-                                <Info className="w-3 h-3 text-slate-400" />
-                              </span>
-                            </label>
-                          </div>
-                        </>
+                        </div>
                       )}
 
                       {locationType === "state" && (
-                        <>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-800">Country</Label>
-                            <Select value={selectedCountryCode} onValueChange={handleCountryChange}>
-                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                                <SelectValue placeholder="Select Country" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border-slate-200 max-h-56">
-                                {allCountries.map((c) => (
-                                  <SelectItem key={c.isoCode} value={c.isoCode} className="text-xs cursor-pointer">
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-800">State / Province</Label>
-                            <Select value={selectedStateCode} onValueChange={handleStateChange}>
-                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                                <SelectValue placeholder="Select State" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border-slate-200 max-h-56">
-                                {statesOfCountry.length > 0 ? (
-                                  statesOfCountry.map((s) => (
-                                    <SelectItem key={s.isoCode} value={s.isoCode} className="text-xs cursor-pointer">
-                                      {s.name}
-                                    </SelectItem>
-                                  ))
-                                ) : (
-                                  <div className="p-2 text-xs text-slate-400 text-center">No states found</div>
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2 pt-1">
-                            <Label className="text-xs font-bold text-slate-800">Additional Filters (Optional)</Label>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                              <input
-                                type="checkbox"
-                                checked={onlyEligible}
-                                onChange={(e) => setOnlyEligible(e.target.checked)}
-                                className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                              />
-                              <span className="text-xs text-slate-700 flex items-center gap-1 font-medium">
-                                Only eligible for job notifications
-                                <Info className="w-3 h-3 text-slate-400" />
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-bold text-slate-800">State</Label>
+                          <div
+                            ref={stateContainerRef}
+                            onClick={() => stateInputRef.current?.focus()}
+                            className="relative min-h-10 bg-white border border-slate-200 rounded-lg p-2 flex flex-wrap items-center gap-1.5 focus-within:border-[#0064cb] focus-within:ring-1 focus-within:ring-[#0064cb] cursor-text transition-all"
+                          >
+                            {selectedStates.map((stateName) => (
+                              <span
+                                key={stateName}
+                                className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
+                              >
+                                <span>{stateName}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveState(stateName);
+                                  }}
+                                  className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                                  title={`Remove ${stateName}`}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
                               </span>
-                            </label>
+                            ))}
+                            <input
+                              ref={stateInputRef}
+                              type="text"
+                              value={stateInput}
+                              onChange={(e) => {
+                                setStateInput(e.target.value);
+                                setShowStateSuggestions(true);
+                              }}
+                              onFocus={() => {
+                                if (stateInput.trim().length >= 1) setShowStateSuggestions(true);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === ",") {
+                                  e.preventDefault();
+                                  if (stateInput.trim()) {
+                                    handleAddState(stateInput.trim());
+                                  }
+                                } else if (e.key === "Backspace" && !stateInput && selectedStates.length > 0) {
+                                  handleRemoveState(selectedStates[selectedStates.length - 1]);
+                                }
+                              }}
+                              placeholder={selectedStates.length === 0 ? "Type state name and press Enter..." : "Add state..."}
+                              className="flex-1 min-w-[120px] bg-transparent text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none border-none p-0.5 h-6"
+                            />
+
+                            {showStateSuggestions && filteredStateSuggestions.length > 0 && (
+                              <div className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-52 overflow-y-auto py-1">
+                                {filteredStateSuggestions.map((item, idx) => (
+                                  <button
+                                    key={`${item.name}-${item.country}-${idx}`}
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleAddState(item.name);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center justify-between text-slate-700 cursor-pointer transition-colors"
+                                  >
+                                    <span className="font-semibold text-slate-900">{item.name}</span>
+                                    <span className="text-[11px] text-slate-400 font-medium">
+                                      {item.country || ""}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        </>
+                        </div>
                       )}
 
                       {locationType === "country" && (
@@ -1162,33 +1386,32 @@ export function AvailableGuardsModule({
                               </SelectContent>
                             </Select>
                           </div>
-
-                          <div className="space-y-2 pt-1">
-                            <Label className="text-xs font-bold text-slate-800">Additional Filters (Optional)</Label>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                              <input
-                                type="checkbox"
-                                checked={onlyEligible}
-                                onChange={(e) => setOnlyEligible(e.target.checked)}
-                                className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                              />
-                              <span className="text-xs text-slate-700 flex items-center gap-1 font-medium">
-                                Only eligible for job notifications
-                                <Info className="w-3 h-3 text-slate-400" />
-                              </span>
-                            </label>
-                          </div>
                         </>
+                      )}
+
+                      {locationType === "all" && (
+                        <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-lg text-xs text-blue-800 flex items-start gap-2">
+                          <Info className="w-4 h-4 text-[#0064cb] shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold block">All Locations</span>
+                            <span>Fetches all active guards without location restrictions.</span>
+                          </div>
+                        </div>
                       )}
 
                       <div className="flex items-center gap-4 pt-2">
                         <Button
                           type="button"
+                          disabled={isGuardsLoading}
                           onClick={loadGuards}
-                          className="h-10 px-5 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg text-xs font-bold shadow-md shadow-[#0064cb]/20 flex items-center gap-2 cursor-pointer transition-all"
+                          className="h-10 px-5 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg text-xs font-bold shadow-md shadow-[#0064cb]/20 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-75 disabled:cursor-not-allowed"
                         >
-                          <Search className="w-3.5 h-3.5" />
-                          Search Guards
+                          {isGuardsLoading ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Search className="w-3.5 h-3.5" />
+                          )}
+                          <span>Search Guards</span>
                         </Button>
                         <button
                           type="button"
@@ -1200,7 +1423,7 @@ export function AvailableGuardsModule({
                       </div>
                     </div>
 
-                    <div className="lg:col-span-7 space-y-0 rounded-xl overflow-hidden border border-slate-200 shadow-xs">
+                    <div className="lg:col-span-8 space-y-0 rounded-xl overflow-hidden border border-slate-200 shadow-xs">
                       <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-700 font-medium">
                         <div className="flex items-center gap-1.5 font-bold text-slate-800 truncate max-w-[50%]">
                           <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
@@ -1210,10 +1433,12 @@ export function AvailableGuardsModule({
                           {locationType === "radius" ? (
                             <span>Radius: <strong className="text-slate-900">{radiusMiles} miles</strong></span>
                           ) : (
-                            <span>Type: <strong className="text-slate-900 capitalize">{locationType}</strong></span>
+                            <span>Type: <strong className="text-slate-900 capitalize">{locationType === "all" ? "All Locations" : locationType}</strong></span>
                           )}
                           <span className="text-slate-300">|</span>
-                          <span>Guards found: <strong className="text-[#0064cb] font-bold">{allGuards.length || 128}</strong></span>
+                          <span>Service: <strong className="text-slate-900 capitalize">{serviceFilter}</strong></span>
+                          <span className="text-slate-300">|</span>
+                          <span>Guards found: <strong className="text-[#0064cb] font-bold">{allGuards.length}</strong></span>
                         </div>
                       </div>
 
@@ -1221,7 +1446,7 @@ export function AvailableGuardsModule({
                         center={mapCenter}
                         radiusMiles={radiusMiles}
                         centerLocationName={activeLocationDisplayName}
-                        guardsFoundCount={allGuards.length || 128}
+                        guardsFoundCount={allGuards.length}
                         guards={allGuards}
                         locationType={locationType}
                       />
@@ -1233,22 +1458,43 @@ export function AvailableGuardsModule({
                   <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
                     <div className="space-y-0.5">
                       <h4 className="text-sm font-bold text-slate-900">
-                        Guards ({allGuards.length || 128} found)
+                        Guards ({allGuards.length} found)
                       </h4>
                       <p className="text-xs text-slate-500">
-                        Showing guards {locationType === "radius" ? `within ${radiusMiles} miles of ` : "for "}{activeLocationDisplayName.split(",")[0]}. Select guards to send the job opportunity.
+                        Showing guards {locationType === "radius" ? `within ${radiusMiles} miles of ` : locationType === "all" ? "across " : "for "}{activeLocationDisplayName.split(",")[0]}. Select guards to send the job opportunity.
                       </p>
                     </div>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleExportList}
-                      className="px-3.5 h-8 rounded-lg text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 shrink-0"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Export List
-                    </Button>
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative w-52 sm:w-64">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <Input
+                          value={guardSearchQuery}
+                          onChange={(e) => setGuardSearchQuery(e.target.value)}
+                          placeholder="Search guards..."
+                          className="w-full h-8 pl-8 pr-7 text-xs bg-slate-50/60 border-slate-200 rounded-lg focus:bg-white"
+                        />
+                        {guardSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setGuardSearchQuery("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleExportList}
+                        className="px-3.5 h-8 rounded-lg text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Export List
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto custom-scrollbar w-full">
@@ -1266,30 +1512,19 @@ export function AvailableGuardsModule({
                           <TableHead className="w-[50px] text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3 text-center">#</TableHead>
                           <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">NAME</TableHead>
                           <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">EMAIL</TableHead>
-                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">PHONE NO.</TableHead>
                           <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">CITY, STATE</TableHead>
-                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">
-                            <div className="flex items-center gap-1">
-                              DISTANCE
-                              <Info className="w-3 h-3 text-slate-400" />
-                            </div>
-                          </TableHead>
-                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">
-                            <div className="flex items-center gap-1">
-                              GUARD LEVEL
-                              <Info className="w-3 h-3 text-slate-400" />
-                            </div>
-                          </TableHead>
+                          {locationType === "radius" && (
+                            <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">DISTANCE</TableHead>
+                          )}
                           <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
                           <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
                           <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">STATUS</TableHead>
-                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">LAST ACTIVE</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {isGuardsLoading ? (
                           <TableRow>
-                            <TableCell colSpan={12} className="py-10 text-center">
+                            <TableCell colSpan={locationType === "radius" ? 9 : 8} className="py-10 text-center">
                               <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
                               <span className="text-xs text-slate-500 font-medium mt-2 block">Loading guards...</span>
                             </TableCell>
@@ -1315,16 +1550,14 @@ export function AvailableGuardsModule({
                                 {guard.first_name || ""} {guard.last_name || ""}
                               </TableCell>
                               <TableCell className="text-xs text-slate-600 py-2.5 px-4">{guard.email || "-"}</TableCell>
-                              <TableCell className="text-xs text-slate-600 py-2.5 px-4">{guard.phone_number || "-"}</TableCell>
                               <TableCell className="text-xs text-slate-600 py-2.5 px-4">
                                 {getCityState(guard, index)}
                               </TableCell>
-                              <TableCell className="text-xs font-medium text-slate-700 py-2.5 px-4">
-                                {getDistance(guard, index)}
-                              </TableCell>
-                              <TableCell className="py-2.5 px-4">
-                                {renderGuardLevelStars(guard.guard_level, index)}
-                              </TableCell>
+                              {locationType === "radius" && (
+                                <TableCell className="text-xs font-medium text-slate-700 py-2.5 px-4">
+                                  {getDistance(guard)}
+                                </TableCell>
+                              )}
                               <TableCell className="py-2.5 px-4 text-center text-xs text-slate-700">
                                 {guard.armed ? "Yes" : "No"}
                               </TableCell>
@@ -1333,22 +1566,19 @@ export function AvailableGuardsModule({
                               </TableCell>
                               <TableCell className="py-2.5 px-4 text-center">
                                 <span className={cn(
-                                  "px-2.5 py-0.5 rounded-full text-[11px] font-semibold",
-                                  guard.status !== false
-                                    ? "bg-emerald-50 text-emerald-600 border border-emerald-100/60"
-                                    : "bg-red-50 text-red-600 border border-red-100/60"
+                                  "px-2.5 py-0.5 rounded-full text-[11px] font-semibold capitalize",
+                                  guard.account_status === "inactive" || guard.status === false
+                                    ? "bg-red-50 text-red-600 border border-red-100/60"
+                                    : "bg-emerald-50 text-emerald-600 border border-emerald-100/60"
                                 )}>
-                                  {guard.status !== false ? "Active" : "Inactive"}
+                                  {guard.account_status || (guard.status !== false ? "Active" : "Inactive")}
                                 </span>
-                              </TableCell>
-                              <TableCell className="text-xs text-slate-600 py-2.5 px-4">
-                                {getLastActive(guard, index)}
                               </TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={12} className="py-8 text-center text-slate-600 font-medium text-xs">
+                            <TableCell colSpan={locationType === "radius" ? 9 : 8} className="py-8 text-center text-slate-600 font-medium text-xs">
                               No guards found matching filters. Try adjusting your location or radius.
                             </TableCell>
                           </TableRow>
@@ -1392,60 +1622,7 @@ export function AvailableGuardsModule({
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="p-8 text-center space-y-8 animate-in fade-in duration-500">
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
-                    <div className="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 flex flex-col items-center gap-3 w-48 shadow-sm">
-                      <div className="w-12 h-12 bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
-                        <CalendarDays className="w-6 h-6" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xl font-bold text-blue-600 leading-none">{selectedShiftIds.length}</p>
-                        <p className="text-[12px] font-bold text-blue-400 tracking-widest mt-1">Shifts Selected</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 flex flex-col items-center gap-3 w-48 shadow-sm">
-                      <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200">
-                        <UserCheck className="w-6 h-6" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xl font-bold text-emerald-600 leading-none">{selectedGuardIds.length}</p>
-                        <p className="text-[12px] font-bold text-emerald-400 tracking-widest mt-1">Guards Selected</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-slate-900">Ready to find?</h3>
-                    <p className="text-sm text-slate-600 leading-relaxed px-4">
-                      We will notify the selected guards about these shifts to check their availability.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto px-6 sm:px-0">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setActiveStep(2);
-                      resetFilters();
-                    }}
-                    className="h-12 px-8 rounded-xl font-bold text-slate-600 border-slate-200 hover:bg-slate-50 cursor-pointer transition-all w-full sm:w-auto flex justify-center items-center"
-                  >
-                    Back to Guards
-                  </Button>
-                  <Button
-                    onClick={handleFind}
-                    disabled={isFinding}
-                    className="h-12 px-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-xl shadow-[#0064cb]/20 cursor-pointer transition-all active:scale-95 flex gap-2 w-full sm:w-auto justify-center items-center"
-                  >
-                    {isFinding ? <Loader2 className="w-5 h-5 animate-spin" /> : "Find Guards"}
-                  </Button>
-                </div>
-              </div>
-            )}
+            ) : null}
 
             {activeStep === 1 && (
               <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 w-full">
