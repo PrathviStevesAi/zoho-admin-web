@@ -139,7 +139,7 @@ export function AvailableGuardsModule({
         if (typeof details === "string") {
           try {
             details = JSON.parse(details);
-          } catch {}
+          } catch { }
         }
         if (details && typeof details === "object") {
           if (details["Site Location"]) {
@@ -247,7 +247,6 @@ export function AvailableGuardsModule({
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-
   const [citySelectKey, setCitySelectKey] = useState(0);
   const [stateSelectKey, setStateSelectKey] = useState(0);
   const [countrySelectKey, setCountrySelectKey] = useState(0);
