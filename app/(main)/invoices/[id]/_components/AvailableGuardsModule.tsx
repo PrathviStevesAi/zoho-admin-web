@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   clientFetchGuardsNewAction,
+  clientFetchLocationAction,
   FetchGuardsByLocationParams
 } from "@/lib/client-actions";
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -130,18 +131,37 @@ export function AvailableGuardsModule({
   const [locationType, setLocationType] = useState<"radius" | "city" | "state" | "country" | "all">("radius");
   const [serviceFilter, setServiceFilter] = useState<"both" | "armed" | "unarmed">("both");
 
-  const initialCenterLocation = useMemo(() => {
+  const dynamicSiteLocation = useMemo(() => {
     // 1. Check history for "Site Location"
     if (Array.isArray(invoice?.history)) {
       for (const h of invoice.history) {
-        if (h?.details?.["Site Location"]) {
-          return h.details["Site Location"];
+        let details = h?.details;
+        if (typeof details === "string") {
+          try {
+            details = JSON.parse(details);
+          } catch {}
+        }
+        if (details && typeof details === "object") {
+          if (details["Site Location"]) {
+            return String(details["Site Location"]).trim();
+          }
+          if (details["site_location"]) {
+            return String(details["site_location"]).trim();
+          }
+          if (details["Location"]) {
+            return String(details["Location"]).trim();
+          }
         }
       }
     }
-    // 2. Format from shipping_address (street, city, state, country - zip)
+
+    // 2. Direct invoice properties if present
+    if (invoice?.site_location) return String(invoice.site_location).trim();
+    if (invoice?.location) return String(invoice.location).trim();
+
+    // 3. Fallback to formatting from shipping_address (street, city, state, country - zip)
     if (invoice?.shipping_address) {
-      if (typeof invoice.shipping_address === "string") return invoice.shipping_address;
+      if (typeof invoice.shipping_address === "string") return invoice.shipping_address.trim();
       const addr = invoice.shipping_address;
       const countryZip = addr.country && addr.zip
         ? `${addr.country} - ${addr.zip}`
@@ -154,7 +174,7 @@ export function AvailableGuardsModule({
       ].filter(Boolean);
       if (parts.length > 0) return parts.join(", ");
     }
-    return "Tampa, FL, USA";
+    return "Site Location";
   }, [invoice]);
 
   const defaultRadius = 50;
@@ -176,226 +196,101 @@ export function AvailableGuardsModule({
         return [lat, lng];
       }
     }
-    const resolved = getCoordinatesFromLocation(initialCenterLocation);
+    const resolved = getCoordinatesFromLocation(dynamicSiteLocation);
     if (resolved) return resolved;
     return [22.7041853, 75.8427014];
-  }, [invoice, initialCenterLocation]);
+  }, [invoice, dynamicSiteLocation]);
 
-  const [centerLocation, setCenterLocation] = useState(initialCenterLocation);
+  const [centerLocation, setCenterLocation] = useState(dynamicSiteLocation);
   const [radiusMiles, setRadiusMiles] = useState<number>(50);
   const [onlyEligible, setOnlyEligible] = useState(true);
   const [includeNearby, setIncludeNearby] = useState(true);
   const [mapCenter, setMapCenter] = useState<[number, number]>(initialCoordinates);
 
   useEffect(() => {
-    if (invoice?.latitude !== undefined && invoice?.latitude !== null && invoice?.longitude !== undefined && invoice?.longitude !== null) {
-      const lat = Number(invoice.latitude);
-      const lng = Number(invoice.longitude);
-      if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
-        setMapCenter([lat, lng]);
-      }
+    if (dynamicSiteLocation && dynamicSiteLocation !== "Site Location") {
+      setCenterLocation(dynamicSiteLocation);
     }
-  }, [invoice?.latitude, invoice?.longitude]);
-
-  const defaultCountryCode = useMemo(() => {
-    const raw = invoice?.shipping_address?.country || "US";
-    const found = Country.getAllCountries().find(
-      c => c.isoCode.toLowerCase() === raw.toLowerCase() || c.name.toLowerCase() === raw.toLowerCase()
-    );
-    return found ? found.isoCode : "US";
-  }, [invoice]);
-
-  const defaultStateCode = useMemo(() => {
-    const raw = invoice?.shipping_address?.state || "";
-    if (!raw) return "";
-    const found = State.getStatesOfCountry(defaultCountryCode).find(
-      s => s.isoCode.toLowerCase() === raw.toLowerCase() || s.name.toLowerCase() === raw.toLowerCase()
-    );
-    return found ? found.isoCode : "";
-  }, [invoice, defaultCountryCode]);
-
-  const [selectedCountryCode, setSelectedCountryCode] = useState<string>(defaultCountryCode);
-  const [selectedStateCode, setSelectedStateCode] = useState<string>(defaultStateCode);
-  const [selectedCities, setSelectedCities] = useState<string[]>(() => {
-    const c = invoice?.shipping_address?.city;
-    return c ? [c] : ["Indore"];
-  });
-  const [cityInput, setCityInput] = useState("");
-  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
-  const cityInputRef = useRef<HTMLInputElement>(null);
-  const cityContainerRef = useRef<HTMLDivElement>(null);
-
-  const [selectedStates, setSelectedStates] = useState<string[]>(() => {
-    const s = invoice?.shipping_address?.state;
-    return s ? [s] : ["Madhya Pradesh"];
-  });
-  const [stateInput, setStateInput] = useState("");
-  const [showStateSuggestions, setShowStateSuggestions] = useState(false);
-  const stateInputRef = useRef<HTMLInputElement>(null);
-  const stateContainerRef = useRef<HTMLDivElement>(null);
+  }, [dynamicSiteLocation]);
 
   useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (cityContainerRef.current && !cityContainerRef.current.contains(e.target as Node)) {
-        setShowCitySuggestions(false);
+    setMapCenter(initialCoordinates);
+  }, [initialCoordinates]);
+
+  const [apiLocations, setApiLocations] = useState<{
+    countries: string[];
+    states: string[];
+    cities: string[];
+  }>({
+    countries: [],
+    states: [],
+    cities: []
+  });
+  const [isLocationsLoading, setIsLocationsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setIsLocationsLoading(true);
+      const res = await clientFetchLocationAction(undefined, undefined, "approved");
+      if (res.success && res.data) {
+        setApiLocations({
+          countries: Array.isArray(res.data.countries) ? res.data.countries : [],
+          states: Array.isArray(res.data.states) ? res.data.states : [],
+          cities: Array.isArray(res.data.cities) ? res.data.cities : []
+        });
       }
-      if (stateContainerRef.current && !stateContainerRef.current.contains(e.target as Node)) {
-        setShowStateSuggestions(false);
-      }
+      setIsLocationsLoading(false);
     };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    fetchLocations();
   }, []);
 
-  useEffect(() => {
-    if (invoice?.shipping_address?.city) {
-      const c = invoice.shipping_address.city;
-      setSelectedCities(prev => (prev.length === 0 || (prev.length === 1 && prev[0] === "Indore") ? [c] : prev));
-    }
-  }, [invoice?.shipping_address?.city]);
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (invoice?.shipping_address?.state) {
-      const s = invoice.shipping_address.state;
-      setSelectedStates(prev => (prev.length === 0 || (prev.length === 1 && prev[0] === "Madhya Pradesh") ? [s] : prev));
-    }
-  }, [invoice?.shipping_address?.state]);
+  const [citySelectKey, setCitySelectKey] = useState(0);
+  const [stateSelectKey, setStateSelectKey] = useState(0);
+  const [countrySelectKey, setCountrySelectKey] = useState(0);
 
-  const handleAddCity = (rawName: string) => {
-    const parts = rawName.split(",").map(p => p.trim()).filter(Boolean);
-    if (parts.length === 0) return;
-
-    let updated = [...selectedCities];
-    let lastCoords: [number, number] | null = null;
-    for (const part of parts) {
-      if (!updated.some(c => c.toLowerCase() === part.toLowerCase())) {
-        updated.push(part);
-        const coords = getCoordinatesFromLocation(part);
-        if (coords) lastCoords = coords;
-      }
+  const handleAddCity = (cityName: string) => {
+    if (!cityName) return;
+    if (!selectedCities.includes(cityName)) {
+      setSelectedCities((prev) => [...prev, cityName]);
     }
-    setSelectedCities(updated);
-    if (lastCoords) setMapCenter(lastCoords);
-    setCityInput("");
-    setShowCitySuggestions(false);
   };
 
   const handleRemoveCity = (nameToRemove: string) => {
-    const updated = selectedCities.filter(c => c.toLowerCase() !== nameToRemove.toLowerCase());
-    setSelectedCities(updated);
-    if (updated.length > 0) {
-      const coords = getCoordinatesFromLocation(updated[updated.length - 1]);
-      if (coords) setMapCenter(coords);
-    }
+    setSelectedCities((prev) => prev.filter((c) => c !== nameToRemove));
   };
 
-  const filteredCitySuggestions = useMemo(() => {
-    const q = cityInput.trim().toLowerCase();
-    if (!q || q.length < 2) return [];
-
-    const matches: { name: string; state?: string; country?: string }[] = [];
-    const seen = new Set<string>();
-
-    const all = City.getAllCities();
-    for (let i = 0; i < all.length; i++) {
-      const c = all[i];
-      const lower = c.name.toLowerCase();
-      if (lower.startsWith(q) || lower.includes(q)) {
-        if (!seen.has(lower) && !selectedCities.some(sc => sc.toLowerCase() === lower)) {
-          seen.add(lower);
-          matches.push({ name: c.name, state: c.stateCode, country: c.countryCode });
-          if (matches.length >= 8) break;
-        }
-      }
+  const handleAddState = (stateName: string) => {
+    if (!stateName) return;
+    if (!selectedStates.includes(stateName)) {
+      setSelectedStates((prev) => [...prev, stateName]);
     }
-    return matches;
-  }, [cityInput, selectedCities]);
-
-  const handleAddState = (rawName: string) => {
-    const parts = rawName.split(",").map(p => p.trim()).filter(Boolean);
-    if (parts.length === 0) return;
-
-    let updated = [...selectedStates];
-    let lastCoords: [number, number] | null = null;
-    for (const part of parts) {
-      if (!updated.some(s => s.toLowerCase() === part.toLowerCase())) {
-        updated.push(part);
-        const coords = getCoordinatesFromLocation(part);
-        if (coords) lastCoords = coords;
-      }
-    }
-    setSelectedStates(updated);
-    if (lastCoords) setMapCenter(lastCoords);
-    setStateInput("");
-    setShowStateSuggestions(false);
   };
 
   const handleRemoveState = (nameToRemove: string) => {
-    const updated = selectedStates.filter(s => s.toLowerCase() !== nameToRemove.toLowerCase());
-    setSelectedStates(updated);
-    if (updated.length > 0) {
-      const coords = getCoordinatesFromLocation(updated[updated.length - 1]);
-      if (coords) setMapCenter(coords);
+    setSelectedStates((prev) => prev.filter((s) => s !== nameToRemove));
+  };
+
+  const handleAddCountry = (countryName: string) => {
+    if (!countryName) return;
+    if (!selectedCountries.includes(countryName)) {
+      setSelectedCountries((prev) => [...prev, countryName]);
     }
   };
 
-  const filteredStateSuggestions = useMemo(() => {
-    const q = stateInput.trim().toLowerCase();
-    if (!q || q.length < 1) return [];
-
-    const matches: { name: string; country?: string }[] = [];
-    const seen = new Set<string>();
-
-    const all = State.getAllStates();
-    for (let i = 0; i < all.length; i++) {
-      const s = all[i];
-      const lower = s.name.toLowerCase();
-      if (lower.startsWith(q) || lower.includes(q)) {
-        if (!seen.has(lower) && !selectedStates.some(st => st.toLowerCase() === lower)) {
-          seen.add(lower);
-          matches.push({ name: s.name, country: s.countryCode });
-          if (matches.length >= 8) break;
-        }
-      }
-    }
-    return matches;
-  }, [stateInput, selectedStates]);
-
-  useEffect(() => {
-    if (initialCenterLocation && initialCenterLocation !== "Tampa, FL, USA") {
-      setCenterLocation(initialCenterLocation);
-      const coords = getCoordinatesFromLocation(initialCenterLocation);
-      if (coords) setMapCenter(coords);
-    }
-  }, [initialCenterLocation]);
-
-  const allCountries = useMemo(() => Country.getAllCountries(), []);
-
-  const statesOfCountry = useMemo(() => {
-    if (!selectedCountryCode) return [];
-    return State.getStatesOfCountry(selectedCountryCode);
-  }, [selectedCountryCode]);
-
+  const handleRemoveCountry = (nameToRemove: string) => {
+    setSelectedCountries((prev) => prev.filter((c) => c !== nameToRemove));
+  };
 
   const activeLocationDisplayName = useMemo(() => {
-    if (locationType === "radius") {
-      return centerLocation || "Site Location";
+    if (locationType === "radius" && centerLocation) {
+      return centerLocation;
     }
-    if (locationType === "city") {
-      return selectedCities.length > 0 ? selectedCities.join(", ") : "Selected Cities";
-    }
-    if (locationType === "state") {
-      return selectedStates.length > 0 ? selectedStates.join(", ") : "Selected States";
-    }
-    if (locationType === "country") {
-      const countryObj = Country.getCountryByCode(selectedCountryCode);
-      return countryObj?.name || "Selected Country";
-    }
-    if (locationType === "all") {
-      return "All Available Locations";
-    }
-    return centerLocation;
-  }, [locationType, centerLocation, selectedCities, selectedStates, selectedCountryCode]);
+    return dynamicSiteLocation;
+  }, [locationType, centerLocation, dynamicSiteLocation]);
 
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -408,9 +303,6 @@ export function AvailableGuardsModule({
   const loadGuards = async () => {
     setIsGuardsLoading(true);
     setHasSearched(true);
-
-    const countryObj = Country.getCountryByCode(selectedCountryCode);
-    const stateObj = State.getStateByCodeAndCountry(selectedStateCode, selectedCountryCode);
 
     const params: FetchGuardsByLocationParams = {
       account_status: "active",
@@ -427,29 +319,19 @@ export function AvailableGuardsModule({
       }
     } else if (locationType === "city") {
       params.location_type = "cities";
-      const activeCities = [...selectedCities];
-      if (cityInput.trim() && !activeCities.some(c => c.toLowerCase() === cityInput.trim().toLowerCase())) {
-        activeCities.push(cityInput.trim());
-        setSelectedCities(activeCities);
-        setCityInput("");
-      }
-      if (activeCities.length > 0) {
-        params.cities = activeCities;
+      if (selectedCities.length > 0) {
+        params.cities = selectedCities;
       }
     } else if (locationType === "state") {
       params.location_type = "states";
-      const activeStates = [...selectedStates];
-      if (stateInput.trim() && !activeStates.some(s => s.toLowerCase() === stateInput.trim().toLowerCase())) {
-        activeStates.push(stateInput.trim());
-        setSelectedStates(activeStates);
-        setStateInput("");
-      }
-      if (activeStates.length > 0) {
-        params.states = activeStates;
+      if (selectedStates.length > 0) {
+        params.states = selectedStates;
       }
     } else if (locationType === "country") {
       params.location_type = "country";
-      if (countryObj?.name) params.country = [countryObj.name];
+      if (selectedCountries.length > 0) {
+        params.country = selectedCountries;
+      }
     }
 
     const res = await clientFetchGuardsNewAction(params);
@@ -471,27 +353,7 @@ export function AvailableGuardsModule({
 
   const handleLocationTypeChange = (type: "radius" | "city" | "state" | "country" | "all") => {
     setLocationType(type);
-    if (type === "country") {
-      const country = Country.getCountryByCode(selectedCountryCode);
-      if (country?.latitude && country?.longitude) {
-        setMapCenter([parseFloat(country.latitude), parseFloat(country.longitude)]);
-      }
-    } else if (type === "state") {
-      if (selectedStates.length > 0) {
-        const coords = getCoordinatesFromLocation(selectedStates[0]);
-        if (coords) setMapCenter(coords);
-      }
-    } else if (type === "city") {
-      if (selectedCities.length > 0) {
-        const coords = getCoordinatesFromLocation(selectedCities[0]);
-        if (coords) setMapCenter(coords);
-      }
-    } else if (type === "all") {
-      setMapCenter([39.8283, -98.5795]);
-    } else {
-      const coords = getCoordinatesFromLocation(centerLocation);
-      if (coords) setMapCenter(coords);
-    }
+    setMapCenter(initialCoordinates);
   };
 
   const handleCenterLocationChange = (val: string) => {
@@ -499,27 +361,6 @@ export function AvailableGuardsModule({
     const coords = getCoordinatesFromLocation(val);
     if (coords) {
       setMapCenter(coords);
-    }
-  };
-
-  const handleCountryChange = (cCode: string) => {
-    setSelectedCountryCode(cCode);
-    const states = State.getStatesOfCountry(cCode);
-    const firstState = states[0]?.isoCode || "";
-    setSelectedStateCode(firstState);
-
-    const country = Country.getCountryByCode(cCode);
-    if (country?.latitude && country?.longitude) {
-      setMapCenter([parseFloat(country.latitude), parseFloat(country.longitude)]);
-    }
-  };
-
-  const handleStateChange = (sCode: string) => {
-    setSelectedStateCode(sCode);
-
-    const state = State.getStateByCodeAndCountry(sCode, selectedCountryCode);
-    if (state?.latitude && state?.longitude) {
-      setMapCenter([parseFloat(state.latitude), parseFloat(state.longitude)]);
     }
   };
 
@@ -597,17 +438,11 @@ export function AvailableGuardsModule({
     setLocationType("radius");
     setServiceFilter("both");
     setRadiusMiles(50);
-    setCenterLocation(initialCenterLocation);
-    if (invoice?.latitude && invoice?.longitude) {
-      setMapCenter([Number(invoice.latitude), Number(invoice.longitude)]);
-    } else {
-      const coords = getCoordinatesFromLocation(initialCenterLocation);
-      if (coords) setMapCenter(coords);
-    }
-    setSelectedCities(invoice?.shipping_address?.city ? [invoice.shipping_address.city] : ["Indore"]);
-    setCityInput("");
-    setSelectedStates(invoice?.shipping_address?.state ? [invoice.shipping_address.state] : ["Madhya Pradesh"]);
-    setStateInput("");
+    setCenterLocation(dynamicSiteLocation);
+    setMapCenter(initialCoordinates);
+    setSelectedCities([]);
+    setSelectedStates([]);
+    setSelectedCountries([]);
     setOnlyEligible(true);
     setIncludeNearby(true);
     setCurrentPage(1);
@@ -1218,175 +1053,168 @@ export function AvailableGuardsModule({
                       )}
 
                       {locationType === "city" && (
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           <Label className="text-xs font-bold text-slate-800">City</Label>
-                          <div
-                            ref={cityContainerRef}
-                            onClick={() => cityInputRef.current?.focus()}
-                            className="relative min-h-10 bg-white border border-slate-200 rounded-lg p-2 flex flex-wrap items-center gap-1.5 focus-within:border-[#0064cb] focus-within:ring-1 focus-within:ring-[#0064cb] cursor-text transition-all"
+                          <Select
+                            key={citySelectKey}
+                            onValueChange={(val) => {
+                              if (val && val !== "__none__") {
+                                handleAddCity(val);
+                                setCitySelectKey((k) => k + 1);
+                              }
+                            }}
                           >
-                            {selectedCities.map((cityName) => (
-                              <span
-                                key={cityName}
-                                className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
-                              >
-                                <span>{cityName}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoveCity(cityName);
-                                  }}
-                                  className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
-                                  title={`Remove ${cityName}`}
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </span>
-                            ))}
-                            <input
-                              ref={cityInputRef}
-                              type="text"
-                              value={cityInput}
-                              onChange={(e) => {
-                                setCityInput(e.target.value);
-                                setShowCitySuggestions(true);
-                              }}
-                              onFocus={() => {
-                                if (cityInput.trim().length >= 2) setShowCitySuggestions(true);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === ",") {
-                                  e.preventDefault();
-                                  if (cityInput.trim()) {
-                                    handleAddCity(cityInput.trim());
-                                  }
-                                } else if (e.key === "Backspace" && !cityInput && selectedCities.length > 0) {
-                                  handleRemoveCity(selectedCities[selectedCities.length - 1]);
-                                }
-                              }}
-                              placeholder={selectedCities.length === 0 ? "Type city name and press Enter..." : "Add city..."}
-                              className="flex-1 min-w-[120px] bg-transparent text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none border-none p-0.5 h-6"
-                            />
+                            <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                              <SelectValue placeholder={isLocationsLoading ? "Loading cities..." : "Select City"} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-slate-200 max-h-56">
+                              {apiLocations.cities.length === 0 ? (
+                                <SelectItem value="__none__" disabled className="text-xs text-slate-400">
+                                  {isLocationsLoading ? "Loading cities..." : "No cities found"}
+                                </SelectItem>
+                              ) : (
+                                apiLocations.cities
+                                  .filter((c) => !selectedCities.includes(c))
+                                  .map((city) => (
+                                    <SelectItem key={city} value={city} className="text-xs cursor-pointer">
+                                      {city}
+                                    </SelectItem>
+                                  ))
+                              )}
+                            </SelectContent>
+                          </Select>
 
-                            {showCitySuggestions && filteredCitySuggestions.length > 0 && (
-                              <div className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-52 overflow-y-auto py-1">
-                                {filteredCitySuggestions.map((item, idx) => (
+                          {selectedCities.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {selectedCities.map((cityName) => (
+                                <span
+                                  key={cityName}
+                                  className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
+                                >
+                                  <span>{cityName}</span>
                                   <button
-                                    key={`${item.name}-${item.state}-${idx}`}
                                     type="button"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      handleAddCity(item.name);
-                                    }}
-                                    className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center justify-between text-slate-700 cursor-pointer transition-colors"
+                                    onClick={() => handleRemoveCity(cityName)}
+                                    className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                                    title={`Remove ${cityName}`}
                                   >
-                                    <span className="font-semibold text-slate-900">{item.name}</span>
-                                    <span className="text-[11px] text-slate-400 font-medium">
-                                      {[item.state, item.country].filter(Boolean).join(", ")}
-                                    </span>
+                                    <X className="w-3 h-3" />
                                   </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
 
                       {locationType === "state" && (
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           <Label className="text-xs font-bold text-slate-800">State</Label>
-                          <div
-                            ref={stateContainerRef}
-                            onClick={() => stateInputRef.current?.focus()}
-                            className="relative min-h-10 bg-white border border-slate-200 rounded-lg p-2 flex flex-wrap items-center gap-1.5 focus-within:border-[#0064cb] focus-within:ring-1 focus-within:ring-[#0064cb] cursor-text transition-all"
+                          <Select
+                            key={stateSelectKey}
+                            onValueChange={(val) => {
+                              if (val && val !== "__none__") {
+                                handleAddState(val);
+                                setStateSelectKey((k) => k + 1);
+                              }
+                            }}
                           >
-                            {selectedStates.map((stateName) => (
-                              <span
-                                key={stateName}
-                                className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
-                              >
-                                <span>{stateName}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoveState(stateName);
-                                  }}
-                                  className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
-                                  title={`Remove ${stateName}`}
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </span>
-                            ))}
-                            <input
-                              ref={stateInputRef}
-                              type="text"
-                              value={stateInput}
-                              onChange={(e) => {
-                                setStateInput(e.target.value);
-                                setShowStateSuggestions(true);
-                              }}
-                              onFocus={() => {
-                                if (stateInput.trim().length >= 1) setShowStateSuggestions(true);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === ",") {
-                                  e.preventDefault();
-                                  if (stateInput.trim()) {
-                                    handleAddState(stateInput.trim());
-                                  }
-                                } else if (e.key === "Backspace" && !stateInput && selectedStates.length > 0) {
-                                  handleRemoveState(selectedStates[selectedStates.length - 1]);
-                                }
-                              }}
-                              placeholder={selectedStates.length === 0 ? "Type state name and press Enter..." : "Add state..."}
-                              className="flex-1 min-w-[120px] bg-transparent text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none border-none p-0.5 h-6"
-                            />
+                            <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                              <SelectValue placeholder={isLocationsLoading ? "Loading states..." : "Select State"} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-slate-200 max-h-56">
+                              {apiLocations.states.length === 0 ? (
+                                <SelectItem value="__none__" disabled className="text-xs text-slate-400">
+                                  {isLocationsLoading ? "Loading states..." : "No states found"}
+                                </SelectItem>
+                              ) : (
+                                apiLocations.states
+                                  .filter((s) => !selectedStates.includes(s))
+                                  .map((state) => (
+                                    <SelectItem key={state} value={state} className="text-xs cursor-pointer">
+                                      {state}
+                                    </SelectItem>
+                                  ))
+                              )}
+                            </SelectContent>
+                          </Select>
 
-                            {showStateSuggestions && filteredStateSuggestions.length > 0 && (
-                              <div className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-52 overflow-y-auto py-1">
-                                {filteredStateSuggestions.map((item, idx) => (
+                          {selectedStates.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {selectedStates.map((stateName) => (
+                                <span
+                                  key={stateName}
+                                  className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
+                                >
+                                  <span>{stateName}</span>
                                   <button
-                                    key={`${item.name}-${item.country}-${idx}`}
                                     type="button"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      handleAddState(item.name);
-                                    }}
-                                    className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center justify-between text-slate-700 cursor-pointer transition-colors"
+                                    onClick={() => handleRemoveState(stateName)}
+                                    className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                                    title={`Remove ${stateName}`}
                                   >
-                                    <span className="font-semibold text-slate-900">{item.name}</span>
-                                    <span className="text-[11px] text-slate-400 font-medium">
-                                      {item.country || ""}
-                                    </span>
+                                    <X className="w-3 h-3" />
                                   </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
 
                       {locationType === "country" && (
-                        <>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-800">Country</Label>
-                            <Select value={selectedCountryCode} onValueChange={handleCountryChange}>
-                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                                <SelectValue placeholder="Select Country" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border-slate-200 max-h-56">
-                                {allCountries.map((c) => (
-                                  <SelectItem key={c.isoCode} value={c.isoCode} className="text-xs cursor-pointer">
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold text-slate-800">Country</Label>
+                          <Select
+                            key={countrySelectKey}
+                            onValueChange={(val) => {
+                              if (val && val !== "__none__") {
+                                handleAddCountry(val);
+                                setCountrySelectKey((k) => k + 1);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                              <SelectValue placeholder={isLocationsLoading ? "Loading countries..." : "Select Country"} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-slate-200 max-h-56">
+                              {apiLocations.countries.length === 0 ? (
+                                <SelectItem value="__none__" disabled className="text-xs text-slate-400">
+                                  {isLocationsLoading ? "Loading countries..." : "No countries found"}
+                                </SelectItem>
+                              ) : (
+                                apiLocations.countries
+                                  .filter((c) => !selectedCountries.includes(c))
+                                  .map((country) => (
+                                    <SelectItem key={country} value={country} className="text-xs cursor-pointer">
+                                      {country}
+                                    </SelectItem>
+                                  ))
+                              )}
+                            </SelectContent>
+                          </Select>
+
+                          {selectedCountries.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {selectedCountries.map((countryName) => (
+                                <span
+                                  key={countryName}
+                                  className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
+                                >
+                                  <span>{countryName}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveCountry(countryName)}
+                                    className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                                    title={`Remove ${countryName}`}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
 
                       {locationType === "all" && (
