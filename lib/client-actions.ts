@@ -629,6 +629,85 @@ export async function clientFetchAvailableGuardsAction(
   }
 }
 
+export async function clientFetchAvailableGuardsShiftsAction(
+  invoiceId: string
+): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  try {
+    const data = await clientApiFetch<{ success: boolean; data: any[] }>(
+      `/api/v1/invoice/${invoiceId}/available-guards/shifts`,
+      { cache: "no-store" }
+    );
+    const shiftsData = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+    return { success: true, data: shiftsData };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    console.error("[fetchAvailableGuardsShiftsAction] Error:", message);
+    return { success: false, error: message || "Unknown Error" };
+  }
+}
+
+export interface AvailableGuardItem {
+  notification_id: string;
+  guard_id: string;
+  guard_name: string;
+  email: string;
+  created_at: string;
+  shifts_data: { [key: string]: string };
+}
+
+export interface AvailableGuardsMatrixResponse {
+  success: boolean;
+  shift_nos?: string[];
+  total_guards?: number;
+  total_pages?: number;
+  current_page?: number;
+  data?: AvailableGuardItem[];
+  error?: string;
+}
+
+export async function clientFetchAvailableGuardsMatrixAction(
+  invoiceId: string,
+  shiftNos: string[] = [],
+  availabilityType: string = "all",
+  page: number = 1
+): Promise<AvailableGuardsMatrixResponse> {
+  try {
+    const params = new URLSearchParams();
+    if (shiftNos.length > 0) {
+      shiftNos.forEach((no) => {
+        const clean = String(no).replace(/^#/, "").trim();
+        if (clean) params.append("shift_no", clean);
+      });
+    }
+    if (availabilityType) {
+      params.append("availability_type", availabilityType);
+    }
+    if (page) {
+      params.append("page", page.toString());
+    }
+
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+    const data = await clientApiFetch<any>(
+      `/api/v1/invoice/${invoiceId}/available-guards${queryString}`,
+      { cache: "no-store" }
+    );
+
+    const guardsList = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+    return {
+      success: true,
+      shift_nos: Array.isArray(data?.shift_nos) ? data.shift_nos : [],
+      total_guards: data?.total_guards ?? guardsList.length,
+      total_pages: data?.total_pages ?? 1,
+      current_page: data?.current_page ?? page,
+      data: guardsList,
+    };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    console.error("[clientFetchAvailableGuardsMatrixAction] Error:", message);
+    return { success: false, error: message || "Unknown Error" };
+  }
+}
+
 
 export async function clientFetchCalendarShiftsAction(
   from_date: string,

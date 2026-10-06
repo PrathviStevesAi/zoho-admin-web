@@ -497,14 +497,12 @@ export function ShiftModule({
                   className="flex items-center gap-2 h-11 w-full bg-white border border-slate-200 rounded-lg px-2.5 cursor-pointer hover:border-slate-300 transition-colors"
                 >
                   <div
-                    className={`w-8 h-[18px] flex items-center rounded-full p-0.5 transition-colors shrink-0 ${
-                      addShiftData?.is_travel_guard ? "bg-[#0064cb]" : "bg-slate-300"
-                    }`}
+                    className={`w-8 h-[18px] flex items-center rounded-full p-0.5 transition-colors shrink-0 ${addShiftData?.is_travel_guard ? "bg-[#0064cb]" : "bg-slate-300"
+                      }`}
                   >
                     <div
-                      className={`bg-white w-3.5 h-3.5 rounded-full shadow-sm transform transition-transform ${
-                        addShiftData?.is_travel_guard ? "translate-x-3.5" : ""
-                      }`}
+                      className={`bg-white w-3.5 h-3.5 rounded-full shadow-sm transform transition-transform ${addShiftData?.is_travel_guard ? "translate-x-3.5" : ""
+                        }`}
                     ></div>
                   </div>
                   <span className="text-[11px] leading-[13px] text-slate-700 font-medium select-none">
@@ -563,8 +561,8 @@ export function ShiftModule({
                     if (setRowSchedules) setRowSchedules({});
                   }}>Repeat Shifts</span>
                   <span className="text-xs text-slate-500 mt-0.5">
-                    {isRepeating 
-                      ? `Recurring shifts enabled from ${repeatStartDate} to ${repeatEndDate}` 
+                    {isRepeating
+                      ? `Recurring shifts enabled from ${repeatStartDate} to ${repeatEndDate}`
                       : "Turn on to configure recurring shifts for multiple days."}
                   </span>
                 </div>
@@ -573,105 +571,105 @@ export function ShiftModule({
               {isRepeating && (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                  <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat on</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { id: 1, label: "Monday" },
-                      { id: 2, label: "Tuesday" },
-                      { id: 3, label: "Wednesday" },
-                      { id: 4, label: "Thursday" },
-                      { id: 5, label: "Friday" },
-                      { id: 6, label: "Saturday" },
-                      { id: 0, label: "Sunday" },
-                    ].map((day) => (
-                      <button
-                        key={day.id}
-                        type="button"
+                    <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat on</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { id: 1, label: "Monday" },
+                        { id: 2, label: "Tuesday" },
+                        { id: 3, label: "Wednesday" },
+                        { id: 4, label: "Thursday" },
+                        { id: 5, label: "Friday" },
+                        { id: 6, label: "Saturday" },
+                        { id: 0, label: "Sunday" },
+                      ].map((day) => (
+                        <button
+                          key={day.id}
+                          type="button"
+                          disabled={!isRepeating}
+                          onClick={() => {
+                            setRepeatDays(prev =>
+                              prev.includes(day.id) ? prev.filter(d => d !== day.id) : [...prev, day.id]
+                            );
+                          }}
+                          className={`h-9 px-4 rounded-md text-sm font-semibold transition-all ${!isRepeating
+                            ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                            : repeatDays.includes(day.id)
+                              ? "bg-[#0064cb] text-white shadow-sm shadow-[#0064cb]/20 cursor-pointer"
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                            }`}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+                    <div className="space-y-2">
+                      <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat Date From</Label>
+                      <Input
+                        type="date"
                         disabled={!isRepeating}
-                        onClick={() => {
-                          setRepeatDays(prev =>
-                            prev.includes(day.id) ? prev.filter(d => d !== day.id) : [...prev, day.id]
-                          );
+                        min={today}
+                        value={repeatStartDate}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setRepeatStartDate(val);
                         }}
-                        className={`h-9 px-4 rounded-md text-sm font-semibold transition-all ${!isRepeating
-                          ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                          : repeatDays.includes(day.id)
-                            ? "bg-[#0064cb] text-white shadow-sm shadow-[#0064cb]/20 cursor-pointer"
-                            : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
-                          }`}
-                      >
-                        {day.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
-                  <div className="space-y-2">
-                    <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat Date From</Label>
-                    <Input
-                      type="date"
-                      disabled={!isRepeating}
-                      min={today}
-                      value={repeatStartDate}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setRepeatStartDate(val);
-                      }}
-                      className={`w-full h-11 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat Date To</Label>
-                    <Input
-                      type="date"
-                      disabled={!isRepeating}
-                      min={repeatStartDate || today}
-                      value={repeatEndDate}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setRepeatEndDate(val);
-                      }}
-                      className={`w-full h-11 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4 border-t border-slate-100">
-                  <div className="space-y-1">
-                    <Label className="text-[14px] font-bold text-slate-900 uppercase tracking-wider">Time for each day</Label>
-                    <p className="text-sm text-slate-500">Set the time for one day. It will be the same for all selected dates.</p>
-                  </div>
-                  <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center max-w-xl">
-                    <div className="space-y-2">
-                      <Label className={`text-[10px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Start Time</Label>
-                      <div className="relative">
-                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <Input
-                          type="time"
-                          disabled={!isRepeating}
-                          value={repeatStartTime}
-                          onChange={(e) => setRepeatStartTime(e.target.value)}
-                          className={`w-full h-11 pl-10 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
-                        />
-                      </div>
+                        className={`w-full h-11 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                      />
                     </div>
-                    <div className="text-slate-400 mt-6 font-bold">-</div>
                     <div className="space-y-2">
-                      <Label className={`text-[10px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>End Time</Label>
-                      <div className="relative">
-                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <Input
-                          type="time"
-                          disabled={!isRepeating}
-                          value={repeatEndTime}
-                          onChange={(e) => setRepeatEndTime(e.target.value)}
-                          className={`w-full h-11 pl-10 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
-                        />
+                      <Label className={`text-[11px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Repeat Date To</Label>
+                      <Input
+                        type="date"
+                        disabled={!isRepeating}
+                        min={repeatStartDate || today}
+                        value={repeatEndDate}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setRepeatEndDate(val);
+                        }}
+                        className={`w-full h-11 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <div className="space-y-1">
+                      <Label className="text-[14px] font-bold text-slate-900 uppercase tracking-wider">Time for each day</Label>
+                      <p className="text-sm text-slate-500">Set the time for one day. It will be the same for all selected dates.</p>
+                    </div>
+                    <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center max-w-xl">
+                      <div className="space-y-2">
+                        <Label className={`text-[10px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>Start Time</Label>
+                        <div className="relative">
+                          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <Input
+                            type="time"
+                            disabled={!isRepeating}
+                            value={repeatStartTime}
+                            onChange={(e) => setRepeatStartTime(e.target.value)}
+                            className={`w-full h-11 pl-10 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-slate-400 mt-6 font-bold">-</div>
+                      <div className="space-y-2">
+                        <Label className={`text-[10px] font-bold uppercase transition-colors ${isRepeating ? "text-slate-800" : "text-slate-400"}`}>End Time</Label>
+                        <div className="relative">
+                          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <Input
+                            type="time"
+                            disabled={!isRepeating}
+                            value={repeatEndTime}
+                            onChange={(e) => setRepeatEndTime(e.target.value)}
+                            className={`w-full h-11 pl-10 bg-white border-slate-200 rounded-lg ${!isRepeating ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
                 </div>
               )}
             </div>

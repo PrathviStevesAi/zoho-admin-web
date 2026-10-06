@@ -4,12 +4,18 @@ import Link from "next/link";
 import {
   clientFetchGuardsNewAction,
   clientFetchLocationAction,
+  clientFetchAvailableGuardsShiftsAction,
+  clientFetchAvailableGuardsMatrixAction,
+  AvailableGuardItem,
   FetchGuardsByLocationParams
 } from "@/lib/client-actions";
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Loader2,
   ChevronRight,
+  ChevronLeft,
+  ChevronDown,
+  ChevronsUpDown,
   UserCheck,
   Info,
   ArrowLeft,
@@ -24,7 +30,13 @@ import {
   X,
   Shield,
   ShieldAlert,
-  ShieldCheck
+  ShieldCheck,
+  CalendarDays,
+  Users,
+  Check,
+  Clock,
+  Plane,
+  Minus
 } from "lucide-react";
 import { Country, State, City } from "country-state-city";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,6 +59,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { findAvailableGuardsAction } from "@/actions/dashboard.actions";
@@ -98,8 +111,226 @@ function getCoordinatesFromLocation(locationText: string): [number, number] | nu
       }
     }
   }
-
   return null;
+}
+
+const DEFAULT_SAMPLE_SHIFTS = [
+  { shift_id: "s-123", shift_no: "#123", start_time: "2026-10-10T08:00:00", end_time: "2026-10-10T16:00:00" },
+  { shift_id: "s-456", shift_no: "#456", start_time: "2026-10-11T08:00:00", end_time: "2026-10-11T16:00:00" },
+  { shift_id: "s-789", shift_no: "#789", start_time: "2026-10-12T08:00:00", end_time: "2026-10-12T16:00:00" },
+  { shift_id: "s-898", shift_no: "#898", start_time: "2026-10-13T08:00:00", end_time: "2026-10-13T16:00:00" },
+];
+
+const DEFAULT_SAMPLE_GUARDS = [
+  {
+    guard_id: "g-1",
+    guard_name: "Hunter Cooper",
+    email: "hunter@example.com",
+    shift_statuses: {
+      "s-123": "available",
+      "s-456": "available",
+      "s-789": "available",
+      "s-898": "not_sent",
+      "0": "available",
+      "1": "available",
+      "2": "available",
+      "3": "not_sent",
+    } as Record<string, string>
+  },
+  {
+    guard_id: "g-2",
+    guard_name: "Jessica Thompson",
+    email: "jessica@example.com",
+    shift_statuses: {
+      "s-123": "available",
+      "s-456": "unavailable",
+      "s-789": "available",
+      "s-898": "willing_to_travel",
+      "0": "available",
+      "1": "unavailable",
+      "2": "available",
+      "3": "willing_to_travel",
+    } as Record<string, string>
+  },
+  {
+    guard_id: "g-3",
+    guard_name: "Robert Wilson",
+    email: "robert@example.com",
+    shift_statuses: {
+      "s-123": "available",
+      "s-456": "pending",
+      "s-789": "available",
+      "s-898": "not_sent",
+      "0": "available",
+      "1": "pending",
+      "2": "available",
+      "3": "not_sent",
+    } as Record<string, string>
+  },
+  {
+    guard_id: "g-4",
+    guard_name: "Sarah Brown",
+    email: "sarah@example.com",
+    shift_statuses: {
+      "s-123": "not_sent",
+      "s-456": "not_sent",
+      "s-789": "available",
+      "s-898": "available",
+      "0": "not_sent",
+      "1": "not_sent",
+      "2": "available",
+      "3": "available",
+    } as Record<string, string>
+  },
+  {
+    guard_id: "g-5",
+    guard_name: "Michael Carter",
+    email: "michael@example.com",
+    shift_statuses: {
+      "s-123": "available",
+      "s-456": "available",
+      "s-789": "willing_to_travel",
+      "s-898": "pending",
+      "0": "available",
+      "1": "available",
+      "2": "willing_to_travel",
+      "3": "pending",
+    } as Record<string, string>
+  },
+  {
+    guard_id: "g-6",
+    guard_name: "David Garcia",
+    email: "david@example.com",
+    shift_statuses: {
+      "s-123": "unavailable",
+      "s-456": "available",
+      "s-789": "not_sent",
+      "s-898": "not_sent",
+      "0": "unavailable",
+      "1": "available",
+      "2": "not_sent",
+      "3": "not_sent",
+    } as Record<string, string>
+  },
+  {
+    guard_id: "g-7",
+    guard_name: "Samantha Lee",
+    email: "samantha@example.com",
+    shift_statuses: {
+      "s-123": "pending",
+      "s-456": "willing_to_travel",
+      "s-789": "available",
+      "s-898": "available",
+      "0": "pending",
+      "1": "willing_to_travel",
+      "2": "available",
+      "3": "available",
+    } as Record<string, string>
+  },
+  {
+    guard_id: "g-8",
+    guard_name: "Ryan Johnson",
+    email: "ryan@example.com",
+    shift_statuses: {
+      "s-123": "available",
+      "s-456": "available",
+      "s-789": "pending",
+      "s-898": "not_sent",
+      "0": "available",
+      "1": "available",
+      "2": "pending",
+      "3": "not_sent",
+    } as Record<string, string>
+  },
+];
+
+const MATRIX_AVATAR_COLORS: { [key: string]: string } = {
+  "HC": "bg-indigo-100 text-indigo-700",
+  "JT": "bg-purple-100 text-purple-700",
+  "RW": "bg-blue-100 text-blue-700",
+  "SB": "bg-rose-100 text-rose-700",
+  "MC": "bg-sky-100 text-sky-700",
+  "DG": "bg-violet-100 text-violet-700",
+  "SL": "bg-indigo-100 text-indigo-700",
+  "RJ": "bg-blue-100 text-blue-700",
+};
+
+function getMatrixInitials(name: string): string {
+  if (!name) return "G";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+function formatShiftDisplayDate(dateStr?: string): string {
+  if (!dateStr) return "Oct 10, 2026";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatShiftDisplayTime(startStr?: string, endStr?: string): string {
+  if (!startStr && !endStr) return "08:00 AM - 04:00 PM";
+  try {
+    const fmt = (s?: string) => {
+      if (!s) return "";
+      const d = new Date(s);
+      if (isNaN(d.getTime())) return s;
+      return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+    };
+    if (startStr && endStr) {
+      return `${fmt(startStr)} - ${fmt(endStr)}`;
+    }
+    return fmt(startStr || endStr);
+  } catch {
+    return "08:00 AM - 04:00 PM";
+  }
+}
+
+type MatrixShiftStatus = "available" | "unavailable" | "not_available" | "pending" | "willing_to_travel" | "not_sent" | string;
+
+function MatrixStatusBadge({ status }: { status: MatrixShiftStatus }) {
+  const norm = String(status || "").toLowerCase().trim();
+  switch (norm) {
+    case "available":
+      return (
+        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto" title="Available">
+          <Check className="w-3.5 h-3.5 stroke-[3]" />
+        </div>
+      );
+    case "unavailable":
+    case "not_available":
+      return (
+        <div className="w-6 h-6 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto" title="Unavailable">
+          <X className="w-3.5 h-3.5 stroke-[3]" />
+        </div>
+      );
+    case "pending":
+      return (
+        <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center mx-auto" title="Pending">
+          <Clock className="w-3.5 h-3.5 stroke-[2.5]" />
+        </div>
+      );
+    case "willing_to_travel":
+      return (
+        <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mx-auto" title="Willing to Travel">
+          <Plane className="w-3.5 h-3.5 stroke-[2.5]" />
+        </div>
+      );
+    case "not_sent":
+    default:
+      return (
+        <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto" title="Not Sent">
+          <Minus className="w-3.5 h-3.5 stroke-[3]" />
+        </div>
+      );
+  }
 }
 
 export function AvailableGuardsModule({
@@ -123,6 +354,185 @@ export function AvailableGuardsModule({
   const [notificationSource, setNotificationSource] = useState<"in_app" | "sms" | "both">("in_app");
   const [locationType, setLocationType] = useState<"radius" | "city" | "state" | "country" | "all_guard" | "all">("radius");
   const [serviceFilter, setServiceFilter] = useState<"all" | "both" | "armed" | "unarmed">("all");
+
+  // Matrix View States (Image 2 design)
+  const [sentShifts, setSentShifts] = useState<any[]>([]);
+  const [isSentShiftsLoading, setIsSentShiftsLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSentShifts = async () => {
+      if (!invoiceId) return;
+      setIsSentShiftsLoading(true);
+      try {
+        const res = await clientFetchAvailableGuardsShiftsAction(invoiceId);
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          if (isMounted) {
+            setSentShifts(res.data);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch available guards sent shifts:", err);
+      } finally {
+        if (isMounted) setIsSentShiftsLoading(false);
+      }
+    };
+    fetchSentShifts();
+    return () => {
+      isMounted = false;
+    };
+  }, [invoiceId]);
+
+  const availableInvoiceShifts = useMemo(() => {
+    const rawList =
+      Array.isArray(sentShifts) && sentShifts.length > 0
+        ? sentShifts
+        : Array.isArray(shifts) && shifts.length > 0
+          ? shifts
+          : [];
+
+    if (rawList.length > 0) {
+      const seen = new Set<string>();
+      const uniqueShifts: Array<{
+        shift_id: string;
+        shift_no: string;
+        start_time: string;
+        end_time: string;
+      }> = [];
+
+      rawList.forEach((s: any, idx: number) => {
+        const rawNo = String(s.shift_no || s.shift_number || `${idx + 101}`).trim();
+        const formattedNo = rawNo.startsWith("#") ? rawNo : `#${rawNo}`;
+        const id = String(s.shift_id || s.id || rawNo || `shift-${idx}`);
+
+        if (!seen.has(id)) {
+          seen.add(id);
+          uniqueShifts.push({
+            shift_id: id,
+            shift_no: formattedNo,
+            start_time: s.start_time || "2026-10-10T08:00:00",
+            end_time: s.end_time || "2026-10-10T16:00:00",
+          });
+        }
+      });
+      return uniqueShifts;
+    }
+    return [];
+  }, [sentShifts, shifts]);
+
+  const [selectedMatrixShiftIds, setSelectedMatrixShiftIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (availableInvoiceShifts.length > 0) {
+      setSelectedMatrixShiftIds(availableInvoiceShifts.map((s) => s.shift_id));
+    }
+  }, [availableInvoiceShifts]);
+
+  const [matrixAvailabilityType, setMatrixAvailabilityType] = useState<
+    "all" | "available_all" | "available_any" | "willing_to_travel_all" | "willing_to_travel_any"
+  >("all");
+  const [isShiftDropdownOpen, setIsShiftDropdownOpen] = useState(false);
+  const shiftDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (shiftDropdownRef.current && !shiftDropdownRef.current.contains(event.target as Node)) {
+        setIsShiftDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const [matrixGuards, setMatrixGuards] = useState<AvailableGuardItem[]>([]);
+  const [matrixShiftNos, setMatrixShiftNos] = useState<string[]>([]);
+  const [isMatrixLoading, setIsMatrixLoading] = useState(true);
+  const [matrixTotalGuards, setMatrixTotalGuards] = useState(0);
+  const [matrixTotalPages, setMatrixTotalPages] = useState(1);
+  const [matrixCurrentPage, setMatrixCurrentPage] = useState(1);
+
+  const selectedMatrixShifts = useMemo(() => {
+    const seen = new Set<string>();
+    return availableInvoiceShifts.filter((s) => {
+      if (selectedMatrixShiftIds.includes(s.shift_id) && !seen.has(s.shift_id)) {
+        seen.add(s.shift_id);
+        return true;
+      }
+      return false;
+    });
+  }, [availableInvoiceShifts, selectedMatrixShiftIds]);
+
+  const handleToggleMatrixShift = (id: string) => {
+    setSelectedMatrixShiftIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleRemoveMatrixShift = (id: string) => {
+    setSelectedMatrixShiftIds((prev) => prev.filter((i) => i !== id));
+  };
+
+  const fetchAvailableGuardsMatrix = async (pageToFetch: number = 1) => {
+    if (!invoiceId) return;
+    setIsMatrixLoading(true);
+    try {
+      const shiftNosToSend = selectedMatrixShifts.map((s) =>
+        String(s.shift_no).replace(/^#/, "").trim()
+      );
+      const res = await clientFetchAvailableGuardsMatrixAction(
+        invoiceId,
+        shiftNosToSend,
+        matrixAvailabilityType,
+        pageToFetch
+      );
+      if (res.success && res.data) {
+        setMatrixGuards(res.data);
+        if (Array.isArray(res.shift_nos) && res.shift_nos.length > 0) {
+          setMatrixShiftNos(res.shift_nos);
+        } else {
+          setMatrixShiftNos(shiftNosToSend);
+        }
+        setMatrixTotalGuards(res.total_guards ?? res.data.length);
+        setMatrixTotalPages(res.total_pages ?? 1);
+        setMatrixCurrentPage(res.current_page ?? pageToFetch);
+      }
+    } catch (err) {
+      console.error("Failed to fetch available guards matrix:", err);
+    } finally {
+      setIsMatrixLoading(false);
+    }
+  };
+
+  const lastFetchedKeyRef = useRef<string>("");
+  useEffect(() => {
+    if (!invoiceId) return;
+    if (isSentShiftsLoading) {
+      setIsMatrixLoading(true);
+      return;
+    }
+    if (selectedMatrixShifts.length === 0) {
+      setIsMatrixLoading(false);
+      return;
+    }
+
+    const shiftNosToSend = selectedMatrixShifts.map((s) =>
+      String(s.shift_no).replace(/^#/, "").trim()
+    );
+    const key = `${invoiceId}_${shiftNosToSend.slice().sort().join(",")}_${matrixAvailabilityType}`;
+    if (lastFetchedKeyRef.current !== key) {
+      lastFetchedKeyRef.current = key;
+      fetchAvailableGuardsMatrix(1);
+    }
+  }, [invoiceId, isSentShiftsLoading, selectedMatrixShifts, matrixAvailabilityType]);
+
+  const displayedShiftNos = useMemo(() => {
+    if (matrixShiftNos && matrixShiftNos.length > 0) {
+      return matrixShiftNos;
+    }
+    return selectedMatrixShifts.map((s) => String(s.shift_no).replace(/^#/, "").trim());
+  }, [matrixShiftNos, selectedMatrixShifts]);
 
   const dynamicSiteLocation = useMemo(() => {
     if (Array.isArray(invoice?.history)) {
@@ -696,125 +1106,464 @@ export function AvailableGuardsModule({
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-      {renderStepper()}
+      {activeStep > 0 && renderStepper()}
 
       <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white max-w-7xl mx-auto">
         <CardContent className="p-0">
-          <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold text-slate-900">
-                {activeStep === 0
-                  ? "Available Guards"
-                  : activeStep === 1
-                    ? "Select Shifts"
-                    : "Select Guards"}
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                {activeStep === 0 ? (
-                  <>
-                    Total available guards found:{" "}
-                    <span className="font-semibold text-[#0064cb]">{totalGuards}</span>
-                  </>
-                ) : activeStep === 1 ? (
-                  "You can select multiple shifts"
-                ) : (
-                  "Choose guards manually or use location filters to send job opportunity."
-                )}
-              </p>
-            </div>
-
-            {activeStep === 2 ? (
-              <Button
-                variant="outline"
-                onClick={() => setActiveStep(1)}
-                className="px-4 h-9 rounded-lg font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer text-xs shrink-0"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Back to Shift
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={activeStep === 0 ? onBack : () => {
-                  setActiveStep(0);
-                  resetFilters();
-                }}
-                className="px-6 h-10 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer w-full sm:w-auto text-center shrink-0"
-              >
-                {activeStep === 0 ? "Back" : "Cancel"}
-              </Button>
-            )}
-          </div>
-
-          <div className="p-0">
-            {activeStep === 0 ? (
-              <div className="overflow-x-auto custom-scrollbar w-full">
-                <Table className="min-w-[900px] md:min-w-full">
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Guard Name</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Email</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Total Shifts Sent</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Available For Shifts</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Unavailable For Shifts</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Seen</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Responded</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isResultsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="py-10 text-center">
-                          <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
-                        </TableCell>
-                      </TableRow>
-                    ) : results.length > 0 ? (
-                      results.map((guard, index) => (
-                        <TableRow key={guard.notification_id || index} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                          <TableCell className="py-2.5 px-4 text-sm font-bold text-slate-700">{guard.guard_name}</TableCell>
-                          <TableCell className="py-2.5 px-4 text-sm font-medium text-slate-800">{guard.email}</TableCell>
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <span className="text-xs font-medium text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md">
-                              {formatArray(guard.total_shifts_sent)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md">
-                              {formatArray(guard.available_for_shifts)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-md">
-                              {formatArray(guard.unavailable_for_shifts)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-[10px] font-bold uppercase",
-                              guard.notification_seen ? "bg-blue-50 text-blue-600" : "bg-slate-50 text-slate-700"
-                            )}>
-                              {guard.notification_seen ? "Seen" : "Unseen"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-[10px] font-bold uppercase",
-                              guard.is_responded ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-700"
-                            )}>
-                              {guard.is_responded ? "Responded" : "No Response"}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={7} className="py-8 text-center text-slate-700 font-medium">No available guards found for this invoice.</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+          {activeStep === 0 ? (
+            <div>
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4 border-b border-slate-100 bg-white">
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  Find Available Guards
+                </h1>
+                <p className="text-sm text-slate-500 mt-1 font-normal">
+                  Find guards based on their responses for the selected shifts.
+                </p>
               </div>
-            ) : activeStep === 1 ? (
+
+              {/* Matrix Content Body */}
+              <div className="p-6">
+                {/* Filter Controls Bar */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end mb-6">
+                  {/* Shift Multi-Select with removable pills */}
+                  <div className="md:col-span-6 relative" ref={shiftDropdownRef}>
+                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                      <span className="inline-flex items-center gap-1">
+                        Select shifts for which requests were sent
+                        <ChevronDown className="w-3 h-3 text-slate-500" />
+                      </span>
+                    </label>
+                    <div
+                      onClick={() => setIsShiftDropdownOpen(!isShiftDropdownOpen)}
+                      className="min-h-[42px] px-2.5 py-1.5 border border-slate-200 rounded-lg flex flex-wrap items-center gap-1.5 bg-white cursor-pointer hover:border-slate-300 transition-colors"
+                    >
+                      {isSentShiftsLoading ? (
+                        <span className="text-xs text-slate-400 flex items-center gap-1.5 py-1">
+                          <Loader2 className="w-3 h-3 animate-spin text-[#0064cb]" /> Loading shifts...
+                        </span>
+                      ) : selectedMatrixShifts.length > 0 ? (
+                        selectedMatrixShifts.map((s, sIdx) => (
+                          <span
+                            key={`pill-${s.shift_id}-${sIdx}`}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#e8f1fc] text-[#0064cb] text-xs font-bold"
+                          >
+                            {s.shift_no}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveMatrixShift(s.shift_id);
+                              }}
+                              className="hover:text-blue-800 transition-colors cursor-pointer"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-400">Select shifts...</span>
+                      )}
+                      <ChevronDown className="w-4 h-4 text-slate-400 ml-auto shrink-0" />
+                    </div>
+
+                    {isShiftDropdownOpen && (
+                      <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl p-2 max-h-60 overflow-y-auto space-y-1">
+                        {isSentShiftsLoading ? (
+                          <div className="py-4 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#0064cb]" /> Loading shifts...
+                          </div>
+                        ) : availableInvoiceShifts.map((s, sIdx) => {
+                          const isSelected = selectedMatrixShiftIds.includes(s.shift_id);
+                          return (
+                            <div
+                              key={`dropdown-shift-${s.shift_id}-${sIdx}`}
+                              onClick={() => handleToggleMatrixShift(s.shift_id)}
+                              className={cn(
+                                "px-3 py-2 rounded-md flex items-center justify-between text-xs cursor-pointer transition-colors",
+                                isSelected ? "bg-blue-50 text-[#0064cb] font-semibold" : "hover:bg-slate-50 text-slate-700"
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                  className="rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb]"
+                                />
+                                <span className="font-bold">{s.shift_no}</span>
+                                <span className="text-slate-500 font-normal">
+                                  ({formatShiftDisplayDate(s.start_time)})
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-slate-400">
+                                {formatShiftDisplayTime(s.start_time, s.end_time)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Availability Type Dropdown */}
+                  <div className="md:col-span-4">
+                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                      Availability Type
+                    </label>
+                    <Select
+                      value={matrixAvailabilityType}
+                      onValueChange={(val: any) => setMatrixAvailabilityType(val)}
+                    >
+                      <SelectTrigger className="h-[42px] rounded-lg border-slate-200 text-xs font-semibold text-slate-800 bg-white cursor-pointer">
+                        <SelectValue placeholder="Availability Type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-slate-200 shadow-xl z-50">
+                        <SelectItem value="all" className="cursor-pointer py-2.5">
+                          <div className="flex items-center gap-2.5 font-medium text-xs">
+                            <Users className="w-4 h-4 text-slate-700 shrink-0" />
+                            <span>All</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="available_all" className="cursor-pointer py-2.5">
+                          <div className="flex items-center gap-2.5 font-medium text-xs">
+                            <Check className="w-4 h-4 text-emerald-600 stroke-[2.5] shrink-0" />
+                            <span>Available for All Selected Shifts</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="available_any" className="cursor-pointer py-2.5">
+                          <div className="flex items-center gap-2.5 font-medium text-xs">
+                            <Check className="w-4 h-4 text-emerald-600 stroke-[2.5] shrink-0" />
+                            <span>Available for Any Selected Shifts</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="willing_to_travel_all" className="cursor-pointer py-2.5">
+                          <div className="flex items-center gap-2.5 font-medium text-xs">
+                            <Send className="w-3.5 h-3.5 text-blue-500 shrink-0 -rotate-45" />
+                            <span>Willing to Travel for All Selected Shifts</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="willing_to_travel_any" className="cursor-pointer py-2.5">
+                          <div className="flex items-center gap-2.5 font-medium text-xs">
+                            <Send className="w-3.5 h-3.5 text-blue-500 shrink-0 -rotate-45" />
+                            <span>Willing to Travel for Any Selected Shifts</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Search Button */}
+                  <div className="md:col-span-2">
+                    <Button
+                      type="button"
+                      onClick={() => fetchAvailableGuardsMatrix(1)}
+                      disabled={isMatrixLoading}
+                      className="w-full h-[42px] rounded-lg bg-[#0064cb] hover:bg-[#0052a8] text-white font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm shadow-[#0064cb]/20 transition-all disabled:opacity-70"
+                    >
+                      {isMatrixLoading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Search className="w-3.5 h-3.5" />
+                      )}
+                      Search
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Selected Shifts Cards */}
+                {selectedMatrixShifts.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xs font-bold text-slate-900 mb-2.5">
+                      Selected Shifts ({selectedMatrixShifts.length})
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
+                      {selectedMatrixShifts.map((shift, idx) => (
+                        <div
+                          key={`card-${shift.shift_id}-${idx}`}
+                          className="border border-blue-100 bg-[#f8fbff] rounded-xl p-3 flex items-start justify-between relative shadow-sm"
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-[#e8f1fc] text-[#0064cb] flex items-center justify-center shrink-0 mt-0.5">
+                              <CalendarDays className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-xs text-[#0064cb]">
+                                {shift.shift_no}
+                              </div>
+                              <div className="text-[11px] text-slate-700 font-medium mt-0.5">
+                                {formatShiftDisplayDate(shift.start_time)}
+                              </div>
+                              <div className="text-[11px] text-slate-500 mt-0.5">
+                                {formatShiftDisplayTime(shift.start_time, shift.end_time)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Showing Guards count */}
+                <div className="mb-2.5">
+                  {isMatrixLoading ? (
+                    <Skeleton className="h-4 w-36 bg-slate-200 rounded" />
+                  ) : (
+                    <p className="text-xs font-medium text-slate-600">
+                      Showing {matrixGuards.length} of {matrixTotalGuards} guards
+                    </p>
+                  )}
+                </div>
+
+                {/* Matrix Table */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                  <div className="overflow-x-auto custom-scrollbar w-full">
+                    <Table className="min-w-[850px] md:min-w-full">
+                      <TableHeader className="bg-slate-50/50">
+                        <TableRow className="hover:bg-transparent border-slate-100">
+                          <TableHead className="text-[11px] font-bold text-slate-900 uppercase py-3.5 px-4">
+                            GUARD NAME
+                          </TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-900 uppercase py-3.5 px-4">
+                            EMAIL
+                          </TableHead>
+                          {(displayedShiftNos.length > 0
+                            ? displayedShiftNos
+                            : isMatrixLoading
+                            ? ["...", "..."]
+                            : []
+                          ).map((shiftNo, idx) => (
+                            <TableHead
+                              key={`th-shift-${shiftNo}-${idx}`}
+                              className="text-[11px] font-bold text-slate-900 uppercase py-3.5 px-4 text-center"
+                            >
+                              {shiftNo === "..." ? (
+                                <Skeleton className="h-3 w-12 mx-auto bg-slate-200" />
+                              ) : (
+                                `#${shiftNo.replace(/^#/, "")}`
+                              )}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {isMatrixLoading ? (
+                          Array.from({ length: 8 }).map((_, rIdx) => (
+                            <TableRow
+                              key={`matrix-skel-row-${rIdx}`}
+                              className="border-slate-50 hover:bg-transparent"
+                            >
+                              <TableCell className="py-3.5 px-4">
+                                <div className="flex items-center gap-2.5">
+                                  <Skeleton className="w-7 h-7 rounded-full bg-slate-200 shrink-0" />
+                                  <Skeleton
+                                    className={cn(
+                                      "h-4 rounded bg-slate-200",
+                                      rIdx % 3 === 0
+                                        ? "w-28"
+                                        : rIdx % 3 === 1
+                                        ? "w-36"
+                                        : "w-24"
+                                    )}
+                                  />
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-3.5 px-4">
+                                <Skeleton
+                                  className={cn(
+                                    "h-4 rounded bg-slate-200",
+                                    rIdx % 2 === 0 ? "w-40" : "w-32"
+                                  )}
+                                />
+                              </TableCell>
+                              {(displayedShiftNos.length > 0
+                                ? displayedShiftNos
+                                : ["1", "2"]
+                              ).map((_, sIdx) => (
+                                <TableCell
+                                  key={`matrix-skel-cell-${rIdx}-${sIdx}`}
+                                  className="py-3.5 px-4 text-center"
+                                >
+                                  <Skeleton className="w-6 h-6 rounded-full mx-auto bg-slate-200" />
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))
+                        ) : matrixGuards.length > 0 ? (
+                          matrixGuards.map((guard: any, idx: number) => {
+                            const guardId = guard.guard_id || guard.notification_id || `g-${idx}`;
+                            const name = guard.guard_name || guard.name || "Guard";
+                            const initials = getMatrixInitials(name);
+                            const avatarColor = MATRIX_AVATAR_COLORS[initials] || "bg-indigo-100 text-indigo-700";
+
+                            return (
+                              <TableRow
+                                key={`guard-${guardId}-${idx}`}
+                                className="border-slate-50 hover:bg-slate-50/50 transition-colors"
+                              >
+                                <TableCell className="py-3 px-4">
+                                  <div className="flex items-center gap-2.5">
+                                    <div
+                                      className={cn(
+                                        "w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0",
+                                        avatarColor
+                                      )}
+                                    >
+                                      {initials}
+                                    </div>
+                                    <span className="font-bold text-sm text-slate-900">
+                                      {name}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-3 px-4 text-sm text-slate-600 font-normal">
+                                  {guard.email || "-"}
+                                </TableCell>
+                                {displayedShiftNos.map((shiftNo, sIdx) => {
+                                  const cleanNo = shiftNo.replace(/^#/, "").trim();
+                                  const status =
+                                    guard.shifts_data?.[cleanNo] ||
+                                    guard.shifts_data?.[`#${cleanNo}`] ||
+                                    "not_sent";
+
+                                  return (
+                                    <TableCell key={`cell-${guardId}-${cleanNo}-${sIdx}`} className="py-3 px-4 text-center">
+                                      <MatrixStatusBadge status={status} />
+                                    </TableCell>
+                                  );
+                                })}
+                              </TableRow>
+                            );
+                          })
+                        ) : (
+                          <TableRow>
+                            <TableCell
+                              colSpan={2 + displayedShiftNos.length}
+                              className="py-10 text-center text-slate-600 font-medium"
+                            >
+                              No guards found matching the selected criteria.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Footer pagination & legend */}
+                  <div className="border-t border-slate-100 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+                    <div className="text-xs text-slate-500 font-medium">
+                      {isMatrixLoading ? (
+                        <Skeleton className="h-4 w-40 bg-slate-200 rounded" />
+                      ) : (
+                        `Showing ${matrixGuards.length > 0 ? (matrixCurrentPage - 1) * 15 + 1 : 0} to ${Math.min(matrixCurrentPage * 15, matrixTotalGuards)} of ${matrixTotalGuards} guards`
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-8 h-8 p-0 text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                        disabled={matrixCurrentPage <= 1 || isMatrixLoading}
+                        onClick={() => fetchAvailableGuardsMatrix(matrixCurrentPage - 1)}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      {Array.from({ length: Math.max(1, matrixTotalPages) }, (_, p) => p + 1).map((pg) => (
+                        <Button
+                          key={`page-${pg}`}
+                          size="sm"
+                          variant={pg === matrixCurrentPage ? "primary" : "outline"}
+                          className={cn(
+                            "w-8 h-8 p-0 font-bold text-xs cursor-pointer",
+                            pg === matrixCurrentPage
+                              ? "bg-[#0064cb] text-white hover:bg-[#0052a8]"
+                              : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                          )}
+                          onClick={() => fetchAvailableGuardsMatrix(pg)}
+                          disabled={isMatrixLoading}
+                        >
+                          {pg}
+                        </Button>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-8 h-8 p-0 text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                        disabled={matrixCurrentPage >= matrixTotalPages || isMatrixLoading}
+                        onClick={() => fetchAvailableGuardsMatrix(matrixCurrentPage + 1)}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 bg-slate-50/70 border border-slate-200/80 px-4 py-2 rounded-xl text-xs font-medium text-slate-700">
+                      <div className="flex items-center gap-1.5">
+                        <MatrixStatusBadge status="available" />
+                        <span className="text-xs text-slate-600 font-medium">Available</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MatrixStatusBadge status="unavailable" />
+                        <span className="text-xs text-slate-600 font-medium">Unavailable</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MatrixStatusBadge status="pending" />
+                        <span className="text-xs text-slate-600 font-medium">Pending</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MatrixStatusBadge status="willing_to_travel" />
+                        <span className="text-xs text-slate-600 font-medium">Willing to Travel</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MatrixStatusBadge status="not_sent" />
+                        <span className="text-xs text-slate-600 font-medium">Not Sent</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {/* Header for Steps 1 & 2 */}
+              <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+                <div className="space-y-1">
+                  <h2 className="text-xl font-bold text-slate-900">
+                    {activeStep === 1 ? "Select Shifts" : "Select Guards"}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                    {activeStep === 1
+                      ? "You can select multiple shifts"
+                      : "Choose guards manually or use location filters to send job opportunity."}
+                  </p>
+                </div>
+
+                {activeStep === 2 ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => setActiveStep(1)}
+                    className="px-4 h-9 rounded-lg font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer text-xs shrink-0"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Back to Shift
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setActiveStep(0);
+                      resetFilters();
+                    }}
+                    className="px-6 h-10 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer w-full sm:w-auto text-center shrink-0"
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
+
+              <div className="p-0">
+                {activeStep === 1 ? (
               <div className="overflow-x-auto custom-scrollbar w-full">
                 <Table className="min-w-[650px] md:min-w-full">
                   <TableHeader className="bg-slate-50/50">
@@ -835,8 +1584,8 @@ export function AvailableGuardsModule({
                   </TableHeader>
                   <TableBody>
                     {shifts.length > 0 ? (
-                      shifts.map((shift) => (
-                        <TableRow key={shift.shift_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                      shifts.map((shift, idx) => (
+                        <TableRow key={`step1-shift-${shift.shift_id || idx}-${idx}`} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
                           <TableCell className="py-2.5 px-4 text-center">
                             <input
                               type="checkbox"
@@ -1586,8 +2335,10 @@ export function AvailableGuardsModule({
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+</div>
   );
 }
