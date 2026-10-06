@@ -482,7 +482,7 @@ export interface FetchGuardsByLocationParams {
   country?: string[] | string;
   radius?: number | string;
   search?: string;
-  service?: "armed" | "unarmed" | "both" | string;
+  service?: "all" | "both" | "armed" | "unarmed" | string;
   guard_level?: number | string;
   account_status?: string;
   page?: number | null;

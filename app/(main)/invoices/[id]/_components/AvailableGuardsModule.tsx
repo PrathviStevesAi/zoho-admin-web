@@ -71,7 +71,6 @@ function getCoordinatesFromLocation(locationText: string): [number, number] | nu
   if (!locationText) return null;
   const parts = locationText.split(",").map(p => p.trim());
 
-  // Check each part for city match
   for (const rawPart of parts) {
     const part = rawPart.split("-")[0].trim();
     if (part) {
@@ -84,7 +83,6 @@ function getCoordinatesFromLocation(locationText: string): [number, number] | nu
     }
   }
 
-  // Check each part for state or country match
   for (const rawPart of parts) {
     const part = rawPart.split("-")[0].trim();
     if (part) {
@@ -129,10 +127,9 @@ export function AvailableGuardsModule({
   const debouncedSearchQuery = useDebounceValue(guardSearchQuery, 500);
   const [notificationSource, setNotificationSource] = useState<"in_app" | "sms" | "both">("both");
   const [locationType, setLocationType] = useState<"radius" | "city" | "state" | "country" | "all">("radius");
-  const [serviceFilter, setServiceFilter] = useState<"both" | "armed" | "unarmed">("both");
+  const [serviceFilter, setServiceFilter] = useState<"all" | "both" | "armed" | "unarmed">("both");
 
   const dynamicSiteLocation = useMemo(() => {
-    // 1. Check history for "Site Location"
     if (Array.isArray(invoice?.history)) {
       for (const h of invoice.history) {
         let details = h?.details;
@@ -155,11 +152,8 @@ export function AvailableGuardsModule({
       }
     }
 
-    // 2. Direct invoice properties if present
     if (invoice?.site_location) return String(invoice.site_location).trim();
     if (invoice?.location) return String(invoice.location).trim();
-
-    // 3. Fallback to formatting from shipping_address (street, city, state, country - zip)
     if (invoice?.shipping_address) {
       if (typeof invoice.shipping_address === "string") return invoice.shipping_address.trim();
       const addr = invoice.shipping_address;
@@ -180,7 +174,6 @@ export function AvailableGuardsModule({
   const defaultRadius = 50;
 
   const initialCoordinates: [number, number] = useMemo(() => {
-    // 1. Check direct invoice latitude & longitude
     if (invoice?.latitude !== undefined && invoice?.latitude !== null && invoice?.longitude !== undefined && invoice?.longitude !== null) {
       const lat = Number(invoice.latitude);
       const lng = Number(invoice.longitude);
@@ -188,7 +181,6 @@ export function AvailableGuardsModule({
         return [lat, lng];
       }
     }
-    // 2. Check shipping_address latitude & longitude
     if (invoice?.shipping_address?.latitude && invoice?.shipping_address?.longitude) {
       const lat = Number(invoice.shipping_address.latitude);
       const lng = Number(invoice.shipping_address.longitude);
@@ -244,44 +236,168 @@ export function AvailableGuardsModule({
     fetchLocations();
   }, []);
 
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [selectedStates, setSelectedStates] = useState<string[]>([]);
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const invoiceLocation = useMemo(() => {
+    let city = invoice?.city ? String(invoice.city).trim() : "";
+    let state = invoice?.state ? String(invoice.state).trim() : "";
+    let country = invoice?.country ? String(invoice.country).trim() : "";
+
+    let shipping = invoice?.shipping_address;
+    if (typeof shipping === "string") {
+      try {
+        shipping = JSON.parse(shipping);
+      } catch { }
+    }
+    if (shipping && typeof shipping === "object") {
+      if (!city && shipping.city) city = String(shipping.city).trim();
+      if (!state && shipping.state) state = String(shipping.state).trim();
+      if (!country && shipping.country) country = String(shipping.country).trim();
+    }
+
+    let serviceAddr = invoice?.service_address;
+    if (typeof serviceAddr === "string") {
+      try {
+        serviceAddr = JSON.parse(serviceAddr);
+      } catch { }
+    }
+    if (serviceAddr && typeof serviceAddr === "object") {
+      if (!city && serviceAddr.city) city = String(serviceAddr.city).trim();
+      if (!state && serviceAddr.state) state = String(serviceAddr.state).trim();
+      if (!country && serviceAddr.country) country = String(serviceAddr.country).trim();
+    }
+
+    if ((!city || !state || !country) && dynamicSiteLocation && dynamicSiteLocation !== "Site Location") {
+      const parts = dynamicSiteLocation.split(",").map((p: string) => p.trim());
+      if (parts.length >= 3) {
+        if (!country) {
+          const lastPart = parts[parts.length - 1];
+          const cName = lastPart.split("-")[0].trim();
+          if (cName) country = cName;
+        }
+        if (!state && parts.length >= 2) {
+          state = parts[parts.length - 2].trim();
+        }
+        if (!city && parts.length >= 3) {
+          city = parts[parts.length - 3].trim();
+        }
+      }
+    }
+
+    return { city, state, country };
+  }, [invoice, dynamicSiteLocation]);
+
+  const [selectedCities, setSelectedCities] = useState<string[]>(() => {
+    let city = invoice?.city ? String(invoice.city).trim() : "";
+    let shipping = invoice?.shipping_address;
+    if (typeof shipping === "string") {
+      try { shipping = JSON.parse(shipping); } catch { }
+    }
+    if (shipping && typeof shipping === "object" && shipping.city) {
+      city = String(shipping.city).trim();
+    }
+    return city ? [city] : [];
+  });
+
+  const [selectedStates, setSelectedStates] = useState<string[]>(() => {
+    let state = invoice?.state ? String(invoice.state).trim() : "";
+    let shipping = invoice?.shipping_address;
+    if (typeof shipping === "string") {
+      try { shipping = JSON.parse(shipping); } catch { }
+    }
+    if (shipping && typeof shipping === "object" && shipping.state) {
+      state = String(shipping.state).trim();
+    }
+    return state ? [state] : [];
+  });
+
+  const [selectedCountries, setSelectedCountries] = useState<string[]>(() => {
+    let country = invoice?.country ? String(invoice.country).trim() : "";
+    let shipping = invoice?.shipping_address;
+    if (typeof shipping === "string") {
+      try { shipping = JSON.parse(shipping); } catch { }
+    }
+    if (shipping && typeof shipping === "object" && shipping.country) {
+      country = String(shipping.country).trim();
+    }
+    return country ? [country] : [];
+  });
+
   const [citySelectKey, setCitySelectKey] = useState(0);
   const [stateSelectKey, setStateSelectKey] = useState(0);
   const [countrySelectKey, setCountrySelectKey] = useState(0);
 
+  useEffect(() => {
+    if (invoiceLocation.city) {
+      setSelectedCities((prev) => (prev.length === 0 ? [invoiceLocation.city] : prev));
+    }
+  }, [invoiceLocation.city]);
+
+  useEffect(() => {
+    if (invoiceLocation.state) {
+      setSelectedStates((prev) => (prev.length === 0 ? [invoiceLocation.state] : prev));
+    }
+  }, [invoiceLocation.state]);
+
+  useEffect(() => {
+    if (invoiceLocation.country) {
+      setSelectedCountries((prev) => (prev.length === 0 ? [invoiceLocation.country] : prev));
+    }
+  }, [invoiceLocation.country]);
+
+  const availableCities = useMemo(() => {
+    const list = [...apiLocations.cities];
+    if (invoiceLocation.city && !list.some((c) => c.trim().toLowerCase() === invoiceLocation.city.trim().toLowerCase())) {
+      list.unshift(invoiceLocation.city);
+    }
+    return list;
+  }, [apiLocations.cities, invoiceLocation.city]);
+
+  const availableStates = useMemo(() => {
+    const list = [...apiLocations.states];
+    if (invoiceLocation.state && !list.some((s) => s.trim().toLowerCase() === invoiceLocation.state.trim().toLowerCase())) {
+      list.unshift(invoiceLocation.state);
+    }
+    return list;
+  }, [apiLocations.states, invoiceLocation.state]);
+
+  const availableCountries = useMemo(() => {
+    const list = [...apiLocations.countries];
+    if (invoiceLocation.country && !list.some((c) => c.trim().toLowerCase() === invoiceLocation.country.trim().toLowerCase())) {
+      list.unshift(invoiceLocation.country);
+    }
+    return list;
+  }, [apiLocations.countries, invoiceLocation.country]);
+
   const handleAddCity = (cityName: string) => {
     if (!cityName) return;
-    if (!selectedCities.includes(cityName)) {
+    if (!selectedCities.some((c) => c.toLowerCase() === cityName.toLowerCase())) {
       setSelectedCities((prev) => [...prev, cityName]);
     }
   };
 
   const handleRemoveCity = (nameToRemove: string) => {
-    setSelectedCities((prev) => prev.filter((c) => c !== nameToRemove));
+    setSelectedCities((prev) => prev.filter((c) => c.toLowerCase() !== nameToRemove.toLowerCase()));
   };
 
   const handleAddState = (stateName: string) => {
     if (!stateName) return;
-    if (!selectedStates.includes(stateName)) {
+    if (!selectedStates.some((s) => s.toLowerCase() === stateName.toLowerCase())) {
       setSelectedStates((prev) => [...prev, stateName]);
     }
   };
 
   const handleRemoveState = (nameToRemove: string) => {
-    setSelectedStates((prev) => prev.filter((s) => s !== nameToRemove));
+    setSelectedStates((prev) => prev.filter((s) => s.toLowerCase() !== nameToRemove.toLowerCase()));
   };
 
   const handleAddCountry = (countryName: string) => {
     if (!countryName) return;
-    if (!selectedCountries.includes(countryName)) {
+    if (!selectedCountries.some((c) => c.toLowerCase() === countryName.toLowerCase())) {
       setSelectedCountries((prev) => [...prev, countryName]);
     }
   };
 
   const handleRemoveCountry = (nameToRemove: string) => {
-    setSelectedCountries((prev) => prev.filter((c) => c !== nameToRemove));
+    setSelectedCountries((prev) => prev.filter((c) => c.toLowerCase() !== nameToRemove.toLowerCase()));
   };
 
   const activeLocationDisplayName = useMemo(() => {
@@ -353,6 +469,22 @@ export function AvailableGuardsModule({
   const handleLocationTypeChange = (type: "radius" | "city" | "state" | "country" | "all") => {
     setLocationType(type);
     setMapCenter(initialCoordinates);
+    if (type === "city") {
+      const cityToUse = selectedCities.length > 0 ? selectedCities[0] : invoiceLocation.city;
+      if (cityToUse && selectedCities.length === 0) {
+        setSelectedCities([cityToUse]);
+      }
+    } else if (type === "state") {
+      const stateToUse = selectedStates.length > 0 ? selectedStates[0] : invoiceLocation.state;
+      if (stateToUse && selectedStates.length === 0) {
+        setSelectedStates([stateToUse]);
+      }
+    } else if (type === "country") {
+      const countryToUse = selectedCountries.length > 0 ? selectedCountries[0] : invoiceLocation.country;
+      if (countryToUse && selectedCountries.length === 0) {
+        setSelectedCountries([countryToUse]);
+      }
+    }
   };
 
   const handleCenterLocationChange = (val: string) => {
@@ -439,9 +571,9 @@ export function AvailableGuardsModule({
     setRadiusMiles(50);
     setCenterLocation(dynamicSiteLocation);
     setMapCenter(initialCoordinates);
-    setSelectedCities([]);
-    setSelectedStates([]);
-    setSelectedCountries([]);
+    setSelectedCities(invoiceLocation.city ? [invoiceLocation.city] : []);
+    setSelectedStates(invoiceLocation.state ? [invoiceLocation.state] : []);
+    setSelectedCountries(invoiceLocation.country ? [invoiceLocation.country] : []);
     setOnlyEligible(true);
     setIncludeNearby(true);
     setCurrentPage(1);
@@ -515,46 +647,6 @@ export function AvailableGuardsModule({
       return typeof val === "string" && val.endsWith("mi") ? val : `${val} mi`;
     }
     return "-";
-  };
-
-  const getLastActive = (guard: any, index: number) => {
-    if (guard.last_active_at) {
-      try {
-        const d = new Date(guard.last_active_at);
-        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-      } catch { }
-    }
-    const sampleDates = ["Oct 1, 2026", "Sep 30, 2026", "Sep 28, 2026", "Sep 29, 2026", "Sep 30, 2026"];
-    return sampleDates[index % sampleDates.length];
-  };
-
-  const renderGuardLevelStars = (level: number | undefined, index: number) => {
-    const effectiveLevel = level !== undefined && level !== null ? level : (index % 2 === 0 ? 2 : 1);
-    if (effectiveLevel === 3) {
-      return (
-        <div className="flex items-center gap-0.5">
-          <Star className="w-3.5 h-3.5 fill-purple-600 text-purple-600" />
-          <Star className="w-3.5 h-3.5 fill-purple-600 text-purple-600" />
-          <Star className="w-3.5 h-3.5 fill-purple-600 text-purple-600" />
-        </div>
-      );
-    }
-    if (effectiveLevel === 2) {
-      return (
-        <div className="flex items-center gap-0.5">
-          <Star className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
-          <Star className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
-        </div>
-      );
-    }
-    if (effectiveLevel === 1) {
-      return (
-        <div className="flex items-center gap-0.5">
-          <Star className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
-        </div>
-      );
-    }
-    return <span className="text-slate-400 text-xs">--</span>;
   };
 
   const renderStepper = () => (
@@ -949,12 +1041,13 @@ export function AvailableGuardsModule({
                         <Label className="text-xs font-bold text-slate-800">Service</Label>
                         <Select
                           value={serviceFilter}
-                          onValueChange={(val: "both" | "armed" | "unarmed") => setServiceFilter(val)}
+                          onValueChange={(val: "all" | "both" | "armed" | "unarmed") => setServiceFilter(val)}
                         >
                           <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Shield className="w-3.5 h-3.5 text-blue-600" />
                               <span>
+                                {serviceFilter === "all" && "All"}
                                 {serviceFilter === "both" && "Both"}
                                 {serviceFilter === "armed" && "Armed"}
                                 {serviceFilter === "unarmed" && "Unarmed"}
@@ -962,6 +1055,12 @@ export function AvailableGuardsModule({
                             </div>
                           </SelectTrigger>
                           <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
+                            <SelectItem value="all" className="text-xs cursor-pointer py-2">
+                              <div className="flex items-center gap-2">
+                                <Shield className="w-3.5 h-3.5 text-blue-600" />
+                                <span>All</span>
+                              </div>
+                            </SelectItem>
                             <SelectItem value="both" className="text-xs cursor-pointer py-2">
                               <div className="flex items-center gap-2">
                                 <Shield className="w-3.5 h-3.5 text-blue-600" />
@@ -1064,16 +1163,24 @@ export function AvailableGuardsModule({
                             }}
                           >
                             <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                              <SelectValue placeholder={isLocationsLoading ? "Loading cities..." : "Select City"} />
+                              <SelectValue
+                                placeholder={
+                                  selectedCities.length > 0
+                                    ? selectedCities.join(", ")
+                                    : isLocationsLoading
+                                    ? "Loading cities..."
+                                    : "Select City"
+                                }
+                              />
                             </SelectTrigger>
                             <SelectContent className="bg-white border-slate-200 max-h-56">
-                              {apiLocations.cities.length === 0 ? (
+                              {availableCities.filter((c) => !selectedCities.some((sc) => sc.toLowerCase() === c.toLowerCase())).length === 0 ? (
                                 <SelectItem value="__none__" disabled className="text-xs text-slate-400">
-                                  {isLocationsLoading ? "Loading cities..." : "No cities found"}
+                                  {isLocationsLoading ? "Loading cities..." : selectedCities.length > 0 ? "No more cities" : "No cities found"}
                                 </SelectItem>
                               ) : (
-                                apiLocations.cities
-                                  .filter((c) => !selectedCities.includes(c))
+                                availableCities
+                                  .filter((c) => !selectedCities.some((sc) => sc.toLowerCase() === c.toLowerCase()))
                                   .map((city) => (
                                     <SelectItem key={city} value={city} className="text-xs cursor-pointer">
                                       {city}
@@ -1119,16 +1226,24 @@ export function AvailableGuardsModule({
                             }}
                           >
                             <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                              <SelectValue placeholder={isLocationsLoading ? "Loading states..." : "Select State"} />
+                              <SelectValue
+                                placeholder={
+                                  selectedStates.length > 0
+                                    ? selectedStates.join(", ")
+                                    : isLocationsLoading
+                                    ? "Loading states..."
+                                    : "Select State"
+                                }
+                              />
                             </SelectTrigger>
                             <SelectContent className="bg-white border-slate-200 max-h-56">
-                              {apiLocations.states.length === 0 ? (
+                              {availableStates.filter((s) => !selectedStates.some((ss) => ss.toLowerCase() === s.toLowerCase())).length === 0 ? (
                                 <SelectItem value="__none__" disabled className="text-xs text-slate-400">
-                                  {isLocationsLoading ? "Loading states..." : "No states found"}
+                                  {isLocationsLoading ? "Loading states..." : selectedStates.length > 0 ? "No more states" : "No states found"}
                                 </SelectItem>
                               ) : (
-                                apiLocations.states
-                                  .filter((s) => !selectedStates.includes(s))
+                                availableStates
+                                  .filter((s) => !selectedStates.some((ss) => ss.toLowerCase() === s.toLowerCase()))
                                   .map((state) => (
                                     <SelectItem key={state} value={state} className="text-xs cursor-pointer">
                                       {state}
@@ -1174,16 +1289,24 @@ export function AvailableGuardsModule({
                             }}
                           >
                             <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                              <SelectValue placeholder={isLocationsLoading ? "Loading countries..." : "Select Country"} />
+                              <SelectValue
+                                placeholder={
+                                  selectedCountries.length > 0
+                                    ? selectedCountries.join(", ")
+                                    : isLocationsLoading
+                                    ? "Loading countries..."
+                                    : "Select Country"
+                                }
+                              />
                             </SelectTrigger>
                             <SelectContent className="bg-white border-slate-200 max-h-56">
-                              {apiLocations.countries.length === 0 ? (
+                              {availableCountries.filter((c) => !selectedCountries.some((sc) => sc.toLowerCase() === c.toLowerCase())).length === 0 ? (
                                 <SelectItem value="__none__" disabled className="text-xs text-slate-400">
-                                  {isLocationsLoading ? "Loading countries..." : "No countries found"}
+                                  {isLocationsLoading ? "Loading countries..." : selectedCountries.length > 0 ? "No more countries" : "No countries found"}
                                 </SelectItem>
                               ) : (
-                                apiLocations.countries
-                                  .filter((c) => !selectedCountries.includes(c))
+                                availableCountries
+                                  .filter((c) => !selectedCountries.some((sc) => sc.toLowerCase() === c.toLowerCase()))
                                   .map((country) => (
                                     <SelectItem key={country} value={country} className="text-xs cursor-pointer">
                                       {country}
@@ -1252,9 +1375,9 @@ export function AvailableGuardsModule({
 
                     <div className="lg:col-span-8 space-y-0 rounded-xl overflow-hidden border border-slate-200 shadow-xs">
                       <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-700 font-medium">
-                        <div className="flex items-center gap-1.5 font-bold text-slate-800 truncate max-w-[50%]">
+                        <div className="flex items-center gap-1.5 font-bold text-slate-800 truncate max-w-[50%]" title={dynamicSiteLocation}>
                           <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                          <span className="truncate">{activeLocationDisplayName}</span>
+                          <span className="truncate">{dynamicSiteLocation}</span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           {locationType === "radius" ? (
@@ -1272,7 +1395,7 @@ export function AvailableGuardsModule({
                       <DynamicGuardsMap
                         center={mapCenter}
                         radiusMiles={radiusMiles}
-                        centerLocationName={activeLocationDisplayName}
+                        centerLocationName={dynamicSiteLocation}
                         guardsFoundCount={allGuards.length}
                         guards={allGuards}
                         locationType={locationType}
@@ -1288,7 +1411,18 @@ export function AvailableGuardsModule({
                         Guards ({allGuards.length} found)
                       </h4>
                       <p className="text-xs text-slate-500">
-                        Showing guards {locationType === "radius" ? `within ${radiusMiles} miles of ` : locationType === "all" ? "across " : "for "}{activeLocationDisplayName.split(",")[0]}. Select guards to send the job opportunity.
+                        Showing guards {locationType === "radius" ? `within ${radiusMiles} miles of ` : locationType === "all" ? "across " : "for "}
+                        {locationType === "radius"
+                          ? (centerLocation || dynamicSiteLocation).split(",")[0]
+                          : locationType === "city" && selectedCities.length > 0
+                          ? selectedCities.join(", ")
+                          : locationType === "state" && selectedStates.length > 0
+                          ? selectedStates.join(", ")
+                          : locationType === "country" && selectedCountries.length > 0
+                          ? selectedCountries.join(", ")
+                          : locationType === "all"
+                          ? "all locations"
+                          : dynamicSiteLocation.split(",")[0]}. Select guards to send the job opportunity.
                       </p>
                     </div>
 
