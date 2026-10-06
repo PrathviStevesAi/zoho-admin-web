@@ -485,15 +485,20 @@ export interface FetchGuardsByLocationParams {
   service?: "all" | "both" | "armed" | "unarmed" | string;
   guard_level?: number | string;
   account_status?: string;
+  status?: string;
   page?: number | null;
 }
 
 export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationParams = {}): Promise<FetchResponse<any>> {
   const query = new URLSearchParams();
 
-  // status and account_status both set for compatibility with backend query spec
-  query.append("status", "active");
-  query.append("account_status", params.account_status || "active");
+  if (params.status) {
+    query.append("status", params.status);
+  }
+
+  if (params.account_status) {
+    query.append("account_status", params.account_status);
+  }
 
   if (params.page !== undefined && params.page !== null) {
     query.append("page", params.page.toString());

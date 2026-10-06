@@ -11,8 +11,6 @@ import {
   Loader2,
   ChevronRight,
   UserCheck,
-  CalendarDays,
-  Star,
   Info,
   ArrowLeft,
   Smartphone,
@@ -22,7 +20,6 @@ import {
   Building2,
   Map,
   Search,
-  Download,
   Send,
   X,
   Shield,
@@ -53,8 +50,8 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { findAvailableGuardsAction } from "@/actions/dashboard.actions";
-import useDebounceValue from "@/hooks/use-debounce";
 import { DynamicGuardsMap } from "./DynamicGuardsMap";
+import Autocomplete from "react-google-autocomplete";
 
 interface AvailableGuardsModuleProps {
   invoiceId: string;
@@ -121,13 +118,11 @@ export function AvailableGuardsModule({
   const [allGuards, setAllGuards] = useState<any[]>([]);
   const [isGuardsLoading, setIsGuardsLoading] = useState(false);
   const [isFinding, setIsFinding] = useState(false);
-  const [guardSearchQuery, setGuardSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
-  const debouncedSearchQuery = useDebounceValue(guardSearchQuery, 500);
-  const [notificationSource, setNotificationSource] = useState<"in_app" | "sms" | "both">("both");
-  const [locationType, setLocationType] = useState<"radius" | "city" | "state" | "country" | "all">("radius");
-  const [serviceFilter, setServiceFilter] = useState<"all" | "both" | "armed" | "unarmed">("both");
+  const [notificationSource, setNotificationSource] = useState<"in_app" | "sms" | "both">("in_app");
+  const [locationType, setLocationType] = useState<"radius" | "city" | "state" | "country" | "all_guard" | "all">("radius");
+  const [serviceFilter, setServiceFilter] = useState<"all" | "both" | "armed" | "unarmed">("all");
 
   const dynamicSiteLocation = useMemo(() => {
     if (Array.isArray(invoice?.history)) {
@@ -170,8 +165,6 @@ export function AvailableGuardsModule({
     }
     return "Site Location";
   }, [invoice]);
-
-  const defaultRadius = 50;
 
   const initialCoordinates: [number, number] = useMemo(() => {
     if (invoice?.latitude !== undefined && invoice?.latitude !== null && invoice?.longitude !== undefined && invoice?.longitude !== null) {
@@ -400,9 +393,25 @@ export function AvailableGuardsModule({
     setSelectedCountries((prev) => prev.filter((c) => c.toLowerCase() !== nameToRemove.toLowerCase()));
   };
 
+  const isCustomRadiusLocation = useMemo(() => {
+    if (locationType !== "radius") return false;
+    if (!centerLocation || !centerLocation.trim()) return false;
+    return centerLocation.trim().toLowerCase() !== dynamicSiteLocation.trim().toLowerCase();
+  }, [locationType, centerLocation, dynamicSiteLocation]);
+
+  const mapDisplayedLocation = useMemo(() => {
+    if (locationType === "radius" && isCustomRadiusLocation && centerLocation) {
+      return centerLocation;
+    }
+    return dynamicSiteLocation;
+  }, [locationType, isCustomRadiusLocation, centerLocation, dynamicSiteLocation]);
+
   const activeLocationDisplayName = useMemo(() => {
     if (locationType === "radius" && centerLocation) {
       return centerLocation;
+    }
+    if (locationType === "all_guard" || locationType === "all") {
+      return "All Guards";
     }
     return dynamicSiteLocation;
   }, [locationType, centerLocation, dynamicSiteLocation]);
@@ -421,8 +430,6 @@ export function AvailableGuardsModule({
 
     const params: FetchGuardsByLocationParams = {
       account_status: "active",
-      page: currentPage,
-      search: debouncedSearchQuery || undefined,
       service: serviceFilter,
     };
 
@@ -447,6 +454,8 @@ export function AvailableGuardsModule({
       if (selectedCountries.length > 0) {
         params.country = selectedCountries;
       }
+    } else if (locationType === "all_guard" || locationType === "all") {
+      params.location_type = "all_guard";
     }
 
     const res = await clientFetchGuardsNewAction(params);
@@ -466,7 +475,7 @@ export function AvailableGuardsModule({
     setIsGuardsLoading(false);
   };
 
-  const handleLocationTypeChange = (type: "radius" | "city" | "state" | "country" | "all") => {
+  const handleLocationTypeChange = (type: "radius" | "city" | "state" | "country" | "all_guard" | "all") => {
     setLocationType(type);
     setMapCenter(initialCoordinates);
     if (type === "city") {
@@ -487,11 +496,33 @@ export function AvailableGuardsModule({
     }
   };
 
+  const handlePlaceSelect = (place: any) => {
+    if (!place) return;
+    const address = place.formatted_address || place.name || "";
+    if (address) {
+      setCenterLocation(address);
+    }
+    const lat = place.geometry?.location?.lat?.();
+    const lng = place.geometry?.location?.lng?.();
+    if (typeof lat === "number" && typeof lng === "number" && !isNaN(lat) && !isNaN(lng)) {
+      setMapCenter([lat, lng]);
+    } else {
+      const coords = getCoordinatesFromLocation(address);
+      if (coords) {
+        setMapCenter(coords);
+      }
+    }
+  };
+
   const handleCenterLocationChange = (val: string) => {
     setCenterLocation(val);
-    const coords = getCoordinatesFromLocation(val);
-    if (coords) {
-      setMapCenter(coords);
+    if (!val || val.trim().toLowerCase() === dynamicSiteLocation.trim().toLowerCase()) {
+      setMapCenter(initialCoordinates);
+    } else {
+      const coords = getCoordinatesFromLocation(val);
+      if (coords) {
+        setMapCenter(coords);
+      }
     }
   };
 
@@ -540,11 +571,15 @@ export function AvailableGuardsModule({
 
     setIsFinding(true);
     try {
+      const locationToSend = (locationType === "radius" && centerLocation)
+        ? centerLocation
+        : dynamicSiteLocation;
+
       const res = await findAvailableGuardsAction({
         invoice_id: invoiceId,
         shift_ids: selectedShiftIds,
         guard_ids: selectedGuardIds,
-        location: activeLocationDisplayName || centerLocation || "",
+        location: locationToSend || "",
         source: notificationSource || "both",
       });
 
@@ -565,9 +600,9 @@ export function AvailableGuardsModule({
   };
 
   const resetFilters = () => {
-    setGuardSearchQuery("");
     setLocationType("radius");
-    setServiceFilter("both");
+    setServiceFilter("all");
+    setNotificationSource("in_app");
     setRadiusMiles(50);
     setCenterLocation(dynamicSiteLocation);
     setMapCenter(initialCoordinates);
@@ -579,50 +614,6 @@ export function AvailableGuardsModule({
     setCurrentPage(1);
     setAllGuards([]);
     setHasSearched(false);
-  };
-
-  const handleExportList = () => {
-    if (allGuards.length === 0) {
-      toast.error("No guards to export");
-      return;
-    }
-    try {
-      const headers = [
-        "#",
-        "NAME",
-        "EMAIL",
-        "CITY, STATE",
-        ...(locationType === "radius" ? ["DISTANCE"] : []),
-        "ARMED",
-        "UNARMED",
-        "STATUS"
-      ];
-      const rows = [
-        headers,
-        ...allGuards.map((g, idx) => [
-          idx + 1,
-          `${g.first_name || ""} ${g.last_name || ""}`.trim() || g.name || "-",
-          g.email || "-",
-          getCityState(g, idx),
-          ...(locationType === "radius" ? [getDistance(g)] : []),
-          g.armed ? "Yes" : "No",
-          g.unarmed ? "Yes" : "No",
-          g.status !== false ? "Active" : "Inactive"
-        ])
-      ];
-
-      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.map(val => `"${val}"`).join(",")).join("\n");
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `guards_export_${new Date().toISOString().split("T")[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success("Guards list exported successfully");
-    } catch (err) {
-      toast.error("Failed to export list");
-    }
   };
 
   const formatArray = (arr: any[] | null) => {
@@ -903,9 +894,14 @@ export function AvailableGuardsModule({
                         )}
                       >
                         <div className="flex items-center gap-2.5">
-                          <Smartphone className="w-5 h-5 text-blue-600 shrink-0" />
+                          <Smartphone className={cn("w-5 h-5 shrink-0", notificationSource === "in_app" ? "text-[#0064cb]" : "text-slate-600")} />
                           <div>
-                            <p className="text-xs font-bold text-slate-800 leading-tight">In App Notification</p>
+                            <p className={cn(
+                              "text-xs font-bold leading-tight",
+                              notificationSource === "in_app" ? "text-[#0064cb]" : "text-slate-800"
+                            )}>
+                              In App Notification
+                            </p>
                             <p className="text-[11px] text-slate-500 mt-0.5">Send notification inside the Fast Guard app</p>
                           </div>
                         </div>
@@ -929,9 +925,14 @@ export function AvailableGuardsModule({
                         )}
                       >
                         <div className="flex items-center gap-2.5">
-                          <MessageSquare className="w-5 h-5 text-blue-600 shrink-0" />
+                          <MessageSquare className={cn("w-5 h-5 shrink-0", notificationSource === "sms" ? "text-[#0064cb]" : "text-slate-600")} />
                           <div>
-                            <p className="text-xs font-bold text-slate-800 leading-tight">SMS (Text Message)</p>
+                            <p className={cn(
+                              "text-xs font-bold leading-tight",
+                              notificationSource === "sms" ? "text-[#0064cb]" : "text-slate-800"
+                            )}>
+                              SMS (Text Message)
+                            </p>
                             <p className="text-[11px] text-slate-500 mt-0.5">Send SMS with job link (deep link to app)</p>
                           </div>
                         </div>
@@ -955,12 +956,20 @@ export function AvailableGuardsModule({
                         )}
                       >
                         <div className="flex items-center gap-2.5">
-                          <div className="flex items-center -space-x-1 shrink-0 text-[#0064cb]">
+                          <div className={cn(
+                            "flex items-center -space-x-1 shrink-0",
+                            notificationSource === "both" ? "text-[#0064cb]" : "text-slate-600"
+                          )}>
                             <Smartphone className="w-4 h-4" />
                             <MessageSquare className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-[#0064cb] leading-tight">Both (Recommended)</p>
+                            <p className={cn(
+                              "text-xs font-bold leading-tight",
+                              notificationSource === "both" ? "text-[#0064cb]" : "text-slate-800"
+                            )}>
+                              Both (Recommended)
+                            </p>
                             <p className="text-[11px] text-slate-500 mt-0.5">Send in-app notification and SMS with job link</p>
                           </div>
                         </div>
@@ -992,13 +1001,13 @@ export function AvailableGuardsModule({
                               {locationType === "city" && <Building2 className="w-3.5 h-3.5 text-blue-600" />}
                               {locationType === "state" && <Map className="w-3.5 h-3.5 text-blue-600" />}
                               {locationType === "country" && <Globe className="w-3.5 h-3.5 text-blue-600" />}
-                              {locationType === "all" && <UserCheck className="w-3.5 h-3.5 text-blue-600" />}
+                              {(locationType === "all_guard" || locationType === "all") && <UserCheck className="w-3.5 h-3.5 text-blue-600" />}
                               <span>
                                 {locationType === "radius" && "Geographic Area ( Radius )"}
                                 {locationType === "city" && "City"}
                                 {locationType === "state" && "State"}
                                 {locationType === "country" && "Country"}
-                                {locationType === "all" && "All Locations (All Guards)"}
+                                {(locationType === "all_guard" || locationType === "all") && "All Guards"}
                               </span>
                             </div>
                           </SelectTrigger>
@@ -1027,10 +1036,10 @@ export function AvailableGuardsModule({
                                 <span>Country</span>
                               </div>
                             </SelectItem>
-                            <SelectItem value="all" className="text-xs cursor-pointer py-2">
+                            <SelectItem value="all_guard" className="text-xs cursor-pointer py-2">
                               <div className="flex items-center gap-2">
                                 <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-                                <span>All Locations (All Guards)</span>
+                                <span>All Guards</span>
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -1086,20 +1095,26 @@ export function AvailableGuardsModule({
                       {locationType === "radius" && (
                         <>
                           <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-800">Site Location</Label>
+                            <Label className="text-xs font-bold text-black">Site Location</Label>
                             <div className="relative">
-                              <MapPin className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                              <Input
+                              <MapPin className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+                              <Autocomplete
+                                apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyAcL7f3q3X4BUlmdpjbo7ZY0GotX7Gh-sU"}
                                 value={centerLocation}
-                                onChange={(e) => handleCenterLocationChange(e.target.value)}
-                                placeholder="Site Location or Address"
-                                className="w-full h-10 pl-9 pr-8 bg-white border-slate-200 rounded-lg text-xs text-slate-800 focus:border-[#0064cb] focus:ring-[#0064cb]/10"
+                                onChange={(e: any) => handleCenterLocationChange(e.target.value)}
+                                onPlaceSelected={handlePlaceSelect}
+                                options={{
+                                  types: ["geocode", "establishment"],
+                                }}
+                                placeholder="Search location with Google..."
+                                className="w-full h-10 pl-9 pr-8 bg-white border border-slate-200 rounded-lg text-xs text-black font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/10 transition-colors cursor-pointer"
+                                style={{ color: "#000000" }}
                               />
                               {centerLocation && (
                                 <button
                                   type="button"
                                   onClick={() => handleCenterLocationChange("")}
-                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer z-10"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>
@@ -1168,8 +1183,8 @@ export function AvailableGuardsModule({
                                   selectedCities.length > 0
                                     ? selectedCities.join(", ")
                                     : isLocationsLoading
-                                    ? "Loading cities..."
-                                    : "Select City"
+                                      ? "Loading cities..."
+                                      : "Select City"
                                 }
                               />
                             </SelectTrigger>
@@ -1231,8 +1246,8 @@ export function AvailableGuardsModule({
                                   selectedStates.length > 0
                                     ? selectedStates.join(", ")
                                     : isLocationsLoading
-                                    ? "Loading states..."
-                                    : "Select State"
+                                      ? "Loading states..."
+                                      : "Select State"
                                 }
                               />
                             </SelectTrigger>
@@ -1294,8 +1309,8 @@ export function AvailableGuardsModule({
                                   selectedCountries.length > 0
                                     ? selectedCountries.join(", ")
                                     : isLocationsLoading
-                                    ? "Loading countries..."
-                                    : "Select Country"
+                                      ? "Loading countries..."
+                                      : "Select Country"
                                 }
                               />
                             </SelectTrigger>
@@ -1339,11 +1354,11 @@ export function AvailableGuardsModule({
                         </div>
                       )}
 
-                      {locationType === "all" && (
+                      {(locationType === "all_guard" || locationType === "all") && (
                         <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-lg text-xs text-blue-800 flex items-start gap-2">
                           <Info className="w-4 h-4 text-[#0064cb] shrink-0 mt-0.5" />
                           <div>
-                            <span className="font-semibold block">All Locations</span>
+                            <span className="font-semibold block">All Guards</span>
                             <span>Fetches all active guards without location restrictions.</span>
                           </div>
                         </div>
@@ -1375,15 +1390,15 @@ export function AvailableGuardsModule({
 
                     <div className="lg:col-span-8 space-y-0 rounded-xl overflow-hidden border border-slate-200 shadow-xs">
                       <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-700 font-medium">
-                        <div className="flex items-center gap-1.5 font-bold text-slate-800 truncate max-w-[50%]" title={dynamicSiteLocation}>
+                        <div className="flex items-center gap-1.5 font-bold text-black truncate max-w-[50%]" title={mapDisplayedLocation}>
                           <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                          <span className="truncate">{dynamicSiteLocation}</span>
+                          <span className="truncate">{mapDisplayedLocation}</span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           {locationType === "radius" ? (
                             <span>Radius: <strong className="text-slate-900">{radiusMiles} miles</strong></span>
                           ) : (
-                            <span>Type: <strong className="text-slate-900 capitalize">{locationType === "all" ? "All Locations" : locationType}</strong></span>
+                            <span>Type: <strong className="text-slate-900 capitalize">{(locationType === "all_guard" || locationType === "all") ? "All Guards" : locationType}</strong></span>
                           )}
                           <span className="text-slate-300">|</span>
                           <span>Service: <strong className="text-slate-900 capitalize">{serviceFilter}</strong></span>
@@ -1393,9 +1408,9 @@ export function AvailableGuardsModule({
                       </div>
 
                       <DynamicGuardsMap
-                        center={mapCenter}
+                        center={locationType === "radius" && isCustomRadiusLocation ? mapCenter : initialCoordinates}
                         radiusMiles={radiusMiles}
-                        centerLocationName={dynamicSiteLocation}
+                        centerLocationName={mapDisplayedLocation}
                         guardsFoundCount={allGuards.length}
                         guards={allGuards}
                         locationType={locationType}
@@ -1405,56 +1420,25 @@ export function AvailableGuardsModule({
                 </div>
 
                 <div className="bg-white">
-                  <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+                  <div className="px-6 py-4 border-b border-slate-100">
                     <div className="space-y-0.5">
                       <h4 className="text-sm font-bold text-slate-900">
                         Guards ({allGuards.length} found)
                       </h4>
                       <p className="text-xs text-slate-500">
-                        Showing guards {locationType === "radius" ? `within ${radiusMiles} miles of ` : locationType === "all" ? "across " : "for "}
+                        Showing guards {locationType === "radius" ? `within ${radiusMiles} miles of ` : (locationType === "all_guard" || locationType === "all") ? "across " : "for "}
                         {locationType === "radius"
-                          ? (centerLocation || dynamicSiteLocation).split(",")[0]
+                          ? mapDisplayedLocation.split(",")[0]
                           : locationType === "city" && selectedCities.length > 0
-                          ? selectedCities.join(", ")
-                          : locationType === "state" && selectedStates.length > 0
-                          ? selectedStates.join(", ")
-                          : locationType === "country" && selectedCountries.length > 0
-                          ? selectedCountries.join(", ")
-                          : locationType === "all"
-                          ? "all locations"
-                          : dynamicSiteLocation.split(",")[0]}. Select guards to send the job opportunity.
+                            ? selectedCities.join(", ")
+                            : locationType === "state" && selectedStates.length > 0
+                              ? selectedStates.join(", ")
+                              : locationType === "country" && selectedCountries.length > 0
+                                ? selectedCountries.join(", ")
+                                : (locationType === "all_guard" || locationType === "all")
+                                  ? "all guards"
+                                  : dynamicSiteLocation.split(",")[0]}. Select guards to send the job opportunity.
                       </p>
-                    </div>
-
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative w-52 sm:w-64">
-                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <Input
-                          value={guardSearchQuery}
-                          onChange={(e) => setGuardSearchQuery(e.target.value)}
-                          placeholder="Search guards..."
-                          className="w-full h-8 pl-8 pr-7 text-xs bg-slate-50/60 border-slate-200 rounded-lg focus:bg-white"
-                        />
-                        {guardSearchQuery && (
-                          <button
-                            type="button"
-                            onClick={() => setGuardSearchQuery("")}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExportList}
-                        className="px-3.5 h-8 rounded-lg text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 shrink-0"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Export List
-                      </Button>
                     </div>
                   </div>
 

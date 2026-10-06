@@ -21,10 +21,9 @@ interface GuardsMapProps {
   centerLocationName: string;
   guardsFoundCount: number;
   guards?: any[];
-  locationType?: "radius" | "city" | "state" | "country" | "all";
+  locationType?: "radius" | "city" | "state" | "country" | "all" | "all_guard";
 }
 
-// Controller component inside MapContainer for zoom and pan
 function MapController({
   center,
   radiusMiles = 30,
@@ -32,7 +31,7 @@ function MapController({
 }: {
   center: [number, number];
   radiusMiles?: number;
-  locationType?: "radius" | "city" | "state" | "country" | "all";
+  locationType?: "radius" | "city" | "state" | "country" | "all" | "all_guard";
 }) {
   const map = useMap();
 
@@ -40,7 +39,7 @@ function MapController({
     map.invalidateSize();
     if (center && center[0] && center[1]) {
       let zoom = 10;
-      if (locationType === "country" || locationType === "all") {
+      if (locationType === "country" || locationType === "all" || locationType === "all_guard") {
         zoom = 4;
       } else if (locationType === "state") {
         zoom = 7;
@@ -91,7 +90,6 @@ function MapController({
   );
 }
 
-// Center Pin Icon (Blue Google style pin)
 const createCenterIcon = () =>
   new L.DivIcon({
     className: "custom-leaflet-icon",
@@ -118,7 +116,6 @@ const createCenterIcon = () =>
     iconAnchor: [17, 34],
   });
 
-// Distance Badge on top edge of circle
 const createDistanceBadgeIcon = (text: string) =>
   new L.DivIcon({
     className: "custom-leaflet-icon",
@@ -143,7 +140,6 @@ const createDistanceBadgeIcon = (text: string) =>
     iconAnchor: [35, 12],
   });
 
-// Guard marker icon with blinking guard badge above dot
 const createGuardMarkerIcon = (isEligible: boolean) => {
   const color = isEligible ? "#16a34a" : "#3b82f6";
   const glowColor = isEligible ? "rgba(22, 163, 74, 0.5)" : "rgba(59, 130, 246, 0.5)";
@@ -280,10 +276,7 @@ export default function GuardsMap({
     center[1],
   ];
 
-  // Map markers: only actual guards returned from dynamic API
   const guardMarkers: GuardLocation[] = [];
-
-  // Add actual guards if available
   guards.forEach((g, idx) => {
     const lat = Number(g.latitude || g.lat);
     const lng = Number(g.longitude || g.lng);
@@ -309,27 +302,23 @@ export default function GuardsMap({
       <MapContainer
         key={mapKey}
         center={center}
-        zoom={locationType === "country" ? 4 : locationType === "state" ? 7 : locationType === "city" ? 11 : 10}
+        zoom={locationType === "country" || locationType === "all" || locationType === "all_guard" ? 4 : locationType === "state" ? 7 : locationType === "city" ? 11 : 10}
         zoomControl={false}
         className="h-full w-full relative z-0"
       >
         <MapController center={center} radiusMiles={radiusMiles} locationType={locationType} />
-
-        {/* Google Maps Layer */}
         <TileLayer
           attribution='&copy; Google Maps'
           url="https://{s}.google.com/vt?lyrs=m&x={x}&y={y}&z={z}"
           subdomains={["mt0", "mt1", "mt2", "mt3"]}
         />
 
-        {/* Center Marker */}
         <Marker position={center} icon={createCenterIcon()}>
           <Tooltip direction="top" offset={[0, -20]} opacity={0.95}>
             <span className="font-semibold text-xs">{centerLocationName}</span>
           </Tooltip>
         </Marker>
 
-        {/* Radius Circle (Only in Radius mode) */}
         {isRadiusMode && (
           <>
             <Circle
@@ -347,7 +336,6 @@ export default function GuardsMap({
           </>
         )}
 
-        {/* Guard Dots with Blinking Guard Badge Icon Above */}
         {guardMarkers.map((gm) => (
           <Marker
             key={gm.id}
@@ -367,7 +355,6 @@ export default function GuardsMap({
         ))}
       </MapContainer>
 
-      {/* Map Legend (only shown when guards are on map) */}
       {guardMarkers.length > 0 && (
         <div className="absolute bottom-8 right-3 z-[1000] bg-white/95 backdrop-blur-xs px-3.5 py-2.5 rounded-lg shadow-md border border-slate-200/90 text-[11px] space-y-2 pointer-events-auto">
           <div className="flex items-center gap-2 font-medium text-slate-700">
@@ -389,7 +376,6 @@ export default function GuardsMap({
         </div>
       )}
 
-      {/* Google Attribution */}
       <div className="absolute bottom-1.5 left-2.5 z-[1000] text-[12px] font-bold text-slate-500 tracking-tight select-none pointer-events-none opacity-80 flex items-center">
         <span className="text-[#4285F4]">G</span>
         <span className="text-[#EA4335]">o</span>
