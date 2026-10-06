@@ -9,7 +9,7 @@ import {
   AvailableGuardItem,
   FetchGuardsByLocationParams
 } from "@/lib/client-actions";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Loader2,
   ChevronRight,
@@ -359,29 +359,24 @@ export function AvailableGuardsModule({
   const [sentShifts, setSentShifts] = useState<any[]>([]);
   const [isSentShiftsLoading, setIsSentShiftsLoading] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchSentShifts = async () => {
-      if (!invoiceId) return;
-      setIsSentShiftsLoading(true);
-      try {
-        const res = await clientFetchAvailableGuardsShiftsAction(invoiceId);
-        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-          if (isMounted) {
-            setSentShifts(res.data);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch available guards sent shifts:", err);
-      } finally {
-        if (isMounted) setIsSentShiftsLoading(false);
+  const fetchSentShifts = useCallback(async () => {
+    if (!invoiceId) return;
+    setIsSentShiftsLoading(true);
+    try {
+      const res = await clientFetchAvailableGuardsShiftsAction(invoiceId);
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        setSentShifts(res.data);
       }
-    };
-    fetchSentShifts();
-    return () => {
-      isMounted = false;
-    };
+    } catch (err) {
+      console.error("Failed to fetch available guards sent shifts:", err);
+    } finally {
+      setIsSentShiftsLoading(false);
+    }
   }, [invoiceId]);
+
+  useEffect(() => {
+    fetchSentShifts();
+  }, [fetchSentShifts]);
 
   const availableInvoiceShifts = useMemo(() => {
     const rawList =
@@ -424,7 +419,12 @@ export function AvailableGuardsModule({
 
   useEffect(() => {
     if (availableInvoiceShifts.length > 0) {
-      setSelectedMatrixShiftIds(availableInvoiceShifts.map((s) => s.shift_id));
+      setSelectedMatrixShiftIds((prev) => {
+        if (prev.length > 0 && availableInvoiceShifts.some((s) => prev.includes(s.shift_id))) {
+          return prev;
+        }
+        return [availableInvoiceShifts[0].shift_id];
+      });
     }
   }, [availableInvoiceShifts]);
 
@@ -448,7 +448,8 @@ export function AvailableGuardsModule({
 
   const [matrixGuards, setMatrixGuards] = useState<AvailableGuardItem[]>([]);
   const [matrixShiftNos, setMatrixShiftNos] = useState<string[]>([]);
-  const [isMatrixLoading, setIsMatrixLoading] = useState(true);
+  const [isMatrixLoading, setIsMatrixLoading] = useState(false);
+  const [hasMatrixSearched, setHasMatrixSearched] = useState(false);
   const [matrixTotalGuards, setMatrixTotalGuards] = useState(0);
   const [matrixTotalPages, setMatrixTotalPages] = useState(1);
   const [matrixCurrentPage, setMatrixCurrentPage] = useState(1);
@@ -477,6 +478,7 @@ export function AvailableGuardsModule({
   const fetchAvailableGuardsMatrix = async (pageToFetch: number = 1) => {
     if (!invoiceId) return;
     setIsMatrixLoading(true);
+    setHasMatrixSearched(true);
     try {
       const shiftNosToSend = selectedMatrixShifts.map((s) =>
         String(s.shift_no).replace(/^#/, "").trim()
@@ -504,28 +506,6 @@ export function AvailableGuardsModule({
       setIsMatrixLoading(false);
     }
   };
-
-  const lastFetchedKeyRef = useRef<string>("");
-  useEffect(() => {
-    if (!invoiceId) return;
-    if (isSentShiftsLoading) {
-      setIsMatrixLoading(true);
-      return;
-    }
-    if (selectedMatrixShifts.length === 0) {
-      setIsMatrixLoading(false);
-      return;
-    }
-
-    const shiftNosToSend = selectedMatrixShifts.map((s) =>
-      String(s.shift_no).replace(/^#/, "").trim()
-    );
-    const key = `${invoiceId}_${shiftNosToSend.slice().sort().join(",")}_${matrixAvailabilityType}`;
-    if (lastFetchedKeyRef.current !== key) {
-      lastFetchedKeyRef.current = key;
-      fetchAvailableGuardsMatrix(1);
-    }
-  }, [invoiceId, isSentShiftsLoading, selectedMatrixShifts, matrixAvailabilityType]);
 
   const displayedShiftNos = useMemo(() => {
     if (matrixShiftNos && matrixShiftNos.length > 0) {
@@ -996,9 +976,11 @@ export function AvailableGuardsModule({
       if (res.success) {
         toast.success(res.message || `Job opportunity sent successfully to ${selectedGuardIds.length} guard(s)`);
         if (onRefresh) onRefresh();
+        fetchSentShifts();
         setActiveStep(0);
         setSelectedShiftIds([]);
         setSelectedGuardIds([]);
+        resetFilters();
       } else {
         toast.error(res.error || "Failed to send job opportunity");
       }
@@ -1024,6 +1006,21 @@ export function AvailableGuardsModule({
     setCurrentPage(1);
     setAllGuards([]);
     setHasSearched(false);
+
+    // Matrix view filters & state reset
+    setMatrixAvailabilityType("all");
+    setMatrixGuards([]);
+    setMatrixShiftNos([]);
+    setHasMatrixSearched(false);
+    setMatrixTotalGuards(0);
+    setMatrixTotalPages(1);
+    setMatrixCurrentPage(1);
+    setIsShiftDropdownOpen(false);
+    if (availableInvoiceShifts.length > 0) {
+      setSelectedMatrixShiftIds([availableInvoiceShifts[0].shift_id]);
+    } else {
+      setSelectedMatrixShiftIds([]);
+    }
   };
 
   const formatArray = (arr: any[] | null) => {
@@ -1051,54 +1048,61 @@ export function AvailableGuardsModule({
   };
 
   const renderStepper = () => (
-    <div className="flex items-center justify-center py-3 px-4">
-      <div className="flex items-center gap-2 sm:gap-3">
+    <div className="flex items-center justify-center py-2 px-4">
+      <div className="flex items-center gap-3">
         <button
+          type="button"
           onClick={() => setActiveStep(1)}
           disabled={activeStep === 1}
           className={cn(
-            "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 rounded-full transition-all cursor-pointer",
+            "flex items-center gap-2.5 px-5 py-2 rounded-full transition-all cursor-pointer shadow-xs",
             activeStep === 1
-              ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
-              : "bg-white text-slate-600 border border-slate-200 hover:border-[#0064cb] hover:text-[#0064cb]"
+              ? "bg-[#0064cb] text-white shadow-md shadow-blue-200 border border-[#0064cb]"
+              : "bg-white text-slate-800 border border-slate-200 hover:border-[#0064cb] hover:text-[#0064cb]"
           )}
         >
-          <div className={cn(
-            "w-5.5 h-5.5 rounded-full flex items-center justify-center font-bold text-[11px]",
-            activeStep === 1 ? "bg-white/20" : "bg-slate-100"
-          )}>
+          <div
+            className={cn(
+              "w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs",
+              activeStep === 1 ? "bg-white/20 text-white" : "bg-[#f0f4f9] text-[#0064cb]"
+            )}
+          >
             1
           </div>
-          <span className="text-xs font-bold tracking-wider hidden sm:inline">Select Shift</span>
+          <span className="text-sm font-bold tracking-tight">Select Shift</span>
         </button>
 
-        <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+        <ChevronRight className="w-4 h-4 text-slate-300" />
 
         <button
+          type="button"
           onClick={() => {
-            if (selectedShiftIds.length === 0 && activeStep !== 2) {
+            if (selectedShiftIds.length === 0 && selectedMatrixShifts.length === 0) {
               toast.error("Please select shifts first");
               return;
             }
+            if (selectedShiftIds.length === 0 && selectedMatrixShifts.length > 0) {
+              setSelectedShiftIds(selectedMatrixShifts.map((s) => s.shift_id));
+            }
             setActiveStep(2);
           }}
-          disabled={activeStep === 2 || (activeStep === 0)}
+          disabled={activeStep === 2}
           className={cn(
-            "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 rounded-full transition-all",
+            "flex items-center gap-2.5 px-5 py-2 rounded-full transition-all cursor-pointer shadow-xs",
             activeStep === 2
-              ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
-              : activeStep === 1
-                ? "bg-white text-slate-600 border border-slate-200 hover:border-[#0064cb] hover:text-[#0064cb] cursor-pointer"
-                : "bg-slate-50 text-slate-700 border border-slate-300 opacity-60 cursor-not-allowed"
+              ? "bg-[#0064cb] text-white shadow-md shadow-blue-200 border border-[#0064cb]"
+              : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-slate-700"
           )}
         >
-          <div className={cn(
-            "w-5.5 h-5.5 rounded-full flex items-center justify-center font-bold text-[11px]",
-            activeStep === 2 ? "bg-white/20" : "bg-slate-100"
-          )}>
+          <div
+            className={cn(
+              "w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs",
+              activeStep === 2 ? "bg-white/20 text-white" : "bg-[#f8fafc] text-slate-400"
+            )}
+          >
             2
           </div>
-          <span className="text-xs font-bold tracking-wider hidden sm:inline">Select Guard</span>
+          <span className="text-sm font-bold tracking-tight">Select Guard</span>
         </button>
       </div>
     </div>
@@ -1106,7 +1110,7 @@ export function AvailableGuardsModule({
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-      {activeStep > 0 && renderStepper()}
+      {renderStepper()}
 
       <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white max-w-7xl mx-auto">
         <CardContent className="p-0">
@@ -1442,7 +1446,9 @@ export function AvailableGuardsModule({
                               colSpan={2 + displayedShiftNos.length}
                               className="py-10 text-center text-slate-600 font-medium"
                             >
-                              No guards found matching the selected criteria.
+                              {!hasMatrixSearched
+                                ? 'Click "Search" to view available guards for the selected shift(s).'
+                                : "No guards found matching the selected criteria."}
                             </TableCell>
                           </TableRow>
                         )}
