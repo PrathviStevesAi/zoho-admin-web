@@ -420,11 +420,14 @@ export function AvailableGuardsModule({
   useEffect(() => {
     if (availableInvoiceShifts.length > 0) {
       setSelectedMatrixShiftIds((prev) => {
-        if (prev.length > 0 && availableInvoiceShifts.some((s) => prev.includes(s.shift_id))) {
-          return prev;
+        const valid = prev.filter((id) => availableInvoiceShifts.some((s) => s.shift_id === id));
+        if (valid.length > 0) {
+          return valid;
         }
         return [availableInvoiceShifts[0].shift_id];
       });
+    } else {
+      setSelectedMatrixShiftIds([]);
     }
   }, [availableInvoiceShifts]);
 
@@ -466,13 +469,26 @@ export function AvailableGuardsModule({
   }, [availableInvoiceShifts, selectedMatrixShiftIds]);
 
   const handleToggleMatrixShift = (id: string) => {
-    setSelectedMatrixShiftIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    setSelectedMatrixShiftIds((prev) => {
+      if (prev.includes(id)) {
+        if (prev.length <= 1) {
+          toast.info("At least one shift must be selected");
+          return prev;
+        }
+        return prev.filter((i) => i !== id);
+      }
+      return [...prev, id];
+    });
   };
 
   const handleRemoveMatrixShift = (id: string) => {
-    setSelectedMatrixShiftIds((prev) => prev.filter((i) => i !== id));
+    setSelectedMatrixShiftIds((prev) => {
+      if (prev.length <= 1) {
+        toast.info("At least one shift must be selected");
+        return prev;
+      }
+      return prev.filter((i) => i !== id);
+    });
   };
 
   const fetchAvailableGuardsMatrix = async (pageToFetch: number = 1) => {
@@ -1119,7 +1135,7 @@ export function AvailableGuardsModule({
               {/* Header */}
               <div className="px-6 pt-6 pb-4 border-b border-slate-100 bg-white">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  Find Available Guards
+                  Available Guards List
                 </h1>
                 <p className="text-sm text-slate-500 mt-1 font-normal">
                   Find guards based on their responses for the selected shifts.
@@ -1153,16 +1169,19 @@ export function AvailableGuardsModule({
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#e8f1fc] text-[#0064cb] text-xs font-bold"
                           >
                             {s.shift_no}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveMatrixShift(s.shift_id);
-                              }}
-                              className="hover:text-blue-800 transition-colors cursor-pointer"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
+                            {selectedMatrixShifts.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveMatrixShift(s.shift_id);
+                                }}
+                                className="hover:text-blue-800 transition-colors cursor-pointer"
+                                title="Remove shift"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
                           </span>
                         ))
                       ) : (
@@ -1192,7 +1211,7 @@ export function AvailableGuardsModule({
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
-                                  onChange={() => {}}
+                                  onChange={() => { }}
                                   className="rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb]"
                                 />
                                 <span className="font-bold">{s.shift_no}</span>
@@ -1262,8 +1281,8 @@ export function AvailableGuardsModule({
                     <Button
                       type="button"
                       onClick={() => fetchAvailableGuardsMatrix(1)}
-                      disabled={isMatrixLoading}
-                      className="w-full h-[42px] rounded-lg bg-[#0064cb] hover:bg-[#0052a8] text-white font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm shadow-[#0064cb]/20 transition-all disabled:opacity-70"
+                      disabled={isMatrixLoading || selectedMatrixShifts.length === 0 || isSentShiftsLoading}
+                      className="w-full h-[42px] rounded-lg bg-[#0064cb] hover:bg-[#0052a8] text-white font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm shadow-[#0064cb]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isMatrixLoading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1335,8 +1354,8 @@ export function AvailableGuardsModule({
                           {(displayedShiftNos.length > 0
                             ? displayedShiftNos
                             : isMatrixLoading
-                            ? ["...", "..."]
-                            : []
+                              ? ["...", "..."]
+                              : []
                           ).map((shiftNo, idx) => (
                             <TableHead
                               key={`th-shift-${shiftNo}-${idx}`}
@@ -1367,8 +1386,8 @@ export function AvailableGuardsModule({
                                       rIdx % 3 === 0
                                         ? "w-28"
                                         : rIdx % 3 === 1
-                                        ? "w-36"
-                                        : "w-24"
+                                          ? "w-36"
+                                          : "w-24"
                                     )}
                                   />
                                 </div>
@@ -1570,781 +1589,781 @@ export function AvailableGuardsModule({
 
               <div className="p-0">
                 {activeStep === 1 ? (
-              <div className="overflow-x-auto custom-scrollbar w-full">
-                <Table className="min-w-[650px] md:min-w-full">
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="w-[60px] py-2.5 px-4 text-center">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                          checked={shifts.length > 0 && selectedShiftIds.length === shifts.length}
-                          onChange={(e) => handleSelectAllShifts(e.target.checked)}
-                        />
-                      </TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Shift No.</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Service Name</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Start Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">End Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {shifts.length > 0 ? (
-                      shifts.map((shift, idx) => (
-                        <TableRow key={`step1-shift-${shift.shift_id || idx}-${idx}`} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                              checked={selectedShiftIds.includes(shift.shift_id)}
-                              onChange={(e) => handleSelectShift(shift.shift_id, e.target.checked)}
-                            />
-                          </TableCell>
-                          <TableCell className="text-sm font-bold text-slate-700 py-2.5 px-4">
-                            <Link
-                              href={`/shift/view?shift_id=${shift.shift_id}`}
-                              className="text-[#0064cb] hover:text-[#0052ae] hover:underline cursor-pointer transition-all"
-                            >
-                              {shift.shift_no}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">{shift.service_name}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
-                            <FormattedDate date={shift.start_time} timezone={shift.timezone || 'UTC'} />
-                          </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
-                            <FormattedDate date={shift.end_time} timezone={shift.timezone || 'UTC'} />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="py-8 text-center text-slate-700 font-medium">
-                          No shifts found for this invoice. Please schedule shifts first.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : activeStep === 2 ? (
-              <div className="space-y-0">
-                <div className="px-6 py-4 border-b border-slate-100 bg-white">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="space-y-0.5 lg:max-w-xs shrink-0">
-                      <h3 className="text-sm font-bold text-slate-900">Notification Source</h3>
-                      <p className="text-xs text-slate-500">
-                        Select how you want to send the job opportunity to guards.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1 max-w-4xl">
-                      <div
-                        onClick={() => setNotificationSource("in_app")}
-                        className={cn(
-                          "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5",
-                          notificationSource === "in_app"
-                            ? "border-2 border-[#0064cb] bg-blue-50/20"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                        )}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <Smartphone className={cn("w-5 h-5 shrink-0", notificationSource === "in_app" ? "text-[#0064cb]" : "text-slate-600")} />
-                          <div>
-                            <p className={cn(
-                              "text-xs font-bold leading-tight",
-                              notificationSource === "in_app" ? "text-[#0064cb]" : "text-slate-800"
-                            )}>
-                              In App Notification
-                            </p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">Send notification inside the Fast Guard app</p>
-                          </div>
-                        </div>
-                        <div className={cn(
-                          "w-4 h-4 rounded-full border shrink-0 flex items-center justify-center",
-                          notificationSource === "in_app"
-                            ? "border-2 border-[#0064cb]"
-                            : "border-slate-300"
-                        )}>
-                          {notificationSource === "in_app" && <div className="w-2 h-2 rounded-full bg-[#0064cb]" />}
-                        </div>
-                      </div>
-
-                      <div
-                        onClick={() => setNotificationSource("sms")}
-                        className={cn(
-                          "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5",
-                          notificationSource === "sms"
-                            ? "border-2 border-[#0064cb] bg-blue-50/20"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                        )}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <MessageSquare className={cn("w-5 h-5 shrink-0", notificationSource === "sms" ? "text-[#0064cb]" : "text-slate-600")} />
-                          <div>
-                            <p className={cn(
-                              "text-xs font-bold leading-tight",
-                              notificationSource === "sms" ? "text-[#0064cb]" : "text-slate-800"
-                            )}>
-                              SMS (Text Message)
-                            </p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">Send SMS with job link (deep link to app)</p>
-                          </div>
-                        </div>
-                        <div className={cn(
-                          "w-4 h-4 rounded-full border shrink-0 flex items-center justify-center",
-                          notificationSource === "sms"
-                            ? "border-2 border-[#0064cb]"
-                            : "border-slate-300"
-                        )}>
-                          {notificationSource === "sms" && <div className="w-2 h-2 rounded-full bg-[#0064cb]" />}
-                        </div>
-                      </div>
-
-                      <div
-                        onClick={() => setNotificationSource("both")}
-                        className={cn(
-                          "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5",
-                          notificationSource === "both"
-                            ? "border-2 border-[#0064cb] bg-blue-50/20"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                        )}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className={cn(
-                            "flex items-center -space-x-1 shrink-0",
-                            notificationSource === "both" ? "text-[#0064cb]" : "text-slate-600"
-                          )}>
-                            <Smartphone className="w-4 h-4" />
-                            <MessageSquare className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className={cn(
-                              "text-xs font-bold leading-tight",
-                              notificationSource === "both" ? "text-[#0064cb]" : "text-slate-800"
-                            )}>
-                              Both (Recommended)
-                            </p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">Send in-app notification and SMS with job link</p>
-                          </div>
-                        </div>
-                        <div className={cn(
-                          "w-4 h-4 rounded-full border shrink-0 flex items-center justify-center",
-                          notificationSource === "both"
-                            ? "border-2 border-[#0064cb]"
-                            : "border-slate-300"
-                        )}>
-                          {notificationSource === "both" && <div className="w-2 h-2 rounded-full bg-[#0064cb]" />}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 border-b border-slate-100 bg-white">
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    <div className="lg:col-span-4 space-y-4 bg-white">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-bold text-slate-800">Location Type</Label>
-                        <Select
-                          value={locationType}
-                          onValueChange={(val: any) => handleLocationTypeChange(val)}
-                        >
-                          <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              {locationType === "radius" && <Globe className="w-3.5 h-3.5 text-blue-600" />}
-                              {locationType === "city" && <Building2 className="w-3.5 h-3.5 text-blue-600" />}
-                              {locationType === "state" && <Map className="w-3.5 h-3.5 text-blue-600" />}
-                              {locationType === "country" && <Globe className="w-3.5 h-3.5 text-blue-600" />}
-                              {(locationType === "all_guard" || locationType === "all") && <UserCheck className="w-3.5 h-3.5 text-blue-600" />}
-                              <span>
-                                {locationType === "radius" && "Geographic Area ( Radius )"}
-                                {locationType === "city" && "City"}
-                                {locationType === "state" && "State"}
-                                {locationType === "country" && "Country"}
-                                {(locationType === "all_guard" || locationType === "all") && "All Guards"}
-                              </span>
-                            </div>
-                          </SelectTrigger>
-                          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-                            <SelectItem value="radius" className="text-xs cursor-pointer py-2">
-                              <div className="flex items-center gap-2">
-                                <Globe className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Geographic Area ( Radius )</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="city" className="text-xs cursor-pointer py-2">
-                              <div className="flex items-center gap-2">
-                                <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                                <span>City</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="state" className="text-xs cursor-pointer py-2">
-                              <div className="flex items-center gap-2">
-                                <Map className="w-3.5 h-3.5 text-blue-600" />
-                                <span>State</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="country" className="text-xs cursor-pointer py-2">
-                              <div className="flex items-center gap-2">
-                                <Globe className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Country</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="all_guard" className="text-xs cursor-pointer py-2">
-                              <div className="flex items-center gap-2">
-                                <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-                                <span>All Guards</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-bold text-slate-800">Service</Label>
-                        <Select
-                          value={serviceFilter}
-                          onValueChange={(val: "all" | "both" | "armed" | "unarmed") => setServiceFilter(val)}
-                        >
-                          <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Shield className="w-3.5 h-3.5 text-blue-600" />
-                              <span>
-                                {serviceFilter === "all" && "All"}
-                                {serviceFilter === "both" && "Both"}
-                                {serviceFilter === "armed" && "Armed"}
-                                {serviceFilter === "unarmed" && "Unarmed"}
-                              </span>
-                            </div>
-                          </SelectTrigger>
-                          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-                            <SelectItem value="all" className="text-xs cursor-pointer py-2">
-                              <div className="flex items-center gap-2">
-                                <Shield className="w-3.5 h-3.5 text-blue-600" />
-                                <span>All</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="both" className="text-xs cursor-pointer py-2">
-                              <div className="flex items-center gap-2">
-                                <Shield className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Both</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="armed" className="text-xs cursor-pointer py-2">
-                              <div className="flex items-center gap-2">
-                                <ShieldAlert className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Armed</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="unarmed" className="text-xs cursor-pointer py-2">
-                              <div className="flex items-center gap-2">
-                                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Unarmed</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {locationType === "radius" && (
-                        <>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-black">Site Location</Label>
-                            <div className="relative">
-                              <MapPin className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-                              <Autocomplete
-                                apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyAcL7f3q3X4BUlmdpjbo7ZY0GotX7Gh-sU"}
-                                value={centerLocation}
-                                onChange={(e: any) => handleCenterLocationChange(e.target.value)}
-                                onPlaceSelected={handlePlaceSelect}
-                                options={{
-                                  types: ["geocode", "establishment"],
-                                }}
-                                placeholder="Search location with Google..."
-                                className="w-full h-10 pl-9 pr-8 bg-white border border-slate-200 rounded-lg text-xs text-black font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/10 transition-colors cursor-pointer"
-                                style={{ color: "#000000" }}
-                              />
-                              {centerLocation && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleCenterLocationChange("")}
-                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer z-10"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-800">Radius (Miles)</Label>
-                            <div className="flex items-center gap-3">
-                              <div className="relative w-36 shrink-0 flex items-center">
-                                <Input
-                                  type="number"
-                                  min={5}
-                                  max={5000}
-                                  step={5}
-                                  value={radiusMiles}
-                                  onChange={(e) => {
-                                    const val = Number(e.target.value);
-                                    setRadiusMiles(val > 0 ? val : 50);
-                                  }}
-                                  className="w-full h-10 pr-14 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:border-[#0064cb]"
-                                />
-                                <div className="absolute right-1 flex items-center gap-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => setRadiusMiles((prev) => Math.max(5, prev - 5))}
-                                    className="w-6 h-7 flex items-center justify-center rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
-                                    title="Decrease by 5 miles"
-                                  >
-                                    -
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setRadiusMiles((prev) => prev + 5)}
-                                    className="w-6 h-7 flex items-center justify-center rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
-                                    title="Increase by 5 miles"
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              </div>
-                              <p className="text-xs text-slate-500 font-normal">
-                                Find guards within {radiusMiles} miles.
-                              </p>
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {locationType === "city" && (
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-800">City</Label>
-                          <Select
-                            key={citySelectKey}
-                            onValueChange={(val) => {
-                              if (val && val !== "__none__") {
-                                handleAddCity(val);
-                                setCitySelectKey((k) => k + 1);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                              <SelectValue
-                                placeholder={
-                                  selectedCities.length > 0
-                                    ? selectedCities.join(", ")
-                                    : isLocationsLoading
-                                      ? "Loading cities..."
-                                      : "Select City"
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border-slate-200 max-h-56">
-                              {availableCities.filter((c) => !selectedCities.some((sc) => sc.toLowerCase() === c.toLowerCase())).length === 0 ? (
-                                <SelectItem value="__none__" disabled className="text-xs text-slate-400">
-                                  {isLocationsLoading ? "Loading cities..." : selectedCities.length > 0 ? "No more cities" : "No cities found"}
-                                </SelectItem>
-                              ) : (
-                                availableCities
-                                  .filter((c) => !selectedCities.some((sc) => sc.toLowerCase() === c.toLowerCase()))
-                                  .map((city) => (
-                                    <SelectItem key={city} value={city} className="text-xs cursor-pointer">
-                                      {city}
-                                    </SelectItem>
-                                  ))
-                              )}
-                            </SelectContent>
-                          </Select>
-
-                          {selectedCities.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {selectedCities.map((cityName) => (
-                                <span
-                                  key={cityName}
-                                  className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
-                                >
-                                  <span>{cityName}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveCity(cityName)}
-                                    className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
-                                    title={`Remove ${cityName}`}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {locationType === "state" && (
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-800">State</Label>
-                          <Select
-                            key={stateSelectKey}
-                            onValueChange={(val) => {
-                              if (val && val !== "__none__") {
-                                handleAddState(val);
-                                setStateSelectKey((k) => k + 1);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                              <SelectValue
-                                placeholder={
-                                  selectedStates.length > 0
-                                    ? selectedStates.join(", ")
-                                    : isLocationsLoading
-                                      ? "Loading states..."
-                                      : "Select State"
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border-slate-200 max-h-56">
-                              {availableStates.filter((s) => !selectedStates.some((ss) => ss.toLowerCase() === s.toLowerCase())).length === 0 ? (
-                                <SelectItem value="__none__" disabled className="text-xs text-slate-400">
-                                  {isLocationsLoading ? "Loading states..." : selectedStates.length > 0 ? "No more states" : "No states found"}
-                                </SelectItem>
-                              ) : (
-                                availableStates
-                                  .filter((s) => !selectedStates.some((ss) => ss.toLowerCase() === s.toLowerCase()))
-                                  .map((state) => (
-                                    <SelectItem key={state} value={state} className="text-xs cursor-pointer">
-                                      {state}
-                                    </SelectItem>
-                                  ))
-                              )}
-                            </SelectContent>
-                          </Select>
-
-                          {selectedStates.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {selectedStates.map((stateName) => (
-                                <span
-                                  key={stateName}
-                                  className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
-                                >
-                                  <span>{stateName}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveState(stateName)}
-                                    className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
-                                    title={`Remove ${stateName}`}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {locationType === "country" && (
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-800">Country</Label>
-                          <Select
-                            key={countrySelectKey}
-                            onValueChange={(val) => {
-                              if (val && val !== "__none__") {
-                                handleAddCountry(val);
-                                setCountrySelectKey((k) => k + 1);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
-                              <SelectValue
-                                placeholder={
-                                  selectedCountries.length > 0
-                                    ? selectedCountries.join(", ")
-                                    : isLocationsLoading
-                                      ? "Loading countries..."
-                                      : "Select Country"
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border-slate-200 max-h-56">
-                              {availableCountries.filter((c) => !selectedCountries.some((sc) => sc.toLowerCase() === c.toLowerCase())).length === 0 ? (
-                                <SelectItem value="__none__" disabled className="text-xs text-slate-400">
-                                  {isLocationsLoading ? "Loading countries..." : selectedCountries.length > 0 ? "No more countries" : "No countries found"}
-                                </SelectItem>
-                              ) : (
-                                availableCountries
-                                  .filter((c) => !selectedCountries.some((sc) => sc.toLowerCase() === c.toLowerCase()))
-                                  .map((country) => (
-                                    <SelectItem key={country} value={country} className="text-xs cursor-pointer">
-                                      {country}
-                                    </SelectItem>
-                                  ))
-                              )}
-                            </SelectContent>
-                          </Select>
-
-                          {selectedCountries.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {selectedCountries.map((countryName) => (
-                                <span
-                                  key={countryName}
-                                  className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
-                                >
-                                  <span>{countryName}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveCountry(countryName)}
-                                    className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
-                                    title={`Remove ${countryName}`}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {(locationType === "all_guard" || locationType === "all") && (
-                        <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-lg text-xs text-blue-800 flex items-start gap-2">
-                          <Info className="w-4 h-4 text-[#0064cb] shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-semibold block">All Guards</span>
-                            <span>Fetches all active guards without location restrictions.</span>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-4 pt-2">
-                        <Button
-                          type="button"
-                          disabled={isGuardsLoading}
-                          onClick={loadGuards}
-                          className="h-10 px-5 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg text-xs font-bold shadow-md shadow-[#0064cb]/20 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-75 disabled:cursor-not-allowed"
-                        >
-                          {isGuardsLoading ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Search className="w-3.5 h-3.5" />
-                          )}
-                          <span>Search Guards</span>
-                        </Button>
-                        <button
-                          type="button"
-                          onClick={resetFilters}
-                          className="text-xs font-bold text-[#0064cb] hover:underline cursor-pointer"
-                        >
-                          Clear Filters
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="lg:col-span-8 space-y-0 rounded-xl overflow-hidden border border-slate-200 shadow-xs">
-                      <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-700 font-medium">
-                        <div className="flex items-center gap-1.5 font-bold text-black truncate max-w-[50%]" title={mapDisplayedLocation}>
-                          <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                          <span className="truncate">{mapDisplayedLocation}</span>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          {locationType === "radius" ? (
-                            <span>Radius: <strong className="text-slate-900">{radiusMiles} miles</strong></span>
-                          ) : (
-                            <span>Type: <strong className="text-slate-900 capitalize">{(locationType === "all_guard" || locationType === "all") ? "All Guards" : locationType}</strong></span>
-                          )}
-                          <span className="text-slate-300">|</span>
-                          <span>Service: <strong className="text-slate-900 capitalize">{serviceFilter}</strong></span>
-                          <span className="text-slate-300">|</span>
-                          <span>Guards found: <strong className="text-[#0064cb] font-bold">{allGuards.length}</strong></span>
-                        </div>
-                      </div>
-
-                      <DynamicGuardsMap
-                        center={locationType === "radius" && isCustomRadiusLocation ? mapCenter : initialCoordinates}
-                        radiusMiles={radiusMiles}
-                        centerLocationName={mapDisplayedLocation}
-                        guardsFoundCount={allGuards.length}
-                        guards={allGuards}
-                        locationType={locationType}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white">
-                  <div className="px-6 py-4 border-b border-slate-100">
-                    <div className="space-y-0.5">
-                      <h4 className="text-sm font-bold text-slate-900">
-                        Guards ({allGuards.length} found)
-                      </h4>
-                      <p className="text-xs text-slate-500">
-                        Showing guards {locationType === "radius" ? `within ${radiusMiles} miles of ` : (locationType === "all_guard" || locationType === "all") ? "across " : "for "}
-                        {locationType === "radius"
-                          ? mapDisplayedLocation.split(",")[0]
-                          : locationType === "city" && selectedCities.length > 0
-                            ? selectedCities.join(", ")
-                            : locationType === "state" && selectedStates.length > 0
-                              ? selectedStates.join(", ")
-                              : locationType === "country" && selectedCountries.length > 0
-                                ? selectedCountries.join(", ")
-                                : (locationType === "all_guard" || locationType === "all")
-                                  ? "all guards"
-                                  : dynamicSiteLocation.split(",")[0]}. Select guards to send the job opportunity.
-                      </p>
-                    </div>
-                  </div>
-
                   <div className="overflow-x-auto custom-scrollbar w-full">
-                    <Table className="min-w-[1100px] md:min-w-full">
-                      <TableHeader className="bg-slate-50/60">
+                    <Table className="min-w-[650px] md:min-w-full">
+                      <TableHeader className="bg-slate-50/50">
                         <TableRow className="hover:bg-transparent border-slate-100">
-                          <TableHead className="w-[50px] py-2.5 px-4 text-center">
+                          <TableHead className="w-[60px] py-2.5 px-4 text-center">
                             <input
                               type="checkbox"
                               className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                              checked={allGuards.length > 0 && selectedGuardIds.length === allGuards.length}
-                              onChange={(e) => handleSelectAllGuards(e.target.checked)}
+                              checked={shifts.length > 0 && selectedShiftIds.length === shifts.length}
+                              onChange={(e) => handleSelectAllShifts(e.target.checked)}
                             />
                           </TableHead>
-                          <TableHead className="w-[50px] text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3 text-center">#</TableHead>
-                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">NAME</TableHead>
-                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">EMAIL</TableHead>
-                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">CITY, STATE</TableHead>
-                          {locationType === "radius" && (
-                            <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">DISTANCE</TableHead>
-                          )}
-                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
-                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
-                          <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">STATUS</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Shift No.</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Service Name</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Start Time</TableHead>
+                          <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">End Time</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {isGuardsLoading ? (
-                          <TableRow>
-                            <TableCell colSpan={locationType === "radius" ? 9 : 8} className="py-10 text-center">
-                              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
-                              <span className="text-xs text-slate-500 font-medium mt-2 block">Loading guards...</span>
-                            </TableCell>
-                          </TableRow>
-                        ) : allGuards.length > 0 ? (
-                          allGuards.map((guard, index) => (
-                            <TableRow
-                              key={guard.guard_id || index}
-                              className="border-slate-50 hover:bg-slate-50/40 transition-colors"
-                            >
+                        {shifts.length > 0 ? (
+                          shifts.map((shift, idx) => (
+                            <TableRow key={`step1-shift-${shift.shift_id || idx}-${idx}`} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
                               <TableCell className="py-2.5 px-4 text-center">
                                 <input
                                   type="checkbox"
                                   className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                                  checked={selectedGuardIds.includes(guard.guard_id)}
-                                  onChange={(e) => handleSelectGuard(guard.guard_id, e.target.checked)}
+                                  checked={selectedShiftIds.includes(shift.shift_id)}
+                                  onChange={(e) => handleSelectShift(shift.shift_id, e.target.checked)}
                                 />
                               </TableCell>
-                              <TableCell className="text-xs text-slate-600 py-2.5 px-3 text-center">
-                                {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
+                              <TableCell className="text-sm font-bold text-slate-700 py-2.5 px-4">
+                                <Link
+                                  href={`/shift/view?shift_id=${shift.shift_id}`}
+                                  className="text-[#0064cb] hover:text-[#0052ae] hover:underline cursor-pointer transition-all"
+                                >
+                                  {shift.shift_no}
+                                </Link>
                               </TableCell>
-                              <TableCell className="text-[13px] font-bold text-slate-900 py-2.5 px-4">
-                                {guard.first_name || ""} {guard.last_name || ""}
+                              <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">{shift.service_name}</TableCell>
+                              <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
+                                <FormattedDate date={shift.start_time} timezone={shift.timezone || 'UTC'} />
                               </TableCell>
-                              <TableCell className="text-xs text-slate-600 py-2.5 px-4">{guard.email || "-"}</TableCell>
-                              <TableCell className="text-xs text-slate-600 py-2.5 px-4">
-                                {getCityState(guard, index)}
-                              </TableCell>
-                              {locationType === "radius" && (
-                                <TableCell className="text-xs font-medium text-slate-700 py-2.5 px-4">
-                                  {getDistance(guard)}
-                                </TableCell>
-                              )}
-                              <TableCell className="py-2.5 px-4 text-center text-xs text-slate-700">
-                                {guard.armed ? "Yes" : "No"}
-                              </TableCell>
-                              <TableCell className="py-2.5 px-4 text-center text-xs text-slate-700">
-                                {guard.unarmed ? "Yes" : "No"}
-                              </TableCell>
-                              <TableCell className="py-2.5 px-4 text-center">
-                                <span className={cn(
-                                  "px-2.5 py-0.5 rounded-full text-[11px] font-semibold capitalize",
-                                  guard.account_status === "inactive" || guard.status === false
-                                    ? "bg-red-50 text-red-600 border border-red-100/60"
-                                    : "bg-emerald-50 text-emerald-600 border border-emerald-100/60"
-                                )}>
-                                  {guard.account_status || (guard.status !== false ? "Active" : "Inactive")}
-                                </span>
+                              <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
+                                <FormattedDate date={shift.end_time} timezone={shift.timezone || 'UTC'} />
                               </TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={locationType === "radius" ? 9 : 8} className="py-8 text-center text-slate-600 font-medium text-xs">
-                              No guards found matching filters. Try adjusting your location or radius.
+                            <TableCell colSpan={5} className="py-8 text-center text-slate-700 font-medium">
+                              No shifts found for this invoice. Please schedule shifts first.
                             </TableCell>
                           </TableRow>
                         )}
                       </TableBody>
                     </Table>
                   </div>
-                </div>
+                ) : activeStep === 2 ? (
+                  <div className="space-y-0">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-white">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="space-y-0.5 lg:max-w-xs shrink-0">
+                          <h3 className="text-sm font-bold text-slate-900">Notification Source</h3>
+                          <p className="text-xs text-slate-500">
+                            Select how you want to send the job opportunity to guards.
+                          </p>
+                        </div>
 
-                <div className="px-6 py-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="text-xs font-bold text-slate-800">
-                    {selectedGuardIds.length} guards selected
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1 max-w-4xl">
+                          <div
+                            onClick={() => setNotificationSource("in_app")}
+                            className={cn(
+                              "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5",
+                              notificationSource === "in_app"
+                                ? "border-2 border-[#0064cb] bg-blue-50/20"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <Smartphone className={cn("w-5 h-5 shrink-0", notificationSource === "in_app" ? "text-[#0064cb]" : "text-slate-600")} />
+                              <div>
+                                <p className={cn(
+                                  "text-xs font-bold leading-tight",
+                                  notificationSource === "in_app" ? "text-[#0064cb]" : "text-slate-800"
+                                )}>
+                                  In App Notification
+                                </p>
+                                <p className="text-[11px] text-slate-500 mt-0.5">Send notification inside the Fast Guard app</p>
+                              </div>
+                            </div>
+                            <div className={cn(
+                              "w-4 h-4 rounded-full border shrink-0 flex items-center justify-center",
+                              notificationSource === "in_app"
+                                ? "border-2 border-[#0064cb]"
+                                : "border-slate-300"
+                            )}>
+                              {notificationSource === "in_app" && <div className="w-2 h-2 rounded-full bg-[#0064cb]" />}
+                            </div>
+                          </div>
+
+                          <div
+                            onClick={() => setNotificationSource("sms")}
+                            className={cn(
+                              "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5",
+                              notificationSource === "sms"
+                                ? "border-2 border-[#0064cb] bg-blue-50/20"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <MessageSquare className={cn("w-5 h-5 shrink-0", notificationSource === "sms" ? "text-[#0064cb]" : "text-slate-600")} />
+                              <div>
+                                <p className={cn(
+                                  "text-xs font-bold leading-tight",
+                                  notificationSource === "sms" ? "text-[#0064cb]" : "text-slate-800"
+                                )}>
+                                  SMS (Text Message)
+                                </p>
+                                <p className="text-[11px] text-slate-500 mt-0.5">Send SMS with job link (deep link to app)</p>
+                              </div>
+                            </div>
+                            <div className={cn(
+                              "w-4 h-4 rounded-full border shrink-0 flex items-center justify-center",
+                              notificationSource === "sms"
+                                ? "border-2 border-[#0064cb]"
+                                : "border-slate-300"
+                            )}>
+                              {notificationSource === "sms" && <div className="w-2 h-2 rounded-full bg-[#0064cb]" />}
+                            </div>
+                          </div>
+
+                          <div
+                            onClick={() => setNotificationSource("both")}
+                            className={cn(
+                              "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5",
+                              notificationSource === "both"
+                                ? "border-2 border-[#0064cb] bg-blue-50/20"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className={cn(
+                                "flex items-center -space-x-1 shrink-0",
+                                notificationSource === "both" ? "text-[#0064cb]" : "text-slate-600"
+                              )}>
+                                <Smartphone className="w-4 h-4" />
+                                <MessageSquare className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <p className={cn(
+                                  "text-xs font-bold leading-tight",
+                                  notificationSource === "both" ? "text-[#0064cb]" : "text-slate-800"
+                                )}>
+                                  Both (Recommended)
+                                </p>
+                                <p className="text-[11px] text-slate-500 mt-0.5">Send in-app notification and SMS with job link</p>
+                              </div>
+                            </div>
+                            <div className={cn(
+                              "w-4 h-4 rounded-full border shrink-0 flex items-center justify-center",
+                              notificationSource === "both"
+                                ? "border-2 border-[#0064cb]"
+                                : "border-slate-300"
+                            )}>
+                              {notificationSource === "both" && <div className="w-2 h-2 rounded-full bg-[#0064cb]" />}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-6 border-b border-slate-100 bg-white">
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        <div className="lg:col-span-4 space-y-4 bg-white">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-800">Location Type</Label>
+                            <Select
+                              value={locationType}
+                              onValueChange={(val: any) => handleLocationTypeChange(val)}
+                            >
+                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  {locationType === "radius" && <Globe className="w-3.5 h-3.5 text-blue-600" />}
+                                  {locationType === "city" && <Building2 className="w-3.5 h-3.5 text-blue-600" />}
+                                  {locationType === "state" && <Map className="w-3.5 h-3.5 text-blue-600" />}
+                                  {locationType === "country" && <Globe className="w-3.5 h-3.5 text-blue-600" />}
+                                  {(locationType === "all_guard" || locationType === "all") && <UserCheck className="w-3.5 h-3.5 text-blue-600" />}
+                                  <span>
+                                    {locationType === "radius" && "Geographic Area ( Radius )"}
+                                    {locationType === "city" && "City"}
+                                    {locationType === "state" && "State"}
+                                    {locationType === "country" && "Country"}
+                                    {(locationType === "all_guard" || locationType === "all") && "All Guards"}
+                                  </span>
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
+                                <SelectItem value="radius" className="text-xs cursor-pointer py-2">
+                                  <div className="flex items-center gap-2">
+                                    <Globe className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>Geographic Area ( Radius )</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="city" className="text-xs cursor-pointer py-2">
+                                  <div className="flex items-center gap-2">
+                                    <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>City</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="state" className="text-xs cursor-pointer py-2">
+                                  <div className="flex items-center gap-2">
+                                    <Map className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>State</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="country" className="text-xs cursor-pointer py-2">
+                                  <div className="flex items-center gap-2">
+                                    <Globe className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>Country</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="all_guard" className="text-xs cursor-pointer py-2">
+                                  <div className="flex items-center gap-2">
+                                    <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>All Guards</span>
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-800">Service</Label>
+                            <Select
+                              value={serviceFilter}
+                              onValueChange={(val: "all" | "both" | "armed" | "unarmed") => setServiceFilter(val)}
+                            >
+                              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Shield className="w-3.5 h-3.5 text-blue-600" />
+                                  <span>
+                                    {serviceFilter === "all" && "All"}
+                                    {serviceFilter === "both" && "Both"}
+                                    {serviceFilter === "armed" && "Armed"}
+                                    {serviceFilter === "unarmed" && "Unarmed"}
+                                  </span>
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
+                                <SelectItem value="all" className="text-xs cursor-pointer py-2">
+                                  <div className="flex items-center gap-2">
+                                    <Shield className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>All</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="both" className="text-xs cursor-pointer py-2">
+                                  <div className="flex items-center gap-2">
+                                    <Shield className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>Both</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="armed" className="text-xs cursor-pointer py-2">
+                                  <div className="flex items-center gap-2">
+                                    <ShieldAlert className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>Armed</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="unarmed" className="text-xs cursor-pointer py-2">
+                                  <div className="flex items-center gap-2">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>Unarmed</span>
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {locationType === "radius" && (
+                            <>
+                              <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-black">Site Location</Label>
+                                <div className="relative">
+                                  <MapPin className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+                                  <Autocomplete
+                                    apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyAcL7f3q3X4BUlmdpjbo7ZY0GotX7Gh-sU"}
+                                    value={centerLocation}
+                                    onChange={(e: any) => handleCenterLocationChange(e.target.value)}
+                                    onPlaceSelected={handlePlaceSelect}
+                                    options={{
+                                      types: ["geocode", "establishment"],
+                                    }}
+                                    placeholder="Search location with Google..."
+                                    className="w-full h-10 pl-9 pr-8 bg-white border border-slate-200 rounded-lg text-xs text-black font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/10 transition-colors cursor-pointer"
+                                    style={{ color: "#000000" }}
+                                  />
+                                  {centerLocation && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCenterLocationChange("")}
+                                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer z-10"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-slate-800">Radius (Miles)</Label>
+                                <div className="flex items-center gap-3">
+                                  <div className="relative w-36 shrink-0 flex items-center">
+                                    <Input
+                                      type="number"
+                                      min={5}
+                                      max={5000}
+                                      step={5}
+                                      value={radiusMiles}
+                                      onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        setRadiusMiles(val > 0 ? val : 50);
+                                      }}
+                                      className="w-full h-10 pr-14 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:border-[#0064cb]"
+                                    />
+                                    <div className="absolute right-1 flex items-center gap-0.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => setRadiusMiles((prev) => Math.max(5, prev - 5))}
+                                        className="w-6 h-7 flex items-center justify-center rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                                        title="Decrease by 5 miles"
+                                      >
+                                        -
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setRadiusMiles((prev) => prev + 5)}
+                                        className="w-6 h-7 flex items-center justify-center rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                                        title="Increase by 5 miles"
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-slate-500 font-normal">
+                                    Find guards within {radiusMiles} miles.
+                                  </p>
+                                </div>
+                              </div>
+                            </>
+                          )}
+
+                          {locationType === "city" && (
+                            <div className="space-y-2">
+                              <Label className="text-xs font-bold text-slate-800">City</Label>
+                              <Select
+                                key={citySelectKey}
+                                onValueChange={(val) => {
+                                  if (val && val !== "__none__") {
+                                    handleAddCity(val);
+                                    setCitySelectKey((k) => k + 1);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                                  <SelectValue
+                                    placeholder={
+                                      selectedCities.length > 0
+                                        ? selectedCities.join(", ")
+                                        : isLocationsLoading
+                                          ? "Loading cities..."
+                                          : "Select City"
+                                    }
+                                  />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border-slate-200 max-h-56">
+                                  {availableCities.filter((c) => !selectedCities.some((sc) => sc.toLowerCase() === c.toLowerCase())).length === 0 ? (
+                                    <SelectItem value="__none__" disabled className="text-xs text-slate-400">
+                                      {isLocationsLoading ? "Loading cities..." : selectedCities.length > 0 ? "No more cities" : "No cities found"}
+                                    </SelectItem>
+                                  ) : (
+                                    availableCities
+                                      .filter((c) => !selectedCities.some((sc) => sc.toLowerCase() === c.toLowerCase()))
+                                      .map((city) => (
+                                        <SelectItem key={city} value={city} className="text-xs cursor-pointer">
+                                          {city}
+                                        </SelectItem>
+                                      ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+
+                              {selectedCities.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                  {selectedCities.map((cityName) => (
+                                    <span
+                                      key={cityName}
+                                      className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
+                                    >
+                                      <span>{cityName}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveCity(cityName)}
+                                        className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                                        title={`Remove ${cityName}`}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {locationType === "state" && (
+                            <div className="space-y-2">
+                              <Label className="text-xs font-bold text-slate-800">State</Label>
+                              <Select
+                                key={stateSelectKey}
+                                onValueChange={(val) => {
+                                  if (val && val !== "__none__") {
+                                    handleAddState(val);
+                                    setStateSelectKey((k) => k + 1);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                                  <SelectValue
+                                    placeholder={
+                                      selectedStates.length > 0
+                                        ? selectedStates.join(", ")
+                                        : isLocationsLoading
+                                          ? "Loading states..."
+                                          : "Select State"
+                                    }
+                                  />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border-slate-200 max-h-56">
+                                  {availableStates.filter((s) => !selectedStates.some((ss) => ss.toLowerCase() === s.toLowerCase())).length === 0 ? (
+                                    <SelectItem value="__none__" disabled className="text-xs text-slate-400">
+                                      {isLocationsLoading ? "Loading states..." : selectedStates.length > 0 ? "No more states" : "No states found"}
+                                    </SelectItem>
+                                  ) : (
+                                    availableStates
+                                      .filter((s) => !selectedStates.some((ss) => ss.toLowerCase() === s.toLowerCase()))
+                                      .map((state) => (
+                                        <SelectItem key={state} value={state} className="text-xs cursor-pointer">
+                                          {state}
+                                        </SelectItem>
+                                      ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+
+                              {selectedStates.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                  {selectedStates.map((stateName) => (
+                                    <span
+                                      key={stateName}
+                                      className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
+                                    >
+                                      <span>{stateName}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveState(stateName)}
+                                        className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                                        title={`Remove ${stateName}`}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {locationType === "country" && (
+                            <div className="space-y-2">
+                              <Label className="text-xs font-bold text-slate-800">Country</Label>
+                              <Select
+                                key={countrySelectKey}
+                                onValueChange={(val) => {
+                                  if (val && val !== "__none__") {
+                                    handleAddCountry(val);
+                                    setCountrySelectKey((k) => k + 1);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer">
+                                  <SelectValue
+                                    placeholder={
+                                      selectedCountries.length > 0
+                                        ? selectedCountries.join(", ")
+                                        : isLocationsLoading
+                                          ? "Loading countries..."
+                                          : "Select Country"
+                                    }
+                                  />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border-slate-200 max-h-56">
+                                  {availableCountries.filter((c) => !selectedCountries.some((sc) => sc.toLowerCase() === c.toLowerCase())).length === 0 ? (
+                                    <SelectItem value="__none__" disabled className="text-xs text-slate-400">
+                                      {isLocationsLoading ? "Loading countries..." : selectedCountries.length > 0 ? "No more countries" : "No countries found"}
+                                    </SelectItem>
+                                  ) : (
+                                    availableCountries
+                                      .filter((c) => !selectedCountries.some((sc) => sc.toLowerCase() === c.toLowerCase()))
+                                      .map((country) => (
+                                        <SelectItem key={country} value={country} className="text-xs cursor-pointer">
+                                          {country}
+                                        </SelectItem>
+                                      ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+
+                              {selectedCountries.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                  {selectedCountries.map((countryName) => (
+                                    <span
+                                      key={countryName}
+                                      className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs"
+                                    >
+                                      <span>{countryName}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveCountry(countryName)}
+                                        className="text-slate-400 hover:text-red-500 rounded p-0.5 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                                        title={`Remove ${countryName}`}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {(locationType === "all_guard" || locationType === "all") && (
+                            <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-lg text-xs text-blue-800 flex items-start gap-2">
+                              <Info className="w-4 h-4 text-[#0064cb] shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-semibold block">All Guards</span>
+                                <span>Fetches all active guards without location restrictions.</span>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-4 pt-2">
+                            <Button
+                              type="button"
+                              disabled={isGuardsLoading}
+                              onClick={loadGuards}
+                              className="h-10 px-5 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg text-xs font-bold shadow-md shadow-[#0064cb]/20 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-75 disabled:cursor-not-allowed"
+                            >
+                              {isGuardsLoading ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Search className="w-3.5 h-3.5" />
+                              )}
+                              <span>Search Guards</span>
+                            </Button>
+                            <button
+                              type="button"
+                              onClick={resetFilters}
+                              className="text-xs font-bold text-[#0064cb] hover:underline cursor-pointer"
+                            >
+                              Clear Filters
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="lg:col-span-8 space-y-0 rounded-xl overflow-hidden border border-slate-200 shadow-xs">
+                          <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-700 font-medium">
+                            <div className="flex items-center gap-1.5 font-bold text-black truncate max-w-[50%]" title={mapDisplayedLocation}>
+                              <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                              <span className="truncate">{mapDisplayedLocation}</span>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              {locationType === "radius" ? (
+                                <span>Radius: <strong className="text-slate-900">{radiusMiles} miles</strong></span>
+                              ) : (
+                                <span>Type: <strong className="text-slate-900 capitalize">{(locationType === "all_guard" || locationType === "all") ? "All Guards" : locationType}</strong></span>
+                              )}
+                              <span className="text-slate-300">|</span>
+                              <span>Service: <strong className="text-slate-900 capitalize">{serviceFilter}</strong></span>
+                              <span className="text-slate-300">|</span>
+                              <span>Guards found: <strong className="text-[#0064cb] font-bold">{allGuards.length}</strong></span>
+                            </div>
+                          </div>
+
+                          <DynamicGuardsMap
+                            center={locationType === "radius" && isCustomRadiusLocation ? mapCenter : initialCoordinates}
+                            radiusMiles={radiusMiles}
+                            centerLocationName={mapDisplayedLocation}
+                            guardsFoundCount={allGuards.length}
+                            guards={allGuards}
+                            locationType={locationType}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white">
+                      <div className="px-6 py-4 border-b border-slate-100">
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-bold text-slate-900">
+                            Guards ({allGuards.length} found)
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            Showing guards {locationType === "radius" ? `within ${radiusMiles} miles of ` : (locationType === "all_guard" || locationType === "all") ? "across " : "for "}
+                            {locationType === "radius"
+                              ? mapDisplayedLocation.split(",")[0]
+                              : locationType === "city" && selectedCities.length > 0
+                                ? selectedCities.join(", ")
+                                : locationType === "state" && selectedStates.length > 0
+                                  ? selectedStates.join(", ")
+                                  : locationType === "country" && selectedCountries.length > 0
+                                    ? selectedCountries.join(", ")
+                                    : (locationType === "all_guard" || locationType === "all")
+                                      ? "all guards"
+                                      : dynamicSiteLocation.split(",")[0]}. Select guards to send the job opportunity.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto custom-scrollbar w-full">
+                        <Table className="min-w-[1100px] md:min-w-full">
+                          <TableHeader className="bg-slate-50/60">
+                            <TableRow className="hover:bg-transparent border-slate-100">
+                              <TableHead className="w-[50px] py-2.5 px-4 text-center">
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                                  checked={allGuards.length > 0 && selectedGuardIds.length === allGuards.length}
+                                  onChange={(e) => handleSelectAllGuards(e.target.checked)}
+                                />
+                              </TableHead>
+                              <TableHead className="w-[50px] text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3 text-center">#</TableHead>
+                              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">NAME</TableHead>
+                              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">EMAIL</TableHead>
+                              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">CITY, STATE</TableHead>
+                              {locationType === "radius" && (
+                                <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">DISTANCE</TableHead>
+                              )}
+                              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
+                              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
+                              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">STATUS</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {isGuardsLoading ? (
+                              <TableRow>
+                                <TableCell colSpan={locationType === "radius" ? 9 : 8} className="py-10 text-center">
+                                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
+                                  <span className="text-xs text-slate-500 font-medium mt-2 block">Loading guards...</span>
+                                </TableCell>
+                              </TableRow>
+                            ) : allGuards.length > 0 ? (
+                              allGuards.map((guard, index) => (
+                                <TableRow
+                                  key={guard.guard_id || index}
+                                  className="border-slate-50 hover:bg-slate-50/40 transition-colors"
+                                >
+                                  <TableCell className="py-2.5 px-4 text-center">
+                                    <input
+                                      type="checkbox"
+                                      className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                                      checked={selectedGuardIds.includes(guard.guard_id)}
+                                      onChange={(e) => handleSelectGuard(guard.guard_id, e.target.checked)}
+                                    />
+                                  </TableCell>
+                                  <TableCell className="text-xs text-slate-600 py-2.5 px-3 text-center">
+                                    {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
+                                  </TableCell>
+                                  <TableCell className="text-[13px] font-bold text-slate-900 py-2.5 px-4">
+                                    {guard.first_name || ""} {guard.last_name || ""}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-slate-600 py-2.5 px-4">{guard.email || "-"}</TableCell>
+                                  <TableCell className="text-xs text-slate-600 py-2.5 px-4">
+                                    {getCityState(guard, index)}
+                                  </TableCell>
+                                  {locationType === "radius" && (
+                                    <TableCell className="text-xs font-medium text-slate-700 py-2.5 px-4">
+                                      {getDistance(guard)}
+                                    </TableCell>
+                                  )}
+                                  <TableCell className="py-2.5 px-4 text-center text-xs text-slate-700">
+                                    {guard.armed ? "Yes" : "No"}
+                                  </TableCell>
+                                  <TableCell className="py-2.5 px-4 text-center text-xs text-slate-700">
+                                    {guard.unarmed ? "Yes" : "No"}
+                                  </TableCell>
+                                  <TableCell className="py-2.5 px-4 text-center">
+                                    <span className={cn(
+                                      "px-2.5 py-0.5 rounded-full text-[11px] font-semibold capitalize",
+                                      guard.account_status === "inactive" || guard.status === false
+                                        ? "bg-red-50 text-red-600 border border-red-100/60"
+                                        : "bg-emerald-50 text-emerald-600 border border-emerald-100/60"
+                                    )}>
+                                      {guard.account_status || (guard.status !== false ? "Active" : "Inactive")}
+                                    </span>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={locationType === "radius" ? 9 : 8} className="py-8 text-center text-slate-600 font-medium text-xs">
+                                  No guards found matching filters. Try adjusting your location or radius.
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+
+                    <div className="px-6 py-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="text-xs font-bold text-slate-800">
+                        {selectedGuardIds.length} guards selected
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setActiveStep(0);
+                            resetFilters();
+                          }}
+                          className="px-5 h-9 rounded-lg text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
+                        >
+                          Cancel
+                        </Button>
+
+                        <Button
+                          type="button"
+                          onClick={handleFind}
+                          disabled={isFinding || selectedGuardIds.length === 0}
+                          className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-5 h-9 rounded-lg text-xs font-bold shadow-md shadow-[#0064cb]/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          {isFinding ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                          Send Job Opportunity ({selectedGuardIds.length})
+                        </Button>
+                      </div>
+                    </div>
                   </div>
+                ) : null}
 
-                  <div className="flex items-center gap-3">
+                {activeStep === 1 && (
+                  <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 w-full">
                     <Button
-                      type="button"
-                      variant="outline"
                       onClick={() => {
-                        setActiveStep(0);
-                        resetFilters();
+                        if (selectedShiftIds.length === 0) {
+                          toast.error("Please select shifts first");
+                        } else {
+                          setActiveStep(2);
+                        }
                       }}
-                      className="px-5 h-9 rounded-lg text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
+                      className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer w-full sm:w-auto flex justify-center items-center"
                     >
-                      Cancel
-                    </Button>
-
-                    <Button
-                      type="button"
-                      onClick={handleFind}
-                      disabled={isFinding || selectedGuardIds.length === 0}
-                      className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-5 h-9 rounded-lg text-xs font-bold shadow-md shadow-[#0064cb]/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
-                    >
-                      {isFinding ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Send className="w-3.5 h-3.5" />
-                      )}
-                      Send Job Opportunity ({selectedGuardIds.length})
+                      Go to Step 2
                     </Button>
                   </div>
-                </div>
+                )}
               </div>
-            ) : null}
-
-            {activeStep === 1 && (
-              <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 w-full">
-                <Button
-                  onClick={() => {
-                    if (selectedShiftIds.length === 0) {
-                      toast.error("Please select shifts first");
-                    } else {
-                      setActiveStep(2);
-                    }
-                  }}
-                  className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer w-full sm:w-auto flex justify-center items-center"
-                >
-                  Go to Step 2
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </CardContent>
-  </Card>
-</div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

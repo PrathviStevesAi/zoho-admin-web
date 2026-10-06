@@ -29,6 +29,7 @@ import { GuardAddress } from "../components/guard-address";
 import { GuardDocuments } from "../components/guard-documents";
 import { GuardPreviousEmployment } from "../components/guard-previous-employment";
 import { GuardNotesAndBadge } from "../components/guard-notes-and-badge";
+import { GuardHistoryDrawer } from "../components/guard-history-drawer";
 
 const phoneCountries = [
   { name: "Argentina", code: "ar", dialCode: "+54" },
@@ -58,6 +59,7 @@ export default function GuardDetailPage() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [notes, setNotes] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isGeneratingBadge, setIsGeneratingBadge] = useState(false);
@@ -682,6 +684,7 @@ export default function GuardDetailPage() {
         setEditForm={setEditForm}
         getTabParam={getTabParam}
         getStatusBreadcrumb={getStatusBreadcrumb}
+        setIsHistoryOpen={setIsHistoryOpen}
       />
 
       <GuardProfileSummary
@@ -794,6 +797,7 @@ export default function GuardDetailPage() {
       <ConfirmationDialog isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} onConfirm={handleDeleteApplication} title="Delete Guard Application?" description="Are you sure you want to delete this guard application? This action cannot be undone." confirmText="Yes, delete it" isDanger={true} isLoading={isDeleting} />
       <BadgeCreateDialog isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} defaultName={`${guard.first_name || ""} ${guard.last_name || ""}`.trim()} defaultEmail={guard.email || ""} defaultHeadshotUrl={guard.headshot_image_url || ""} onSubmit={handleCreateBadgeSubmit} isSubmitting={isGeneratingBadge} />
       <BadgeViewDialog isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} badgeUrl={guard.guard_badge_url || ""} onDownload={handleDownloadBadge} onDelete={handleDeleteBadge} isDeleting={isDeletingBadge} />
+      <GuardHistoryDrawer isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} history={guard?.history} />
     </div>
   );
 }

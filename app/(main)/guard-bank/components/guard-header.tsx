@@ -10,7 +10,8 @@ import {
   Trash2,
   Loader2,
   Eye,
-  KeyRound
+  KeyRound,
+  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -36,6 +37,7 @@ interface GuardHeaderProps {
   setEditForm: (form: any) => void;
   getTabParam: () => string;
   getStatusBreadcrumb: () => string;
+  setIsHistoryOpen?: (val: boolean) => void;
 }
 
 export function GuardHeader({
@@ -49,7 +51,8 @@ export function GuardHeader({
   setDeleteConfirmOpen,
   setEditForm,
   getTabParam,
-  getStatusBreadcrumb
+  getStatusBreadcrumb,
+  setIsHistoryOpen
 }: GuardHeaderProps) {
   const router = useRouter();
   const [resendPasswordConfirm, setResendPasswordConfirm] = useState<{
@@ -138,6 +141,15 @@ export function GuardHeader({
                 <DropdownMenuItem onClick={() => { setEditForm({ ...guard, ...(guard.previous_employee_info || {}) }); setIsEditing(true); }} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                   <Edit2 className="w-4 h-4" />
                   Edit Application
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_show_history && (
+                <DropdownMenuItem
+                  onClick={() => setIsHistoryOpen?.(true)}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <Clock className="w-4 h-4" />
+                  History
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={handleResendPassword} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
