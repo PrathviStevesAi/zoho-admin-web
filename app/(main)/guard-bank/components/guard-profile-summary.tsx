@@ -162,8 +162,20 @@ export function GuardProfileSummary({
         </div>
 
         <div className="space-y-3 sm:space-y-4 flex-1 min-w-0 flex flex-col items-center sm:items-start text-center sm:text-left w-full">
-          <h2 className="text-xl sm:text-[22px] font-bold text-slate-900 truncate w-full">
-            {`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "Guard Name"}
+          <h2 className="text-xl sm:text-[22px] font-bold text-slate-900 truncate w-full flex flex-wrap items-center justify-center sm:justify-start gap-2">
+            <span>{`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "Guard Name"}</span>
+            {guard?.account_status && (
+              <span className={cn(
+                "font-semibold capitalize text-base sm:text-lg",
+                guard.account_status.toLowerCase() === "active" && "text-emerald-600",
+                guard.account_status.toLowerCase() === "inactive" && "text-amber-600",
+                guard.account_status.toLowerCase() === "blocked" && "text-red-600",
+                guard.account_status.toLowerCase() === "archived" && "text-slate-500",
+                !["active", "inactive", "blocked", "archived"].includes(guard.account_status.toLowerCase()) && "text-slate-600"
+              )}>
+                ({guard.account_status})
+              </span>
+            )}
           </h2>
 
           <div>

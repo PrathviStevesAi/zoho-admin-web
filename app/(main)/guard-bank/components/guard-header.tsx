@@ -11,7 +11,12 @@ import {
   Loader2,
   Eye,
   KeyRound,
-  Clock
+  Clock,
+  Ban,
+  Archive,
+  Unlock,
+  ArchiveRestore,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -24,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { clientResendGuardPasswordAction } from "@/lib/client-actions";
 import { ConfirmationDialog } from "./confirmation-dialog";
+import { AccountStatusDialog, AccountStatusActionType } from "./account-status-dialog";
 
 interface GuardHeaderProps {
   guard: any;
@@ -38,6 +44,7 @@ interface GuardHeaderProps {
   getTabParam: () => string;
   getStatusBreadcrumb: () => string;
   setIsHistoryOpen?: (val: boolean) => void;
+  onUpdateAccountStatus?: (status: string, reason?: string) => Promise<boolean | void> | boolean | void;
 }
 
 export function GuardHeader({
@@ -52,7 +59,8 @@ export function GuardHeader({
   setEditForm,
   getTabParam,
   getStatusBreadcrumb,
-  setIsHistoryOpen
+  setIsHistoryOpen,
+  onUpdateAccountStatus
 }: GuardHeaderProps) {
   const router = useRouter();
   const [resendPasswordConfirm, setResendPasswordConfirm] = useState<{
@@ -61,6 +69,28 @@ export function GuardHeader({
     guardName: string;
   }>({ isOpen: false, guardId: "", guardName: "" });
   const [isResendingPassword, setIsResendingPassword] = useState(false);
+
+  const [statusConfirm, setStatusConfirm] = useState<{
+    isOpen: boolean;
+    actionType: AccountStatusActionType;
+    accountStatus: string;
+  }>({ isOpen: false, actionType: "", accountStatus: "active" });
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  const handleActionClick = (actionType: AccountStatusActionType, targetStatus: string) => {
+    setStatusConfirm({ isOpen: true, actionType, accountStatus: targetStatus });
+  };
+
+  const handleConfirmStatusChange = async (reason?: string) => {
+    if (!statusConfirm.accountStatus || !onUpdateAccountStatus) return;
+    setIsUpdatingStatus(true);
+    try {
+      await onUpdateAccountStatus(statusConfirm.accountStatus, reason);
+      setStatusConfirm({ isOpen: false, actionType: "", accountStatus: "active" });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   const handleNavigateToOverview = () => {
     const targetGuardId = guard?.guard_id || guard?.user_id || guard?.id || "";
@@ -162,6 +192,51 @@ export function GuardHeader({
                   Update Level
                 </DropdownMenuItem>
               )}
+              {guard.action?.is_blocked && (
+                <DropdownMenuItem
+                  onClick={() => handleActionClick("blocked", "blocked")}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <Ban className="w-4 h-4 text-red-500" />
+                  Blocked
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_archived && (
+                <DropdownMenuItem
+                  onClick={() => handleActionClick("archived", "archived")}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <Archive className="w-4 h-4 text-slate-500" />
+                  Archived
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_unblocked && (
+                <DropdownMenuItem
+                  onClick={() => handleActionClick("unblocked", "active")}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <Unlock className="w-4 h-4 text-emerald-600" />
+                  Unblocked
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_unarchived && (
+                <DropdownMenuItem
+                  onClick={() => handleActionClick("unarchived", "active")}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <ArchiveRestore className="w-4 h-4 text-blue-600" />
+                  Unarchived
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_active && (
+                <DropdownMenuItem
+                  onClick={() => handleActionClick("active", "active")}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Active
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => setDeleteConfirmOpen(true)} className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 focus:text-red-600 rounded-lg text-red-500 hover:text-red-600">
                 <Trash2 className="w-4 h-4" />
                 Delete
@@ -190,6 +265,15 @@ export function GuardHeader({
         cancelText="Cancel"
         isDanger={false}
         isLoading={isResendingPassword}
+      />
+
+      <AccountStatusDialog
+        isOpen={statusConfirm.isOpen}
+        onClose={() => setStatusConfirm({ isOpen: false, actionType: "", accountStatus: "active" })}
+        onConfirm={handleConfirmStatusChange}
+        actionType={statusConfirm.actionType}
+        guardName={`${guard?.first_name || ""} ${guard?.last_name || ""}`.trim() || guard?.name}
+        isLoading={isUpdatingStatus}
       />
     </div>
   );

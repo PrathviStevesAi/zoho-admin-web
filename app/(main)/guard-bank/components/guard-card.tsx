@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Trash2, User, Building2, MapPin, Mail, Phone, Eye, UserCheck, UserX } from "lucide-react";
+import { Trash2, User, Building2, MapPin, Mail, Phone, Eye, UserCheck, UserX, Shield } from "lucide-react";
 
 interface GuardCardProps {
   guard: {
@@ -14,6 +14,7 @@ interface GuardCardProps {
     email?: string;
     phone_number?: string;
     performed_by?: string | null;
+    account_status?: string | null;
   };
   status: "record_touched" | "approved" | "disqualified";
   onDelete?: (id: string) => void;
@@ -70,6 +71,44 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
     return null;
   };
 
+  const getAccountStatusSection = () => {
+    if (!guard.account_status) return null;
+
+    const rawStatus = String(guard.account_status).toLowerCase().trim();
+
+    let badgeClass = "bg-slate-100 text-slate-700 border-slate-200";
+    let dotClass = "bg-slate-400";
+    let label = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+
+    if (rawStatus === "active") {
+      badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+      dotClass = "bg-emerald-500";
+      label = "Active";
+    } else if (rawStatus === "inactive") {
+      badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+      dotClass = "bg-amber-500";
+      label = "Inactive";
+    } else if (rawStatus === "blocked") {
+      badgeClass = "bg-red-50 text-red-700 border-red-200";
+      dotClass = "bg-red-500";
+      label = "Blocked";
+    } else if (rawStatus === "archived") {
+      badgeClass = "bg-slate-100 text-slate-700 border-slate-200";
+      dotClass = "bg-slate-500";
+      label = "Archived";
+    }
+
+    return (
+      <div className="flex items-center gap-2 text-[12px] pt-0.5">
+        <Shield className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${badgeClass}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+          {label}
+        </span>
+      </div>
+    );
+  };
+
   const handleCardClick = () => {
     if (guard.id) {
       router.push(`/guard-bank/${guard.id}`);
@@ -122,6 +161,7 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
           </div>
 
           {getPerformedBySection()}
+          {getAccountStatusSection()}
         </div>
       </div>
     </div>

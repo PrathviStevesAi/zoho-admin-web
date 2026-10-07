@@ -46,7 +46,21 @@ export function GuardPersonalDetails({ guard, isEditing, editForm, handleEditCha
         </div>
         <div className="space-y-1">
           <span className="text-[11px] text-slate-500 font-semibold block">Full Name</span>
-          <p className="text-[13px] font-bold text-slate-800">{`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "N/A"}</p>
+          <p className="text-[13px] font-bold text-slate-800">
+            {`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "N/A"}
+            {guard?.account_status && (
+              <span className={cn(
+                "ml-1.5 font-semibold capitalize",
+                guard.account_status.toLowerCase() === "active" && "text-emerald-600",
+                guard.account_status.toLowerCase() === "inactive" && "text-amber-600",
+                guard.account_status.toLowerCase() === "blocked" && "text-red-600",
+                guard.account_status.toLowerCase() === "archived" && "text-slate-500",
+                !["active", "inactive", "blocked", "archived"].includes(guard.account_status.toLowerCase()) && "text-slate-600"
+              )}>
+                ({guard.account_status})
+              </span>
+            )}
+          </p>
         </div>
         <div className="space-y-1">
           <span className="text-[11px] text-slate-500 font-semibold block">Gender</span>

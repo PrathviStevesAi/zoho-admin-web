@@ -59,6 +59,7 @@ function GuardBankContent() {
   const [selectedCountry, setSelectedCountry] = useState("all");
   const [selectedState, setSelectedState] = useState("all");
   const [selectedCity, setSelectedCity] = useState("all");
+  const [selectedAccountStatus, setSelectedAccountStatus] = useState("all");
   const [locations, setLocations] = useState<{
     countries: string[];
     states: string[];
@@ -78,6 +79,7 @@ function GuardBankContent() {
     setSelectedCountry("all");
     setSelectedState("all");
     setSelectedCity("all");
+    setSelectedAccountStatus("all");
     setSearch("");
     setCurrentPage(1);
     if (activeTab === "home") {
@@ -89,7 +91,7 @@ function GuardBankContent() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, selectedCountry, selectedState, selectedCity]);
+  }, [debouncedSearch, selectedCountry, selectedState, selectedCity, selectedAccountStatus]);
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -176,6 +178,9 @@ function GuardBankContent() {
       if (debouncedSearch) {
         url += `&search=${encodeURIComponent(debouncedSearch)}`;
       }
+      if (selectedAccountStatus && selectedAccountStatus !== "all") {
+        url += `&account_status=${encodeURIComponent(selectedAccountStatus)}`;
+      }
 
       url += `&_t=${Date.now()}`;
 
@@ -215,7 +220,7 @@ function GuardBankContent() {
 
   useEffect(() => {
     fetchGuards();
-  }, [activeTab, currentPage, pageSize, debouncedSearch, selectedCountry, selectedState, selectedCity]);
+  }, [activeTab, currentPage, pageSize, debouncedSearch, selectedCountry, selectedState, selectedCity, selectedAccountStatus]);
 
   const handleDeleteGuard = (id: string) => {
     setDeleteConfirm({ isOpen: true, guardId: id });
@@ -414,6 +419,8 @@ function GuardBankContent() {
                   setSelectedState={setSelectedState}
                   selectedCity={selectedCity}
                   setSelectedCity={setSelectedCity}
+                  selectedAccountStatus={selectedAccountStatus}
+                  setSelectedAccountStatus={setSelectedAccountStatus}
                   locations={locations}
                   mounted={mounted}
                   isHomeTab={true}
@@ -450,6 +457,8 @@ function GuardBankContent() {
                   setSelectedState={setSelectedState}
                   selectedCity={selectedCity}
                   setSelectedCity={setSelectedCity}
+                  selectedAccountStatus={selectedAccountStatus}
+                  setSelectedAccountStatus={setSelectedAccountStatus}
                   locations={locations}
                   mounted={mounted}
                 />
@@ -509,6 +518,8 @@ function GuardBankContent() {
                   setSelectedState={setSelectedState}
                   selectedCity={selectedCity}
                   setSelectedCity={setSelectedCity}
+                  selectedAccountStatus={selectedAccountStatus}
+                  setSelectedAccountStatus={setSelectedAccountStatus}
                   locations={locations}
                   mounted={mounted}
                 />
@@ -568,6 +579,8 @@ function GuardBankContent() {
                   setSelectedState={setSelectedState}
                   selectedCity={selectedCity}
                   setSelectedCity={setSelectedCity}
+                  selectedAccountStatus={selectedAccountStatus}
+                  setSelectedAccountStatus={setSelectedAccountStatus}
                   locations={locations}
                   mounted={mounted}
                 />

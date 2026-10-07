@@ -383,6 +383,47 @@ export default function GuardDetailPage() {
     }
   };
 
+  const handleUpdateAccountStatus = async (accountStatus: string, reason?: string) => {
+    try {
+      const session = await getSession() as any;
+      const token = session?.accessToken;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const url = `${baseUrl}/api/v1/guard/bank/application/${id}`;
+
+      const payload: { account_status: string; reason?: string } = {
+        account_status: accountStatus
+      };
+
+      if ((accountStatus === "blocked" || accountStatus === "archived") && reason && reason.trim() !== "") {
+        payload.reason = reason.trim();
+      }
+
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        toast.success(`Guard status updated successfully`);
+        fetchGuardDetails();
+        return true;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.detail || data.message || "Failed to update guard status");
+        return false;
+      }
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      toast.error("An error occurred while updating status");
+      return false;
+    }
+  };
+
   const handleDeleteDocument = async (documentKey: string, field: string) => {
     try {
       setDeletingDocs(prev => ({ ...prev, [documentKey]: true }));
@@ -685,6 +726,7 @@ export default function GuardDetailPage() {
         getTabParam={getTabParam}
         getStatusBreadcrumb={getStatusBreadcrumb}
         setIsHistoryOpen={setIsHistoryOpen}
+        onUpdateAccountStatus={handleUpdateAccountStatus}
       />
 
       <GuardProfileSummary

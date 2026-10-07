@@ -12,6 +12,8 @@ interface GuardFiltersProps {
   setSelectedState: (val: string) => void;
   selectedCity: string;
   setSelectedCity: (val: string) => void;
+  selectedAccountStatus: string;
+  setSelectedAccountStatus: (val: string) => void;
   locations: {
     countries: string[];
     states: string[];
@@ -30,6 +32,8 @@ export function GuardFilters({
   setSelectedState,
   selectedCity,
   setSelectedCity,
+  selectedAccountStatus,
+  setSelectedAccountStatus,
   locations,
   mounted,
   isHomeTab = false
@@ -54,18 +58,18 @@ export function GuardFilters({
 
     const safeOptions: string[] = Array.isArray(options)
       ? options
-          .map((opt: any) => {
-            if (typeof opt === "string") return opt.trim();
-            if (typeof opt === "number") return String(opt);
-            if (opt && typeof opt === "object") {
-              if (typeof opt.name === "string") return opt.name.trim();
-              if (typeof opt.label === "string") return opt.label.trim();
-              if (typeof opt.value === "string") return opt.value.trim();
-              return "";
-            }
+        .map((opt: any) => {
+          if (typeof opt === "string") return opt.trim();
+          if (typeof opt === "number") return String(opt);
+          if (opt && typeof opt === "object") {
+            if (typeof opt.name === "string") return opt.name.trim();
+            if (typeof opt.label === "string") return opt.label.trim();
+            if (typeof opt.value === "string") return opt.value.trim();
             return "";
-          })
-          .filter((opt) => typeof opt === "string" && opt.length > 0)
+          }
+          return "";
+        })
+        .filter((opt) => typeof opt === "string" && opt.length > 0)
       : [];
 
     return (
@@ -84,7 +88,7 @@ export function GuardFilters({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <div className="space-y-1.5">
         <label className={labelClass}>{searchLabel}</label>
         <Input
@@ -105,6 +109,28 @@ export function GuardFilters({
       <div className="space-y-1.5">
         <label className={labelClass}>City</label>
         {renderSelect(selectedCity, setSelectedCity, "All Cities", locations?.cities || [], "All Cities")}
+      </div>
+      <div className="space-y-1.5">
+        <label className={labelClass}>Status</label>
+        {!mounted ? (
+          <div className="h-10 border border-slate-200 rounded-md animate-pulse bg-slate-50" />
+        ) : (
+          <Select
+            value={typeof selectedAccountStatus === "string" ? selectedAccountStatus : "all"}
+            onValueChange={setSelectedAccountStatus}
+          >
+            <SelectTrigger className="h-10 border-slate-200 bg-slate-50">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="blocked">Blocked</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
     </div>
   );
