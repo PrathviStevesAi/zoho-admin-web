@@ -178,7 +178,7 @@ function GuardBankContent() {
       if (debouncedSearch) {
         url += `&search=${encodeURIComponent(debouncedSearch)}`;
       }
-      if (selectedAccountStatus && selectedAccountStatus !== "all") {
+      if (activeTab !== "home" && selectedAccountStatus && selectedAccountStatus !== "all") {
         url += `&account_status=${encodeURIComponent(selectedAccountStatus)}`;
       }
 

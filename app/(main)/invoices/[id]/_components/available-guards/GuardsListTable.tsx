@@ -65,6 +65,8 @@ export function GuardsListTable({
     </>
   );
 
+  const hasVerticalScroll = allGuards.length > 15;
+
   return (
     <div className="bg-white">
       <div className="px-6 py-4 border-b border-slate-100">
@@ -78,9 +80,12 @@ export function GuardsListTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto custom-scrollbar w-full">
-        <Table className="min-w-[1100px] md:min-w-full">
-          <TableHeader className="bg-slate-50/60">
+      <div className="w-full">
+        <Table
+          containerClassName={hasVerticalScroll ? "max-h-[620px] overflow-y-auto" : ""}
+          className="min-w-[1100px] md:min-w-full"
+        >
+          <TableHeader className={cn("bg-slate-50", hasVerticalScroll && "sticky top-0 z-20 shadow-sm")}>
             <TableRow className="hover:bg-transparent border-slate-100">
               <TableHead className="w-[50px] py-2.5 px-4 text-center">
                 <input

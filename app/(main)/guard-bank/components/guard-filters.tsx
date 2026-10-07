@@ -2,6 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface GuardFiltersProps {
   search: string;
@@ -88,7 +89,12 @@ export function GuardFilters({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className={cn(
+      "grid gap-4",
+      isHomeTab
+        ? "grid-cols-1 md:grid-cols-4"
+        : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"
+    )}>
       <div className="space-y-1.5">
         <label className={labelClass}>{searchLabel}</label>
         <Input
@@ -110,28 +116,30 @@ export function GuardFilters({
         <label className={labelClass}>City</label>
         {renderSelect(selectedCity, setSelectedCity, "All Cities", locations?.cities || [], "All Cities")}
       </div>
-      <div className="space-y-1.5">
-        <label className={labelClass}>Status</label>
-        {!mounted ? (
-          <div className="h-10 border border-slate-200 rounded-md animate-pulse bg-slate-50" />
-        ) : (
-          <Select
-            value={typeof selectedAccountStatus === "string" ? selectedAccountStatus : "all"}
-            onValueChange={setSelectedAccountStatus}
-          >
-            <SelectTrigger className="h-10 border-slate-200 bg-slate-50">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="blocked">Blocked</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </div>
+      {!isHomeTab && (
+        <div className="space-y-1.5">
+          <label className={labelClass}>Status</label>
+          {!mounted ? (
+            <div className="h-10 border border-slate-200 rounded-md animate-pulse bg-slate-50" />
+          ) : (
+            <Select
+              value={typeof selectedAccountStatus === "string" ? selectedAccountStatus : "all"}
+              onValueChange={setSelectedAccountStatus}
+            >
+              <SelectTrigger className="h-10 border-slate-200 bg-slate-50">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      )}
     </div>
   );
 }
