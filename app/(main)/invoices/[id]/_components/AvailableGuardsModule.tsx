@@ -6,6 +6,7 @@ import {
   clientFetchLocationAction,
   clientFetchAvailableGuardsShiftsAction,
   clientFetchAvailableGuardsMatrixAction,
+  clientFetchInvoiceShiftsAction,
   AvailableGuardItem,
   FetchGuardsByLocationParams
 } from "@/lib/client-actions";
@@ -246,6 +247,78 @@ export function AvailableGuardsModule({
     fetchSentShifts();
   }, [fetchSentShifts]);
 
+  const [step1Shifts, setStep1Shifts] = useState<any[]>([]);
+  const [isStep1ShiftsLoading, setIsStep1ShiftsLoading] = useState(false);
+
+  const loadStep1Shifts = useCallback(async () => {
+    if (!invoiceId) return;
+    setIsStep1ShiftsLoading(true);
+    try {
+      const res = await clientFetchInvoiceShiftsAction(invoiceId, "assign_guard");
+      if (res.success && Array.isArray(res.data)) {
+        setStep1Shifts(res.data);
+      } else {
+        toast.error(res.error || "Failed to load shifts");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to load shifts");
+    } finally {
+      setIsStep1ShiftsLoading(false);
+    }
+  }, [invoiceId]);
+
+  useEffect(() => {
+    if (activeStep === 1) {
+      loadStep1Shifts();
+    }
+  }, [activeStep, loadStep1Shifts]);
+
+  const cleanShiftNo = useCallback((no: any) => {
+    return String(no || "").replace(/^#/, "").trim();
+  }, []);
+
+  const findRealShiftId = useCallback((shiftOrNoOrId: any): string => {
+    if (!shiftOrNoOrId) return "";
+    const strVal = typeof shiftOrNoOrId === "object"
+      ? String(shiftOrNoOrId.shift_id || shiftOrNoOrId.id || "")
+      : String(shiftOrNoOrId);
+    const targetNo = typeof shiftOrNoOrId === "object"
+      ? cleanShiftNo(shiftOrNoOrId.shift_no || shiftOrNoOrId.shift_number)
+      : cleanShiftNo(shiftOrNoOrId);
+
+    const shiftList = step1Shifts.length > 0 ? step1Shifts : shifts;
+
+    if (Array.isArray(shiftList) && shiftList.length > 0) {
+      // 1. Match by shift_id / id
+      const matchById = shiftList.find((s: any) =>
+        (s.shift_id && s.shift_id === strVal) || (s.id && s.id === strVal)
+      );
+      if (matchById && (matchById.shift_id || matchById.id)) {
+        return String(matchById.shift_id || matchById.id);
+      }
+
+      // 2. Match by shift_no
+      if (targetNo) {
+        const matchByNo = shiftList.find((s: any) =>
+          cleanShiftNo(s.shift_no || s.shift_number) === targetNo
+        );
+        if (matchByNo && (matchByNo.shift_id || matchByNo.id)) {
+          return String(matchByNo.shift_id || matchByNo.id);
+        }
+      }
+
+      // 3. Match against strVal if strVal happened to be raw shift_no without '#'
+      const matchByStrNo = shiftList.find((s: any) =>
+        cleanShiftNo(s.shift_no || s.shift_number) === cleanShiftNo(strVal)
+      );
+      if (matchByStrNo && (matchByStrNo.shift_id || matchByStrNo.id)) {
+        return String(matchByStrNo.shift_id || matchByStrNo.id);
+      }
+    }
+
+    return strVal;
+  }, [step1Shifts, shifts, cleanShiftNo]);
+
   const availableInvoiceShifts = useMemo(() => {
     const rawList =
       Array.isArray(sentShifts) && sentShifts.length > 0
@@ -264,24 +337,39 @@ export function AvailableGuardsModule({
       }> = [];
 
       rawList.forEach((s: any, idx: number) => {
-        const rawNo = String(s.shift_no || s.shift_number || `${idx + 101}`).trim();
-        const formattedNo = rawNo.startsWith("#") ? rawNo : `#${rawNo}`;
-        const id = String(s.shift_id || s.id || rawNo || `shift-${idx}`);
+        const rawNo = cleanShiftNo(s.shift_no || s.shift_number || `${idx + 101}`);
+        const formattedNo = `#${rawNo}`;
 
-        if (!seen.has(id)) {
-          seen.add(id);
+        const matched = (step1Shifts.length > 0 ? step1Shifts : shifts)?.find((invShift: any) => {
+          if (s.shift_id && (invShift.shift_id === s.shift_id || invShift.id === s.shift_id)) return true;
+          if (s.id && (invShift.shift_id === s.id || invShift.id === s.id)) return true;
+          const invNo = cleanShiftNo(invShift.shift_no || invShift.shift_number);
+          return invNo && rawNo && invNo === rawNo;
+        });
+
+        const trueId = String(
+          matched?.shift_id ||
+          matched?.id ||
+          s.shift_id ||
+          s.id ||
+          rawNo ||
+          `shift-${idx}`
+        );
+
+        if (!seen.has(rawNo)) {
+          seen.add(rawNo);
           uniqueShifts.push({
-            shift_id: id,
+            shift_id: trueId,
             shift_no: formattedNo,
-            start_time: s.start_time || "2026-10-10T08:00:00",
-            end_time: s.end_time || "2026-10-10T16:00:00",
+            start_time: s.start_time || matched?.start_time || "2026-10-10T08:00:00",
+            end_time: s.end_time || matched?.end_time || "2026-10-10T16:00:00",
           });
         }
       });
       return uniqueShifts;
     }
     return [];
-  }, [sentShifts, shifts]);
+  }, [sentShifts, shifts, step1Shifts, cleanShiftNo]);
 
   const [selectedMatrixShiftIds, setSelectedMatrixShiftIds] = useState<string[]>([]);
 
@@ -488,20 +576,22 @@ export function AvailableGuardsModule({
   const [isLocationsLoading, setIsLocationsLoading] = useState(false);
 
   useEffect(() => {
-    const fetchLocations = async () => {
-      setIsLocationsLoading(true);
-      const res = await clientFetchLocationAction(undefined, undefined, "approved");
-      if (res.success && res.data) {
-        setApiLocations({
-          countries: Array.isArray(res.data.countries) ? res.data.countries : [],
-          states: Array.isArray(res.data.states) ? res.data.states : [],
-          cities: Array.isArray(res.data.cities) ? res.data.cities : []
-        });
-      }
-      setIsLocationsLoading(false);
-    };
-    fetchLocations();
-  }, []);
+    if (activeStep === 2 && (locationType === "city" || locationType === "state" || locationType === "country")) {
+      const fetchLocations = async () => {
+        setIsLocationsLoading(true);
+        const res = await clientFetchLocationAction(undefined, undefined, "approved");
+        if (res.success && res.data) {
+          setApiLocations({
+            countries: Array.isArray(res.data.countries) ? res.data.countries : [],
+            states: Array.isArray(res.data.states) ? res.data.states : [],
+            cities: Array.isArray(res.data.cities) ? res.data.cities : []
+          });
+        }
+        setIsLocationsLoading(false);
+      };
+      fetchLocations();
+    }
+  }, [activeStep, locationType]);
 
   const invoiceLocation = useMemo(() => {
     let city = invoice?.city ? String(invoice.city).trim() : "";
@@ -705,6 +795,7 @@ export function AvailableGuardsModule({
     const params: FetchGuardsByLocationParams = {
       account_status: "active",
       service: serviceFilter,
+      page: null,
     };
 
     if (locationType === "radius") {
@@ -809,8 +900,9 @@ export function AvailableGuardsModule({
   };
 
   const handleSelectAllShifts = (checked: boolean) => {
+    const list = step1Shifts.length > 0 ? step1Shifts : shifts;
     if (checked) {
-      setSelectedShiftIds(shifts.map(s => s.shift_id));
+      setSelectedShiftIds(list.map(s => String(s.shift_id || s.id)));
     } else {
       setSelectedShiftIds([]);
     }
@@ -843,6 +935,45 @@ export function AvailableGuardsModule({
       return;
     }
 
+    let currentShifts = step1Shifts.length > 0 ? step1Shifts : shifts;
+    if ((!currentShifts || currentShifts.length === 0) && invoiceId) {
+      try {
+        const res = await clientFetchInvoiceShiftsAction(invoiceId, "assign_guard");
+        if (res.success && Array.isArray(res.data)) {
+          currentShifts = res.data;
+          setStep1Shifts(res.data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch shifts to resolve shift IDs:", e);
+      }
+    }
+
+    // Resolve every shift ID to its actual UUID / shift_id
+    const resolvedShiftIds = selectedShiftIds
+      .map(idOrNo => {
+        const cleanTarget = cleanShiftNo(idOrNo);
+        if (Array.isArray(currentShifts) && currentShifts.length > 0) {
+          const matched = currentShifts.find((s: any) => {
+            if (s.shift_id && s.shift_id === idOrNo) return true;
+            if (s.id && s.id === idOrNo) return true;
+            const sNo = cleanShiftNo(s.shift_no || s.shift_number);
+            return sNo && cleanTarget && sNo === cleanTarget;
+          });
+          if (matched && (matched.shift_id || matched.id)) {
+            return String(matched.shift_id || matched.id);
+          }
+        }
+        return findRealShiftId(idOrNo);
+      })
+      .filter(id => Boolean(id) && !id.startsWith("#"));
+
+    const uniqueShiftIds = Array.from(new Set(resolvedShiftIds));
+
+    if (uniqueShiftIds.length === 0) {
+      toast.error("Please select valid shifts");
+      return;
+    }
+
     setIsFinding(true);
     try {
       const locationToSend = (locationType === "radius" && centerLocation)
@@ -851,7 +982,7 @@ export function AvailableGuardsModule({
 
       const res = await findAvailableGuardsAction({
         invoice_id: invoiceId,
-        shift_ids: selectedShiftIds,
+        shift_ids: uniqueShiftIds,
         guard_ids: selectedGuardIds,
         location: locationToSend || "",
         source: notificationSource || "both",
@@ -931,7 +1062,10 @@ export function AvailableGuardsModule({
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => setActiveStep(1)}
+          onClick={() => {
+            setActiveStep(1);
+            loadStep1Shifts();
+          }}
           disabled={activeStep === 1}
           className={cn(
             "flex items-center gap-2.5 px-5 py-2 rounded-full transition-all cursor-pointer shadow-xs",
@@ -961,7 +1095,10 @@ export function AvailableGuardsModule({
               return;
             }
             if (selectedShiftIds.length === 0 && selectedMatrixShifts.length > 0) {
-              setSelectedShiftIds(selectedMatrixShifts.map((s) => s.shift_id));
+              const ids = selectedMatrixShifts
+                .map((s) => findRealShiftId(s))
+                .filter(Boolean);
+              setSelectedShiftIds(ids);
             }
             setActiveStep(2);
           }}
@@ -1450,7 +1587,7 @@ export function AvailableGuardsModule({
                             <input
                               type="checkbox"
                               className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                              checked={shifts.length > 0 && selectedShiftIds.length === shifts.length}
+                              checked={step1Shifts.length > 0 && selectedShiftIds.length === step1Shifts.length}
                               onChange={(e) => handleSelectAllShifts(e.target.checked)}
                             />
                           </TableHead>
@@ -1461,34 +1598,46 @@ export function AvailableGuardsModule({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {shifts.length > 0 ? (
-                          shifts.map((shift, idx) => (
-                            <TableRow key={`step1-shift-${shift.shift_id || idx}-${idx}`} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                              <TableCell className="py-2.5 px-4 text-center">
-                                <input
-                                  type="checkbox"
-                                  className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                                  checked={selectedShiftIds.includes(shift.shift_id)}
-                                  onChange={(e) => handleSelectShift(shift.shift_id, e.target.checked)}
-                                />
-                              </TableCell>
-                              <TableCell className="text-sm font-bold text-slate-700 py-2.5 px-4">
-                                <Link
-                                  href={`/shift/view?shift_id=${shift.shift_id}`}
-                                  className="text-[#0064cb] hover:text-[#0052ae] hover:underline cursor-pointer transition-all"
-                                >
-                                  {shift.shift_no}
-                                </Link>
-                              </TableCell>
-                              <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">{shift.service_name}</TableCell>
-                              <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
-                                <FormattedDate date={shift.start_time} timezone={shift.timezone || 'UTC'} />
-                              </TableCell>
-                              <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
-                                <FormattedDate date={shift.end_time} timezone={shift.timezone || 'UTC'} />
-                              </TableCell>
-                            </TableRow>
-                          ))
+                        {isStep1ShiftsLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="py-12 text-center text-slate-500 font-medium">
+                              <div className="flex items-center justify-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin text-[#0064cb]" />
+                                <span>Loading shifts...</span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : step1Shifts.length > 0 ? (
+                          step1Shifts.map((shift: any, idx: number) => {
+                            const shiftKeyId = String(shift.shift_id || shift.id);
+                            return (
+                              <TableRow key={`step1-shift-${shiftKeyId || idx}-${idx}`} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                                <TableCell className="py-2.5 px-4 text-center">
+                                  <input
+                                    type="checkbox"
+                                    className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
+                                    checked={selectedShiftIds.includes(shiftKeyId)}
+                                    onChange={(e) => handleSelectShift(shiftKeyId, e.target.checked)}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-sm font-bold text-slate-700 py-2.5 px-4">
+                                  <Link
+                                    href={`/shift/view?shift_id=${shiftKeyId}`}
+                                    className="text-[#0064cb] hover:text-[#0052ae] hover:underline cursor-pointer transition-all"
+                                  >
+                                    {shift.shift_no}
+                                  </Link>
+                                </TableCell>
+                                <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">{shift.service_name}</TableCell>
+                                <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
+                                  <FormattedDate date={shift.start_time} timezone={shift.timezone || 'UTC'} />
+                                </TableCell>
+                                <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
+                                  <FormattedDate date={shift.end_time} timezone={shift.timezone || 'UTC'} />
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
                         ) : (
                           <TableRow>
                             <TableCell colSpan={5} className="py-8 text-center text-slate-700 font-medium">
@@ -2116,7 +2265,7 @@ export function AvailableGuardsModule({
                                     />
                                   </TableCell>
                                   <TableCell className="text-xs text-slate-600 py-2.5 px-3 text-center">
-                                    {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
+                                    {index + 1}
                                   </TableCell>
                                   <TableCell className="text-[13px] font-bold text-slate-900 py-2.5 px-4">
                                     {guard.first_name || ""} {guard.last_name || ""}

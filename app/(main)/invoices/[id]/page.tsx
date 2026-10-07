@@ -951,8 +951,6 @@ export default function InvoiceDetailsPage() {
           setIsPaymentOpen(false);
           setIsSettingsOpen(false);
           setIsUploadAttachmentOpen(false);
-          loadAvailableGuards();
-          loadShifts("assign_guard");
         }}
         onOpenSettings={() => {
           setIsSettingsOpen(true);
