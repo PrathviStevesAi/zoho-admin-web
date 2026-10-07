@@ -581,7 +581,7 @@ export function AvailableGuardsModule({
 
   const [hasSearched, setHasSearched] = useState(false);
 
-  const loadGuards = useCallback(async () => {
+  const loadGuards = async () => {
     setIsGuardsLoading(true);
     setHasSearched(true);
 
@@ -631,21 +631,7 @@ export function AvailableGuardsModule({
       toast.error(res.error || "Failed to load guards");
     }
     setIsGuardsLoading(false);
-  }, [
-    serviceFilter,
-    locationType,
-    radiusMiles,
-    centerLocation,
-    selectedCities,
-    selectedStates,
-    selectedCountries,
-  ]);
-
-  useEffect(() => {
-    if (hasSearched && activeStep === 2) {
-      loadGuards();
-    }
-  }, [currentPage, hasSearched, activeStep, loadGuards]);
+  };
 
   const handleLocationTypeChange = (type: LocationType) => {
     setLocationType(type);
