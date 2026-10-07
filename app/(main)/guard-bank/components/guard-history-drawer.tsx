@@ -14,7 +14,6 @@ interface GuardHistoryDrawerProps {
 function formatHistoryDate(dateStr?: string | null): string {
   if (!dateStr) return "-";
   try {
-    // Handle MM/DD/YY or MM/DD/YYYY
     const slashMatch = String(dateStr).match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(.*)$/);
     if (slashMatch) {
       const month = parseInt(slashMatch[1], 10) - 1;
@@ -44,7 +43,6 @@ function formatHistoryDate(dateStr?: string | null): string {
       return `${month} ${day}, ${year} ${formattedHours}:${minutes} ${ampm}`;
     }
   } catch {
-    // fallback
   }
   return String(dateStr);
 }
@@ -63,7 +61,6 @@ export function GuardHistoryDrawer({
         <DialogPrimitive.Content
           className="fixed inset-y-0 right-0 z-50 w-full sm:w-[360px] max-w-[360px] bg-white shadow-2xl border-l border-slate-200 flex flex-col duration-300 ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right focus:outline-none"
         >
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white shrink-0">
             <DialogPrimitive.Title className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               History
@@ -80,7 +77,6 @@ export function GuardHistoryDrawer({
             </DialogPrimitive.Close>
           </div>
 
-          {/* Scrollable Timeline */}
           <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6">
             {historyList.length > 0 ? (
               <div className="relative pl-6 space-y-6 before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
@@ -98,7 +94,6 @@ export function GuardHistoryDrawer({
 
                   return (
                     <div key={idx} className="relative group border-b border-slate-100/80 pb-6 last:border-b-0 last:pb-0">
-                      {/* Timeline Dot */}
                       <div
                         className={cn(
                           "absolute -left-[25px] top-1 w-3 h-3 rounded-full border-2 border-white ring-2",
@@ -108,7 +103,6 @@ export function GuardHistoryDrawer({
                         )}
                       />
 
-                      {/* Content Rows */}
                       <div className="space-y-2">
                         <div className="flex items-start">
                           <span className="text-xs font-bold text-slate-800 w-18 shrink-0">Action</span>

@@ -15,7 +15,6 @@ import {
   ChevronRight,
   ChevronLeft,
   ChevronDown,
-  ChevronsUpDown,
   UserCheck,
   Info,
   ArrowLeft,
@@ -113,136 +112,6 @@ function getCoordinatesFromLocation(locationText: string): [number, number] | nu
   }
   return null;
 }
-
-const DEFAULT_SAMPLE_SHIFTS = [
-  { shift_id: "s-123", shift_no: "#123", start_time: "2026-10-10T08:00:00", end_time: "2026-10-10T16:00:00" },
-  { shift_id: "s-456", shift_no: "#456", start_time: "2026-10-11T08:00:00", end_time: "2026-10-11T16:00:00" },
-  { shift_id: "s-789", shift_no: "#789", start_time: "2026-10-12T08:00:00", end_time: "2026-10-12T16:00:00" },
-  { shift_id: "s-898", shift_no: "#898", start_time: "2026-10-13T08:00:00", end_time: "2026-10-13T16:00:00" },
-];
-
-const DEFAULT_SAMPLE_GUARDS = [
-  {
-    guard_id: "g-1",
-    guard_name: "Hunter Cooper",
-    email: "hunter@example.com",
-    shift_statuses: {
-      "s-123": "available",
-      "s-456": "available",
-      "s-789": "available",
-      "s-898": "not_sent",
-      "0": "available",
-      "1": "available",
-      "2": "available",
-      "3": "not_sent",
-    } as Record<string, string>
-  },
-  {
-    guard_id: "g-2",
-    guard_name: "Jessica Thompson",
-    email: "jessica@example.com",
-    shift_statuses: {
-      "s-123": "available",
-      "s-456": "unavailable",
-      "s-789": "available",
-      "s-898": "willing_to_travel",
-      "0": "available",
-      "1": "unavailable",
-      "2": "available",
-      "3": "willing_to_travel",
-    } as Record<string, string>
-  },
-  {
-    guard_id: "g-3",
-    guard_name: "Robert Wilson",
-    email: "robert@example.com",
-    shift_statuses: {
-      "s-123": "available",
-      "s-456": "pending",
-      "s-789": "available",
-      "s-898": "not_sent",
-      "0": "available",
-      "1": "pending",
-      "2": "available",
-      "3": "not_sent",
-    } as Record<string, string>
-  },
-  {
-    guard_id: "g-4",
-    guard_name: "Sarah Brown",
-    email: "sarah@example.com",
-    shift_statuses: {
-      "s-123": "not_sent",
-      "s-456": "not_sent",
-      "s-789": "available",
-      "s-898": "available",
-      "0": "not_sent",
-      "1": "not_sent",
-      "2": "available",
-      "3": "available",
-    } as Record<string, string>
-  },
-  {
-    guard_id: "g-5",
-    guard_name: "Michael Carter",
-    email: "michael@example.com",
-    shift_statuses: {
-      "s-123": "available",
-      "s-456": "available",
-      "s-789": "willing_to_travel",
-      "s-898": "pending",
-      "0": "available",
-      "1": "available",
-      "2": "willing_to_travel",
-      "3": "pending",
-    } as Record<string, string>
-  },
-  {
-    guard_id: "g-6",
-    guard_name: "David Garcia",
-    email: "david@example.com",
-    shift_statuses: {
-      "s-123": "unavailable",
-      "s-456": "available",
-      "s-789": "not_sent",
-      "s-898": "not_sent",
-      "0": "unavailable",
-      "1": "available",
-      "2": "not_sent",
-      "3": "not_sent",
-    } as Record<string, string>
-  },
-  {
-    guard_id: "g-7",
-    guard_name: "Samantha Lee",
-    email: "samantha@example.com",
-    shift_statuses: {
-      "s-123": "pending",
-      "s-456": "willing_to_travel",
-      "s-789": "available",
-      "s-898": "available",
-      "0": "pending",
-      "1": "willing_to_travel",
-      "2": "available",
-      "3": "available",
-    } as Record<string, string>
-  },
-  {
-    guard_id: "g-8",
-    guard_name: "Ryan Johnson",
-    email: "ryan@example.com",
-    shift_statuses: {
-      "s-123": "available",
-      "s-456": "available",
-      "s-789": "pending",
-      "s-898": "not_sent",
-      "0": "available",
-      "1": "available",
-      "2": "pending",
-      "3": "not_sent",
-    } as Record<string, string>
-  },
-];
 
 const MATRIX_AVATAR_COLORS: { [key: string]: string } = {
   "HC": "bg-indigo-100 text-indigo-700",
@@ -355,7 +224,6 @@ export function AvailableGuardsModule({
   const [locationType, setLocationType] = useState<"radius" | "city" | "state" | "country" | "all_guard" | "all">("radius");
   const [serviceFilter, setServiceFilter] = useState<"all" | "both" | "armed" | "unarmed">("all");
 
-  // Matrix View States (Image 2 design)
   const [sentShifts, setSentShifts] = useState<any[]>([]);
   const [isSentShiftsLoading, setIsSentShiftsLoading] = useState(false);
 
@@ -1039,11 +907,6 @@ export function AvailableGuardsModule({
     }
   };
 
-  const formatArray = (arr: any[] | null) => {
-    if (!arr || arr.length === 0) return "----";
-    return arr.join(", ");
-  };
-
   const getCityState = (guard: any, index?: number) => {
     if (guard.city && guard.state) return `${guard.city}, ${guard.state}`;
     if (guard.city) return guard.city;
@@ -1142,11 +1005,8 @@ export function AvailableGuardsModule({
                 </p>
               </div>
 
-              {/* Matrix Content Body */}
               <div className="p-6">
-                {/* Filter Controls Bar */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end mb-6">
-                  {/* Shift Multi-Select with removable pills */}
                   <div className="md:col-span-6 relative" ref={shiftDropdownRef}>
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
                       <span className="inline-flex items-center gap-1">
@@ -1229,7 +1089,6 @@ export function AvailableGuardsModule({
                     )}
                   </div>
 
-                  {/* Availability Type Dropdown */}
                   <div className="md:col-span-4">
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
                       Availability Type
@@ -1276,7 +1135,6 @@ export function AvailableGuardsModule({
                     </Select>
                   </div>
 
-                  {/* Search Button */}
                   <div className="md:col-span-2">
                     <Button
                       type="button"
@@ -1294,7 +1152,6 @@ export function AvailableGuardsModule({
                   </div>
                 </div>
 
-                {/* Selected Shifts Cards */}
                 {selectedMatrixShifts.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-xs font-bold text-slate-900 mb-2.5">
@@ -1328,7 +1185,6 @@ export function AvailableGuardsModule({
                   </div>
                 )}
 
-                {/* Showing Guards count */}
                 <div className="mb-2.5">
                   {isMatrixLoading ? (
                     <Skeleton className="h-4 w-36 bg-slate-200 rounded" />
@@ -1339,7 +1195,6 @@ export function AvailableGuardsModule({
                   )}
                 </div>
 
-                {/* Matrix Table */}
                 <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
                   <div className="overflow-x-auto custom-scrollbar w-full">
                     <Table className="min-w-[850px] md:min-w-full">
@@ -1475,7 +1330,6 @@ export function AvailableGuardsModule({
                     </Table>
                   </div>
 
-                  {/* Footer pagination & legend */}
                   <div className="border-t border-slate-100 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
                     <div className="text-xs text-slate-500 font-medium">
                       {isMatrixLoading ? (
@@ -1551,7 +1405,6 @@ export function AvailableGuardsModule({
             </div>
           ) : (
             <div>
-              {/* Header for Steps 1 & 2 */}
               <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
                 <div className="space-y-1">
                   <h2 className="text-xl font-bold text-slate-900">

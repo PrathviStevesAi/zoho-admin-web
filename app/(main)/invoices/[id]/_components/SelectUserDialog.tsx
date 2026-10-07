@@ -1,11 +1,12 @@
 "use client";
 
 import {
-  clientFetchGuardsAction
+  clientFetchGuardsNewAction,
+  FetchGuardsByLocationParams
 } from "@/lib/client-actions";
 import { useState, useEffect } from "react";
 import { X, XCircle, Star, Info } from "lucide-react";
-import { fetchLocationAction, } from "@/actions/dashboard.actions";
+import { fetchLocationAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +18,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { FormattedDate } from "@/components/ui/formatted-date";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -50,7 +50,6 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
     country: "All Country",
     state: "All State",
     city: "All City",
-    status: "all",
     service: "All",
     level: "All"
   });
@@ -60,10 +59,9 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
     cities: []
   });
   const [guards, setGuards] = useState<any[]>([]);
+  const [totalGuards, setTotalGuards] = useState<number>(0);
   const [isLoadingGuards, setIsLoadingGuards] = useState(false);
   const [isSelectingGuardId, setIsSelectingGuardId] = useState<string | null>(null);
-  const [pagination, setPagination] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [hourlyRate, setHourlyRate] = useState("");
@@ -75,15 +73,14 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
       setFlatQcRate("");
     } else {
       setUserSearchQuery("");
+      setTotalGuards(0);
       setUserFilters({
         country: "All Country",
         state: "All State",
         city: "All City",
-        status: "all",
         service: "All",
         level: "All"
       });
-      setCurrentPage(1);
       setShowMobileFilters(false);
     }
   }, [isOpen]);
@@ -126,32 +123,46 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
     if (isOpen) {
       const loadGuards = async () => {
         setIsLoadingGuards(true);
-        let armed = "";
-        let unarmed = "";
-        if (userFilters.service === "armed") armed = "true";
-        if (userFilters.service === "unarmed") unarmed = "true";
-        if (userFilters.service === "both") { armed = "true"; unarmed = "true"; }
+        const params: FetchGuardsByLocationParams = {
+          account_status: "active",
+          page: 1
+        };
 
-        const res = await clientFetchGuardsAction({
-          page: currentPage,
-          search: debouncedSearchQuery,
-          status: userFilters.status === "all" ? "" : userFilters.status,
-          city: userFilters.city,
-          state: userFilters.state,
-          country: userFilters.country,
-          level: userFilters.level === "All" ? "" : userFilters.level,
-          armed,
-          unarmed
-        });
+        if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+          params.search = debouncedSearchQuery.trim();
+        }
+
+        if (userFilters.city && userFilters.city !== "All City") {
+          params.cities = userFilters.city;
+        }
+        if (userFilters.state && userFilters.state !== "All State") {
+          params.states = userFilters.state;
+        }
+        if (userFilters.country && userFilters.country !== "All Country") {
+          params.country = userFilters.country;
+        }
+
+        if (userFilters.service && userFilters.service !== "All") {
+          params.service = userFilters.service.toLowerCase();
+        }
+
+        if (userFilters.level && userFilters.level !== "All") {
+          params.guard_level = userFilters.level;
+        }
+
+        const res = await clientFetchGuardsNewAction(params);
         if (res.success && res.data) {
           setGuards(res.data);
-          setPagination(res.pagination);
+          setTotalGuards(res.pagination?.total ?? res.data.length);
+        } else {
+          setGuards([]);
+          setTotalGuards(0);
         }
         setIsLoadingGuards(false);
       };
       loadGuards();
     }
-  }, [isOpen, currentPage, debouncedSearchQuery, userFilters]);
+  }, [isOpen, debouncedSearchQuery, userFilters]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -173,7 +184,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
           </button>
         </div>
 
-        <div className="p-6 pt-0 pb-0 space-y-6 flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="p-6 pt-0 pb-0 space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="space-y-3">
             {mode === "lead" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -274,12 +285,17 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
             )}
 
             <div className={cn(
-              "grid grid-cols-1 md:grid-cols-6 gap-4 md:grid",
+              "grid grid-cols-1 md:grid-cols-5 gap-4 md:grid",
               showMobileFilters ? "grid" : "hidden"
             )}>
               <div className="space-y-1.5 w-full">
                 <Label className="text-[13px] font-medium text-slate-700">Country</Label>
-                <Select value={userFilters.country} onValueChange={(val) => setUserFilters(prev => ({ ...prev, country: val }))}>
+                <Select
+                  value={userFilters.country}
+                  onValueChange={(val) => {
+                    setUserFilters(prev => ({ ...prev, country: val, state: "All State", city: "All City" }));
+                  }}
+                >
                   <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
                     <SelectValue placeholder="Select Country" />
                   </SelectTrigger>
@@ -293,7 +309,12 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
 
               <div className="space-y-1.5 w-full">
                 <Label className="text-[13px] font-medium text-slate-700">State</Label>
-                <Select value={userFilters.state} onValueChange={(val) => setUserFilters(prev => ({ ...prev, state: val }))}>
+                <Select
+                  value={userFilters.state}
+                  onValueChange={(val) => {
+                    setUserFilters(prev => ({ ...prev, state: val, city: "All City" }));
+                  }}
+                >
                   <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
                     <SelectValue placeholder="Select State" />
                   </SelectTrigger>
@@ -307,7 +328,12 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
 
               <div className="space-y-1.5 w-full">
                 <Label className="text-[13px] font-medium text-slate-700">City</Label>
-                <Select value={userFilters.city} onValueChange={(val) => setUserFilters(prev => ({ ...prev, city: val }))}>
+                <Select
+                  value={userFilters.city}
+                  onValueChange={(val) => {
+                    setUserFilters(prev => ({ ...prev, city: val }));
+                  }}
+                >
                   <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
                     <SelectValue placeholder="Select City" />
                   </SelectTrigger>
@@ -320,22 +346,13 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
               </div>
 
               <div className="space-y-1.5 w-full">
-                <Label className="text-[13px] font-medium text-slate-700">Status</Label>
-                <Select value={userFilters.status} onValueChange={(val) => setUserFilters(prev => ({ ...prev, status: val }))}>
-                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="true">Active</SelectItem>
-                    <SelectItem value="false">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5 w-full">
                 <Label className="text-[13px] font-medium text-slate-700">Service</Label>
-                <Select value={userFilters.service} onValueChange={(val) => setUserFilters(prev => ({ ...prev, service: val }))}>
+                <Select
+                  value={userFilters.service}
+                  onValueChange={(val) => {
+                    setUserFilters(prev => ({ ...prev, service: val }));
+                  }}
+                >
                   <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
@@ -350,7 +367,12 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
 
               <div className="space-y-1.5 w-full">
                 <Label className="text-[13px] font-medium text-slate-700">Guard Level</Label>
-                <Select value={userFilters.level} onValueChange={(val) => setUserFilters(prev => ({ ...prev, level: val }))}>
+                <Select
+                  value={userFilters.level}
+                  onValueChange={(val) => {
+                    setUserFilters(prev => ({ ...prev, level: val }));
+                  }}
+                >
                   <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
@@ -365,69 +387,82 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
             </div>
           </div>
 
-          <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col flex-1 min-h-[150px] bg-white shadow-sm">
+          <div className="flex flex-col gap-2.5 flex-1 min-h-0 overflow-hidden">
+            <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg bg-blue-50/60 border border-blue-100/80 text-slate-600 text-xs shrink-0">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-[#0064cb] shrink-0" />
+                <span>
+                  Displaying 10 guards by default. Use the <strong className="font-semibold text-slate-800">Search</strong> to find specific guards.
+                </span>
+              </div>
+              {guards.length > 0 && (
+                <span className="text-[11px] font-medium text-slate-500 whitespace-nowrap hidden sm:inline">
+                  Showing {Math.min(guards.length, 10)} of {totalGuards || guards.length} guards
+                </span>
+              )}
+            </div>
+
+            <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col flex-1 min-h-[150px] bg-white shadow-sm">
             <Table className="border-collapse min-w-[1200px]" scrollbarClass="custom-scrollbar-visible">
               <TableHeader className="bg-white sticky top-0 z-20">
-                  <TableRow className="hover:bg-transparent border-b border-slate-100">
-                    <TableHead className="w-[140px] py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-100">ACTION</TableHead>
-                    <TableHead className="w-[80px] text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">#</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">NAME</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">EMAIL</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">PHONE NO.</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">
-                      <div className="flex items-center gap-1">
-                        GUARD LEVEL
-                        <Info className="w-3.5 h-3.5 text-slate-400" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">ARMED</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">UNARMED</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">ADDRESS</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">LAST ACTIVE</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6">STATUS</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingGuards ? (
-                    Array.from({ length: 6 }).map((_, i) => (
-                      <TableRow key={`skel-${i}`} className="border-b border-slate-50">
-                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                          <Skeleton className="h-4 w-14 rounded" />
-                        </TableCell>
-                        <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
-                          <Skeleton className="h-4 w-6 rounded mx-auto" />
-                        </TableCell>
-                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                          <Skeleton className="h-4 w-28 rounded" />
-                        </TableCell>
-                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                          <Skeleton className="h-4 w-36 rounded" />
-                        </TableCell>
-                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                          <Skeleton className="h-4 w-24 rounded" />
-                        </TableCell>
-                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                          <Skeleton className="h-4 w-16 rounded" />
-                        </TableCell>
-                        <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
-                          <Skeleton className="h-4 w-8 rounded mx-auto" />
-                        </TableCell>
-                        <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
-                          <Skeleton className="h-4 w-8 rounded mx-auto" />
-                        </TableCell>
-                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                          <Skeleton className="h-4 w-32 rounded" />
-                        </TableCell>
-                        <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                          <Skeleton className="h-4 w-20 rounded" />
-                        </TableCell>
-                        <TableCell className="py-4 px-6">
-                          <Skeleton className="h-5 w-14 rounded-full mx-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : guards.length > 0 ? (
-                    guards.map((guard, index) => (
+                <TableRow className="hover:bg-transparent border-b border-slate-100">
+                  <TableHead className="w-[140px] py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-100">ACTION</TableHead>
+                  <TableHead className="w-[80px] text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">#</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">NAME</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">EMAIL</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">PHONE NO.</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">
+                    <div className="flex items-center gap-1">
+                      GUARD LEVEL
+                      <Info className="w-3.5 h-3.5 text-slate-400" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">ARMED</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">UNARMED</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">ADDRESS</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6">STATUS</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoadingGuards ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={`skel-${i}`} className="border-b border-slate-50">
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-14 rounded" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                        <Skeleton className="h-4 w-6 rounded mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-28 rounded" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-36 rounded" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-24 rounded" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-16 rounded" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                        <Skeleton className="h-4 w-8 rounded mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                        <Skeleton className="h-4 w-8 rounded mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                        <Skeleton className="h-4 w-32 rounded" />
+                      </TableCell>
+                      <TableCell className="py-4 px-6">
+                        <Skeleton className="h-5 w-14 rounded-full mx-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : guards.length > 0 ? (
+                  guards.slice(0, 10).map((guard, index) => {
+                    const isActive = guard.account_status === "active" || guard.status === true || guard.status === "active";
+                    return (
                       <TableRow key={guard.guard_id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                         <TableCell className="py-5 px-6 border-r border-slate-50/50">
                           <button
@@ -440,7 +475,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                           </button>
                         </TableCell>
                         <TableCell className="text-[13px] text-slate-800 py-5 px-6 border-r border-slate-50/50 text-center">
-                          {(currentPage - 1) * 10 + index + 1}
+                          {index + 1}
                         </TableCell>
                         <TableCell className="text-[13px] font-medium text-slate-600 py-5 px-6 border-r border-slate-50/50">
                           {guard.first_name} {guard.last_name}
@@ -482,30 +517,29 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                         <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
                           {guard.address || "-"}
                         </TableCell>
-                        <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
-                          {guard.last_active_at ? <FormattedDate date={guard.last_active_at} includeTime={false} /> : "-"}
-                        </TableCell>
                         <TableCell className="py-5 px-6">
                           <span className={cn(
                             "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                            guard.status ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
+                            isActive ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
                           )}>
-                            {guard.status ? "Active" : "Inactive"}
+                            {isActive ? "Active" : "Inactive"}
                           </span>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={11} className="py-8 text-center text-slate-700">No guards found</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={10} className="py-8 text-center text-slate-700">No guards found</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </div>
+      </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end bg-white">
+      <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end bg-white">
           <button
             onClick={onClose}
             className="cursor-pointer text-sm font-bold text-[#0064cb] hover:text-[#0052ae] transition-colors"

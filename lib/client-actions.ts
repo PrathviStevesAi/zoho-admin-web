@@ -478,7 +478,9 @@ export interface FetchGuardsByLocationParams {
   location_type?: "geographic_area" | "cities" | "states" | "country" | string;
   location?: string;
   cities?: string[] | string;
+  city?: string;
   states?: string[] | string;
+  state?: string;
   country?: string[] | string;
   radius?: number | string;
   search?: string;
@@ -492,16 +494,16 @@ export interface FetchGuardsByLocationParams {
 export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationParams = {}): Promise<FetchResponse<any>> {
   const query = new URLSearchParams();
 
+  const accountStatus = params.account_status || "active";
+  query.append("account_status", accountStatus);
+
+  if (params.page !== null) {
+    const page = params.page !== undefined ? params.page : 1;
+    query.append("page", page.toString());
+  }
+
   if (params.status) {
     query.append("status", params.status);
-  }
-
-  if (params.account_status) {
-    query.append("account_status", params.account_status);
-  }
-
-  if (params.page !== undefined && params.page !== null) {
-    query.append("page", params.page.toString());
   }
 
   if (params.location_type) {
@@ -516,39 +518,42 @@ export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationPa
     query.append("radius", params.radius.toString());
   }
 
-  if (params.search) {
-    query.append("search", params.search);
+  if (params.search && params.search.trim()) {
+    query.append("search", params.search.trim());
   }
 
-  if (params.service) {
-    query.append("service", params.service);
+  if (params.service && params.service.toLowerCase() !== "all") {
+    query.append("service", params.service.toLowerCase());
   }
 
-  if (params.guard_level !== undefined && params.guard_level !== null && params.guard_level !== "") {
+  if (params.guard_level !== undefined && params.guard_level !== null && params.guard_level !== "" && params.guard_level !== "All") {
     query.append("guard_level", params.guard_level.toString());
   }
 
-  if (params.cities) {
-    if (Array.isArray(params.cities)) {
-      params.cities.forEach(c => c && query.append("cities", c));
+  const citiesParam = params.cities ?? params.city;
+  if (citiesParam && citiesParam !== "All City") {
+    if (Array.isArray(citiesParam)) {
+      citiesParam.forEach(c => c && c !== "All City" && query.append("cities", c));
     } else {
-      query.append("cities", params.cities);
+      query.append("cities", citiesParam);
     }
   }
 
-  if (params.states) {
-    if (Array.isArray(params.states)) {
-      params.states.forEach(s => s && query.append("states", s));
+  const statesParam = params.states ?? params.state;
+  if (statesParam && statesParam !== "All State") {
+    if (Array.isArray(statesParam)) {
+      statesParam.forEach(s => s && s !== "All State" && query.append("states", s));
     } else {
-      query.append("states", params.states);
+      query.append("states", statesParam);
     }
   }
 
-  if (params.country) {
-    if (Array.isArray(params.country)) {
-      params.country.forEach(c => c && query.append("country", c));
+  const countryParam = params.country;
+  if (countryParam && countryParam !== "All Country") {
+    if (Array.isArray(countryParam)) {
+      countryParam.forEach(c => c && c !== "All Country" && query.append("country", c));
     } else {
-      query.append("country", params.country);
+      query.append("country", countryParam);
     }
   }
 
@@ -559,7 +564,7 @@ export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationPa
     const guardsList = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
     const totalCount = data?.total !== undefined && data?.total !== null ? data.total : guardsList.length;
     const pagination = {
-      page: data?.page || 1,
+      page: data?.page || (params.page !== null && params.page !== undefined ? params.page : 1),
       limit: data?.page_size || guardsList.length || 10,
       total: totalCount,
       total_pages: data?.page_size ? Math.ceil(totalCount / data.page_size) : 1
