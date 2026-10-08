@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import {
   Table,
@@ -133,7 +134,18 @@ export function GuardsListTable({
                     {index + 1}
                   </TableCell>
                   <TableCell className="text-[13px] font-bold text-slate-900 py-2.5 px-4">
-                    {guard.first_name || ""} {guard.last_name || ""}
+                    {guard.application_id || guard.guard_id || guard.id ? (
+                      <Link
+                        href={`/guard-bank/${guard.application_id || guard.guard_id || guard.id}`}
+                        className="hover:text-[#0064cb] hover:underline transition-colors"
+                      >
+                        {guard.first_name || ""} {guard.last_name || ""}
+                      </Link>
+                    ) : (
+                      <span>
+                        {guard.first_name || ""} {guard.last_name || ""}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-xs text-slate-600 py-2.5 px-4">{guard.email || "-"}</TableCell>
                   <TableCell className="text-xs text-slate-600 py-2.5 px-4">

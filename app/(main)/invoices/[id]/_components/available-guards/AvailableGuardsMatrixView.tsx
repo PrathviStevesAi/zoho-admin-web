@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Loader2,
   ChevronDown,
@@ -86,6 +87,7 @@ export function AvailableGuardsMatrixView({
   hasMatrixSearched,
   onPageChange,
 }: AvailableGuardsMatrixViewProps) {
+  const router = useRouter();
   const [isShiftDropdownOpen, setIsShiftDropdownOpen] = useState(false);
   const shiftDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -380,6 +382,7 @@ export function AvailableGuardsMatrixView({
                 ) : matrixGuards.length > 0 ? (
                   matrixGuards.map((guard: any, idx: number) => {
                     const guardId = guard.guard_id || guard.notification_id || `g-${idx}`;
+                    const targetId = guard.application_id || guard.guard_id || guard.id;
                     const name = guard.guard_name || guard.name || "Guard";
                     const initials = getMatrixInitials(name);
                     const avatarColor = MATRIX_AVATAR_COLORS[initials] || "bg-indigo-100 text-indigo-700";
@@ -387,7 +390,16 @@ export function AvailableGuardsMatrixView({
                     return (
                       <TableRow
                         key={`guard-${guardId}-${idx}`}
-                        className="border-slate-50 hover:bg-slate-50/50 transition-colors"
+                        className={cn(
+                          "border-slate-50 transition-colors group",
+                          targetId ? "cursor-pointer hover:bg-slate-50/80" : "hover:bg-slate-50/50"
+                        )}
+                        onClick={() => {
+                          if (targetId) {
+                            router.push(`/guard-bank/${targetId}`);
+                          }
+                        }}
+                        title={targetId ? `Click to view ${name} details` : undefined}
                       >
                         <TableCell className="py-3 px-4">
                           <div className="flex items-center gap-2.5">
@@ -399,7 +411,7 @@ export function AvailableGuardsMatrixView({
                             >
                               {initials}
                             </div>
-                            <span className="font-bold text-sm text-slate-900">
+                            <span className="font-bold text-sm text-slate-900 group-hover:text-[#0064cb] transition-colors">
                               {name}
                             </span>
                           </div>
