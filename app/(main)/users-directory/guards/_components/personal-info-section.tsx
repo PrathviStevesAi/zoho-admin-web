@@ -42,6 +42,9 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
   useEffect(() => {
     const allCountries = Country.getAllCountries().filter(c => Object.keys(ALLOWED_COUNTRIES).includes(c.isoCode));
     setCountryOptions(allCountries);
+    if (!formData.addressCountry) {
+      setFormData((prev: any) => ({ ...prev, addressCountry: "US" }));
+    }
   }, []);
 
   useEffect(() => {
@@ -328,6 +331,44 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
             onChange={(e) => setFormData({ ...formData, licenseExpirationDate: e.target.value })}
             className="h-11 bg-slate-50/50"
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+            Hold Unarmed License? <span className="text-red-500">*</span>
+          </label>
+          <Select
+            value={formData.holdUnarmedLicense || ""}
+            onValueChange={(val) => setFormData({ ...formData, holdUnarmedLicense: val, holdUnarmedLicenseError: "" })}
+          >
+            <SelectTrigger className={`h-11 bg-slate-50/50 ${formData.holdUnarmedLicenseError ? "border-red-500 ring-1 ring-red-500" : ""}`}>
+              <SelectValue placeholder="Select..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Yes">Yes</SelectItem>
+              <SelectItem value="No">No</SelectItem>
+            </SelectContent>
+          </Select>
+          {formData.holdUnarmedLicenseError && <p className="text-xs text-red-500 font-medium mt-1">{formData.holdUnarmedLicenseError}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+            Hold Armed License? <span className="text-red-500">*</span>
+          </label>
+          <Select
+            value={formData.holdArmedLicense || ""}
+            onValueChange={(val) => setFormData({ ...formData, holdArmedLicense: val, holdArmedLicenseError: "" })}
+          >
+            <SelectTrigger className={`h-11 bg-slate-50/50 ${formData.holdArmedLicenseError ? "border-red-500 ring-1 ring-red-500" : ""}`}>
+              <SelectValue placeholder="Select..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Yes">Yes</SelectItem>
+              <SelectItem value="No">No</SelectItem>
+            </SelectContent>
+          </Select>
+          {formData.holdArmedLicenseError && <p className="text-xs text-red-500 font-medium mt-1">{formData.holdArmedLicenseError}</p>}
         </div>
       </div>
     </div>
