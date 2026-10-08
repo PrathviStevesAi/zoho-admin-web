@@ -4,13 +4,14 @@ import {
   clientFetchGuardsNewAction,
   FetchGuardsByLocationParams
 } from "@/lib/client-actions";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, XCircle, Star, Info } from "lucide-react";
 import { fetchLocationAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Pagination } from "@/components/table/pagination";
 import {
   Dialog,
   DialogContent,
@@ -59,7 +60,18 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
     cities: []
   });
   const [guards, setGuards] = useState<any[]>([]);
-  const [totalGuards, setTotalGuards] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  }>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    total_pages: 1,
+  });
   const [isLoadingGuards, setIsLoadingGuards] = useState(false);
   const [isSelectingGuardId, setIsSelectingGuardId] = useState<string | null>(null);
   const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
@@ -73,7 +85,14 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
       setFlatQcRate("");
     } else {
       setUserSearchQuery("");
-      setTotalGuards(0);
+      setCurrentPage(1);
+      setGuards([]);
+      setPagination({
+        page: 1,
+        limit: 10,
+        total: 0,
+        total_pages: 1,
+      });
       setUserFilters({
         country: "All Country",
         state: "All State",
@@ -119,50 +138,70 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
     }
   }, [isOpen, userFilters.country, userFilters.state]);
 
+  const loadGuards = useCallback(async (page: number = 1) => {
+    setIsLoadingGuards(true);
+    const params: FetchGuardsByLocationParams = {
+      account_status: "active",
+      page: page
+    };
+
+    if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+      params.search = debouncedSearchQuery.trim();
+    }
+
+    if (userFilters.city && userFilters.city !== "All City") {
+      params.cities = userFilters.city;
+    }
+    if (userFilters.state && userFilters.state !== "All State") {
+      params.states = userFilters.state;
+    }
+    if (userFilters.country && userFilters.country !== "All Country") {
+      params.country = userFilters.country;
+    }
+
+    if (userFilters.service && userFilters.service !== "All") {
+      params.service = userFilters.service.toLowerCase();
+    }
+
+    if (userFilters.level && userFilters.level !== "All") {
+      params.guard_level = userFilters.level;
+    }
+
+    const res = await clientFetchGuardsNewAction(params);
+    if (res.success && res.data) {
+      setGuards(res.data);
+      const limit = res.pagination?.limit || 10;
+      const total = res.pagination?.total ?? res.data.length;
+      const totalPages = res.pagination?.total_pages || Math.ceil(total / limit) || 1;
+      setPagination({
+        page: res.pagination?.page || page,
+        limit,
+        total,
+        total_pages: totalPages
+      });
+    } else {
+      setGuards([]);
+      setPagination({
+        page: 1,
+        limit: 10,
+        total: 0,
+        total_pages: 1
+      });
+    }
+    setIsLoadingGuards(false);
+  }, [debouncedSearchQuery, userFilters]);
+
   useEffect(() => {
     if (isOpen) {
-      const loadGuards = async () => {
-        setIsLoadingGuards(true);
-        const params: FetchGuardsByLocationParams = {
-          account_status: "active",
-          page: 1
-        };
-
-        if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
-          params.search = debouncedSearchQuery.trim();
-        }
-
-        if (userFilters.city && userFilters.city !== "All City") {
-          params.cities = userFilters.city;
-        }
-        if (userFilters.state && userFilters.state !== "All State") {
-          params.states = userFilters.state;
-        }
-        if (userFilters.country && userFilters.country !== "All Country") {
-          params.country = userFilters.country;
-        }
-
-        if (userFilters.service && userFilters.service !== "All") {
-          params.service = userFilters.service.toLowerCase();
-        }
-
-        if (userFilters.level && userFilters.level !== "All") {
-          params.guard_level = userFilters.level;
-        }
-
-        const res = await clientFetchGuardsNewAction(params);
-        if (res.success && res.data) {
-          setGuards(res.data);
-          setTotalGuards(res.pagination?.total ?? res.data.length);
-        } else {
-          setGuards([]);
-          setTotalGuards(0);
-        }
-        setIsLoadingGuards(false);
-      };
-      loadGuards();
+      setCurrentPage(1);
+      loadGuards(1);
     }
-  }, [isOpen, debouncedSearchQuery, userFilters]);
+  }, [isOpen, debouncedSearchQuery, userFilters, loadGuards]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    loadGuards(newPage);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -388,20 +427,6 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
           </div>
 
           <div className="flex flex-col gap-2.5 flex-1 min-h-0 overflow-hidden">
-            <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg bg-blue-50/60 border border-blue-100/80 text-slate-600 text-xs shrink-0">
-              <div className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-[#0064cb] shrink-0" />
-                <span>
-                  Displaying 10 guards by default. Use the <strong className="font-semibold text-slate-800">Search</strong> to find specific guards.
-                </span>
-              </div>
-              {guards.length > 0 && (
-                <span className="text-[11px] font-medium text-slate-500 whitespace-nowrap hidden sm:inline">
-                  Showing {Math.min(guards.length, 10)} of {totalGuards || guards.length} guards
-                </span>
-              )}
-            </div>
-
             <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col flex-1 min-h-[150px] bg-white shadow-sm">
             <Table className="border-collapse min-w-[1200px]" scrollbarClass="custom-scrollbar-visible">
               <TableHeader className="bg-white sticky top-0 z-20">
@@ -460,7 +485,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                     </TableRow>
                   ))
                 ) : guards.length > 0 ? (
-                  guards.slice(0, 10).map((guard, index) => {
+                  guards.map((guard, index) => {
                     const isActive = guard.account_status === "active" || guard.status === true || guard.status === "active";
                     return (
                       <TableRow key={guard.guard_id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
@@ -475,7 +500,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                           </button>
                         </TableCell>
                         <TableCell className="text-[13px] text-slate-800 py-5 px-6 border-r border-slate-50/50 text-center">
-                          {index + 1}
+                          {(pagination.page - 1) * pagination.limit + index + 1}
                         </TableCell>
                         <TableCell className="text-[13px] font-medium text-slate-600 py-5 px-6 border-r border-slate-50/50">
                           {guard.first_name} {guard.last_name}
@@ -535,6 +560,16 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
                 )}
               </TableBody>
             </Table>
+            {pagination.total > 0 && (
+              <Pagination
+                page={currentPage}
+                totalPages={pagination.total_pages}
+                totalItems={pagination.total}
+                limit={pagination.limit}
+                onPageChange={handlePageChange}
+                isPending={isLoadingGuards}
+              />
+            )}
           </div>
         </div>
       </div>

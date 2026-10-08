@@ -41,7 +41,10 @@ import {
 } from "@/components/ui/dialog";
 import { assignGuardsToMembershipAction } from "@/actions/membership.actions";
 import { fetchLocationAction } from "@/actions/dashboard.actions";
-import { clientFetchGuardsAction } from "@/lib/client-actions";
+import {
+  clientFetchGuardsNewAction,
+  FetchGuardsByLocationParams,
+} from "@/lib/client-actions";
 import useDebounceValue from "@/hooks/use-debounce";
 
 interface AssignGuardsDialogProps {
@@ -58,6 +61,7 @@ export function AssignGuardsDialog({
   onSuccess,
 }: AssignGuardsDialogProps) {
   const [guards, setGuards] = useState<any[]>([]);
+  const [totalGuards, setTotalGuards] = useState(0);
   const [isLoadingGuards, setIsLoadingGuards] = useState(true);
   const [guardSearch, setGuardSearch] = useState("");
   const debouncedGuardSearch = useDebounceValue(guardSearch, 400);
@@ -66,7 +70,7 @@ export function AssignGuardsDialog({
     country: "All Country",
     state: "All State",
     city: "All City",
-    status: "all",
+    service: "All",
     level: "All",
   });
 
@@ -83,7 +87,15 @@ export function AssignGuardsDialog({
   const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
   const [isSavingAssignments, setIsSavingAssignments] = useState(false);
 
-  // Load locations dynamically
+  const isFilterActive = Boolean(
+    (debouncedGuardSearch && debouncedGuardSearch.trim()) ||
+    (guardFilters.country && guardFilters.country !== "All Country") ||
+    (guardFilters.state && guardFilters.state !== "All State") ||
+    (guardFilters.city && guardFilters.city !== "All City") ||
+    (guardFilters.service && guardFilters.service !== "All") ||
+    (guardFilters.level && guardFilters.level !== "All")
+  );
+
   useEffect(() => {
     const loadLocations = async () => {
       try {
@@ -99,37 +111,60 @@ export function AssignGuardsDialog({
             cities: ["All City", ...(res.data.cities || [])],
           });
         }
-      } catch {}
+      } catch { }
     };
     if (isOpen) {
       loadLocations();
     }
   }, [guardFilters.country, guardFilters.state, isOpen]);
 
-  // Load available guards with filters
   const loadGuards = useCallback(async () => {
     setIsLoadingGuards(true);
     try {
-      const res = await clientFetchGuardsAction({
-        page: null,
-        search: debouncedGuardSearch,
-        country: guardFilters.country === "All Country" ? "" : guardFilters.country,
-        state: guardFilters.state === "All State" ? "" : guardFilters.state,
-        city: guardFilters.city === "All City" ? "" : guardFilters.city,
-        status: guardFilters.status === "all" ? "" : guardFilters.status,
-        level: guardFilters.level === "All" ? "" : guardFilters.level,
-      });
+      const params: FetchGuardsByLocationParams = {
+        account_status: "active",
+        page: isFilterActive ? null : 1,
+      };
+
+      if (debouncedGuardSearch && debouncedGuardSearch.trim()) {
+        params.search = debouncedGuardSearch.trim();
+      }
+
+      if (guardFilters.country && guardFilters.country !== "All Country") {
+        params.country = guardFilters.country;
+      }
+
+      if (guardFilters.state && guardFilters.state !== "All State") {
+        params.states = guardFilters.state;
+      }
+
+      if (guardFilters.city && guardFilters.city !== "All City") {
+        params.cities = guardFilters.city;
+      }
+
+      if (guardFilters.service && guardFilters.service !== "All") {
+        params.service = guardFilters.service.toLowerCase();
+      }
+
+      if (guardFilters.level && guardFilters.level !== "All") {
+        params.guard_level = guardFilters.level;
+      }
+
+      const res = await clientFetchGuardsNewAction(params);
       if (res.success && Array.isArray(res.data)) {
         setGuards(res.data);
+        setTotalGuards(res.pagination?.total ?? res.data.length);
       } else {
         setGuards([]);
+        setTotalGuards(0);
       }
     } catch {
       setGuards([]);
+      setTotalGuards(0);
     } finally {
       setIsLoadingGuards(false);
     }
-  }, [debouncedGuardSearch, guardFilters]);
+  }, [debouncedGuardSearch, guardFilters, isFilterActive]);
 
   useEffect(() => {
     if (isOpen) {
@@ -137,7 +172,6 @@ export function AssignGuardsDialog({
     }
   }, [isOpen, loadGuards]);
 
-  // Select all helpers
   const isAllSelected = useMemo(() => {
     if (guards.length === 0) return false;
     return guards.every((g) => {
@@ -184,9 +218,10 @@ export function AssignGuardsDialog({
       country: "All Country",
       state: "All State",
       city: "All City",
-      status: "all",
+      service: "All",
       level: "All",
     });
+    setTotalGuards(0);
   }, []);
 
   const handleClose = () => {
@@ -224,7 +259,6 @@ export function AssignGuardsDialog({
         hideCloseButton
         className="max-w-[92vw] 2xl:max-w-7xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white h-[88vh] max-h-[88vh] flex flex-col gap-0 sm:left-[calc(50%+35px)]"
       >
-        {/* Dialog Header */}
         <div className="p-4 px-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-[#0064cb]/10 flex items-center justify-center text-[#0064cb]">
@@ -235,7 +269,7 @@ export function AssignGuardsDialog({
                 Assign Guards
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 font-medium">
-                {guards.length} Guards total &bull;{" "}
+                {totalGuards || guards.length} Guards total &bull;{" "}
                 <span className="text-[#0064cb] font-bold">
                   {selectedGuardIds.length} Selected
                 </span>
@@ -254,10 +288,8 @@ export function AssignGuardsDialog({
           </div>
         </div>
 
-        {/* Dialog Body (Filters & Table) */}
         <div className="p-5 px-6 space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden bg-white">
           <div className="space-y-3 shrink-0">
-            {/* Row 1: Country, State, City */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-[12px] font-semibold text-slate-700">Country</Label>
@@ -335,7 +367,6 @@ export function AssignGuardsDialog({
               </div>
             </div>
 
-            {/* Row 2: Search, Status, Guard Level */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-[12px] font-semibold text-slate-700">Search</Label>
@@ -359,28 +390,31 @@ export function AssignGuardsDialog({
               </div>
 
               <div className="space-y-1">
-                <Label className="text-[12px] font-semibold text-slate-700">Status</Label>
+                <Label className="text-[12px] font-semibold text-slate-700">Service</Label>
                 <Select
-                  value={guardFilters.status}
+                  value={guardFilters.service}
                   onValueChange={(val) =>
                     setGuardFilters((prev) => ({
                       ...prev,
-                      status: val,
+                      service: val,
                     }))
                   }
                 >
                   <SelectTrigger className="w-full !h-10 bg-slate-50 border-slate-200 text-xs sm:text-[13px] rounded-xl focus:ring-[#0064cb]/10 focus:border-[#0064cb]">
-                    <SelectValue placeholder="All Status" />
+                    <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-slate-200 shadow-xl z-[250]">
-                    <SelectItem value="all" className="text-xs sm:text-[13px]">
-                      All Status
+                    <SelectItem value="All" className="text-xs sm:text-[13px]">
+                      All
                     </SelectItem>
-                    <SelectItem value="true" className="text-xs sm:text-[13px]">
-                      Active
+                    <SelectItem value="both" className="text-xs sm:text-[13px]">
+                      Both
                     </SelectItem>
-                    <SelectItem value="false" className="text-xs sm:text-[13px]">
-                      Inactive
+                    <SelectItem value="armed" className="text-xs sm:text-[13px]">
+                      Armed
+                    </SelectItem>
+                    <SelectItem value="unarmed" className="text-xs sm:text-[13px]">
+                      Unarmed
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -419,7 +453,21 @@ export function AssignGuardsDialog({
             </div>
           </div>
 
-          {/* Table Container */}
+          {/* Info Banner */}
+          <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg bg-blue-50/60 border border-blue-100/80 text-slate-600 text-xs shrink-0">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-[#0064cb] shrink-0" />
+              <span>
+                Displaying 10 guards by default. Use the <strong className="font-semibold text-slate-800">Search</strong> to find specific guards.
+              </span>
+            </div>
+            {guards.length > 0 && (
+              <span className="text-[11px] font-medium text-slate-500 whitespace-nowrap hidden sm:inline">
+                Showing {isFilterActive ? guards.length : Math.min(guards.length, 10)} of {totalGuards || guards.length} guards
+              </span>
+            )}
+          </div>
+
           <div className="border border-slate-200 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0 bg-white">
             <Table
               className="min-w-full"
@@ -573,16 +621,23 @@ export function AssignGuardsDialog({
                         </TableCell>
 
                         <TableCell className="py-4 px-6 text-center">
-                          <span
-                            className={cn(
-                              "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border whitespace-nowrap",
-                              guard.status !== false
-                                ? "bg-green-50 text-green-600 border-green-200"
-                                : "bg-red-50 text-red-600 border-red-200"
-                            )}
-                          >
-                            {guard.status !== false ? "Active" : "Inactive"}
-                          </span>
+                          {(() => {
+                            const isActive = guard.account_status
+                              ? guard.account_status.toLowerCase() === "active"
+                              : guard.status !== false;
+                            return (
+                              <span
+                                className={cn(
+                                  "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border whitespace-nowrap",
+                                  isActive
+                                    ? "bg-green-50 text-green-600 border-green-200"
+                                    : "bg-red-50 text-red-600 border-red-200"
+                                )}
+                              >
+                                {isActive ? "Active" : "Inactive"}
+                              </span>
+                            );
+                          })()}
                         </TableCell>
                       </TableRow>
                     );
@@ -593,7 +648,6 @@ export function AssignGuardsDialog({
           </div>
         </div>
 
-        {/* Dialog Footer */}
         <div className="p-4 px-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50/50 shrink-0">
           <Button
             variant="outline"

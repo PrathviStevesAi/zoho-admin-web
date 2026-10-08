@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  clientFetchGuardsAction,
+  clientFetchGuardsNewAction,
   clientResendGuardPasswordAction
 } from "@/lib/client-actions";
 import { useState, useEffect } from "react";
@@ -86,9 +86,10 @@ export default function GuardDirectoryPage() {
 
   const loadGuards = async (page: number = 1) => {
     setIsLoading(true);
-    const res = await clientFetchGuardsAction({
+    const res = await clientFetchGuardsNewAction({
       page,
-      search: searchQuery
+      search: searchQuery.trim(),
+      account_status: "active",
     });
     if (res.success) {
       setGuards(res.data);
@@ -302,14 +303,21 @@ export default function GuardDirectoryPage() {
                               </span>
                             </TableCell>
                             <TableCell className="py-4 px-4">
-                              <span className={cn(
-                                "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border whitespace-nowrap",
-                                guard.status
-                                  ? "bg-green-50 text-green-600 border-green-200"
-                                  : "bg-red-50 text-red-600 border-red-200"
-                              )}>
-                                {guard.status ? "Active" : "Inactive"}
-                              </span>
+                              {(() => {
+                                const isActive = guard.account_status
+                                  ? guard.account_status.toLowerCase() === "active"
+                                  : guard.status !== false;
+                                return (
+                                  <span className={cn(
+                                    "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border whitespace-nowrap",
+                                    isActive
+                                      ? "bg-green-50 text-green-600 border-green-200"
+                                      : "bg-red-50 text-red-600 border-red-200"
+                                  )}>
+                                    {isActive ? "Active" : "Inactive"}
+                                  </span>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell className="px-6 py-4 text-right">
                               <div onClick={(e) => e.stopPropagation()} className="flex justify-end">

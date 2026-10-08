@@ -394,7 +394,9 @@ export default function GuardDetailPage() {
         account_status: accountStatus
       };
 
-      if ((accountStatus === "blocked" || accountStatus === "archived") && reason && reason.trim() !== "") {
+      if (accountStatus === "archived") {
+        payload.reason = reason && reason.trim() !== "" ? reason.trim() : "Archived by admin";
+      } else if (accountStatus === "blocked" && reason && reason.trim() !== "") {
         payload.reason = reason.trim();
       }
 
@@ -408,18 +410,19 @@ export default function GuardDetailPage() {
         body: JSON.stringify(payload)
       });
 
-      if (res.ok) {
-        toast.success(`Guard status updated successfully`);
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success !== false) {
+        toast.success(data.message || `Guard status updated successfully`);
         fetchGuardDetails();
         return true;
       } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(data.detail || data.message || "Failed to update guard status");
+        toast.error(getErrorMessage(data, "Failed to update guard status"));
         return false;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update status:", error);
-      toast.error("An error occurred while updating status");
+      toast.error(error?.message || "An error occurred while updating status");
       return false;
     }
   };

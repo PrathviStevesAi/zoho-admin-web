@@ -39,7 +39,7 @@ export function AccountStatusDialog({
     }
   }, [isOpen]);
 
-  const isReasonRequired = actionType === "blocked" || actionType === "archived";
+  const isReasonRequired = actionType === "blocked";
 
   const getDialogDetails = () => {
     switch (actionType) {
@@ -55,11 +55,11 @@ export function AccountStatusDialog({
       case "archived":
         return {
           title: "Archive Guard",
-          description: `Please enter the reason for archiving ${guardName ? guardName : "this guard"}.`,
+          description: `Are you sure you want to archive ${guardName ? guardName : "this guard"}?`,
           icon: <Archive className="w-5 h-5 text-slate-700" />,
           iconBg: "bg-slate-100 border-slate-200",
           submitBtnClass: "bg-slate-800 hover:bg-slate-900 text-white shadow-sm shadow-slate-200",
-          placeholder: "Enter reason for archiving..."
+          placeholder: ""
         };
       case "unblocked":
         return {

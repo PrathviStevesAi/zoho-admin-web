@@ -256,11 +256,12 @@ function GuardBankContent() {
         }, 800);
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.detail || "Failed to delete guard application");
+        const errorMsg = typeof data.detail === "string" ? data.detail : (data.detail?.error || data.detail?.message || data.error || data.message || "Failed to delete guard application");
+        toast.error(errorMsg);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete guard:", error);
-      toast.error("An error occurred while deleting the guard application");
+      toast.error(error?.message || "An error occurred while deleting the guard application");
     } finally {
       setIsDeleting(false);
     }

@@ -1105,6 +1105,26 @@ export async function manualStartShiftAction(payload: {
   }
 }
 
+export async function manualEndShiftAction(payload: {
+  shift_id: string;
+  end_type: string;
+  manual_shift_end_reason: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    console.log("[Server Action] manualEndShiftAction POST Payload to /api/v1/shift/manual-shift-end:", payload);
+    const result = await apiFetch<any>(`/api/v1/shift/manual-shift-end`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    console.log("[Server Action] manualEndShiftAction POST Response:", result);
+    return { success: true, message: result?.message || "Shift ended" };
+  } catch (error: any) {
+    console.error("[Server Action] manualEndShiftAction error:", error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
 export async function fetchGuardTrackingAction(guard_id: string, shift_id: string): Promise<SingleFetchResponse<any>> {
   try {
     const data = await apiFetch<any>(`/api/v1/tracking/guard/${guard_id}/shift/${shift_id}`);

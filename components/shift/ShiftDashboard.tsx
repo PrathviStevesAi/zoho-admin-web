@@ -14,6 +14,7 @@ import {
   updateShiftDetailsAction,
   cancelShiftServiceAction,
   manualStartShiftAction,
+  manualEndShiftAction,
   assignGuardToShiftAction,
   reassignGuardToShiftAction,
   assignLeadGuardAction,
@@ -41,6 +42,7 @@ import { NewAssignGuardPanel } from "./NewAssignGuardPanel";
 import { StandbyGuardsPanel } from "./StandbyGuardsPanel";
 import { EditShiftLocationDialog } from "./dialogs/EditShiftLocationDialog";
 import { ManualStartShiftDialog } from "./dialogs/ManualStartShiftDialog";
+import { ManualEndShiftDialog } from "./dialogs/ManualEndShiftDialog";
 import { FilePreviewDialog } from "./dialogs/FilePreviewDialog";
 import { SendReportCard } from "./SendReportCard";
 import { ApproveShiftCard } from "./ApproveShiftCard";
@@ -104,12 +106,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
   const [isManualStartOpen, setIsManualStartOpen] = useState(false);
+  const [isManualEndOpen, setIsManualEndOpen] = useState(false);
   const [isSendReportOpen, setIsSendReportOpen] = useState(false);
   const [isApproveShiftOpen, setIsApproveShiftOpen] = useState(false);
   const [isNotApproveShiftOpen, setIsNotApproveShiftOpen] = useState(false);
   const [isCallRecordingsOpen, setIsCallRecordingsOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [isStartingShift, setIsStartingShift] = useState(false);
+  const [isEndingShift, setIsEndingShift] = useState(false);
   const [isSendingReport, setIsSendingReport] = useState(false);
   const [isApprovingShift, setIsApprovingShift] = useState(false);
   const [isNotApprovingShift, setIsNotApprovingShift] = useState(false);
@@ -651,6 +655,28 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     }
   };
 
+  const handleManualEndShiftConfirm = async (reason: string) => {
+    setIsEndingShift(true);
+    try {
+      const res = await manualEndShiftAction({
+        shift_id: shiftId,
+        end_type: "admin",
+        manual_shift_end_reason: reason,
+      });
+      if (res.success) {
+        toast.success(res.message || "Shift ended");
+        setIsManualEndOpen(false);
+        Promise.all([loadShiftDetails(), loadReportsDetails()]);
+      } else {
+        toast.error(res.error || "Failed to end shift");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to end shift");
+    } finally {
+      setIsEndingShift(false);
+    }
+  };
+
   const handleCancelServiceConfirm = async (reason: string) => {
     setIsCancellingService(true);
     try {
@@ -1006,6 +1032,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onCloseCallRecordings={() => setIsCallRecordingsOpen(false)}
         isStartingShift={isStartingShift}
         onManualStart={() => setIsManualStartOpen(true)}
+        isEndingShift={isEndingShift}
+        onManualEnd={() => setIsManualEndOpen(true)}
         onAssignGuard={handleAssignGuard}
         onNewAssignGuard={handleNewAssignGuard}
         onAssignLeadGuard={handleAssignLeadGuard}
@@ -1334,6 +1362,13 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onClose={() => setIsManualStartOpen(false)}
         onConfirm={handleManualStartShiftConfirm}
         isSaving={isStartingShift}
+      />
+
+      <ManualEndShiftDialog
+        isOpen={isManualEndOpen}
+        onClose={() => setIsManualEndOpen(false)}
+        onConfirm={handleManualEndShiftConfirm}
+        isSaving={isEndingShift}
       />
 
       <ActionErrorDialog

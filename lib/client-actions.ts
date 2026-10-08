@@ -563,11 +563,12 @@ export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationPa
     );
     const guardsList = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
     const totalCount = data?.total !== undefined && data?.total !== null ? data.total : guardsList.length;
+    const limit = data?.page_size || 10;
     const pagination = {
       page: data?.page || (params.page !== null && params.page !== undefined ? params.page : 1),
-      limit: data?.page_size || guardsList.length || 10,
+      limit: limit,
       total: totalCount,
-      total_pages: data?.page_size ? Math.ceil(totalCount / data.page_size) : 1
+      total_pages: Math.ceil(totalCount / limit) || 1
     };
     return { success: true, data: guardsList, pagination };
   } catch (error: any) {
