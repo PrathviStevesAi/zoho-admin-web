@@ -27,7 +27,7 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     email: "",
     phone: "",
     streetAddress: "",
-    addressCountry: "",
+    addressCountry: "US",
     addressState: "",
     city: "",
     zipCode: "",
@@ -84,6 +84,14 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     }
     if (!formData.addressState) {
       newErrors.stateError = "State is required";
+      hasRequiredError = true;
+    }
+    if (!formData.holdUnarmedLicense) {
+      newErrors.holdUnarmedLicenseError = "Unarmed license selection is required";
+      hasRequiredError = true;
+    }
+    if (!formData.holdArmedLicense) {
+      newErrors.holdArmedLicenseError = "Armed license selection is required";
       hasRequiredError = true;
     }
     if (!formData.guardLevel) {
@@ -214,7 +222,16 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
           setFormData={setFormData}
         />
 
-        <div className="flex justify-center mt-8">
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isRegistering}
+            onClick={onBack}
+            className="cursor-pointer h-12 px-8 border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 rounded-xl font-bold transition-all active:scale-95 disabled:opacity-70 text-base"
+          >
+            Cancel
+          </Button>
           <Button
             type="submit"
             disabled={isRegistering}
