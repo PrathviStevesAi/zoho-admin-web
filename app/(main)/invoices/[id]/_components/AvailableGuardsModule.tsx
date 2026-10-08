@@ -448,63 +448,13 @@ export function AvailableGuardsModule({
     return { city, state, country };
   }, [invoice, dynamicSiteLocation]);
 
-  const [selectedCities, setSelectedCities] = useState<string[]>(() => {
-    let city = invoice?.city ? String(invoice.city).trim() : "";
-    let shipping = invoice?.shipping_address;
-    if (typeof shipping === "string") {
-      try { shipping = JSON.parse(shipping); } catch { }
-    }
-    if (shipping && typeof shipping === "object" && shipping.city) {
-      city = String(shipping.city).trim();
-    }
-    return city ? [city] : [];
-  });
-
-  const [selectedStates, setSelectedStates] = useState<string[]>(() => {
-    let state = invoice?.state ? String(invoice.state).trim() : "";
-    let shipping = invoice?.shipping_address;
-    if (typeof shipping === "string") {
-      try { shipping = JSON.parse(shipping); } catch { }
-    }
-    if (shipping && typeof shipping === "object" && shipping.state) {
-      state = String(shipping.state).trim();
-    }
-    return state ? [state] : [];
-  });
-
-  const [selectedCountries, setSelectedCountries] = useState<string[]>(() => {
-    let country = invoice?.country ? String(invoice.country).trim() : "";
-    let shipping = invoice?.shipping_address;
-    if (typeof shipping === "string") {
-      try { shipping = JSON.parse(shipping); } catch { }
-    }
-    if (shipping && typeof shipping === "object" && shipping.country) {
-      country = String(shipping.country).trim();
-    }
-    return country ? [country] : [];
-  });
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
 
   const [citySelectKey, setCitySelectKey] = useState(0);
   const [stateSelectKey, setStateSelectKey] = useState(0);
   const [countrySelectKey, setCountrySelectKey] = useState(0);
-
-  useEffect(() => {
-    if (invoiceLocation.city) {
-      setSelectedCities((prev) => (prev.length === 0 ? [invoiceLocation.city] : prev));
-    }
-  }, [invoiceLocation.city]);
-
-  useEffect(() => {
-    if (invoiceLocation.state) {
-      setSelectedStates((prev) => (prev.length === 0 ? [invoiceLocation.state] : prev));
-    }
-  }, [invoiceLocation.state]);
-
-  useEffect(() => {
-    if (invoiceLocation.country) {
-      setSelectedCountries((prev) => (prev.length === 0 ? [invoiceLocation.country] : prev));
-    }
-  }, [invoiceLocation.country]);
 
   const availableCities = useMemo(() => {
     const list = [...apiLocations.cities];
@@ -580,11 +530,7 @@ export function AvailableGuardsModule({
   }, [locationType, isCustomRadiusLocation, centerLocation, dynamicSiteLocation]);
 
   const [hasSearched, setHasSearched] = useState(false);
-
   const loadGuards = async () => {
-    setIsGuardsLoading(true);
-    setHasSearched(true);
-
     const params: FetchGuardsByLocationParams = {
       account_status: "active",
       service: serviceFilter,
@@ -598,23 +544,32 @@ export function AvailableGuardsModule({
         params.location = centerLocation;
       }
     } else if (locationType === "city") {
+      if (selectedCities.length === 0) {
+        toast.error("Please select at least one city");
+        return;
+      }
       params.location_type = "cities";
-      if (selectedCities.length > 0) {
-        params.cities = selectedCities;
-      }
+      params.cities = selectedCities;
     } else if (locationType === "state") {
+      if (selectedStates.length === 0) {
+        toast.error("Please select at least one state");
+        return;
+      }
       params.location_type = "states";
-      if (selectedStates.length > 0) {
-        params.states = selectedStates;
-      }
+      params.states = selectedStates;
     } else if (locationType === "country") {
-      params.location_type = "country";
-      if (selectedCountries.length > 0) {
-        params.country = selectedCountries;
+      if (selectedCountries.length === 0) {
+        toast.error("Please select at least one country");
+        return;
       }
+      params.location_type = "country";
+      params.country = selectedCountries;
     } else if (locationType === "all_guard" || locationType === "all") {
       params.location_type = "all_guard";
     }
+
+    setIsGuardsLoading(true);
+    setHasSearched(true);
 
     const res = await clientFetchGuardsNewAction(params);
 
@@ -636,22 +591,6 @@ export function AvailableGuardsModule({
   const handleLocationTypeChange = (type: LocationType) => {
     setLocationType(type);
     setMapCenter(initialCoordinates);
-    if (type === "city") {
-      const cityToUse = selectedCities.length > 0 ? selectedCities[0] : invoiceLocation.city;
-      if (cityToUse && selectedCities.length === 0) {
-        setSelectedCities([cityToUse]);
-      }
-    } else if (type === "state") {
-      const stateToUse = selectedStates.length > 0 ? selectedStates[0] : invoiceLocation.state;
-      if (stateToUse && selectedStates.length === 0) {
-        setSelectedStates([stateToUse]);
-      }
-    } else if (type === "country") {
-      const countryToUse = selectedCountries.length > 0 ? selectedCountries[0] : invoiceLocation.country;
-      if (countryToUse && selectedCountries.length === 0) {
-        setSelectedCountries([countryToUse]);
-      }
-    }
   };
 
   const handlePlaceSelect = (place: any) => {
@@ -724,9 +663,9 @@ export function AvailableGuardsModule({
     setRadiusMiles(50);
     setCenterLocation(dynamicSiteLocation);
     setMapCenter(initialCoordinates);
-    setSelectedCities(invoiceLocation.city ? [invoiceLocation.city] : []);
-    setSelectedStates(invoiceLocation.state ? [invoiceLocation.state] : []);
-    setSelectedCountries(invoiceLocation.country ? [invoiceLocation.country] : []);
+    setSelectedCities([]);
+    setSelectedStates([]);
+    setSelectedCountries([]);
     setOnlyEligible(true);
     setIncludeNearby(true);
     setCurrentPage(1);

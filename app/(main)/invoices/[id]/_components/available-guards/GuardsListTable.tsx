@@ -52,12 +52,12 @@ export function GuardsListTable({
           : "for "}
       {locationType === "radius"
         ? mapDisplayedLocation.split(",")[0]
-        : locationType === "city" && selectedCities.length > 0
-          ? selectedCities.join(", ")
-          : locationType === "state" && selectedStates.length > 0
-            ? selectedStates.join(", ")
-            : locationType === "country" && selectedCountries.length > 0
-              ? selectedCountries.join(", ")
+        : locationType === "city"
+          ? (selectedCities.length > 0 ? selectedCities.join(", ") : "selected city")
+          : locationType === "state"
+            ? (selectedStates.length > 0 ? selectedStates.join(", ") : "selected state")
+            : locationType === "country"
+              ? (selectedCountries.length > 0 ? selectedCountries.join(", ") : "selected country")
               : locationType === "all_guard" || locationType === "all"
                 ? "all guards"
                 : dynamicSiteLocation.split(",")[0]}

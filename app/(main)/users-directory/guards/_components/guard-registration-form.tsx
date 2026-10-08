@@ -14,6 +14,7 @@ import {
 } from "./status-sections";
 import { GuardLevelSection } from "./guard-level-section";
 import { registerGuardAction } from "@/actions/auth.actions";
+import { Country } from "country-state-city";
 
 export function GuardRegistrationForm({ onBack, countries }: any) {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -107,6 +108,8 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
 
     const formattedPhone = `${selectedCountry.dialCode}${formData.phone}`;
 
+    const fullCountryName = Country.getCountryByCode(formData.addressCountry)?.name || formData.addressCountry;
+
     const payload = {
       email: formData.email,
       phone_number: formattedPhone,
@@ -121,7 +124,7 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
       first_name: formData.firstName,
       last_name: formData.lastName,
       street_address: formData.streetAddress,
-      country: formData.addressCountry,
+      country: fullCountryName,
       state: formData.addressState,
       city: formData.city,
       zip_code: formData.zipCode,
