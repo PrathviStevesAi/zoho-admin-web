@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { recordNavigation } from "@/lib/navigation-history";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
@@ -14,9 +16,30 @@ import { Button } from "@/components/ui/button";
 import { fetchCalendarShiftsAction } from "@/actions/dashboard.actions";
 import "./calendar.css";
 
-export default function CalendarPage() {
+const VIEW_MAP: Record<string, string> = {
+  dayGridMonth: "month",
+  listWeek: "week",
+  listDay: "day",
+};
+
+const REVERSE_VIEW_MAP: Record<string, string> = {
+  month: "dayGridMonth",
+  dayGridMonth: "dayGridMonth",
+  week: "listWeek",
+  listWeek: "listWeek",
+  "week-list": "listWeek",
+  day: "listDay",
+  listDay: "listDay",
+  "day-list": "listDay",
+};
+
+function CalendarContent() {
+  const searchParams = useSearchParams();
+  const urlView = searchParams.get("view") || searchParams.get("tab");
+  const initialViewName = urlView ? (REVERSE_VIEW_MAP[urlView] || "dayGridMonth") : "dayGridMonth";
+
   const calendarRef = useRef<FullCalendar>(null);
-  const [currentView, setCurrentView] = useState("dayGridMonth");
+  const [currentView, setCurrentView] = useState(initialViewName);
   const [currentDate, setCurrentDate] = useState("");
   const [showFullDuration, setShowFullDuration] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
@@ -43,11 +66,28 @@ export default function CalendarPage() {
     updateCurrentDate(calendarApi);
   };
 
+  useEffect(() => {
+    if (urlView) {
+      const targetView = REVERSE_VIEW_MAP[urlView] || "dayGridMonth";
+      if (targetView !== currentView) {
+        setCurrentView(targetView);
+        const calendarApi = calendarRef.current?.getApi();
+        calendarApi?.changeView(targetView);
+        updateCurrentDate(calendarApi);
+      }
+    }
+  }, [urlView]);
+
   const changeView = (viewName: string) => {
     const calendarApi = calendarRef.current?.getApi();
     calendarApi?.changeView(viewName);
     setCurrentView(viewName);
     updateCurrentDate(calendarApi);
+
+    const param = VIEW_MAP[viewName] || "month";
+    const newUrl = `/calendar?view=${param}`;
+    window.history.replaceState(null, "", newUrl);
+    recordNavigation(newUrl);
   };
 
   const updateCurrentDate = (calendarApi: any) => {
@@ -296,7 +336,7 @@ export default function CalendarPage() {
               </div>
               <div className="p-5">
                 <Link
-                  href={`/shift/view?shift_id=${selectedEvent.id}`}
+                  href={`/shift/view?shift_id=${selectedEvent.id}&from=calendar&view=${VIEW_MAP[currentView] || "month"}`}
                   className="block"
                 >
                   <div
@@ -416,7 +456,7 @@ export default function CalendarPage() {
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
+            initialView={initialViewName}
             events={fetchEvents}
             headerToolbar={false}
             height="auto"
@@ -518,5 +558,13 @@ export default function CalendarPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense fallback={null}>
+      <CalendarContent />
+    </Suspense>
   );
 }

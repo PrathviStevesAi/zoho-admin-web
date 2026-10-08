@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, ArrowLeft, Loader2, Play, Square, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon, Mic, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
+import { getPreviousPath, popPreviousPath } from "@/lib/navigation-history";
 
 interface ShiftHeaderProps {
   shift: Shift | null;
@@ -147,6 +148,37 @@ export function ShiftHeader({
   isLoading,
 }: ShiftHeaderProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams.get("from");
+  const viewParam = searchParams.get("view") || searchParams.get("tab");
+
+  const [isFromCalendar, setIsFromCalendar] = useState(false);
+  const [calendarTargetUrl, setCalendarTargetUrl] = useState<string>("/calendar");
+
+  useEffect(() => {
+    const prev = getPreviousPath();
+    const isCal = fromParam === "calendar" || Boolean(prev && prev.startsWith("/calendar"));
+    if (isCal) {
+      setIsFromCalendar(true);
+      if (prev && prev.startsWith("/calendar")) {
+        setCalendarTargetUrl(prev);
+      } else if (viewParam) {
+        setCalendarTargetUrl(`/calendar?view=${viewParam}`);
+      } else {
+        setCalendarTargetUrl("/calendar");
+      }
+    }
+  }, [fromParam, viewParam]);
+
+  const handleBack = () => {
+    if (isFromCalendar) {
+      popPreviousPath();
+      router.push(calendarTargetUrl);
+      return;
+    }
+
+    router.back();
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -156,6 +188,14 @@ export function ShiftHeader({
             <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">
               Dashboard
             </Link>
+            {isFromCalendar && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <Link href={calendarTargetUrl} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">
+                  Calendar
+                </Link>
+              </>
+            )}
             <ChevronRight className="w-3.5 h-3.5" />
             <Link
               href={`/shift/view?shift_id=${shiftId}${notificationId ? `&notification_id=${notificationId}` : ""}`}
@@ -223,8 +263,9 @@ export function ShiftHeader({
           </div>
           <div className="flex items-start sm:items-center gap-3">
             <button
-              onClick={() => router.back()}
+              onClick={handleBack}
               className="cursor-pointer p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all shrink-0 mt-0.5 sm:mt-0"
+              title={isFromCalendar ? "Back to Calendar" : "Go Back"}
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
