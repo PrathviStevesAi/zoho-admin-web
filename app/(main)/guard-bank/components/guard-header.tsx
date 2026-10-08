@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -30,6 +30,7 @@ import {
 import { clientResendGuardPasswordAction } from "@/lib/client-actions";
 import { ConfirmationDialog } from "./confirmation-dialog";
 import { AccountStatusDialog, AccountStatusActionType } from "./account-status-dialog";
+import { getPreviousPath, popPreviousPath } from "@/lib/navigation-history";
 
 interface GuardHeaderProps {
   guard: any;
@@ -120,6 +121,21 @@ export function GuardHeader({
     setResendPasswordConfirm({ isOpen: false, guardId: "", guardName: "" });
   };
 
+  const [previousPath, setPreviousPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    const prev = getPreviousPath();
+    if (prev) {
+      setPreviousPath(prev);
+    }
+  }, []);
+
+  const handleBack = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const target = popPreviousPath() || previousPath || `/guard-bank?tab=${getTabParam()}`;
+    router.push(target);
+  };
+
   return (
     <div className="flex flex-col gap-3 w-full">
       <div className="flex flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 w-full">
@@ -127,14 +143,38 @@ export function GuardHeader({
           <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-slate-700 text-[11px] sm:text-[13px] mb-1">
             <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
             <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-            <Link href="/guard-bank" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Guard Bank</Link>
-            <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-            <Link href={`/guard-bank?tab=${getTabParam()}`} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">{getStatusBreadcrumb()}</Link>
+            {previousPath?.startsWith("/users-directory/guards") ? (
+              <>
+                <Link href="/users-directory/guards" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Users Directory</Link>
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                <Link href={previousPath} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Guards</Link>
+              </>
+            ) : previousPath?.startsWith("/users-directory/customers") ? (
+              <>
+                <Link href="/users-directory/customers" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Users Directory</Link>
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                <Link href={previousPath} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Customers</Link>
+              </>
+            ) : previousPath?.startsWith("/member-activity") ? (
+              <>
+                <Link href={previousPath} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Member Activity</Link>
+              </>
+            ) : (
+              <>
+                <Link href="/guard-bank" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Guard Bank</Link>
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                <Link href={`/guard-bank?tab=${getTabParam()}`} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">{getStatusBreadcrumb()}</Link>
+              </>
+            )}
             <ChevronRight className="w-3.5 h-3.5 shrink-0 hidden sm:block" />
             <span className="text-slate-600 font-medium whitespace-nowrap hidden sm:block">Guard Details</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link href={`/guard-bank?tab=${getTabParam()}`} className="p-1.5 sm:p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
+            <Link
+              href={previousPath || `/guard-bank?tab=${getTabParam()}`}
+              onClick={handleBack}
+              className="p-1.5 sm:p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all cursor-pointer"
+            >
               <ArrowLeft className="w-4 h-4 sm:w-4 sm:h-4" />
             </Link>
             <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">Guard Details</h1>

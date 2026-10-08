@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
 import NotificationProvider from "@/components/NotificationProvider";
@@ -6,6 +7,7 @@ import { ShieldAlert } from "lucide-react";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 import { fetchProfileAction } from "@/actions/profile.actions";
 import { SessionUpdater } from "@/components/auth/SessionUpdater";
+import { NavigationTracker } from "@/components/navigation/NavigationTracker";
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -37,6 +39,9 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex min-h-screen bg-background">
+      <Suspense fallback={null}>
+        <NavigationTracker />
+      </Suspense>
       <SessionUpdater currentRole={currentRole} />
       <NotificationProvider />
       <Sidebar userRole={currentRole} />
