@@ -1,54 +1,46 @@
 "use client";
 
-import Link from "next/link";
-import {
-  clientFetchGuardsAction
-} from "@/lib/client-actions";
-import { useState, useEffect } from "react";
-import { Loader2, ChevronRight, XCircle, UserCheck, CalendarDays, Star, Info } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { FormattedDate } from "@/components/ui/formatted-date";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { findAvailableGuardsAction, } from "@/actions/dashboard.actions";
-import useDebounceValue from "@/hooks/use-debounce";
+import {
+  clientFetchGuardsNewAction,
+  clientFetchLocationAction,
+  clientFetchAvailableGuardsShiftsAction,
+  clientFetchAvailableGuardsMatrixAction,
+  clientFetchInvoiceShiftsAction,
+  AvailableGuardItem,
+  FetchGuardsByLocationParams,
+} from "@/lib/client-actions";
+import { findAvailableGuardsAction } from "@/actions/dashboard.actions";
 
-interface AvailableGuardsModuleProps {
-  invoiceId: string;
-  guards: any[];
-  shifts: any[];
-  isLoading: boolean;
-  onBack: () => void;
-  onRefresh: () => void;
-  totalGuards: number;
-}
+import {
+  AvailableGuardsModuleProps,
+  MatrixAvailabilityType,
+  LocationType,
+  ServiceFilterType,
+  NotificationSourceType,
+} from "./available-guards/types";
+import {
+  cleanShiftNo,
+  getCoordinatesFromLocation,
+} from "./available-guards/utils";
+import { AvailableGuardsStepper } from "./available-guards/AvailableGuardsStepper";
+import { AvailableGuardsMatrixView } from "./available-guards/AvailableGuardsMatrixView";
+import { SelectShiftsStep } from "./available-guards/SelectShiftsStep";
+import { SelectGuardsStep } from "./available-guards/SelectGuardsStep";
+
+export type { AvailableGuardsModuleProps };
 
 export function AvailableGuardsModule({
   invoiceId,
+  invoice,
   guards: results,
   shifts,
   isLoading: isResultsLoading,
   onBack,
   onRefresh,
-  totalGuards
+  totalGuards,
 }: AvailableGuardsModuleProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [selectedShiftIds, setSelectedShiftIds] = useState<string[]>([]);
@@ -56,55 +48,579 @@ export function AvailableGuardsModule({
   const [allGuards, setAllGuards] = useState<any[]>([]);
   const [isGuardsLoading, setIsGuardsLoading] = useState(false);
   const [isFinding, setIsFinding] = useState(false);
-  const [guardSearchQuery, setGuardSearchQuery] = useState("");
-  const [guardFilters, setGuardFilters] = useState({
-    radiusMiles: "all",
-    status: "all",
-    service: "All",
-    level: "All"
-  });
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
-  const debouncedSearchQuery = useDebounceValue(guardSearchQuery, 500);
+  const [notificationSource, setNotificationSource] = useState<NotificationSourceType>("in_app");
+  const [locationType, setLocationType] = useState<LocationType>("radius");
+  const [serviceFilter, setServiceFilter] = useState<ServiceFilterType>("all");
+
+  const [sentShifts, setSentShifts] = useState<any[]>([]);
+  const [isSentShiftsLoading, setIsSentShiftsLoading] = useState(false);
+
+  const fetchSentShifts = useCallback(async () => {
+    if (!invoiceId) return;
+    setIsSentShiftsLoading(true);
+    try {
+      const res = await clientFetchAvailableGuardsShiftsAction(invoiceId);
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        setSentShifts(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch available guards sent shifts:", err);
+    } finally {
+      setIsSentShiftsLoading(false);
+    }
+  }, [invoiceId]);
 
   useEffect(() => {
-    if (activeStep === 2) {
-      loadGuards();
+    fetchSentShifts();
+  }, [fetchSentShifts]);
+
+  const [step1Shifts, setStep1Shifts] = useState<any[]>([]);
+  const [isStep1ShiftsLoading, setIsStep1ShiftsLoading] = useState(false);
+
+  const loadStep1Shifts = useCallback(async () => {
+    if (!invoiceId) return;
+    setIsStep1ShiftsLoading(true);
+    try {
+      const res = await clientFetchInvoiceShiftsAction(invoiceId, "assign_guard");
+      if (res.success && Array.isArray(res.data)) {
+        setStep1Shifts(res.data);
+      } else {
+        toast.error(res.error || "Failed to load shifts");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to load shifts");
+    } finally {
+      setIsStep1ShiftsLoading(false);
     }
-  }, [activeStep, currentPage, debouncedSearchQuery, guardFilters]);
+  }, [invoiceId]);
 
-  const loadGuards = async () => {
-    setIsGuardsLoading(true);
-    let armed = "";
-    let unarmed = "";
-    if (guardFilters.service === "armed") armed = "true";
-    if (guardFilters.service === "unarmed") unarmed = "true";
-    if (guardFilters.service === "both") { armed = "true"; unarmed = "true"; }
+  useEffect(() => {
+    if (activeStep === 1) {
+      loadStep1Shifts();
+    }
+  }, [activeStep, loadStep1Shifts]);
 
-    const isFiltered =
-      debouncedSearchQuery !== "" ||
-      guardFilters.radiusMiles !== "all" ||
-      guardFilters.status !== "all" ||
-      guardFilters.service !== "All";
+  const findRealShiftId = useCallback((shiftOrNoOrId: any): string => {
+    if (!shiftOrNoOrId) return "";
+    const strVal = typeof shiftOrNoOrId === "object"
+      ? String(shiftOrNoOrId.shift_id || shiftOrNoOrId.id || "")
+      : String(shiftOrNoOrId);
+    const targetNo = typeof shiftOrNoOrId === "object"
+      ? cleanShiftNo(shiftOrNoOrId.shift_no || shiftOrNoOrId.shift_number)
+      : cleanShiftNo(shiftOrNoOrId);
 
-    const res = await clientFetchGuardsAction({
-      page: isFiltered ? undefined : currentPage,
-      search: debouncedSearchQuery,
-      status: guardFilters.status === "all" ? "" : guardFilters.status,
-      armed,
-      unarmed,
-      invoice_id: guardFilters.radiusMiles === "all" ? undefined : invoiceId,
-      radius_miles: guardFilters.radiusMiles === "all" ? "" : guardFilters.radiusMiles,
-      level: guardFilters.level === "All" ? "" : guardFilters.level
+    const shiftList = step1Shifts.length > 0 ? step1Shifts : shifts;
+
+    if (Array.isArray(shiftList) && shiftList.length > 0) {
+      const matchById = shiftList.find((s: any) =>
+        (s.shift_id && s.shift_id === strVal) || (s.id && s.id === strVal)
+      );
+      if (matchById && (matchById.shift_id || matchById.id)) {
+        return String(matchById.shift_id || matchById.id);
+      }
+
+      if (targetNo) {
+        const matchByNo = shiftList.find((s: any) =>
+          cleanShiftNo(s.shift_no || s.shift_number) === targetNo
+        );
+        if (matchByNo && (matchByNo.shift_id || matchByNo.id)) {
+          return String(matchByNo.shift_id || matchByNo.id);
+        }
+      }
+
+      const matchByStrNo = shiftList.find((s: any) =>
+        cleanShiftNo(s.shift_no || s.shift_number) === cleanShiftNo(strVal)
+      );
+      if (matchByStrNo && (matchByStrNo.shift_id || matchByStrNo.id)) {
+        return String(matchByStrNo.shift_id || matchByStrNo.id);
+      }
+    }
+
+    return strVal;
+  }, [step1Shifts, shifts]);
+
+  const availableInvoiceShifts = useMemo(() => {
+    const rawList =
+      Array.isArray(sentShifts) && sentShifts.length > 0
+        ? sentShifts
+        : Array.isArray(shifts) && shifts.length > 0
+          ? shifts
+          : [];
+
+    if (rawList.length > 0) {
+      const seen = new Set<string>();
+      const uniqueShifts: Array<{
+        shift_id: string;
+        shift_no: string;
+        start_time: string;
+        end_time: string;
+      }> = [];
+
+      rawList.forEach((s: any, idx: number) => {
+        const rawNo = cleanShiftNo(s.shift_no || s.shift_number || `${idx + 101}`);
+        const formattedNo = `#${rawNo}`;
+
+        const matched = (step1Shifts.length > 0 ? step1Shifts : shifts)?.find((invShift: any) => {
+          if (s.shift_id && (invShift.shift_id === s.shift_id || invShift.id === s.shift_id)) return true;
+          if (s.id && (invShift.shift_id === s.id || invShift.id === s.id)) return true;
+          const invNo = cleanShiftNo(invShift.shift_no || invShift.shift_number);
+          return invNo && rawNo && invNo === rawNo;
+        });
+
+        const trueId = String(
+          matched?.shift_id ||
+          matched?.id ||
+          s.shift_id ||
+          s.id ||
+          rawNo ||
+          `shift-${idx}`
+        );
+
+        if (!seen.has(rawNo)) {
+          seen.add(rawNo);
+          uniqueShifts.push({
+            shift_id: trueId,
+            shift_no: formattedNo,
+            start_time: s.start_time || matched?.start_time || "2026-10-10T08:00:00",
+            end_time: s.end_time || matched?.end_time || "2026-10-10T16:00:00",
+          });
+        }
+      });
+      return uniqueShifts;
+    }
+    return [];
+  }, [sentShifts, shifts, step1Shifts]);
+
+  const [selectedMatrixShiftIds, setSelectedMatrixShiftIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (availableInvoiceShifts.length > 0) {
+      setSelectedMatrixShiftIds((prev) => {
+        const valid = prev.filter((id) => availableInvoiceShifts.some((s) => s.shift_id === id));
+        if (valid.length > 0) {
+          return valid;
+        }
+        return [availableInvoiceShifts[0].shift_id];
+      });
+    } else {
+      setSelectedMatrixShiftIds([]);
+    }
+  }, [availableInvoiceShifts]);
+
+  const [matrixAvailabilityType, setMatrixAvailabilityType] = useState<MatrixAvailabilityType>("all");
+
+  const [matrixGuards, setMatrixGuards] = useState<AvailableGuardItem[]>([]);
+  const [matrixShiftNos, setMatrixShiftNos] = useState<string[]>([]);
+  const [isMatrixLoading, setIsMatrixLoading] = useState(false);
+  const [hasMatrixSearched, setHasMatrixSearched] = useState(false);
+  const [matrixTotalGuards, setMatrixTotalGuards] = useState(0);
+  const [matrixTotalPages, setMatrixTotalPages] = useState(1);
+  const [matrixCurrentPage, setMatrixCurrentPage] = useState(1);
+
+  const selectedMatrixShifts = useMemo(() => {
+    const seen = new Set<string>();
+    return availableInvoiceShifts.filter((s) => {
+      if (selectedMatrixShiftIds.includes(s.shift_id) && !seen.has(s.shift_id)) {
+        seen.add(s.shift_id);
+        return true;
+      }
+      return false;
     });
+  }, [availableInvoiceShifts, selectedMatrixShiftIds]);
+
+  const handleToggleMatrixShift = (id: string) => {
+    setSelectedMatrixShiftIds((prev) => {
+      if (prev.includes(id)) {
+        if (prev.length <= 1) {
+          toast.info("At least one shift must be selected");
+          return prev;
+        }
+        return prev.filter((i) => i !== id);
+      }
+      return [...prev, id];
+    });
+  };
+
+  const handleRemoveMatrixShift = (id: string) => {
+    setSelectedMatrixShiftIds((prev) => {
+      if (prev.length <= 1) {
+        toast.info("At least one shift must be selected");
+        return prev;
+      }
+      return prev.filter((i) => i !== id);
+    });
+  };
+
+  const fetchAvailableGuardsMatrix = async (pageToFetch: number = 1) => {
+    if (!invoiceId) return;
+    setIsMatrixLoading(true);
+    setHasMatrixSearched(true);
+    try {
+      const shiftNosToSend = selectedMatrixShifts.map((s) =>
+        String(s.shift_no).replace(/^#/, "").trim()
+      );
+      const res = await clientFetchAvailableGuardsMatrixAction(
+        invoiceId,
+        shiftNosToSend,
+        matrixAvailabilityType,
+        pageToFetch
+      );
+      if (res.success && res.data) {
+        setMatrixGuards(res.data);
+        if (Array.isArray(res.shift_nos) && res.shift_nos.length > 0) {
+          setMatrixShiftNos(res.shift_nos);
+        } else {
+          setMatrixShiftNos(shiftNosToSend);
+        }
+        setMatrixTotalGuards(res.total_guards ?? res.data.length);
+        setMatrixTotalPages(res.total_pages ?? 1);
+        setMatrixCurrentPage(res.current_page ?? pageToFetch);
+      }
+    } catch (err) {
+      console.error("Failed to fetch available guards matrix:", err);
+    } finally {
+      setIsMatrixLoading(false);
+    }
+  };
+
+  const displayedShiftNos = useMemo(() => {
+    if (matrixShiftNos && matrixShiftNos.length > 0) {
+      return matrixShiftNos;
+    }
+    return selectedMatrixShifts.map((s) => String(s.shift_no).replace(/^#/, "").trim());
+  }, [matrixShiftNos, selectedMatrixShifts]);
+
+  const dynamicSiteLocation = useMemo(() => {
+    if (Array.isArray(invoice?.history)) {
+      for (const h of invoice.history) {
+        let details = h?.details;
+        if (typeof details === "string") {
+          try {
+            details = JSON.parse(details);
+          } catch { }
+        }
+        if (details && typeof details === "object") {
+          if (details["Site Location"]) {
+            return String(details["Site Location"]).trim();
+          }
+          if (details["site_location"]) {
+            return String(details["site_location"]).trim();
+          }
+          if (details["Location"]) {
+            return String(details["Location"]).trim();
+          }
+        }
+      }
+    }
+
+    if (invoice?.site_location) return String(invoice.site_location).trim();
+    if (invoice?.location) return String(invoice.location).trim();
+    if (invoice?.shipping_address) {
+      if (typeof invoice.shipping_address === "string") return invoice.shipping_address.trim();
+      const addr = invoice.shipping_address;
+      const countryZip = addr.country && addr.zip
+        ? `${addr.country} - ${addr.zip}`
+        : (addr.country || addr.zip || "");
+      const parts = [
+        addr.street || addr.address,
+        addr.city,
+        addr.state,
+        countryZip
+      ].filter(Boolean);
+      if (parts.length > 0) return parts.join(", ");
+    }
+    return "Site Location";
+  }, [invoice]);
+
+  const initialCoordinates: [number, number] = useMemo(() => {
+    if (invoice?.latitude !== undefined && invoice?.latitude !== null && invoice?.longitude !== undefined && invoice?.longitude !== null) {
+      const lat = Number(invoice.latitude);
+      const lng = Number(invoice.longitude);
+      if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
+        return [lat, lng];
+      }
+    }
+    if (invoice?.shipping_address?.latitude && invoice?.shipping_address?.longitude) {
+      const lat = Number(invoice.shipping_address.latitude);
+      const lng = Number(invoice.shipping_address.longitude);
+      if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
+        return [lat, lng];
+      }
+    }
+    const resolved = getCoordinatesFromLocation(dynamicSiteLocation);
+    if (resolved) return resolved;
+    return [22.7041853, 75.8427014];
+  }, [invoice, dynamicSiteLocation]);
+
+  const [centerLocation, setCenterLocation] = useState(dynamicSiteLocation);
+  const [radiusMiles, setRadiusMiles] = useState<number>(50);
+  const [onlyEligible, setOnlyEligible] = useState(true);
+  const [includeNearby, setIncludeNearby] = useState(true);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(initialCoordinates);
+
+  useEffect(() => {
+    if (dynamicSiteLocation && dynamicSiteLocation !== "Site Location") {
+      setCenterLocation(dynamicSiteLocation);
+    }
+  }, [dynamicSiteLocation]);
+
+  useEffect(() => {
+    setMapCenter(initialCoordinates);
+  }, [initialCoordinates]);
+
+  const [apiLocations, setApiLocations] = useState<{
+    countries: string[];
+    states: string[];
+    cities: string[];
+  }>({
+    countries: [],
+    states: [],
+    cities: []
+  });
+  const [isLocationsLoading, setIsLocationsLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeStep === 2 && (locationType === "city" || locationType === "state" || locationType === "country")) {
+      const fetchLocations = async () => {
+        setIsLocationsLoading(true);
+        const res = await clientFetchLocationAction(undefined, undefined, "approved");
+        if (res.success && res.data) {
+          setApiLocations({
+            countries: Array.isArray(res.data.countries) ? res.data.countries : [],
+            states: Array.isArray(res.data.states) ? res.data.states : [],
+            cities: Array.isArray(res.data.cities) ? res.data.cities : []
+          });
+        }
+        setIsLocationsLoading(false);
+      };
+      fetchLocations();
+    }
+  }, [activeStep, locationType]);
+
+  const invoiceLocation = useMemo(() => {
+    let city = invoice?.city ? String(invoice.city).trim() : "";
+    let state = invoice?.state ? String(invoice.state).trim() : "";
+    let country = invoice?.country ? String(invoice.country).trim() : "";
+
+    let shipping = invoice?.shipping_address;
+    if (typeof shipping === "string") {
+      try {
+        shipping = JSON.parse(shipping);
+      } catch { }
+    }
+    if (shipping && typeof shipping === "object") {
+      if (!city && shipping.city) city = String(shipping.city).trim();
+      if (!state && shipping.state) state = String(shipping.state).trim();
+      if (!country && shipping.country) country = String(shipping.country).trim();
+    }
+
+    let serviceAddr = invoice?.service_address;
+    if (typeof serviceAddr === "string") {
+      try {
+        serviceAddr = JSON.parse(serviceAddr);
+      } catch { }
+    }
+    if (serviceAddr && typeof serviceAddr === "object") {
+      if (!city && serviceAddr.city) city = String(serviceAddr.city).trim();
+      if (!state && serviceAddr.state) state = String(serviceAddr.state).trim();
+      if (!country && serviceAddr.country) country = String(serviceAddr.country).trim();
+    }
+
+    if ((!city || !state || !country) && dynamicSiteLocation && dynamicSiteLocation !== "Site Location") {
+      const parts = dynamicSiteLocation.split(",").map((p: string) => p.trim());
+      if (parts.length >= 3) {
+        if (!country) {
+          const lastPart = parts[parts.length - 1];
+          const cName = lastPart.split("-")[0].trim();
+          if (cName) country = cName;
+        }
+        if (!state && parts.length >= 2) {
+          state = parts[parts.length - 2].trim();
+        }
+        if (!city && parts.length >= 3) {
+          city = parts[parts.length - 3].trim();
+        }
+      }
+    }
+
+    return { city, state, country };
+  }, [invoice, dynamicSiteLocation]);
+
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+
+  const [citySelectKey, setCitySelectKey] = useState(0);
+  const [stateSelectKey, setStateSelectKey] = useState(0);
+  const [countrySelectKey, setCountrySelectKey] = useState(0);
+
+  const availableCities = useMemo(() => {
+    const list = [...apiLocations.cities];
+    if (invoiceLocation.city && !list.some((c) => c.trim().toLowerCase() === invoiceLocation.city.trim().toLowerCase())) {
+      list.unshift(invoiceLocation.city);
+    }
+    return list;
+  }, [apiLocations.cities, invoiceLocation.city]);
+
+  const availableStates = useMemo(() => {
+    const list = [...apiLocations.states];
+    if (invoiceLocation.state && !list.some((s) => s.trim().toLowerCase() === invoiceLocation.state.trim().toLowerCase())) {
+      list.unshift(invoiceLocation.state);
+    }
+    return list;
+  }, [apiLocations.states, invoiceLocation.state]);
+
+  const availableCountries = useMemo(() => {
+    const list = [...apiLocations.countries];
+    if (invoiceLocation.country && !list.some((c) => c.trim().toLowerCase() === invoiceLocation.country.trim().toLowerCase())) {
+      list.unshift(invoiceLocation.country);
+    }
+    return list;
+  }, [apiLocations.countries, invoiceLocation.country]);
+
+  const handleAddCity = (cityName: string) => {
+    if (!cityName) return;
+    if (!selectedCities.some((c) => c.toLowerCase() === cityName.toLowerCase())) {
+      setSelectedCities((prev) => [...prev, cityName]);
+    }
+    setCitySelectKey((k) => k + 1);
+  };
+
+  const handleRemoveCity = (nameToRemove: string) => {
+    setSelectedCities((prev) => prev.filter((c) => c.toLowerCase() !== nameToRemove.toLowerCase()));
+  };
+
+  const handleAddState = (stateName: string) => {
+    if (!stateName) return;
+    if (!selectedStates.some((s) => s.toLowerCase() === stateName.toLowerCase())) {
+      setSelectedStates((prev) => [...prev, stateName]);
+    }
+    setStateSelectKey((k) => k + 1);
+  };
+
+  const handleRemoveState = (nameToRemove: string) => {
+    setSelectedStates((prev) => prev.filter((s) => s.toLowerCase() !== nameToRemove.toLowerCase()));
+  };
+
+  const handleAddCountry = (countryName: string) => {
+    if (!countryName) return;
+    if (!selectedCountries.some((c) => c.toLowerCase() === countryName.toLowerCase())) {
+      setSelectedCountries((prev) => [...prev, countryName]);
+    }
+    setCountrySelectKey((k) => k + 1);
+  };
+
+  const handleRemoveCountry = (nameToRemove: string) => {
+    setSelectedCountries((prev) => prev.filter((c) => c.toLowerCase() !== nameToRemove.toLowerCase()));
+  };
+
+  const isCustomRadiusLocation = useMemo(() => {
+    if (locationType !== "radius") return false;
+    if (!centerLocation || !centerLocation.trim()) return false;
+    return centerLocation.trim().toLowerCase() !== dynamicSiteLocation.trim().toLowerCase();
+  }, [locationType, centerLocation, dynamicSiteLocation]);
+
+  const mapDisplayedLocation = useMemo(() => {
+    if (locationType === "radius" && isCustomRadiusLocation && centerLocation) {
+      return centerLocation;
+    }
+    return dynamicSiteLocation;
+  }, [locationType, isCustomRadiusLocation, centerLocation, dynamicSiteLocation]);
+
+  const [hasSearched, setHasSearched] = useState(false);
+  const loadGuards = async () => {
+    const params: FetchGuardsByLocationParams = {
+      account_status: "active",
+      service: serviceFilter,
+      page: null,
+    };
+
+    if (locationType === "radius") {
+      params.location_type = "geographic_area";
+      params.radius = radiusMiles;
+      if (centerLocation) {
+        params.location = centerLocation;
+      }
+    } else if (locationType === "city") {
+      if (selectedCities.length === 0) {
+        toast.error("Please select at least one city");
+        return;
+      }
+      params.location_type = "cities";
+      params.cities = selectedCities;
+    } else if (locationType === "state") {
+      if (selectedStates.length === 0) {
+        toast.error("Please select at least one state");
+        return;
+      }
+      params.location_type = "states";
+      params.states = selectedStates;
+    } else if (locationType === "country") {
+      if (selectedCountries.length === 0) {
+        toast.error("Please select at least one country");
+        return;
+      }
+      params.location_type = "country";
+      params.country = selectedCountries;
+    } else if (locationType === "all_guard" || locationType === "all") {
+      params.location_type = "all_guard";
+    }
+
+    setIsGuardsLoading(true);
+    setHasSearched(true);
+
+    const res = await clientFetchGuardsNewAction(params);
 
     if (res.success) {
-      setAllGuards(res.data);
+      const data = res.data || [];
+      setAllGuards(data);
       setPagination(res.pagination);
+      if (data.length > 0) {
+        setSelectedGuardIds(data.map((g: any) => g.guard_id));
+      } else {
+        setSelectedGuardIds([]);
+      }
     } else {
       toast.error(res.error || "Failed to load guards");
     }
     setIsGuardsLoading(false);
+  };
+
+  const handleLocationTypeChange = (type: LocationType) => {
+    setLocationType(type);
+    setMapCenter(initialCoordinates);
+  };
+
+  const handlePlaceSelect = (place: any) => {
+    if (!place) return;
+    const address = place.formatted_address || place.name || "";
+    if (address) {
+      setCenterLocation(address);
+    }
+    const lat = place.geometry?.location?.lat?.();
+    const lng = place.geometry?.location?.lng?.();
+    if (typeof lat === "number" && typeof lng === "number" && !isNaN(lat) && !isNaN(lng)) {
+      setMapCenter([lat, lng]);
+    } else {
+      const coords = getCoordinatesFromLocation(address);
+      if (coords) {
+        setMapCenter(coords);
+      }
+    }
+  };
+
+  const handleCenterLocationChange = (val: string) => {
+    setCenterLocation(val);
+    if (!val || val.trim().toLowerCase() === dynamicSiteLocation.trim().toLowerCase()) {
+      setMapCenter(initialCoordinates);
+    } else {
+      const coords = getCoordinatesFromLocation(val);
+      if (coords) {
+        setMapCenter(coords);
+      }
+    }
   };
 
   const handleSelectShift = (id: string, checked: boolean) => {
@@ -116,15 +632,15 @@ export function AvailableGuardsModule({
   };
 
   const handleSelectAllShifts = (checked: boolean) => {
+    const list = step1Shifts.length > 0 ? step1Shifts : shifts;
     if (checked) {
-      setSelectedShiftIds(shifts.map(s => s.shift_id));
+      setSelectedShiftIds(list.map(s => String(s.shift_id || s.id)));
     } else {
       setSelectedShiftIds([]);
     }
   };
 
   const handleSelectGuard = (id: string, checked: boolean) => {
-    console.log("Selected Guard ID:", id);
     if (checked) {
       setSelectedGuardIds(prev => [...prev, id]);
     } else {
@@ -140,6 +656,35 @@ export function AvailableGuardsModule({
     }
   };
 
+  const resetFilters = () => {
+    setLocationType("radius");
+    setServiceFilter("all");
+    setNotificationSource("in_app");
+    setRadiusMiles(50);
+    setCenterLocation(dynamicSiteLocation);
+    setMapCenter(initialCoordinates);
+    setSelectedCities([]);
+    setSelectedStates([]);
+    setSelectedCountries([]);
+    setOnlyEligible(true);
+    setIncludeNearby(true);
+    setCurrentPage(1);
+    setAllGuards([]);
+    setHasSearched(false);
+    setMatrixAvailabilityType("all");
+    setMatrixGuards([]);
+    setMatrixShiftNos([]);
+    setHasMatrixSearched(false);
+    setMatrixTotalGuards(0);
+    setMatrixTotalPages(1);
+    setMatrixCurrentPage(1);
+    if (availableInvoiceShifts.length > 0) {
+      setSelectedMatrixShiftIds([availableInvoiceShifts[0].shift_id]);
+    } else {
+      setSelectedMatrixShiftIds([]);
+    }
+  };
+
   const handleFind = async () => {
     if (selectedShiftIds.length === 0) {
       toast.error("Please select at least one shift");
@@ -148,580 +693,191 @@ export function AvailableGuardsModule({
     }
     if (selectedGuardIds.length === 0) {
       toast.error("Please select at least one guard");
-      setActiveStep(2);
+      return;
+    }
+
+    let currentShifts = step1Shifts.length > 0 ? step1Shifts : shifts;
+    if ((!currentShifts || currentShifts.length === 0) && invoiceId) {
+      try {
+        const res = await clientFetchInvoiceShiftsAction(invoiceId, "assign_guard");
+        if (res.success && Array.isArray(res.data)) {
+          currentShifts = res.data;
+          setStep1Shifts(res.data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch shifts to resolve shift IDs:", e);
+      }
+    }
+
+    const resolvedShiftIds = selectedShiftIds
+      .map(idOrNo => {
+        const cleanTarget = cleanShiftNo(idOrNo);
+        if (Array.isArray(currentShifts) && currentShifts.length > 0) {
+          const matched = currentShifts.find((s: any) => {
+            if (s.shift_id && s.shift_id === idOrNo) return true;
+            if (s.id && s.id === idOrNo) return true;
+            const sNo = cleanShiftNo(s.shift_no || s.shift_number);
+            return sNo && cleanTarget && sNo === cleanTarget;
+          });
+          if (matched && (matched.shift_id || matched.id)) {
+            return String(matched.shift_id || matched.id);
+          }
+        }
+        return findRealShiftId(idOrNo);
+      })
+      .filter(id => Boolean(id) && !id.startsWith("#"));
+
+    const uniqueShiftIds = Array.from(new Set(resolvedShiftIds));
+
+    if (uniqueShiftIds.length === 0) {
+      toast.error("Please select valid shifts");
       return;
     }
 
     setIsFinding(true);
-    const res = await findAvailableGuardsAction({
-      invoice_id: invoiceId,
-      shift_ids: selectedShiftIds,
-      guard_ids: selectedGuardIds
-    });
+    try {
+      const locationToSend = (locationType === "radius" && centerLocation)
+        ? centerLocation
+        : dynamicSiteLocation;
 
-    if (res.success) {
-      toast.success("Find request sent successfully");
-      onRefresh();
-      setActiveStep(0);
-      setSelectedShiftIds([]);
-      setSelectedGuardIds([]);
-    } else {
-      toast.error(res.error || "Failed to find available guards");
+      const res = await findAvailableGuardsAction({
+        invoice_id: invoiceId,
+        shift_ids: uniqueShiftIds,
+        guard_ids: selectedGuardIds,
+        location: locationToSend || "",
+        source: notificationSource || "both",
+      });
+
+      if (res.success) {
+        toast.success(res.message || `Job opportunity sent successfully to ${selectedGuardIds.length} guard(s)`);
+        if (onRefresh) onRefresh();
+        fetchSentShifts();
+        setActiveStep(0);
+        setSelectedShiftIds([]);
+        setSelectedGuardIds([]);
+        resetFilters();
+      } else {
+        toast.error(res.error || "Failed to send job opportunity");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to send job opportunity");
+    } finally {
+      setIsFinding(false);
     }
-    setIsFinding(false);
   };
-
-  const resetFilters = () => {
-    setGuardSearchQuery("");
-    setGuardFilters({
-      radiusMiles: "20",
-      status: "all",
-      service: "All",
-      level: "All"
-    });
-    setCurrentPage(1);
-  };
-
-  const formatArray = (arr: any[] | null) => {
-    if (!arr || arr.length === 0) return "----";
-    return arr.join(", ");
-  };
-
-  const renderStepper = () => (
-    <div className="flex items-center justify-center py-3 px-4">
-      <div className="flex items-center gap-2 sm:gap-3">
-        <button
-          onClick={() => setActiveStep(1)}
-          disabled={activeStep === 1}
-          className={cn(
-            "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 rounded-full transition-all cursor-pointer",
-            activeStep === 1
-              ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
-              : "bg-white text-slate-600 border border-slate-200 hover:border-[#0064cb] hover:text-[#0064cb]"
-          )}
-        >
-          <div className={cn(
-            "w-5.5 h-5.5 rounded-full flex items-center justify-center font-bold text-[11px]",
-            activeStep === 1 ? "bg-white/20" : "bg-slate-100"
-          )}>
-            1
-          </div>
-          <span className="text-xs font-bold tracking-wider hidden sm:inline">Select Shift</span>
-        </button>
-
-        <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-
-        <button
-          onClick={() => {
-            if (selectedShiftIds.length === 0 && activeStep !== 2) {
-              toast.error("Please select shifts first");
-              return;
-            }
-            setActiveStep(2);
-          }}
-          disabled={activeStep === 2 || (activeStep === 0)}
-          className={cn(
-            "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 rounded-full transition-all",
-            activeStep === 2
-              ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
-              : activeStep === 1
-                ? "bg-white text-slate-600 border border-slate-200 hover:border-[#0064cb] hover:text-[#0064cb] cursor-pointer"
-                : "bg-slate-50 text-slate-700 border border-slate-300 opacity-60 cursor-not-allowed"
-          )}
-        >
-          <div className={cn(
-            "w-5.5 h-5.5 rounded-full flex items-center justify-center font-bold text-[11px]",
-            activeStep === 2 ? "bg-white/20" : "bg-slate-100"
-          )}>
-            2
-          </div>
-          <span className="text-xs font-bold tracking-wider hidden sm:inline">Select Guard</span>
-        </button>
-
-        <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-
-        <button
-          onClick={() => {
-            if (selectedShiftIds.length === 0) {
-              toast.error("Please select shifts first");
-              return;
-            }
-            if (selectedGuardIds.length === 0) {
-              toast.error("Please select guards first");
-              return;
-            }
-            setActiveStep(3);
-          }}
-          disabled={activeStep === 3 || activeStep === 0 || activeStep === 1}
-          className={cn(
-            "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 rounded-full transition-all",
-            activeStep === 3
-              ? "bg-[#0064cb] text-white shadow-md shadow-blue-200"
-              : activeStep === 2
-                ? "bg-white text-slate-600 border border-slate-200 hover:border-[#0064cb] hover:text-[#0064cb] cursor-pointer"
-                : "bg-slate-50 text-slate-700 border border-slate-300 opacity-60 cursor-not-allowed"
-          )}
-        >
-          <div className={cn(
-            "w-5.5 h-5.5 rounded-full flex items-center justify-center font-bold text-[11px]",
-            activeStep === 3 ? "bg-white/20" : "bg-slate-100"
-          )}>
-            3
-          </div>
-          <span className="text-xs font-bold tracking-wider hidden sm:inline">Find</span>
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderFilters = () => (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100">
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Search</Label>
-        <div className="relative w-full">
-          <Input
-            value={guardSearchQuery}
-            onChange={(e) => setGuardSearchQuery(e.target.value)}
-            placeholder="Search name or email..."
-            className="w-full h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
-          />
-          {guardSearchQuery && (
-            <button
-              onClick={() => setGuardSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800 cursor-pointer"
-            >
-              <XCircle className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Find Guard Within</Label>
-        <Select value={guardFilters.radiusMiles} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, radiusMiles: val }))}>
-          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            <SelectItem value="all" className="cursor-pointer">All</SelectItem>
-            <SelectItem value="10" className="cursor-pointer">10 Miles</SelectItem>
-            <SelectItem value="20" className="cursor-pointer">20 Miles</SelectItem>
-            <SelectItem value="30" className="cursor-pointer">30 Miles</SelectItem>
-            <SelectItem value="40" className="cursor-pointer">40 Miles</SelectItem>
-            <SelectItem value="50" className="cursor-pointer">50 Miles</SelectItem>
-            <SelectItem value="60" className="cursor-pointer">60 Miles</SelectItem>
-            <SelectItem value="70" className="cursor-pointer">70 Miles</SelectItem>
-            <SelectItem value="80" className="cursor-pointer">80 Miles</SelectItem>
-            <SelectItem value="90" className="cursor-pointer">90 Miles</SelectItem>
-            <SelectItem value="100" className="cursor-pointer">100 Miles</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Status</Label>
-        <Select value={guardFilters.status} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, status: val }))}>
-          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            <SelectItem value="all" className="cursor-pointer">All Status</SelectItem>
-            <SelectItem value="true" className="cursor-pointer">Active</SelectItem>
-            <SelectItem value="false" className="cursor-pointer">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Service</Label>
-        <Select value={guardFilters.service} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, service: val }))}>
-          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            <SelectItem value="All" className="cursor-pointer">All</SelectItem>
-            <SelectItem value="both" className="cursor-pointer">Both</SelectItem>
-            <SelectItem value="armed" className="cursor-pointer">Armed</SelectItem>
-            <SelectItem value="unarmed" className="cursor-pointer">Unarmed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5 w-full">
-        <Label className="text-[13px] font-medium text-slate-700">Guard Level</Label>
-        <Select value={guardFilters.level} onValueChange={(val) => setGuardFilters(prev => ({ ...prev, level: val }))}>
-          <SelectTrigger className="w-full !h-10 bg-white border-slate-200 rounded-lg cursor-pointer">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
-            <SelectItem value="All" className="cursor-pointer">All</SelectItem>
-            <SelectItem value="1" className="cursor-pointer">1 Star</SelectItem>
-            <SelectItem value="2" className="cursor-pointer">2 Stars</SelectItem>
-            <SelectItem value="3" className="cursor-pointer">3 Stars</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-      {renderStepper()}
+      <AvailableGuardsStepper
+        activeStep={activeStep}
+        onStep1Click={() => {
+          setActiveStep(1);
+          loadStep1Shifts();
+        }}
+        onStep2Click={() => {
+          if (selectedShiftIds.length === 0 && selectedMatrixShifts.length === 0) {
+            toast.error("Please select shifts first");
+            return;
+          }
+          if (selectedShiftIds.length === 0 && selectedMatrixShifts.length > 0) {
+            const ids = selectedMatrixShifts
+              .map((s) => findRealShiftId(s))
+              .filter(Boolean);
+            setSelectedShiftIds(ids);
+          }
+          setActiveStep(2);
+        }}
+      />
 
       <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl bg-white max-w-7xl mx-auto">
         <CardContent className="p-0">
-          <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold text-slate-900">
-                {activeStep === 0 ? "Available Guards" : activeStep === 1 ? "Select Shifts" : activeStep === 2 ? "Select Guards" : "Finalize Search"}
-              </h2>
-              <p className="text-sm text-slate-600 mt-0.5 font-medium">
-                {activeStep === 0 ? (
-                  <>Total available guards found: <span className="font-semibold text-[#0064cb]">{totalGuards}</span></>
-                ) : activeStep === 1 ? (
-                  "You can select multiple shifts"
-                ) : activeStep === 2 ? (
-                  "Select guards for the search"
-                ) : (
-                  "Review your selection and find available guards"
-                )}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={activeStep === 0 ? onBack : () => {
+          {activeStep === 0 ? (
+            <AvailableGuardsMatrixView
+              isSentShiftsLoading={isSentShiftsLoading}
+              selectedMatrixShifts={selectedMatrixShifts}
+              availableInvoiceShifts={availableInvoiceShifts}
+              selectedMatrixShiftIds={selectedMatrixShiftIds}
+              onToggleMatrixShift={handleToggleMatrixShift}
+              onRemoveMatrixShift={handleRemoveMatrixShift}
+              matrixAvailabilityType={matrixAvailabilityType}
+              onMatrixAvailabilityTypeChange={setMatrixAvailabilityType}
+              isMatrixLoading={isMatrixLoading}
+              onSearch={fetchAvailableGuardsMatrix}
+              matrixGuards={matrixGuards}
+              displayedShiftNos={displayedShiftNos}
+              matrixTotalGuards={matrixTotalGuards}
+              matrixTotalPages={matrixTotalPages}
+              matrixCurrentPage={matrixCurrentPage}
+              hasMatrixSearched={hasMatrixSearched}
+              onPageChange={fetchAvailableGuardsMatrix}
+            />
+          ) : activeStep === 1 ? (
+            <SelectShiftsStep
+              step1Shifts={step1Shifts}
+              selectedShiftIds={selectedShiftIds}
+              isStep1ShiftsLoading={isStep1ShiftsLoading}
+              onSelectShift={handleSelectShift}
+              onSelectAllShifts={handleSelectAllShifts}
+              onCancel={() => {
                 setActiveStep(0);
                 resetFilters();
               }}
-              className="px-6 h-10 rounded-lg font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all cursor-pointer w-full sm:w-auto text-center shrink-0"
-            >
-              {activeStep === 0 ? "Back" : "Cancel"}
-            </Button>
-          </div>
-
-          {activeStep === 2 && renderFilters()}
-
-          <div className="p-0">
-            {activeStep === 0 ? (
-              <div className="overflow-x-auto custom-scrollbar w-full">
-                <Table className="min-w-[900px] md:min-w-full">
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Guard Name</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Email</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Total Shifts Sent</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Available For Shifts</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Unavailable For Shifts</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Seen</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">Responded</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isResultsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="py-10 text-center">
-                          <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
-                        </TableCell>
-                      </TableRow>
-                    ) : results.length > 0 ? (
-                      results.map((guard, index) => (
-                        <TableRow key={guard.notification_id || index} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                          <TableCell className="py-2.5 px-4 text-sm font-bold text-slate-700">{guard.guard_name}</TableCell>
-                          <TableCell className="py-2.5 px-4 text-sm font-medium text-slate-800">{guard.email}</TableCell>
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <span className="text-xs font-medium text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md">
-                              {formatArray(guard.total_shifts_sent)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md">
-                              {formatArray(guard.available_for_shifts)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-md">
-                              {formatArray(guard.unavailable_for_shifts)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-[10px] font-bold uppercase",
-                              guard.notification_seen ? "bg-blue-50 text-blue-600" : "bg-slate-50 text-slate-700"
-                            )}>
-                              {guard.notification_seen ? "Seen" : "Unseen"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-[10px] font-bold uppercase",
-                              guard.is_responded ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-700"
-                            )}>
-                              {guard.is_responded ? "Responded" : "No Response"}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={7} className="py-8 text-center text-slate-700 font-medium">No available guards found for this invoice.</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : activeStep === 1 ? (
-              <div className="overflow-x-auto custom-scrollbar w-full">
-                <Table className="min-w-[650px] md:min-w-full">
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="w-[60px] py-2.5 px-4 text-center">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                          checked={shifts.length > 0 && selectedShiftIds.length === shifts.length}
-                          onChange={(e) => handleSelectAllShifts(e.target.checked)}
-                        />
-                      </TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Shift No.</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Service Name</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">Start Time</TableHead>
-                      <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">End Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {shifts.length > 0 ? (
-                      shifts.map((shift) => (
-                        <TableRow key={shift.shift_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                          <TableCell className="py-2.5 px-4 text-center">
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                              checked={selectedShiftIds.includes(shift.shift_id)}
-                              onChange={(e) => handleSelectShift(shift.shift_id, e.target.checked)}
-                            />
-                          </TableCell>
-                          <TableCell className="text-sm font-bold text-slate-700 py-2.5 px-4">
-                            <Link
-                              href={`/shift/view?shift_id=${shift.shift_id}`}
-                              className="text-[#0064cb] hover:text-[#0052ae] hover:underline cursor-pointer transition-all"
-                            >
-                              {shift.shift_no}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">{shift.service_name}</TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
-                            <FormattedDate date={shift.start_time} timezone={shift.timezone || 'UTC'} />
-                          </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800 py-2.5 px-4">
-                            <FormattedDate date={shift.end_time} timezone={shift.timezone || 'UTC'} />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="py-8 text-center text-slate-700 font-medium">
-                          No shifts found for this invoice. Please schedule shifts first.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : activeStep === 2 ? (
-              <Table className="min-w-[1200px] md:min-w-full">
-                <TableHeader className="bg-slate-50/50">
-                  <TableRow className="hover:bg-transparent border-slate-100">
-                    <TableHead className="w-[60px] py-2.5 px-4 text-center">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                        checked={allGuards.length > 0 && selectedGuardIds.length === allGuards.length}
-                        onChange={(e) => handleSelectAllGuards(e.target.checked)}
-                      />
-                    </TableHead>
-                    <TableHead className="w-[60px] text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">#</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">NAME</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">EMAIL</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">PHONE NO.</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">
-                      <div className="flex items-center gap-1">
-                        GUARD LEVEL
-                        <Info className="w-3.5 h-3.5 text-slate-400" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">ADDRESS</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">AWAY DISTANCE (Miles)</TableHead>
-                    <TableHead className="text-[11px] font-bold text-slate-800 uppercase py-2.5 px-4">STATUS</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isGuardsLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={11} className="py-10 text-center">
-                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
-                      </TableCell>
-                    </TableRow>
-                  ) : allGuards.length > 0 ? (
-                    allGuards.map((guard, index) => (
-                      <TableRow key={guard.guard_id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                        <TableCell className="py-2.5 px-4 text-center">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                            checked={selectedGuardIds.includes(guard.guard_id)}
-                            onChange={(e) => handleSelectGuard(guard.guard_id, e.target.checked)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-[13px] text-slate-800 py-2.5 px-4 text-center">
-                          {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
-                        </TableCell>
-                        <TableCell className="text-[13px] font-bold text-slate-700 py-2.5 px-4">
-                          {guard.first_name} {guard.last_name}
-                        </TableCell>
-                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.email}</TableCell>
-                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.phone_number || "-"}</TableCell>
-                        <TableCell className="py-2.5 px-4">
-                          <div className="flex items-center gap-1">
-                            {guard.guard_level === 3 ? (
-                              <>
-                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
-                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
-                                <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
-                              </>
-                            ) : guard.guard_level === 2 ? (
-                              <>
-                                <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
-                                <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
-                              </>
-                            ) : guard.guard_level === 1 ? (
-                              <>
-                                <Star className="w-4 h-4 fill-green-600 text-green-600" />
-                              </>
-                            ) : (
-                              <span className="text-slate-400 text-xs font-medium">---</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.armed ? "Yes" : "No"}</TableCell>
-                        <TableCell className="py-2.5 px-4 text-center text-sm text-slate-700">{guard.unarmed ? "Yes" : "No"}</TableCell>
-                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4 max-w-[200px] truncate">{guard.address || "--"}</TableCell>
-                        <TableCell className="text-sm font-medium text-slate-700 py-2.5 px-4">{guard.distance_miles ?? "--"}</TableCell>
-                        <TableCell className="py-2.5 px-4">
-                          <span className={cn(
-                            "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                            guard.status ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
-                          )}>
-                            {guard.status ? "Active" : "Inactive"}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={11} className="py-6 text-center text-slate-700 font-medium">No guards found matching filters.</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="p-8 text-center space-y-8 animate-in fade-in duration-500">
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
-                    <div className="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 flex flex-col items-center gap-3 w-48 shadow-sm">
-                      <div className="w-12 h-12 bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
-                        <CalendarDays className="w-6 h-6" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xl font-bold text-blue-600 leading-none">{selectedShiftIds.length}</p>
-                        <p className="text-[12px] font-bold text-blue-400 tracking-widest mt-1">Shifts Selected</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 flex flex-col items-center gap-3 w-48 shadow-sm">
-                      <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200">
-                        <UserCheck className="w-6 h-6" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xl font-bold text-emerald-600 leading-none">{selectedGuardIds.length}</p>
-                        <p className="text-[12px] font-bold text-emerald-400 tracking-widest mt-1">Guards Selected</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-slate-900">Ready to find?</h3>
-                    <p className="text-sm text-slate-600 leading-relaxed px-4">
-                      We will notify the selected guards about these shifts to check their availability.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto px-6 sm:px-0">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setActiveStep(2);
-                      resetFilters();
-                    }}
-                    className="h-12 px-8 rounded-xl font-bold text-slate-600 border-slate-200 hover:bg-slate-50 cursor-pointer transition-all w-full sm:w-auto flex justify-center items-center"
-                  >
-                    Back to Guards
-                  </Button>
-                  <Button
-                    onClick={handleFind}
-                    disabled={isFinding}
-                    className="h-12 px-12 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-bold shadow-xl shadow-[#0064cb]/20 cursor-pointer transition-all active:scale-95 flex gap-2 w-full sm:w-auto justify-center items-center"
-                  >
-                    {isFinding ? <Loader2 className="w-5 h-5 animate-spin" /> : "Find Guards"}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {(activeStep === 1 || activeStep === 2) && (
-              <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 w-full">
-                {activeStep === 1 ? (
-                  <Button
-                    onClick={() => {
-                      if (selectedShiftIds.length === 0) {
-                        toast.error("Please select shifts first");
-                      } else {
-                        setActiveStep(2);
-                      }
-                    }}
-                    className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer w-full sm:w-auto flex justify-center items-center"
-                  >
-                    Go to Step 2
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => setActiveStep(1)}
-                      className="px-6 h-11 rounded-lg font-bold text-slate-600 border-slate-200 cursor-pointer w-full sm:w-auto text-center"
-                    >
-                      Back to Step 1
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        if (selectedGuardIds.length === 0) {
-                          toast.error("Please select guards first");
-                        } else {
-                          setActiveStep(3);
-                          resetFilters();
-                        }
-                      }}
-                      className="bg-[#0064cb] hover:bg-[#0052ae] text-white px-8 h-11 rounded-lg font-bold shadow-lg shadow-[#0064cb]/20 transition-all cursor-pointer w-full sm:w-auto flex justify-center items-center"
-                    >
-                      Go to Step 3
-                    </Button>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+              onProceedToStep2={() => {
+                if (selectedShiftIds.length === 0) {
+                  toast.error("Please select shifts first");
+                } else {
+                  setActiveStep(2);
+                }
+              }}
+            />
+          ) : activeStep === 2 ? (
+            <SelectGuardsStep
+              onBackToShifts={() => setActiveStep(1)}
+              onCancel={() => {
+                setActiveStep(0);
+                resetFilters();
+              }}
+              onSendJobOpportunity={handleFind}
+              isFinding={isFinding}
+              notificationSource={notificationSource}
+              onNotificationSourceChange={setNotificationSource}
+              locationType={locationType}
+              onLocationTypeChange={handleLocationTypeChange}
+              serviceFilter={serviceFilter}
+              onServiceFilterChange={setServiceFilter}
+              centerLocation={centerLocation}
+              onCenterLocationChange={handleCenterLocationChange}
+              onPlaceSelected={handlePlaceSelect}
+              radiusMiles={radiusMiles}
+              onRadiusChange={setRadiusMiles}
+              citySelectKey={citySelectKey}
+              stateSelectKey={stateSelectKey}
+              countrySelectKey={countrySelectKey}
+              selectedCities={selectedCities}
+              availableCities={availableCities}
+              onAddCity={handleAddCity}
+              onRemoveCity={handleRemoveCity}
+              selectedStates={selectedStates}
+              availableStates={availableStates}
+              onAddState={handleAddState}
+              onRemoveState={handleRemoveState}
+              selectedCountries={selectedCountries}
+              availableCountries={availableCountries}
+              onAddCountry={handleAddCountry}
+              onRemoveCountry={handleRemoveCountry}
+              isLocationsLoading={isLocationsLoading}
+              isGuardsLoading={isGuardsLoading}
+              onSearchGuards={loadGuards}
+              onResetFilters={resetFilters}
+              mapDisplayedLocation={mapDisplayedLocation}
+              dynamicSiteLocation={dynamicSiteLocation}
+              mapCenter={locationType === "radius" && isCustomRadiusLocation ? mapCenter : initialCoordinates}
+              allGuards={allGuards}
+              selectedGuardIds={selectedGuardIds}
+              onSelectGuard={handleSelectGuard}
+              onSelectAllGuards={handleSelectAllGuards}
+            />
+          ) : null}
         </CardContent>
       </Card>
     </div>

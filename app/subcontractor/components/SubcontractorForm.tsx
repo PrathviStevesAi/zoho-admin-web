@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Country } from "country-state-city";
 import { submitSubcontractorApplicationAction } from "@/actions/subcontractor.actions";
 import { EmailAndPhoneSection } from "./sections/EmailAndPhoneSection";
 import { ContactInformationSection } from "./sections/ContactInformationSection";
@@ -66,6 +67,8 @@ const formSchema = z.object({
 export type FormValues = z.infer<typeof formSchema>;
 
 const getPayload = (data: FormValues) => {
+  const fullCountryName = Country.getCountryByCode(data.country)?.name || data.country;
+
   return {
     email: data.email,
     phone_number: `${data.phoneCode}${data.phone}`.replace(/\s+/g, ""),
@@ -80,7 +83,7 @@ const getPayload = (data: FormValues) => {
     first_name: data.firstName,
     last_name: data.lastName,
     street_address: data.address,
-    country: data.country,
+    country: fullCountryName,
     state: data.state,
     city: data.city,
     zip_code: data.zipCode,

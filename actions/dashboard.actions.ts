@@ -541,6 +541,61 @@ export async function fetchGuardsAction(params: {
   }
 }
 
+export async function fetchGuardsNewAction(params: {
+  location_type?: string;
+  location?: string;
+  cities?: string[] | string;
+  states?: string[] | string;
+  country?: string[] | string;
+  radius?: number | string;
+  search?: string;
+  service?: string;
+  guard_level?: number | string;
+  account_status?: string;
+  page?: number | null;
+} = {}): Promise<FetchResponse<any>> {
+  const query = new URLSearchParams();
+  query.append("status", params.account_status || "active");
+  query.append("account_status", params.account_status || "active");
+  if (params.page !== undefined && params.page !== null) query.append("page", params.page.toString());
+  if (params.location_type) query.append("location_type", params.location_type);
+  if (params.location) query.append("location", params.location);
+  if (params.radius !== undefined && params.radius !== null && params.radius !== "") query.append("radius", params.radius.toString());
+  if (params.search) query.append("search", params.search);
+  if (params.service) query.append("service", params.service);
+  if (params.guard_level !== undefined && params.guard_level !== null && params.guard_level !== "") query.append("guard_level", params.guard_level.toString());
+  if (params.cities) {
+    if (Array.isArray(params.cities)) params.cities.forEach(c => c && query.append("cities", c));
+    else query.append("cities", params.cities);
+  }
+  if (params.states) {
+    if (Array.isArray(params.states)) params.states.forEach(s => s && query.append("states", s));
+    else query.append("states", params.states);
+  }
+  if (params.country) {
+    if (Array.isArray(params.country)) params.country.forEach(c => c && query.append("country", c));
+    else query.append("country", params.country);
+  }
+
+  try {
+    const data = await apiFetch<any>(
+      `/api/v1/guard/list/new?${query.toString()}`
+    );
+    const guardsList = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+    const totalCount = data?.total !== undefined && data?.total !== null ? data.total : guardsList.length;
+    const pagination = {
+      page: data?.page || 1,
+      limit: data?.page_size || guardsList.length || 10,
+      total: totalCount,
+      total_pages: data?.page_size ? Math.ceil(totalCount / data.page_size) : 1
+    };
+    return { success: true, data: guardsList, pagination };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
 export async function assignGuardsAction(payload: {
   invoice_id: string;
   assignments: {
@@ -919,16 +974,18 @@ export async function findAvailableGuardsAction(payload: {
   invoice_id: string;
   shift_ids: string[];
   guard_ids: string[];
-}): Promise<{ success: boolean; message?: string; error?: string }> {
+  location?: string;
+  source?: string;
+}): Promise<{ success: boolean; message?: string; data?: any; error?: string }> {
   try {
-    const res = await apiFetch<{ success: boolean; message?: string }>(
+    const res = await apiFetch<{ success: boolean; message?: string; data?: any }>(
       `/api/v1/invoice/find-available-guards`,
       {
         method: "POST",
         body: JSON.stringify(payload),
       }
     );
-    return { success: true, message: res.message };
+    return { success: true, message: res.message, data: res.data };
   } catch (error: any) {
     const message = error.message || "Something went wrong";
     return { success: false, error: message };
@@ -1043,6 +1100,26 @@ export async function manualStartShiftAction(payload: {
     return { success: true };
   } catch (error: any) {
     console.error("[Server Action] manualStartShiftAction error:", error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function manualEndShiftAction(payload: {
+  shift_id: string;
+  end_type: string;
+  manual_shift_end_reason: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    console.log("[Server Action] manualEndShiftAction POST Payload to /api/v1/shift/manual-shift-end:", payload);
+    const result = await apiFetch<any>(`/api/v1/shift/manual-shift-end`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    console.log("[Server Action] manualEndShiftAction POST Response:", result);
+    return { success: true, message: result?.message || "Shift ended" };
+  } catch (error: any) {
+    console.error("[Server Action] manualEndShiftAction error:", error);
     const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }

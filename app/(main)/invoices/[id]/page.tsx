@@ -951,8 +951,6 @@ export default function InvoiceDetailsPage() {
           setIsPaymentOpen(false);
           setIsSettingsOpen(false);
           setIsUploadAttachmentOpen(false);
-          loadAvailableGuards();
-          loadShifts("assign_guard");
         }}
         onOpenSettings={() => {
           setIsSettingsOpen(true);
@@ -1046,6 +1044,7 @@ export default function InvoiceDetailsPage() {
       ) : isAvailableGuardsOpen ? (
         <AvailableGuardsModule
           invoiceId={id}
+          invoice={invoice}
           guards={availableGuards}
           shifts={shifts}
           totalGuards={totalAvailableGuards}

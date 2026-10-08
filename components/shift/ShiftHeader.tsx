@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon, Mic, Clock } from "lucide-react";
+import { ChevronRight, ArrowLeft, Loader2, Play, Square, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon, Mic, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
@@ -29,6 +29,8 @@ interface ShiftHeaderProps {
   onCloseCallRecordings?: () => void;
   isStartingShift: boolean;
   onManualStart: () => void;
+  isEndingShift?: boolean;
+  onManualEnd?: () => void;
   onAssignGuard: () => void;
   onNewAssignGuard: () => void;
   onAssignLeadGuard: () => void;
@@ -126,6 +128,8 @@ export function ShiftHeader({
   onCloseCallRecordings,
   isStartingShift,
   onManualStart,
+  isEndingShift,
+  onManualEnd,
   onAssignGuard,
   onNewAssignGuard,
   onAssignLeadGuard,
@@ -350,6 +354,15 @@ export function ShiftHeader({
                 color: "emerald" as const,
                 isLoading: isStartingShift,
                 onClick: onManualStart,
+              });
+            }
+            if (act.is_manual_end_shift) {
+              buttons.push({
+                label: "Manual Shift End",
+                icon: Square,
+                color: "red" as const,
+                isLoading: isEndingShift,
+                onClick: onManualEnd,
               });
             }
             if (act.is_config_settings) {

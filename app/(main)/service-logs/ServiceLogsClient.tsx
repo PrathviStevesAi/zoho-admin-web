@@ -82,6 +82,11 @@ const SERVICE_INFO: Record<string, { name: string; description: string; icon: an
     description: "Location APIs",
     icon: Map,
   },
+  twilio: {
+    name: "Twilio",
+    description: "Video & Communications",
+    icon: Video,
+  },
   zegocloud: {
     name: "Zegocloud",
     description: "RTC & Video",

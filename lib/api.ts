@@ -12,7 +12,6 @@ export async function apiFetch<T>(
     try {
       const session = await auth() as any;
       const token = session?.accessToken;
-      console.log('token', token);
 
       if (!token) console.warn(`[apiFetch] No token found for ${endpoint}`);
 

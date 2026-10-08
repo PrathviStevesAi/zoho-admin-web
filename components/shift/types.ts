@@ -35,6 +35,7 @@ export interface ShiftActions {
   is_new_lead_assigned?: boolean;
   is_new_standby_assigned?: boolean;
   is_manual_start_shift?: boolean;
+  is_manual_end_shift?: boolean;
   is_config_settings?: boolean;
   is_cancel_service?: boolean;
   is_edit_schedule?: boolean;

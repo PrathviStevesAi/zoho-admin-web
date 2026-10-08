@@ -474,6 +474,109 @@ export async function clientFetchGuardsAction(params: {
   }
 }
 
+export interface FetchGuardsByLocationParams {
+  location_type?: "geographic_area" | "cities" | "states" | "country" | string;
+  location?: string;
+  cities?: string[] | string;
+  city?: string;
+  states?: string[] | string;
+  state?: string;
+  country?: string[] | string;
+  radius?: number | string;
+  search?: string;
+  service?: "all" | "both" | "armed" | "unarmed" | string;
+  guard_level?: number | string;
+  account_status?: string;
+  status?: string;
+  page?: number | null;
+}
+
+export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationParams = {}): Promise<FetchResponse<any>> {
+  const query = new URLSearchParams();
+
+  const accountStatus = params.account_status || "active";
+  query.append("account_status", accountStatus);
+
+  if (params.page !== null) {
+    const page = params.page !== undefined ? params.page : 1;
+    query.append("page", page.toString());
+  }
+
+  if (params.status) {
+    query.append("status", params.status);
+  }
+
+  if (params.location_type) {
+    query.append("location_type", params.location_type);
+  }
+
+  if (params.location) {
+    query.append("location", params.location);
+  }
+
+  if (params.radius !== undefined && params.radius !== null && params.radius !== "") {
+    query.append("radius", params.radius.toString());
+  }
+
+  if (params.search && params.search.trim()) {
+    query.append("search", params.search.trim());
+  }
+
+  if (params.service && params.service.toLowerCase() !== "all") {
+    query.append("service", params.service.toLowerCase());
+  }
+
+  if (params.guard_level !== undefined && params.guard_level !== null && params.guard_level !== "" && params.guard_level !== "All") {
+    query.append("guard_level", params.guard_level.toString());
+  }
+
+  const citiesParam = params.cities ?? params.city;
+  if (citiesParam && citiesParam !== "All City") {
+    if (Array.isArray(citiesParam)) {
+      citiesParam.forEach(c => c && c !== "All City" && query.append("cities", c));
+    } else {
+      query.append("cities", citiesParam);
+    }
+  }
+
+  const statesParam = params.states ?? params.state;
+  if (statesParam && statesParam !== "All State") {
+    if (Array.isArray(statesParam)) {
+      statesParam.forEach(s => s && s !== "All State" && query.append("states", s));
+    } else {
+      query.append("states", statesParam);
+    }
+  }
+
+  const countryParam = params.country;
+  if (countryParam && countryParam !== "All Country") {
+    if (Array.isArray(countryParam)) {
+      countryParam.forEach(c => c && c !== "All Country" && query.append("country", c));
+    } else {
+      query.append("country", countryParam);
+    }
+  }
+
+  try {
+    const data = await clientApiFetch<any>(
+      `/api/v1/guard/list/new?${query.toString()}`
+    );
+    const guardsList = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+    const totalCount = data?.total !== undefined && data?.total !== null ? data.total : guardsList.length;
+    const limit = data?.page_size || 10;
+    const pagination = {
+      page: data?.page || (params.page !== null && params.page !== undefined ? params.page : 1),
+      limit: limit,
+      total: totalCount,
+      total_pages: Math.ceil(totalCount / limit) || 1
+    };
+    return { success: true, data: guardsList, pagination };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message || "Unknown Error" };
+  }
+}
+
 
 export async function clientFetchCustomersAction(params: {
   page?: number | null;
@@ -528,6 +631,85 @@ export async function clientFetchAvailableGuardsAction(
     return { success: true, data: data?.data || data, total_guards: data.total_guards };
   } catch (error: any) {
     const message = error.message || "Something went wrong";
+    return { success: false, error: message || "Unknown Error" };
+  }
+}
+
+export async function clientFetchAvailableGuardsShiftsAction(
+  invoiceId: string
+): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  try {
+    const data = await clientApiFetch<{ success: boolean; data: any[] }>(
+      `/api/v1/invoice/${invoiceId}/available-guards/shifts`,
+      { cache: "no-store" }
+    );
+    const shiftsData = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+    return { success: true, data: shiftsData };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    console.error("[fetchAvailableGuardsShiftsAction] Error:", message);
+    return { success: false, error: message || "Unknown Error" };
+  }
+}
+
+export interface AvailableGuardItem {
+  notification_id: string;
+  guard_id: string;
+  guard_name: string;
+  email: string;
+  created_at: string;
+  shifts_data: { [key: string]: string };
+}
+
+export interface AvailableGuardsMatrixResponse {
+  success: boolean;
+  shift_nos?: string[];
+  total_guards?: number;
+  total_pages?: number;
+  current_page?: number;
+  data?: AvailableGuardItem[];
+  error?: string;
+}
+
+export async function clientFetchAvailableGuardsMatrixAction(
+  invoiceId: string,
+  shiftNos: string[] = [],
+  availabilityType: string = "all",
+  page: number = 1
+): Promise<AvailableGuardsMatrixResponse> {
+  try {
+    const params = new URLSearchParams();
+    if (shiftNos.length > 0) {
+      shiftNos.forEach((no) => {
+        const clean = String(no).replace(/^#/, "").trim();
+        if (clean) params.append("shift_no", clean);
+      });
+    }
+    if (availabilityType) {
+      params.append("availability_type", availabilityType);
+    }
+    if (page) {
+      params.append("page", page.toString());
+    }
+
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+    const data = await clientApiFetch<any>(
+      `/api/v1/invoice/${invoiceId}/available-guards${queryString}`,
+      { cache: "no-store" }
+    );
+
+    const guardsList = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+    return {
+      success: true,
+      shift_nos: Array.isArray(data?.shift_nos) ? data.shift_nos : [],
+      total_guards: data?.total_guards ?? guardsList.length,
+      total_pages: data?.total_pages ?? 1,
+      current_page: data?.current_page ?? page,
+      data: guardsList,
+    };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    console.error("[clientFetchAvailableGuardsMatrixAction] Error:", message);
     return { success: false, error: message || "Unknown Error" };
   }
 }

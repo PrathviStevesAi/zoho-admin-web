@@ -448,8 +448,8 @@ function ShiftReportContent() {
             <Table
               className="min-w-[1250px] border-collapse"
               containerClassName={
-                allReports.length > 15
-                  ? "max-h-[780px] overflow-y-auto custom-scrollbar"
+                allReports.length > 5
+                  ? "max-h-[380px] overflow-y-auto custom-scrollbar"
                   : "overflow-y-visible"
               }
             >

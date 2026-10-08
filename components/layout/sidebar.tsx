@@ -18,6 +18,7 @@ import {
   DollarSign,
   History,
   FileText,
+  CreditCard,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -58,6 +59,7 @@ const navGroups: NavGroup[] = [
   {
     groupLabel: "User Management",
     items: [
+      { label: "Membership", icon: CreditCard, href: "/membership" },
       {
         label: "Users",
         icon: Users,
