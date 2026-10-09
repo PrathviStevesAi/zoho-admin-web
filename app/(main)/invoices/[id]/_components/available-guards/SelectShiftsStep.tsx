@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,10 @@ export function SelectShiftsStep({
   onCancel,
   onProceedToStep2,
 }: SelectShiftsStepProps) {
+  const selectedShiftIdsSet = useMemo(
+    () => new Set(selectedShiftIds),
+    [selectedShiftIds]
+  );
   return (
     <div>
       <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
@@ -91,7 +96,7 @@ export function SelectShiftsStep({
                         <input
                           type="checkbox"
                           className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                          checked={selectedShiftIds.includes(shiftKeyId)}
+                          checked={selectedShiftIdsSet.has(shiftKeyId)}
                           onChange={(e) => onSelectShift(shiftKeyId, e.target.checked)}
                         />
                       </TableCell>

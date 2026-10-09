@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Loader2,
@@ -91,6 +91,11 @@ export function AvailableGuardsMatrixView({
   const [isShiftDropdownOpen, setIsShiftDropdownOpen] = useState(false);
   const shiftDropdownRef = useRef<HTMLDivElement>(null);
 
+  const selectedMatrixShiftIdsSet = useMemo(
+    () => new Set(selectedMatrixShiftIds),
+    [selectedMatrixShiftIds]
+  );
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (shiftDropdownRef.current && !shiftDropdownRef.current.contains(event.target as Node)) {
@@ -167,7 +172,7 @@ export function AvailableGuardsMatrixView({
                   </div>
                 ) : (
                   availableInvoiceShifts.map((s, sIdx) => {
-                    const isSelected = selectedMatrixShiftIds.includes(s.shift_id);
+                    const isSelected = selectedMatrixShiftIdsSet.has(s.shift_id);
                     return (
                       <div
                         key={`dropdown-shift-${s.shift_id}-${sIdx}`}

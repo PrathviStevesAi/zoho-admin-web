@@ -640,21 +640,25 @@ export function AvailableGuardsModule({
     }
   };
 
-  const handleSelectGuard = (id: string, checked: boolean) => {
-    if (checked) {
-      setSelectedGuardIds(prev => [...prev, id]);
-    } else {
-      setSelectedGuardIds(prev => prev.filter(i => i !== id));
-    }
-  };
+  const handleSelectGuard = useCallback((id: string, checked: boolean) => {
+    setSelectedGuardIds(prev => {
+      const nextSet = new Set(prev);
+      if (checked) {
+        nextSet.add(id);
+      } else {
+        nextSet.delete(id);
+      }
+      return Array.from(nextSet);
+    });
+  }, []);
 
-  const handleSelectAllGuards = (checked: boolean) => {
+  const handleSelectAllGuards = useCallback((checked: boolean) => {
     if (checked) {
       setSelectedGuardIds(allGuards.map(g => g.guard_id));
     } else {
       setSelectedGuardIds([]);
     }
-  };
+  }, [allGuards]);
 
   const resetFilters = () => {
     setLocationType("radius");

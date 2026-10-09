@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import {
@@ -43,6 +44,11 @@ export function GuardsListTable({
   onSelectGuard,
   onSelectAllGuards,
 }: GuardsListTableProps) {
+  // Fast O(1) Set lookup for 3,000–10,000 guards to ensure instant checkbox response
+  const selectedGuardIdsSet = useMemo(
+    () => new Set(selectedGuardIds),
+    [selectedGuardIds]
+  );
   const locationSubtitle = (
     <>
       Showing guards{" "}
@@ -126,7 +132,7 @@ export function GuardsListTable({
                     <input
                       type="checkbox"
                       className="w-4 h-4 rounded border-slate-300 text-[#0064cb] focus:ring-[#0064cb] cursor-pointer"
-                      checked={selectedGuardIds.includes(guard.guard_id)}
+                      checked={selectedGuardIdsSet.has(guard.guard_id)}
                       onChange={(e) => onSelectGuard(guard.guard_id, e.target.checked)}
                     />
                   </TableCell>
