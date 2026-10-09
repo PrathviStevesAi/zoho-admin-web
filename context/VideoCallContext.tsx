@@ -24,6 +24,9 @@ import {
   UserCheck,
   Signal,
   ShieldCheck,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
 } from "lucide-react";
 import {
   startVideoCallAction,
@@ -64,6 +67,24 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const [roomName, setRoomName] = useState<string>("");
   const [activeShiftNo, setActiveShiftNo] = useState<string | number | null>(null);
   const [serverActiveCall, setServerActiveCall] = useState<ActiveVideoCallData | null>(null);
+
+  // Video Zoom and Pan Controls
+  const DEFAULT_ZOOM = 1.0;
+  const MIN_ZOOM = 1.0;
+  const MAX_ZOOM = 3.0;
+  const ZOOM_STEP = 0.15;
+
+  const [zoomLevel, setZoomLevel] = useState<number>(DEFAULT_ZOOM);
+  const [videoFitMode, setVideoFitMode] = useState<"contain" | "cover">("contain");
+  const [panPosition, setPanPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const dragStartRef = useRef<{ mouseX: number; mouseY: number; panX: number; panY: number }>({
+    mouseX: 0,
+    mouseY: 0,
+    panX: 0,
+    panY: 0,
+  });
+  const videoContainerRef = useRef<HTMLDivElement | null>(null);
 
   const activeShiftIdRef = useRef<string | null>(null);
   const activeRoomRef = useRef<any | null>(null);
@@ -163,6 +184,10 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     setIsMicMuted(false);
     setIsVideoMuted(false);
     setIsMinimized(false);
+    setZoomLevel(DEFAULT_ZOOM);
+    setVideoFitMode("contain");
+    setPanPosition({ x: 0, y: 0 });
+    setIsDragging(false);
   }, []);
 
   const getResolvedShiftId = useCallback(
@@ -443,14 +468,50 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   // Handle participant track subscription
   const attachTrack = (track: any, container: HTMLElement | null) => {
     if (!container || !track) return;
+
+    const trackId = track.sid || track.id || track.name || "";
+    // Prevent duplicate track attachment in the same container
+    if (trackId && container.querySelector(`[data-track-id="${trackId}"]`)) {
+      return;
+    }
+
+    // Clear stale video elements to prevent duplicate decoders running concurrently
+    if (track.kind === "video") {
+      container.innerHTML = "";
+    }
+
     const el = track.attach();
+    if (trackId) {
+      el.setAttribute("data-track-id", trackId);
+    }
+
     if (track.kind === "video") {
       el.style.width = "100%";
       el.style.height = "100%";
-      el.style.objectFit = "cover";
+      el.style.objectFit = container === remoteVideoRef.current ? videoFitMode : "cover";
+      // Force GPU hardware acceleration for smooth 30-60fps rendering on Desktop, Laptop & Mobile
+      el.style.transform = "translateZ(0)";
+      el.style.webkitTransform = "translateZ(0)";
+      el.style.backfaceVisibility = "hidden";
+      el.style.willChange = "transform";
+      el.setAttribute("playsinline", "true");
+      el.setAttribute("webkit-playsinline", "true");
+      el.autoplay = true;
+    } else if (track.kind === "audio") {
+      el.autoplay = true;
     }
+
     container.appendChild(el);
   };
+
+  useEffect(() => {
+    if (remoteVideoRef.current) {
+      const videos = remoteVideoRef.current.querySelectorAll("video");
+      videos.forEach((v) => {
+        v.style.objectFit = videoFitMode;
+      });
+    }
+  }, [videoFitMode]);
 
   const detachTrack = (track: any) => {
     if (!track) return;
@@ -462,17 +523,17 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Reattach tracks whenever minimized state changes so video stream continues uninterrupted
+  // Reattach tracks whenever minimized state changes so video stream continues uninterrupted without duplicate decoders
   useEffect(() => {
     if (!remoteParticipant) return;
 
     remoteParticipant.tracks.forEach((publication: any) => {
       if (publication.isSubscribed && publication.track && publication.track.kind === "video") {
         if (!isMinimized && remoteVideoRef.current) {
-          remoteVideoRef.current.innerHTML = "";
+          if (miniRemoteVideoRef.current) miniRemoteVideoRef.current.innerHTML = "";
           attachTrack(publication.track, remoteVideoRef.current);
         } else if (isMinimized && miniRemoteVideoRef.current) {
-          miniRemoteVideoRef.current.innerHTML = "";
+          if (remoteVideoRef.current) remoteVideoRef.current.innerHTML = "";
           attachTrack(publication.track, miniRemoteVideoRef.current);
         }
       }
@@ -483,7 +544,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         activeRoomRef.current.localParticipant.videoTracks.values()
       )[0] as any;
       if (localVideoTrackPublication && localVideoTrackPublication.track) {
-        localVideoRef.current.innerHTML = "";
         attachTrack(localVideoTrackPublication.track, localVideoRef.current);
       }
     }
@@ -492,32 +552,32 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const handleParticipant = (participant: any) => {
     setRemoteParticipant(participant);
 
-    participant.tracks.forEach((publication: any) => {
-      if (publication.isSubscribed && publication.track) {
-        if (publication.track.kind === "video") {
-          if (remoteVideoRef.current) {
-            attachTrack(publication.track, remoteVideoRef.current);
-          }
-          if (miniRemoteVideoRef.current) {
-            attachTrack(publication.track, miniRemoteVideoRef.current);
-          }
-        } else if (publication.track.kind === "audio" && audioContainerRef.current) {
-          attachTrack(publication.track, audioContainerRef.current);
+    const subscribeToTrack = (track: any) => {
+      try {
+        if (typeof track.setPriority === "function") {
+          track.setPriority("high");
         }
+      } catch (e) {
       }
-    });
 
-    participant.on("trackSubscribed", (track: any) => {
       if (track.kind === "video") {
-        if (remoteVideoRef.current) {
-          attachTrack(track, remoteVideoRef.current);
-        }
-        if (miniRemoteVideoRef.current) {
-          attachTrack(track, miniRemoteVideoRef.current);
+        const targetContainer = isMinimized ? miniRemoteVideoRef.current : remoteVideoRef.current;
+        if (targetContainer) {
+          attachTrack(track, targetContainer);
         }
       } else if (track.kind === "audio" && audioContainerRef.current) {
         attachTrack(track, audioContainerRef.current);
       }
+    };
+
+    participant.tracks.forEach((publication: any) => {
+      if (publication.isSubscribed && publication.track) {
+        subscribeToTrack(publication.track);
+      }
+    });
+
+    participant.on("trackSubscribed", (track: any) => {
+      subscribeToTrack(track);
     });
 
     participant.on("trackUnsubscribed", (track: any) => {
@@ -539,7 +599,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         try {
           videoWsRef.current.close();
         } catch (e) {
-          // ignore
         }
       }
 
@@ -671,7 +730,11 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       try {
         localTracks = await Video.createLocalTracks({
           audio: true,
-          video: { width: 1280, height: 720 },
+          video: {
+            width: { ideal: 1280, max: 1280 },
+            height: { ideal: 720, max: 720 },
+            frameRate: { ideal: 30, max: 30 },
+          },
         });
         hasAudio = true;
         hasVideo = true;
@@ -685,7 +748,11 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           console.warn("Could not acquire audio, trying video only:", e2);
           try {
             localTracks = await Video.createLocalTracks({
-              video: { width: 1280, height: 720 },
+              video: {
+                width: { ideal: 1280, max: 1280 },
+                height: { ideal: 720, max: 720 },
+                frameRate: { ideal: 30, max: 30 },
+              },
             });
             hasAudio = false;
             hasVideo = true;
@@ -704,6 +771,17 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       const room = await Video.connect(tokenToUse, {
         name: roomNameToUse,
         tracks: localTracks,
+        bandwidthProfile: {
+          video: {
+            mode: "presentation",
+            clientTrackSwitchOffControl: "auto",
+            contentPreferencesMode: "auto",
+          },
+        },
+        preferredVideoCodecs: [{ codec: "VP8", simulcast: true }, "H264"],
+        maxAudioBitrate: 16000,
+        networkQuality: { local: 1, remote: 1 },
+        dominantSpeaker: true,
       });
 
       activeRoomRef.current = room;
@@ -783,7 +861,26 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         setIsMicMuted(false);
         toast.success("Microphone unmuted");
       } catch (err: any) {
-        toast.error(err.message || "Could not access microphone device.");
+        if (
+          err.name === "NotFoundError" ||
+          err.name === "DevicesNotFoundError" ||
+          err.message?.toLowerCase().includes("not found")
+        ) {
+          toast.error("No microphone detected. Please plug in a microphone or headset.");
+        } else if (
+          err.name === "NotAllowedError" ||
+          err.name === "PermissionDeniedError" ||
+          err.message?.toLowerCase().includes("permission")
+        ) {
+          toast.error("Microphone permission denied. Please allow microphone access in your browser.");
+        } else if (
+          err.name === "NotReadableError" ||
+          err.name === "TrackStartError"
+        ) {
+          toast.error("Microphone is currently in use by another application.");
+        } else {
+          toast.error(err.message || "Could not access microphone device.");
+        }
       }
     }
   };
@@ -808,7 +905,12 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     } else {
       try {
         const Video = await import("twilio-video");
-        const track = await Video.createLocalVideoTrack({ width: 1280, height: 720 });
+        let track: any = null;
+        try {
+          track = await Video.createLocalVideoTrack({ width: { ideal: 1280 }, height: { ideal: 720 } });
+        } catch {
+          track = await Video.createLocalVideoTrack();
+        }
         await activeRoomRef.current.localParticipant.publishTrack(track);
         if (localVideoRef.current) {
           localVideoRef.current.innerHTML = "";
@@ -817,7 +919,26 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         setIsVideoMuted(false);
         toast.success("Camera turned on");
       } catch (err: any) {
-        toast.error(err.message || "Could not access camera device.");
+        if (
+          err.name === "NotFoundError" ||
+          err.name === "DevicesNotFoundError" ||
+          err.message?.toLowerCase().includes("not found")
+        ) {
+          toast.error("No camera detected on this PC. Please connect a webcam or enable your camera.");
+        } else if (
+          err.name === "NotAllowedError" ||
+          err.name === "PermissionDeniedError" ||
+          err.message?.toLowerCase().includes("permission")
+        ) {
+          toast.error("Camera permission denied. Please allow camera access in your browser.");
+        } else if (
+          err.name === "NotReadableError" ||
+          err.name === "TrackStartError"
+        ) {
+          toast.error("Camera is in use by another application (e.g. Microsoft Teams or Zoom).");
+        } else {
+          toast.error(err.message || "Could not access camera device.");
+        }
       }
     }
   };
@@ -870,6 +991,125 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       setIsFullscreen(false);
     }
   };
+
+  const handleZoomIn = useCallback(() => {
+    setZoomLevel((prev) => Math.min(MAX_ZOOM, Math.round((prev + ZOOM_STEP) * 100) / 100));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoomLevel((prev) => {
+      const next = Math.max(MIN_ZOOM, Math.round((prev - ZOOM_STEP) * 100) / 100);
+      if (next <= 1.0) {
+        setPanPosition({ x: 0, y: 0 });
+      }
+      return next;
+    });
+  }, []);
+
+  const handleResetZoom = useCallback(() => {
+    setZoomLevel(DEFAULT_ZOOM);
+    setPanPosition({ x: 0, y: 0 });
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoomLevel <= 1.0) return;
+    if ((e.target as HTMLElement).closest("button")) return;
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      panX: panPosition.x,
+      panY: panPosition.y,
+    };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || zoomLevel <= 1.0) return;
+    e.preventDefault();
+    const deltaX = e.clientX - dragStartRef.current.mouseX;
+    const deltaY = e.clientY - dragStartRef.current.mouseY;
+
+    const container = videoContainerRef.current;
+    const width = container ? container.clientWidth : 1200;
+    const height = container ? container.clientHeight : 600;
+    const maxPanX = Math.max(0, ((zoomLevel - 1) * width) / 2);
+    const maxPanY = Math.max(0, ((zoomLevel - 1) * height) / 2);
+
+    const newX = Math.max(-maxPanX, Math.min(maxPanX, dragStartRef.current.panX + deltaX));
+    const newY = Math.max(-maxPanY, Math.min(maxPanY, dragStartRef.current.panY + deltaY));
+
+    setPanPosition({ x: newX, y: newY });
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!remoteParticipant || isConnecting) return;
+    if ((e.target as HTMLElement).closest("button")) return;
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      setZoomLevel((prev) => Math.min(MAX_ZOOM, Math.round((prev + 0.1) * 100) / 100));
+    } else if (e.deltaY > 0) {
+      setZoomLevel((prev) => {
+        const next = Math.max(MIN_ZOOM, Math.round((prev - 0.1) * 100) / 100);
+        if (next <= 1.0) {
+          setPanPosition({ x: 0, y: 0 });
+        }
+        return next;
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (zoomLevel <= 1.0) {
+      setPanPosition({ x: 0, y: 0 });
+      return;
+    }
+    const container = videoContainerRef.current;
+    if (!container) return;
+    const maxPanX = Math.max(0, ((zoomLevel - 1) * container.clientWidth) / 2);
+    const maxPanY = Math.max(0, ((zoomLevel - 1) * container.clientHeight) / 2);
+    setPanPosition((prev) => ({
+      x: Math.max(-maxPanX, Math.min(maxPanX, prev.x)),
+      y: Math.max(-maxPanY, Math.min(maxPanY, prev.y)),
+    }));
+  }, [zoomLevel]);
+
+  // Keyboard shortcuts (+ / - to zoom, 0 to reset)
+  useEffect(() => {
+    if (!isCallOpen || isMinimized) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement).isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        handleZoomIn();
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        handleZoomOut();
+      } else if (e.key === "0") {
+        e.preventDefault();
+        handleResetZoom();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isCallOpen, isMinimized, handleZoomIn, handleZoomOut, handleResetZoom]);
 
   const handleExpandOrJoin = useCallback(async () => {
     if (activeRoomRef.current) {
@@ -1003,39 +1243,39 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       {isCallOpen && !isMinimized && (
         <div
           ref={callModalRef}
-          className="fixed inset-0 z-[999999] bg-slate-950 flex flex-col items-center justify-between p-4 sm:p-6 select-none animate-in fade-in duration-300 backdrop-blur-md"
+          className="fixed inset-0 z-[999999] bg-slate-950 flex flex-col items-center justify-between p-2 sm:p-3 select-none animate-in fade-in duration-300 backdrop-blur-md"
         >
-          <div className="w-full max-w-7xl flex items-center justify-between z-20 px-4 py-3 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-slate-800/80 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 shadow-inner">
-                <ShieldCheck className="w-5 h-5" />
+          <div className="w-full max-w-7xl flex items-center justify-between z-20 px-3.5 sm:px-4 py-2 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-800/80 shadow-xl">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 shadow-inner">
+                <ShieldCheck className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-white text-sm sm:text-base font-semibold tracking-wide">
+                  <h3 className="text-white text-xs sm:text-sm font-semibold tracking-wide">
                     Video Call
                   </h3>
-                  <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                  <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
                     Live
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 font-mono">
+                <p className="text-[11px] text-slate-400 font-mono">
                   {displayRoomTitle}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="px-3.5 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700/50 text-slate-200 text-xs sm:text-sm font-mono tracking-wider flex items-center gap-2 shadow-inner">
-                <Signal className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-800/90 border border-slate-700/50 text-slate-200 text-xs font-mono tracking-wider flex items-center gap-1.5 shadow-inner">
+                <Signal className="w-3 h-3 text-emerald-400" />
                 <span>{formatDuration(callDuration)}</span>
               </div>
 
               <button
                 type="button"
                 onClick={toggleFullscreen}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
                 title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
               >
                 {isFullscreen ? (
@@ -1047,7 +1287,16 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="w-full max-w-7xl flex-1 my-4 relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-800/80 shadow-2xl flex items-center justify-center">
+          <div
+            ref={videoContainerRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onWheel={handleWheel}
+            className={`w-full max-w-7xl flex-1 my-1.5 sm:my-2 relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-800/80 shadow-2xl flex items-center justify-center ${zoomLevel > 1.0 ? (isDragging ? "cursor-grabbing" : "cursor-grab") : ""
+              }`}
+          >
             {isConnecting && (
               <div className="flex flex-col items-center justify-center gap-4 text-center z-10 p-6 animate-in fade-in duration-200">
                 <div className="relative">
@@ -1069,8 +1318,16 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
 
             <div
               ref={remoteVideoRef}
-              className={`w-full h-full absolute inset-0 flex items-center justify-center overflow-hidden [&>video]:w-full [&>video]:h-full [&>video]:object-cover ${!remoteParticipant || isConnecting ? "hidden" : ""
-                }`}
+              style={{
+                transform: `translate3d(${panPosition.x}px, ${panPosition.y}px, 0) scale(${zoomLevel})`,
+                transformOrigin: "center center",
+                transition: isDragging ? "none" : "transform 0.2s cubic-bezier(0.2, 0, 0, 1)",
+                willChange: "transform",
+                backfaceVisibility: "hidden",
+                WebkitBackfaceVisibility: "hidden",
+              }}
+              className={`w-full h-full absolute inset-0 flex items-center justify-center overflow-hidden [&>video]:w-full [&>video]:h-full [&>video]:max-w-full [&>video]:max-h-full ${videoFitMode === "contain" ? "[&>video]:object-contain" : "[&>video]:object-cover"
+                } ${!remoteParticipant || isConnecting ? "hidden" : ""}`}
             />
 
             {!isConnecting && !remoteParticipant && (
@@ -1089,7 +1346,74 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
               </div>
             )}
 
-            <div className="absolute bottom-4 right-4 z-20 w-36 sm:w-56 aspect-video rounded-2xl overflow-hidden bg-slate-800/90 border-2 border-slate-700 shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105">
+            {/* Floating Zoom & Fit Controls */}
+            {remoteParticipant && !isConnecting && (
+              <div
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-2xl bg-slate-900/85 backdrop-blur-md border border-slate-700/70 shadow-2xl select-none animate-in fade-in duration-200"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={() => setVideoFitMode((prev) => (prev === "contain" ? "cover" : "contain"))}
+                  className="px-2 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/50"
+                  title={videoFitMode === "contain" ? "Switch to Fill Screen (Cover)" : "Switch to Fit (Show Full Face)"}
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-orange-400" />
+                  <span className="text-[11px] font-semibold">{videoFitMode === "contain" ? "Fit (Full Face)" : "Fill Screen"}</span>
+                </button>
+
+                <div className="w-[1px] h-4 bg-slate-700/80 mx-0.5" />
+
+                <button
+                  type="button"
+                  onClick={handleZoomOut}
+                  disabled={zoomLevel <= MIN_ZOOM}
+                  className="p-1 sm:p-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-300 transition-all cursor-pointer disabled:cursor-not-allowed active:scale-95"
+                  title="Zoom Out (-)"
+                >
+                  <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetZoom}
+                  className="px-2 py-0.5 rounded-lg text-xs font-mono font-medium text-slate-200 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+                  title="Click to reset zoom to default (100%)"
+                >
+                  <span>{Math.round(zoomLevel * 100)}%</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleZoomIn}
+                  disabled={zoomLevel >= MAX_ZOOM}
+                  className="p-1 sm:p-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-300 transition-all cursor-pointer disabled:cursor-not-allowed active:scale-95"
+                  title="Zoom In (+)"
+                >
+                  <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+
+                {(zoomLevel !== DEFAULT_ZOOM || panPosition.x !== 0 || panPosition.y !== 0) && (
+                  <button
+                    type="button"
+                    onClick={handleResetZoom}
+                    className="p-1 sm:p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer active:scale-95 border-l border-slate-700/60 ml-0.5 pl-1.5"
+                    title="Reset Zoom & Pan"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Helper hint when zoomed in */}
+            {remoteParticipant && !isConnecting && zoomLevel > 1.0 && !isDragging && (
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 pointer-events-none px-2.5 py-1 rounded-xl bg-slate-900/70 backdrop-blur-sm border border-slate-800/80 text-[11px] font-sans text-slate-400 shadow-lg animate-in fade-in duration-300">
+                Drag video to pan • Scroll wheel to zoom
+              </div>
+            )}
+
+            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 w-32 sm:w-48 aspect-video rounded-xl sm:rounded-2xl overflow-hidden bg-slate-800/90 border-2 border-slate-700 shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105">
               <div
                 ref={localVideoRef}
                 className={`w-full h-full [&>video]:w-full [&>video]:h-full [&>video]:object-cover ${isVideoMuted ? "hidden" : ""
@@ -1097,69 +1421,70 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
               />
               {isVideoMuted && (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-slate-800/95 text-slate-400">
-                  <VideoOff className="w-6 h-6 mb-1 text-slate-500" />
-                  <span className="text-[11px] font-medium">Camera Off</span>
+                  <VideoOff className="w-5 h-5 mb-1 text-slate-500" />
+                  <span className="text-[10px] sm:text-[11px] font-medium">Camera Off</span>
                 </div>
               )}
-              <div className="absolute bottom-1.5 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[10px] font-semibold text-white tracking-wide">
+              <div className="absolute bottom-1 left-1.5 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[9px] sm:text-[10px] font-semibold text-white tracking-wide">
                 You (Admin)
               </div>
             </div>
           </div>
 
-          <div className="w-full max-w-md flex items-center justify-center gap-4 z-20 px-6 py-4 rounded-3xl bg-slate-900/90 backdrop-blur-xl border border-slate-800 shadow-2xl">
+          {/* Compact Bottom Buttons Bar */}
+          <div className="flex items-center justify-center gap-2.5 sm:gap-3 z-20 px-4 py-1.5 sm:py-2 rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-800 shadow-xl">
             <button
               type="button"
               onClick={toggleMic}
-              className={`p-3.5 sm:p-4 rounded-2xl transition-all cursor-pointer shadow-lg active:scale-95 ${isMicMuted
-                  ? "bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30"
-                  : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
+              className={`p-2.5 sm:p-3 rounded-xl transition-all cursor-pointer shadow-md active:scale-95 ${isMicMuted
+                ? "bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30"
+                : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
                 }`}
               title={isMicMuted ? "Unmute Microphone" : "Mute Microphone"}
             >
-              {isMicMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              {isMicMuted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
 
             <button
               type="button"
               onClick={toggleVideo}
-              className={`p-3.5 sm:p-4 rounded-2xl transition-all cursor-pointer shadow-lg active:scale-95 ${isVideoMuted
-                  ? "bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30"
-                  : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
+              className={`p-2.5 sm:p-3 rounded-xl transition-all cursor-pointer shadow-md active:scale-95 ${isVideoMuted
+                ? "bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30"
+                : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
                 }`}
               title={isVideoMuted ? "Turn Camera On" : "Turn Camera Off"}
             >
               {isVideoMuted ? (
-                <VideoOff className="w-5 h-5" />
+                <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />
               ) : (
-                <VideoIcon className="w-5 h-5" />
+                <VideoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
             </button>
 
             <button
               type="button"
               onClick={toggleScreenShare}
-              className={`p-3.5 sm:p-4 rounded-2xl transition-all cursor-pointer shadow-lg active:scale-95 ${isScreenSharing
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30"
-                  : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
+              className={`p-2.5 sm:p-3 rounded-xl transition-all cursor-pointer shadow-md active:scale-95 ${isScreenSharing
+                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30"
+                : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
                 }`}
               title={isScreenSharing ? "Stop Screen Share" : "Share Screen"}
             >
               {isScreenSharing ? (
-                <MonitorX className="w-5 h-5" />
+                <MonitorX className="w-4 h-4 sm:w-5 sm:h-5" />
               ) : (
-                <MonitorUp className="w-5 h-5" />
+                <MonitorUp className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
             </button>
 
             <button
               type="button"
               onClick={endCall}
-              className="px-6 py-3.5 sm:py-4 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-medium flex items-center gap-2.5 transition-all cursor-pointer shadow-xl shadow-rose-600/30 active:scale-95 ml-2"
+              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-rose-600/30 active:scale-95 ml-1"
               title="End Video Call"
             >
-              <PhoneOff className="w-5 h-5" />
-              <span className="text-sm font-semibold tracking-wide">End Call</span>
+              <PhoneOff className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              <span className="text-xs sm:text-sm font-semibold tracking-wide">End Call</span>
             </button>
           </div>
         </div>
