@@ -727,40 +727,47 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       let hasAudio = false;
       let hasVideo = false;
 
+      const mobileVideoConstraints = {
+        facingMode: "user",
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      };
+
       try {
         localTracks = await Video.createLocalTracks({
           audio: true,
-          video: {
-            width: { ideal: 1280, max: 1280 },
-            height: { ideal: 720, max: 720 },
-            frameRate: { ideal: 30, max: 30 },
-          },
+          video: mobileVideoConstraints,
         });
         hasAudio = true;
         hasVideo = true;
       } catch (e1: any) {
-        console.warn("Could not acquire both camera and microphone, trying audio only:", e1);
+        console.warn("Could not acquire both camera and microphone with ideal constraints, trying mobile fallback:", e1);
         try {
-          localTracks = await Video.createLocalTracks({ audio: true });
+          localTracks = await Video.createLocalTracks({
+            audio: true,
+            video: { facingMode: "user" },
+          });
           hasAudio = true;
-          hasVideo = false;
-        } catch (e2: any) {
-          console.warn("Could not acquire audio, trying video only:", e2);
+          hasVideo = true;
+        } catch (eFallback: any) {
           try {
-            localTracks = await Video.createLocalTracks({
-              video: {
-                width: { ideal: 1280, max: 1280 },
-                height: { ideal: 720, max: 720 },
-                frameRate: { ideal: 30, max: 30 },
-              },
-            });
-            hasAudio = false;
-            hasVideo = true;
-          } catch (e3: any) {
-            console.warn("No local media devices found or permission not granted. Connecting in receive-only mode:", e3);
-            localTracks = [];
-            hasAudio = false;
+            localTracks = await Video.createLocalTracks({ audio: true });
+            hasAudio = true;
             hasVideo = false;
+          } catch (e2: any) {
+            console.warn("Could not acquire audio, trying video only:", e2);
+            try {
+              localTracks = await Video.createLocalTracks({
+                video: { facingMode: "user" },
+              });
+              hasAudio = false;
+              hasVideo = true;
+            } catch (e3: any) {
+              console.warn("No local media devices found or permission not granted. Connecting in receive-only mode:", e3);
+              localTracks = [];
+              hasAudio = false;
+              hasVideo = false;
+            }
           }
         }
       }
@@ -872,7 +879,7 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           err.name === "PermissionDeniedError" ||
           err.message?.toLowerCase().includes("permission")
         ) {
-          toast.error("Microphone permission denied. Please allow microphone access in your browser.");
+          toast.error("Microphone permission denied. Tap the settings/tune icon next to the URL in your address bar, open Permissions, and select 'Allow'.", { duration: 6000 });
         } else if (
           err.name === "NotReadableError" ||
           err.name === "TrackStartError"
@@ -907,9 +914,17 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         const Video = await import("twilio-video");
         let track: any = null;
         try {
-          track = await Video.createLocalVideoTrack({ width: { ideal: 1280 }, height: { ideal: 720 } });
+          track = await Video.createLocalVideoTrack({
+            facingMode: "user",
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          });
         } catch {
-          track = await Video.createLocalVideoTrack();
+          try {
+            track = await Video.createLocalVideoTrack({ facingMode: "user" });
+          } catch {
+            track = await Video.createLocalVideoTrack();
+          }
         }
         await activeRoomRef.current.localParticipant.publishTrack(track);
         if (localVideoRef.current) {
@@ -924,18 +939,18 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
           err.name === "DevicesNotFoundError" ||
           err.message?.toLowerCase().includes("not found")
         ) {
-          toast.error("No camera detected on this PC. Please connect a webcam or enable your camera.");
+          toast.error("No camera detected. Please connect a webcam or enable your camera.");
         } else if (
           err.name === "NotAllowedError" ||
           err.name === "PermissionDeniedError" ||
           err.message?.toLowerCase().includes("permission")
         ) {
-          toast.error("Camera permission denied. Please allow camera access in your browser.");
+          toast.error("Camera permission denied. Tap the settings/tune icon next to the URL in your address bar, open Permissions, and select 'Allow'.", { duration: 6000 });
         } else if (
           err.name === "NotReadableError" ||
           err.name === "TrackStartError"
         ) {
-          toast.error("Camera is in use by another application (e.g. Microsoft Teams or Zoom).");
+          toast.error("Camera is in use by another application.");
         } else {
           toast.error(err.message || "Could not access camera device.");
         }
