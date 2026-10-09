@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ArrowLeft,
   RotateCcw,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -33,10 +34,16 @@ export default function BroadcastNotificationsPage() {
   const [isSending, setIsSending] = useState(false);
   const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
   const [isSelectGuardsDialogOpen, setIsSelectGuardsDialogOpen] = useState(false);
+  const isOverLimit = message.length > 1000;
 
   const handleSend = async () => {
     if (!message.trim()) {
       toast.error("Please enter a blast message");
+      return;
+    }
+
+    if (message.length > 1000) {
+      toast.error("Message cannot exceed 1,000 characters");
       return;
     }
 
@@ -186,22 +193,39 @@ export default function BroadcastNotificationsPage() {
                 <textarea
                   id="notification-message"
                   value={message}
-                  onChange={(e) => {
-                    if (e.target.value.length <= 1000) {
-                      setMessage(e.target.value);
-                    }
-                  }}
+                  onChange={(e) => setMessage(e.target.value)}
                   placeholder="Enter your blast message here..."
                   rows={6}
-                  className="w-full p-4 bg-white border border-slate-200 focus:border-[#0064cb] focus:ring-4 focus:ring-[#0064cb]/10 focus:outline-none rounded-xl text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 transition-all duration-200 resize-none pr-4 pb-12 shadow-2xs"
+                  className={cn(
+                    "w-full p-4 bg-white border focus:outline-none rounded-xl text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 transition-all duration-200 resize-none pr-4 pb-12 shadow-2xs",
+                    isOverLimit
+                      ? "border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
+                      : "border-slate-200 focus:border-[#0064cb] focus:ring-4 focus:ring-[#0064cb]/10"
+                  )}
                 />
                 <div className="absolute bottom-3.5 right-4 text-xs font-semibold text-slate-400 select-none">
-                  <span className={cn(message.length >= 950 && "text-amber-600 font-bold")}>
+                  <span
+                    className={cn(
+                      isOverLimit
+                        ? "text-rose-600 font-bold"
+                        : message.length >= 950
+                          ? "text-amber-600 font-bold"
+                          : ""
+                    )}
+                  >
                     {message.length}
                   </span>{" "}
                   / 1,000
                 </div>
               </div>
+              {isOverLimit && (
+                <div className="flex items-center gap-1.5 text-xs font-medium text-rose-600 mt-1.5 animate-in fade-in duration-200">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>
+                    Message cannot exceed 1,000 characters. You have entered {message.length} characters (please remove {message.length - 1000} character{message.length - 1000 === 1 ? "" : "s"}).
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -461,7 +485,7 @@ export default function BroadcastNotificationsPage() {
               <Button
                 type="button"
                 onClick={handleSend}
-                disabled={isSending}
+                disabled={isSending || isOverLimit}
                 className="h-11 px-6 bg-[#0064cb] hover:bg-[#0052ae] text-white font-semibold text-sm rounded-lg flex items-center gap-2 shadow-sm shadow-blue-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
               >
                 {isSending ? (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   X,
   ChevronLeft,
@@ -27,7 +28,6 @@ export function RecipientsDrawer({
   isOpen,
   onClose,
   messageId,
-  messageSnippet,
   initialTotalCount,
 }: RecipientsDrawerProps) {
   const [recipients, setRecipients] = useState<BroadcastRecipientItem[]>([]);
@@ -71,18 +71,6 @@ export function RecipientsDrawer({
     }
   }, [isOpen, messageId, initialTotalCount, loadRecipients]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
   const startRecord = totalCount === 0 ? 0 : (currentPage - 1) * limit + 1;
   const endRecord = Math.min(currentPage * limit, totalCount);
@@ -117,35 +105,41 @@ export function RecipientsDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden font-sans">
-      <div
-        className="fixed inset-0 bg-slate-900/30 transition-opacity animate-in fade-in duration-200"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+    <DialogPrimitive.Root
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/30 transition-opacity duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-8">
-        <div className="w-screen max-w-md sm:max-w-[460px] bg-white shadow-2xl border-l border-slate-200 flex flex-col animate-in slide-in-from-right duration-300">
+        <DialogPrimitive.Content
+          className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] max-w-[460px] bg-white shadow-2xl border-l border-slate-200 flex flex-col duration-300 ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right focus:outline-none font-sans"
+        >
           <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-slate-900">
+              <DialogPrimitive.Title className="text-lg font-bold text-slate-900">
                 Recipients{" "}
                 <span className="text-[#0064cb]">
                   ({totalCount} {totalCount === 1 ? "Guard" : "Guards"})
                 </span>
-              </h2>
+              </DialogPrimitive.Title>
             </div>
-            <button
-              type="button"
+            <DialogPrimitive.Description className="sr-only">
+              List of guards who received this broadcast notification
+            </DialogPrimitive.Description>
+            <DialogPrimitive.Close
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer focus:outline-none"
               aria-label="Close panel"
             >
               <X className="w-5 h-5" />
-            </button>
+              <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-3 divide-y divide-slate-100">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-3 divide-y divide-slate-100">
             {isLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <div key={`skel-${i}`} className="py-3.5 flex items-center gap-3">
@@ -289,8 +283,8 @@ export function RecipientsDrawer({
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

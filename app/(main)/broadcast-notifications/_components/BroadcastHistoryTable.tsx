@@ -81,23 +81,18 @@ export function BroadcastHistoryTable({
 
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 
-  const formatDateTime = (dateStr: string) => {
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "-";
     try {
       const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return { date: dateStr || "-", time: "" };
-      const dateFormatted = date.toLocaleDateString("en-US", {
+      if (isNaN(date.getTime())) return dateStr;
+      return date.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
       });
-      const timeFormatted = date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-      return { date: dateFormatted, time: timeFormatted };
     } catch {
-      return { date: dateStr || "-", time: "" };
+      return dateStr || "-";
     }
   };
 
@@ -158,29 +153,26 @@ export function BroadcastHistoryTable({
       </div>
 
       <div className="overflow-x-auto">
-        <Table className="min-w-[950px]">
+        <Table className="w-full">
           <TableHeader>
             <TableRow className="hover:bg-transparent border-y border-slate-200 bg-slate-100/70">
-              <TableHead className="w-16 text-center text-slate-700 font-bold text-[11px] uppercase tracking-wider py-4 px-4">
+              <TableHead className="w-12 text-center text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3">
                 No.
               </TableHead>
-              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-4 px-6 min-w-[300px]">
+              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3">
                 Message
               </TableHead>
-              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-4 px-6 min-w-[160px]">
+              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3 w-[150px]">
                 Sent By
               </TableHead>
-              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-4 px-6 min-w-[160px]">
-                Date &amp; Time
+              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3 w-[110px]">
+                Date
               </TableHead>
-              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-4 px-6 min-w-[130px]">
+              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3 w-[110px]">
                 Source
               </TableHead>
-              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-4 px-6 min-w-[140px]">
+              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3 w-[130px]">
                 Recipients
-              </TableHead>
-              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-4 px-6 min-w-[90px] text-right">
-                Action
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -188,37 +180,32 @@ export function BroadcastHistoryTable({
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={`skeleton-${i}`} className="border-b border-slate-100">
-                  <TableCell className="px-4 py-4 text-center">
+                  <TableCell className="px-3 py-3.5 text-center">
                     <Skeleton className="h-4 w-6 mx-auto" />
                   </TableCell>
-                  <TableCell className="px-6 py-4">
-                    <Skeleton className="h-4 w-5/6 mb-1.5" />
-                    <Skeleton className="h-3 w-1/2" />
+                  <TableCell className="px-3 py-3.5">
+                    <Skeleton className="h-4 w-44" />
                   </TableCell>
-                  <TableCell className="px-6 py-4">
-                    <div className="flex items-center gap-2.5">
-                      <Skeleton className="w-8 h-8 rounded-full" />
-                      <Skeleton className="h-4 w-24" />
+                  <TableCell className="px-3 py-3.5">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="w-7 h-7 rounded-full" />
+                      <Skeleton className="h-4 w-20" />
                     </div>
                   </TableCell>
-                  <TableCell className="px-6 py-4">
-                    <Skeleton className="h-4 w-24 mb-1" />
-                    <Skeleton className="h-3 w-16" />
+                  <TableCell className="px-3 py-3.5">
+                    <Skeleton className="h-4 w-20" />
                   </TableCell>
-                  <TableCell className="px-6 py-4">
+                  <TableCell className="px-3 py-3.5">
                     <Skeleton className="h-6 w-20 rounded-full" />
                   </TableCell>
-                  <TableCell className="px-6 py-4">
+                  <TableCell className="px-3 py-3.5">
                     <Skeleton className="h-6 w-24 rounded-full" />
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-right">
-                    <Skeleton className="h-8 w-14 rounded-lg ml-auto" />
                   </TableCell>
                 </TableRow>
               ))
             ) : historyList.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-64 text-center">
+                <TableCell colSpan={6} className="h-64 text-center">
                   <div className="flex flex-col items-center justify-center gap-3 py-10 max-w-sm mx-auto">
                     <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                       <History className="w-7 h-7" />
@@ -248,7 +235,7 @@ export function BroadcastHistoryTable({
             ) : (
               historyList.map((item, idx) => {
                 const rowNumber = (currentPage - 1) * limit + idx + 1;
-                const { date, time } = formatDateTime(item.send_at);
+                const formattedDate = formatDate(item.send_at);
                 const rawSender =
                   typeof item.sent_by === "string"
                     ? item.sent_by.replace(/\s+/g, " ").trim()
@@ -270,15 +257,15 @@ export function BroadcastHistoryTable({
                     key={item.id || `history-${idx}`}
                     className="hover:bg-slate-50/70 border-b border-slate-100 transition-colors group"
                   >
-                    <TableCell className="text-center text-sm font-semibold text-slate-500 py-4 px-4">
+                    <TableCell className="text-center text-sm font-semibold text-slate-500 py-3.5 px-3 w-12">
                       {rowNumber}
                     </TableCell>
 
-                    <TableCell className="py-4 px-6 pr-4">
-                      <div className="max-w-md">
+                    <TableCell className="py-3.5 px-3 min-w-0">
+                      <div className="max-w-[180px] sm:max-w-[220px] md:max-w-[260px] lg:max-w-[300px]">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <p className="text-[13px] font-bold text-slate-900 group-hover:text-[#0064cb] transition-colors truncate block max-w-[280px] sm:max-w-[360px] md:max-w-[420px] cursor-pointer">
+                            <p className="text-[13px] font-bold text-slate-900 group-hover:text-[#0064cb] transition-colors truncate block cursor-pointer">
                               {item.message}
                             </p>
                           </TooltipTrigger>
@@ -293,7 +280,7 @@ export function BroadcastHistoryTable({
                       </div>
                     </TableCell>
 
-                    <TableCell className="py-4 px-6">
+                    <TableCell className="py-3.5 px-3 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0064cb] border border-blue-200 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                           {initials}
@@ -304,24 +291,17 @@ export function BroadcastHistoryTable({
                       </div>
                     </TableCell>
 
-                    <TableCell className="py-4 px-6">
-                      <div className="flex flex-col leading-tight whitespace-nowrap">
-                        <span className="text-xs font-bold text-slate-800">
-                          {date}
-                        </span>
-                        {time && (
-                          <span className="text-[11px] text-slate-500 font-medium mt-0.5">
-                            {time}
-                          </span>
-                        )}
-                      </div>
+                    <TableCell className="py-3.5 px-3 whitespace-nowrap">
+                      <span className="text-xs font-bold text-slate-800">
+                        {formattedDate}
+                      </span>
                     </TableCell>
 
-                    <TableCell className="py-4 px-6 whitespace-nowrap">
+                    <TableCell className="py-3.5 px-3 whitespace-nowrap">
                       {renderSourceBadge(item.source)}
                     </TableCell>
 
-                    <TableCell className="py-4 px-6 whitespace-nowrap">
+                    <TableCell className="py-3.5 px-3 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => setSelectedMessageForRecipients(item)}
@@ -331,17 +311,6 @@ export function BroadcastHistoryTable({
                         <Users className="w-3.5 h-3.5 text-[#0064cb]" />
                         {Number(item.recipients_count ?? 0).toLocaleString()} Guards
                       </button>
-                    </TableCell>
-
-                    <TableCell className="py-4 px-6 whitespace-nowrap text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedMessageForRecipients(item)}
-                        className="h-8 px-3 text-[#0064cb] border-[#0064cb] hover:bg-[#0064cb]/10 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                      >
-                        View
-                      </Button>
                     </TableCell>
                   </TableRow>
                 );
