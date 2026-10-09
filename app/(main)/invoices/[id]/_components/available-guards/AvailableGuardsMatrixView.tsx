@@ -13,6 +13,7 @@ import {
   Check,
   Send,
   CalendarDays,
+  CalendarX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -159,7 +160,9 @@ export function AvailableGuardsMatrixView({
                   </span>
                 ))
               ) : (
-                <span className="text-xs text-slate-400">Select shifts...</span>
+                <span className="text-xs text-slate-400">
+                  {availableInvoiceShifts.length === 0 ? "No shifts available" : "Select shifts..."}
+                </span>
               )}
               <ChevronDown className="w-4 h-4 text-slate-400 ml-auto shrink-0" />
             </div>
@@ -169,6 +172,13 @@ export function AvailableGuardsMatrixView({
                 {isSentShiftsLoading ? (
                   <div className="py-4 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-[#0064cb]" /> Loading shifts...
+                  </div>
+                ) : availableInvoiceShifts.length === 0 ? (
+                  <div className="py-6 px-4 text-center">
+                    <div className="w-9 h-9 mx-auto mb-2 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                      <CalendarX className="w-4 h-4 text-slate-500" />
+                    </div>
+                    <p className="text-xs font-semibold text-slate-700">No shifts found</p>
                   </div>
                 ) : (
                   availableInvoiceShifts.map((s, sIdx) => {
