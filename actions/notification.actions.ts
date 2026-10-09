@@ -105,4 +105,81 @@ export async function deleteNotificationsAction(notificationIds: string[]): Prom
     }
 }
 
+export interface BroadcastHistoryItem {
+    id: string;
+    source: string;
+    message: string;
+    send_at: string;
+    recipients_count: number;
+    sent_by?: string | { name?: string; role?: string } | null;
+}
+
+export interface BroadcastHistoryResponse {
+    success: boolean;
+    data: BroadcastHistoryItem[];
+    pagination: {
+        total: number;
+        page: number;
+        limit: number;
+    };
+    error?: string;
+}
+
+export async function fetchBroadcastHistoryAction(page: number = 1, limit: number = 20): Promise<BroadcastHistoryResponse> {
+    try {
+        const response = await apiFetch<BroadcastHistoryResponse>(
+            `/api/v1/notification/broadcast?type=history&page=${page}&limit=${limit}`
+        );
+        return response;
+    } catch (error: unknown) {
+        console.error("Error fetching broadcast history:", error);
+        return {
+            success: false,
+            data: [],
+            pagination: { total: 0, page: 1, limit: 20 },
+            error: (error as Error)?.message || "Failed to load broadcast history",
+        };
+    }
+}
+
+export interface BroadcastRecipientItem {
+    id: string;
+    name: string;
+    email: string;
+    address?: string;
+    phone_number?: string;
+}
+
+export interface BroadcastRecipientsResponse {
+    success: boolean;
+    data: BroadcastRecipientItem[];
+    pagination: {
+        total: number;
+        page: number;
+        limit: number;
+    };
+    error?: string;
+}
+
+export async function fetchBroadcastRecipientsAction(
+    messageId: string,
+    page: number = 1,
+    limit: number = 20
+): Promise<BroadcastRecipientsResponse> {
+    try {
+        const response = await apiFetch<BroadcastRecipientsResponse>(
+            `/api/v1/notification/broadcast?type=recipients&message_id=${messageId}&page=${page}&limit=${limit}`
+        );
+        return response;
+    } catch (error: unknown) {
+        console.error("Error fetching broadcast recipients:", error);
+        return {
+            success: false,
+            data: [],
+            pagination: { total: 0, page: 1, limit: 20 },
+            error: (error as Error)?.message || "Failed to load broadcast recipients",
+        };
+    }
+}
+
 
