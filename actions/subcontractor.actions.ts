@@ -112,3 +112,56 @@ export async function submitSubcontractorApplicationAction(payload: any) {
     return { success: false, error: error.message || "Network error" };
   }
 }
+
+export interface SubcontractorState {
+  name: string;
+  short_code: string;
+}
+
+export interface SubcontractorLocationData {
+  countries: string[];
+  states: SubcontractorState[];
+}
+
+export async function getSubcontractorLocationAction(country?: string): Promise<{
+  success: boolean;
+  data?: SubcontractorLocationData;
+  error?: string;
+}> {
+  try {
+    const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/subcontractor/location`);
+    if (country) {
+      url.searchParams.append("country", country);
+    }
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+      "x-api-key": "trk_live_7f9c2a4d8b1e5f6a9c3d2e7f8a1b4c6d",
+    };
+
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers,
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      let errorMessage = "Failed to fetch locations";
+      if (typeof errorData.detail === "string") errorMessage = errorData.detail;
+      else if (errorData.detail?.error) errorMessage = errorData.detail.error;
+      else if (errorData.message) errorMessage = errorData.message;
+      return { success: false, error: errorMessage };
+    }
+
+    const data = await res.json();
+    if (data.success === false) {
+      return { success: false, error: data.message || data.error || "Failed to fetch locations" };
+    }
+    return { success: true, data: data.data || data };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Network error" };
+  }
+}
+

@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Country } from "country-state-city";
+import { toFullCountryName } from "@/lib/utils";
 import { submitSubcontractorApplicationAction } from "@/actions/subcontractor.actions";
 import { EmailAndPhoneSection } from "./sections/EmailAndPhoneSection";
 import { ContactInformationSection } from "./sections/ContactInformationSection";
@@ -67,7 +68,7 @@ const formSchema = z.object({
 export type FormValues = z.infer<typeof formSchema>;
 
 const getPayload = (data: FormValues) => {
-  const fullCountryName = Country.getCountryByCode(data.country)?.name || data.country;
+  const fullCountryName = toFullCountryName(data.country);
 
   return {
     email: data.email,
@@ -127,7 +128,7 @@ export default function SubcontractorForm() {
       driver_license: "",
       firewatch_certificate: "",
       verificationVideo: "",
-      country: "US",
+      country: "United States",
       state: "",
       city: "",
       gender: "",

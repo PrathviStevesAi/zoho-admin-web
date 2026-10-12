@@ -94,6 +94,16 @@ export async function lookupPostalCode(
         const result = gData.results?.[0];
         if (result) {
           const comps = result.address_components || [];
+          const isOnlyCountry =
+            result.types?.includes("country") &&
+            !result.types?.includes("postal_code") &&
+            !result.types?.includes("locality") &&
+            !result.types?.includes("administrative_area_level_1");
+
+          if (isOnlyCountry) {
+            return null;
+          }
+
           const cityComp = comps.find(
             (c: any) =>
               c.types?.includes("locality") ||
@@ -104,6 +114,10 @@ export async function lookupPostalCode(
           const stateComp = comps.find((c: any) =>
             c.types?.includes("administrative_area_level_1")
           );
+
+          if (!cityComp && !stateComp) {
+            return null;
+          }
           const countryComp = comps.find((c: any) => c.types?.includes("country"));
 
           const cityName = cityComp?.long_name;

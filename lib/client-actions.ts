@@ -1,5 +1,6 @@
 import { clientApiFetch } from "@/lib/client-api";
 import { FetchResponse, BaseApiResponse, InvoiceData, Record, SingleFetchResponse } from "@/types/dashboard.types";
+import { toFullCountryName } from "@/lib/utils";
 
 export async function clientFetchInvoicesAction(
   page: number,
@@ -784,6 +785,12 @@ export async function clientFetchCustomerByIdAction(id: string, customer_id?: st
 
 export async function updateCustomerAction(id: string, payload: any, customer_id?: string | null): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
+    if (payload?.billing_address?.country) {
+      payload.billing_address.country = toFullCountryName(payload.billing_address.country) || "United States";
+    }
+    if (payload?.service_address?.country) {
+      payload.service_address.country = toFullCountryName(payload.service_address.country) || "United States";
+    }
     const pathId = customer_id || id;
     const url = customer_id ? `/api/v1/customer/${pathId}?customer_id=${customer_id}` : `/api/v1/customer/${id}`;
     const data = await clientApiFetch<any>(url, {

@@ -87,3 +87,22 @@ export function formatDate(dateInput: string | Date | null | undefined, includeT
     return "";
   }
 }
+
+import { Country } from "country-state-city";
+
+export function toFullCountryName(countryInput?: string | null): string {
+  if (!countryInput) return "";
+  const trimmed = countryInput.trim();
+  if (!trimmed) return "";
+  const upper = trimmed.toUpperCase();
+  if (upper === "US" || upper === "USA") return "United States";
+  if (upper === "CA" || upper === "CAN" || upper === "CN") return "Canada";
+  const fromCode = Country.getCountryByCode(trimmed)?.name;
+  if (fromCode) return fromCode;
+  const matchByName = Country.getAllCountries().find(
+    (c) => c.name.toLowerCase() === trimmed.toLowerCase()
+  );
+  if (matchByName) return matchByName.name;
+  return trimmed;
+}
+

@@ -15,6 +15,7 @@ import {
 import { GuardLevelSection } from "./guard-level-section";
 import { registerGuardAction } from "@/actions/auth.actions";
 import { Country } from "country-state-city";
+import { toFullCountryName } from "@/lib/utils";
 
 export function GuardRegistrationForm({ onBack, countries }: any) {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -27,10 +28,11 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     email: "",
     phone: "",
     streetAddress: "",
-    addressCountry: "US",
+    addressCountry: "United States",
     addressState: "",
     city: "",
     zipCode: "",
+    zipCodeError: "",
     licenseNumber: "",
     licenseExpirationDate: "",
     gender: "",
@@ -86,6 +88,10 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
       newErrors.stateError = "State is required";
       hasRequiredError = true;
     }
+    if (formData.zipCodeError) {
+      newErrors.zipCodeError = formData.zipCodeError;
+      hasRequiredError = true;
+    }
     if (!formData.holdUnarmedLicense) {
       newErrors.holdUnarmedLicenseError = "Unarmed license selection is required";
       hasRequiredError = true;
@@ -116,7 +122,7 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
 
     const formattedPhone = `${selectedCountry.dialCode}${formData.phone}`;
 
-    const fullCountryName = Country.getCountryByCode(formData.addressCountry)?.name || formData.addressCountry;
+    const fullCountryName = toFullCountryName(formData.addressCountry);
 
     const payload = {
       email: formData.email,

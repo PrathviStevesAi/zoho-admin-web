@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, toFullCountryName } from "@/lib/utils";
 
 const countries = [
   { name: "Argentina", code: "ar", dialCode: "+54" },
@@ -55,6 +55,9 @@ const countries = [
 
 const ALLOWED_COUNTRIES: Record<string, string> = {
   US: "United States",
+  "United States": "United States",
+  CA: "Canada",
+  Canada: "Canada",
 };
 
 const DEFAULT_SERVICES = [
@@ -105,12 +108,12 @@ function CustomerViewContent() {
     billing_city: "",
     billing_state: "",
     billing_zip: "",
-    billing_country: "US",
+    billing_country: "United States",
     service_street: "",
     service_city: "",
     service_state: "",
     service_zip: "",
-    service_country: "US",
+    service_country: "United States",
     billing_type: "regular",
     net_terms_days: "",
     security_service_price: {} as Record<string, number>,
@@ -164,12 +167,12 @@ function CustomerViewContent() {
         billing_city: data.billing_address?.city || "",
         billing_state: data.billing_address?.state || "",
         billing_zip: data.billing_address?.zip || "",
-        billing_country: data.billing_address?.country === "United States" ? "US" : (data.billing_address?.country || "US"),
+        billing_country: toFullCountryName(data.billing_address?.country) || "United States",
         service_street: data.service_address?.street || "",
         service_city: data.service_address?.city || "",
         service_state: data.service_address?.state || "",
         service_zip: data.service_address?.zip || "",
-        service_country: data.service_address?.country === "United States" ? "US" : (data.service_address?.country || "US"),
+        service_country: toFullCountryName(data.service_address?.country) || "United States",
         billing_type: data.billing_type === "net_term" ? "net_term" : "regular",
         net_terms_days: data.net_terms_days ? String(data.net_terms_days) : "",
         security_service_price: initialPrices,
@@ -300,7 +303,7 @@ function CustomerViewContent() {
       formData.billing_city !== (customerData.billing_address?.city || "") ||
       formData.billing_state !== (customerData.billing_address?.state || "") ||
       formData.billing_zip !== (customerData.billing_address?.zip || "") ||
-      formData.billing_country !== (customerData.billing_address?.country === "United States" ? "US" : (customerData.billing_address?.country || "US"));
+      toFullCountryName(formData.billing_country) !== toFullCountryName(customerData.billing_address?.country || "United States");
 
     if (billingChanged) {
       payload.billing_address = {
@@ -309,7 +312,7 @@ function CustomerViewContent() {
         city: formData.billing_city,
         state: formData.billing_state,
         zip: formData.billing_zip,
-        country: formData.billing_country === "US" ? "United States" : formData.billing_country,
+        country: toFullCountryName(formData.billing_country) || "United States",
       };
     }
 
@@ -318,7 +321,7 @@ function CustomerViewContent() {
       formData.service_city !== (customerData.service_address?.city || "") ||
       formData.service_state !== (customerData.service_address?.state || "") ||
       formData.service_zip !== (customerData.service_address?.zip || "") ||
-      formData.service_country !== (customerData.service_address?.country === "United States" ? "US" : (customerData.service_address?.country || "US"));
+      toFullCountryName(formData.service_country) !== toFullCountryName(customerData.service_address?.country || "United States");
 
     if (serviceChanged) {
       payload.service_address = {
@@ -327,7 +330,7 @@ function CustomerViewContent() {
         city: formData.service_city,
         state: formData.service_state,
         zip: formData.service_zip,
-        country: formData.service_country === "US" ? "United States" : formData.service_country,
+        country: toFullCountryName(formData.service_country) || "United States",
       };
     }
 
@@ -394,12 +397,12 @@ function CustomerViewContent() {
         billing_city: customerData.billing_address?.city || "",
         billing_state: customerData.billing_address?.state || "",
         billing_zip: customerData.billing_address?.zip || "",
-        billing_country: "US",
+        billing_country: toFullCountryName(customerData.billing_address?.country) || "United States",
         service_street: customerData.service_address?.street || "",
         service_city: customerData.service_address?.city || "",
         service_state: customerData.service_address?.state || "",
         service_zip: customerData.service_address?.zip || "",
-        service_country: "US",
+        service_country: toFullCountryName(customerData.service_address?.country) || "United States",
         billing_type: customerData.billing_type === "net_term" ? "net_term" : "regular",
         net_terms_days: customerData.net_terms_days ? String(customerData.net_terms_days) : "",
         security_service_price: initialPrices,
@@ -962,7 +965,7 @@ function CustomerViewContent() {
                       Country
                     </label>
                     <Input
-                      value={ALLOWED_COUNTRIES[formData.billing_country] || formData.billing_country || "United States"}
+                      value={toFullCountryName(formData.billing_country) || "United States"}
                       disabled
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
                     />
@@ -1097,7 +1100,7 @@ function CustomerViewContent() {
                       Country
                     </label>
                     <Input
-                      value={ALLOWED_COUNTRIES[formData.service_country] || formData.service_country || "United States"}
+                      value={toFullCountryName(formData.service_country) || "United States"}
                       disabled
                       className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
                     />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -8,11 +8,15 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { ChevronDown, CheckCircle2, Loader2 } from "lucide-react";
-import { verifySubcontractorApplicationAction } from "@/actions/subcontractor.actions";
-import { Country, State, City } from "country-state-city";
-import { US_STATE_CITY_DATA } from "@/app/subcontractor/components/StaticData";
+import {
+  verifySubcontractorApplicationAction,
+  getSubcontractorLocationAction,
+  SubcontractorState
+} from "@/actions/subcontractor.actions";
+import { City } from "country-state-city";
 import { CityAutocomplete } from "@/components/ui/city-autocomplete";
-import { lookupPostalCode, ALLOWED_COUNTRY_CODES } from "@/lib/postal-lookup";
+import { lookupPostalCode } from "@/lib/postal-lookup";
+import { toFullCountryName } from "@/lib/utils";
 
 export function PersonalInfoSection({ formData, setFormData, countries, selectedCountry, setIsDropdownOpen, isDropdownOpen }: any) {
   const [isEmailVerifying, setIsEmailVerifying] = useState(false);
@@ -20,75 +24,166 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
 
-  const [countryOptions, setCountryOptions] = useState<any[]>([]);
-  const [stateOptions, setStateOptions] = useState<any[]>([]);
+  const [countryOptions, setCountryOptions] = useState<string[]>([]);
+  const [stateOptions, setStateOptions] = useState<SubcontractorState[]>([]);
   const [cityOptions, setCityOptions] = useState<any[]>([]);
+  const [isCountriesLoading, setIsCountriesLoading] = useState(false);
+  const [isStatesLoading, setIsStatesLoading] = useState(false);
   const [isZipLoading, setIsZipLoading] = useState(false);
   const [zipLocationMessage, setZipLocationMessage] = useState<string | null>(null);
+  const [zipErrorMessage, setZipErrorMessage] = useState<string | null>(null);
+
+  const normalizedCountry = toFullCountryName(formData.addressCountry);
 
   useEffect(() => {
-    const allCountries = Country.getAllCountries().filter(c => ALLOWED_COUNTRY_CODES.includes(c.isoCode));
-    setCountryOptions(allCountries);
-    if (!formData.addressCountry) {
-      setFormData((prev: any) => ({ ...prev, addressCountry: "US" }));
+    let isCancelled = false;
+
+    async function loadInitialLocations() {
+      setIsCountriesLoading(true);
+      if (normalizedCountry) {
+        setIsStatesLoading(true);
+      }
+      try {
+        const res = await getSubcontractorLocationAction(normalizedCountry || undefined);
+        if (!isCancelled && res.success && res.data) {
+          if (res.data.countries?.length) {
+            setCountryOptions(res.data.countries);
+          }
+          if (res.data.states) {
+            setStateOptions(res.data.states);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading guard registration locations:", e);
+      } finally {
+        if (!isCancelled) {
+          setIsCountriesLoading(false);
+          setIsStatesLoading(false);
+        }
+      }
     }
+
+    loadInitialLocations();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
+  const prevCountryRef = useRef<string>(normalizedCountry);
   useEffect(() => {
-    if (formData.addressCountry === "US") {
-      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]: any) => ({
-        isoCode: data.short_code,
-        name: name,
-      }));
-      setStateOptions(usStates);
-    } else if (formData.addressCountry) {
-      setStateOptions(State.getStatesOfCountry(formData.addressCountry));
-    } else {
+    if (prevCountryRef.current === normalizedCountry) return;
+    prevCountryRef.current = normalizedCountry;
+
+    if (!normalizedCountry) {
       setStateOptions([]);
+      return;
     }
-  }, [formData.addressCountry]);
+
+    let isCancelled = false;
+    setIsStatesLoading(true);
+
+    getSubcontractorLocationAction(normalizedCountry)
+      .then((res) => {
+        if (!isCancelled && res.success && res.data) {
+          if (res.data.countries?.length) {
+            setCountryOptions(res.data.countries);
+          }
+          setStateOptions(res.data.states || []);
+        }
+      })
+      .catch((e) => {
+        console.error("Error fetching states:", e);
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsStatesLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [normalizedCountry]);
 
   useEffect(() => {
-    if (formData.addressCountry && formData.addressState) {
+    const countryIso =
+      normalizedCountry === "United States" ? "US" : normalizedCountry === "Canada" ? "CA" : normalizedCountry;
+
+    if (countryIso && formData.addressState) {
       let stateCode = formData.addressState;
       if (formData.addressState.length > 2) {
         const found = stateOptions.find(
-          (s) => s.name.toLowerCase() === formData.addressState.toLowerCase() || s.isoCode === formData.addressState
+          (s: any) =>
+            s.name?.toLowerCase() === formData.addressState.toLowerCase() ||
+            s.short_code === formData.addressState
         );
-        if (found) stateCode = found.isoCode;
+        if (found) stateCode = found.short_code;
       }
-      setCityOptions(City.getCitiesOfState(formData.addressCountry, stateCode) || []);
-    } else if (formData.addressCountry === "US") {
+      setCityOptions(City.getCitiesOfState(countryIso, stateCode) || []);
+    } else if (countryIso === "US") {
       setCityOptions(City.getCitiesOfCountry("US") || []);
     } else {
       setCityOptions([]);
     }
-  }, [formData.addressState, formData.addressCountry, stateOptions]);
+  }, [formData.addressState, normalizedCountry, stateOptions]);
 
-  const handleZipLookup = async (zipValue: string) => {
+  const handleZipLookup = async (zipValue: string, isBlur: boolean = false) => {
     const rawPostal = (zipValue || "").trim();
-    if (rawPostal.length < 3) {
+    if (!rawPostal) {
+      setZipLocationMessage(null);
+      setZipErrorMessage(null);
+      setFormData((prev: any) => ({ ...prev, zipCodeError: "" }));
+      return;
+    }
+    if (rawPostal.length < 3 && !isBlur) {
       setZipLocationMessage(null);
       return;
     }
     setIsZipLoading(true);
+    setZipErrorMessage(null);
+
     try {
-      const res = await lookupPostalCode(rawPostal, formData.addressCountry || "US");
-      if (res) {
+      const targetCountryIso = normalizedCountry === "Canada" ? "CA" : "US";
+      const res = await lookupPostalCode(rawPostal, targetCountryIso);
+      if (res && (res.cityName || res.stateCode) && res.formattedMessage) {
+        setZipErrorMessage(null);
+        const cName = toFullCountryName(res.country || normalizedCountry);
+
+        let finalState = res.stateCode;
+        if (res.stateCode) {
+          const found = stateOptions.find(
+            (s: any) =>
+              s.short_code?.toUpperCase() === res.stateCode?.toUpperCase() ||
+              s.name?.toLowerCase() === res.stateName?.toLowerCase()
+          );
+          if (found) finalState = found.short_code || found.name;
+        }
+
         setFormData((prev: any) => ({
           ...prev,
-          ...(res.country && { addressCountry: res.country, countryError: "" }),
-          ...(res.stateCode && { addressState: res.stateCode, stateError: "" }),
+          addressCountry: cName,
+          countryError: "",
+          ...(finalState && { addressState: finalState, stateError: "" }),
           ...(res.cityName && { city: res.cityName }),
+          zipCodeError: "",
         }));
-        if (res.formattedMessage) {
-          setZipLocationMessage(res.formattedMessage);
-        }
+        setZipLocationMessage(res.formattedMessage);
       } else {
         setZipLocationMessage(null);
+        const errorMsg =
+          normalizedCountry === "Canada"
+            ? "Invalid or unverified postal code for Canada"
+            : "Invalid or unverified zip code";
+        setZipErrorMessage(errorMsg);
+        setFormData((prev: any) => ({ ...prev, zipCodeError: errorMsg }));
       }
     } catch (err) {
       console.error("Postal lookup error:", err);
+      setZipLocationMessage(null);
+      const errorMsg = "Unable to verify zip code";
+      setZipErrorMessage(errorMsg);
+      setFormData((prev: any) => ({ ...prev, zipCodeError: errorMsg }));
     } finally {
       setIsZipLoading(false);
     }
@@ -268,17 +363,33 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Country <span className="text-red-500">*</span></label>
           <Select
-            value={formData.addressCountry}
+            value={normalizedCountry || undefined}
             onValueChange={(val) => {
-              setFormData({ ...formData, addressCountry: val, addressState: "", city: "", countryError: "" });
+              setFormData((prev: any) => ({
+                ...prev,
+                addressCountry: val,
+                addressState: "",
+                city: "",
+                countryError: "",
+              }));
               setZipLocationMessage(null);
+              const curZip = (formData.zipCode || "").trim();
+              if (curZip) {
+                handleZipLookup(curZip, true);
+              } else {
+                setZipErrorMessage(null);
+                setFormData((prev: any) => ({ ...prev, zipCodeError: "" }));
+              }
             }}
+            disabled={isCountriesLoading}
           >
-            <SelectTrigger className={`h-11 bg-slate-50/50 ${formData.countryError ? "border-red-500 ring-1 ring-red-500" : ""}`}><SelectValue placeholder="Select Country" /></SelectTrigger>
+            <SelectTrigger className={`h-11 bg-slate-50/50 ${formData.countryError ? "border-red-500 ring-1 ring-red-500" : ""}`}>
+              <SelectValue placeholder={isCountriesLoading ? "Loading countries..." : "Select Country"} />
+            </SelectTrigger>
             <SelectContent>
               {countryOptions.map((c) => (
-                <SelectItem key={c.isoCode} value={c.isoCode}>
-                  {c.name}
+                <SelectItem key={c} value={c}>
+                  {c}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -295,15 +406,27 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
               maxLength={15}
               onChange={(e) => {
                 const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s\-]/g, "");
-                setFormData({ ...formData, zipCode: cleaned });
+                setFormData((prev: any) => ({ ...prev, zipCode: cleaned }));
+                if (!cleaned) {
+                  setZipLocationMessage(null);
+                  setZipErrorMessage(null);
+                  setFormData((prev: any) => ({ ...prev, zipCodeError: "" }));
+                  return;
+                }
                 if (cleaned.length >= 4) {
-                  handleZipLookup(cleaned);
+                  handleZipLookup(cleaned, false);
+                } else {
+                  setZipLocationMessage(null);
                 }
               }}
               onBlur={() => {
-                if (formData.zipCode) handleZipLookup(formData.zipCode);
+                if (formData.zipCode) handleZipLookup(formData.zipCode, true);
               }}
-              className="h-11 bg-slate-50/50 pr-8"
+              className={`h-11 bg-slate-50/50 pr-8 ${
+                zipErrorMessage || formData.zipCodeError
+                  ? "border-red-500 ring-1 ring-red-500 focus-visible:ring-red-500"
+                  : ""
+              }`}
             />
             {isZipLoading && (
               <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
@@ -311,10 +434,20 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
               </div>
             )}
           </div>
-          {zipLocationMessage && (
+          {isZipLoading && (
+            <p className="text-xs text-blue-600 flex items-center gap-1 mt-1 font-medium">
+              <Loader2 className="w-3 h-3 animate-spin shrink-0" /> Identifying city & state...
+            </p>
+          )}
+          {zipLocationMessage && !isZipLoading && !zipErrorMessage && !formData.zipCodeError && (
             <p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-1">
               <CheckCircle2 className="w-3.5 h-3.5 text-green-500 inline-block" />
               {zipLocationMessage}
+            </p>
+          )}
+          {!isZipLoading && (zipErrorMessage || formData.zipCodeError) && (
+            <p className="text-xs text-red-500 font-medium mt-1">
+              {zipErrorMessage || formData.zipCodeError}
             </p>
           )}
         </div>
@@ -322,17 +455,36 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">State <span className="text-red-500">*</span></label>
           <Select
-            value={formData.addressState}
-            onValueChange={(val) => setFormData({ ...formData, addressState: val, city: "", stateError: "" })}
-            disabled={!formData.addressCountry}
+            value={
+              stateOptions.find(
+                (s: any) =>
+                  s.short_code?.toUpperCase() === formData.addressState?.toUpperCase() ||
+                  s.name?.toLowerCase() === formData.addressState?.toLowerCase()
+              )?.short_code || formData.addressState || undefined
+            }
+            onValueChange={(val) => setFormData((prev: any) => ({ ...prev, addressState: val, city: "", stateError: "" }))}
+            disabled={!normalizedCountry || isStatesLoading}
           >
-            <SelectTrigger className={`h-11 bg-slate-50/50 ${formData.stateError ? "border-red-500 ring-1 ring-red-500" : ""}`}><SelectValue placeholder="Select State" /></SelectTrigger>
+            <SelectTrigger className={`h-11 bg-slate-50/50 ${formData.stateError ? "border-red-500 ring-1 ring-red-500" : ""}`}>
+              <SelectValue
+                placeholder={
+                  isStatesLoading
+                    ? "Loading states..."
+                    : !normalizedCountry
+                    ? "Select Country first"
+                    : "Select State"
+                }
+              />
+            </SelectTrigger>
             <SelectContent>
-              {stateOptions.map((s) => (
-                <SelectItem key={s.isoCode} value={s.isoCode}>
-                  {s.name}
-                </SelectItem>
-              ))}
+              {stateOptions.map((s) => {
+                const val = s.short_code || s.name;
+                return (
+                  <SelectItem key={val} value={val}>
+                    {s.name}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           {formData.stateError && <p className="text-xs text-red-500 font-medium mt-1">{formData.stateError}</p>}
