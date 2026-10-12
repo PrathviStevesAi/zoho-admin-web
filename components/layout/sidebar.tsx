@@ -19,6 +19,7 @@ import {
   History,
   FileText,
   CreditCard,
+  UserSearch,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -59,6 +60,7 @@ const navGroups: NavGroup[] = [
   {
     groupLabel: "User Management",
     items: [
+      { label: "Find Available Guards", icon: UserSearch, href: "/find-available-guards" },
       { label: "Membership", icon: CreditCard, href: "/membership" },
       {
         label: "Users",
