@@ -94,7 +94,7 @@ export function AvailableGuardsListTable({
       Email: g.email || "-",
       "Phone Number": g.phone_number || "-",
       "City, State": getCityState(g),
-      ...(locationType === "radius" ? { Distance: getDistance(g) } : {}),
+      Distance: getDistance(g),
       Armed: g.armed ? "Yes" : "No",
       Unarmed: g.unarmed ? "Yes" : "No",
       "Guard Level": g.guard_level !== undefined && g.guard_level !== null ? g.guard_level : "-",
@@ -159,9 +159,7 @@ export function AvailableGuardsListTable({
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">NAME</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">EMAIL</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">CITY, STATE</TableHead>
-              {locationType === "radius" && (
-                <TableHead className="w-24 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">DISTANCE</TableHead>
-              )}
+              <TableHead className="w-24 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">DISTANCE</TableHead>
               <TableHead className="w-20 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-2 text-center">ARMED</TableHead>
               <TableHead className="w-20 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-2 text-center">UNARMED</TableHead>
               <TableHead className="w-24 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-2 text-center">STATUS</TableHead>
@@ -170,7 +168,7 @@ export function AvailableGuardsListTable({
           <TableBody>
             {isGuardsLoading ? (
               <TableRow>
-                <TableCell colSpan={locationType === "radius" ? 9 : 8} className="py-10 text-center">
+                <TableCell colSpan={9} className="py-10 text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
                   <span className="text-xs text-slate-500 font-medium mt-2 block">Loading guards...</span>
                 </TableCell>
@@ -213,11 +211,9 @@ export function AvailableGuardsListTable({
                   <TableCell className="text-xs text-slate-600 py-2.5 px-3 truncate max-w-[180px]" title={getCityState(guard)}>
                     {getCityState(guard)}
                   </TableCell>
-                  {locationType === "radius" && (
-                    <TableCell className="text-xs font-semibold text-slate-700 py-2.5 px-3 whitespace-nowrap">
-                      {getDistance(guard)}
-                    </TableCell>
-                  )}
+                  <TableCell className="text-xs font-semibold text-slate-700 py-2.5 px-3 whitespace-nowrap">
+                    {getDistance(guard)}
+                  </TableCell>
                   <TableCell className="text-xs py-2.5 px-2 text-center whitespace-nowrap">
                     {guard.armed ? (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
@@ -250,7 +246,7 @@ export function AvailableGuardsListTable({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={locationType === "radius" ? 9 : 8}
+                  colSpan={9}
                   className="py-12 text-center text-xs text-slate-500"
                 >
                   No guards found matching filters. Try adjusting your location or radius.

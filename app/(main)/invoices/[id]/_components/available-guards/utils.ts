@@ -99,12 +99,13 @@ export function getCityState(guard: any): string {
 }
 
 export function getDistance(guard: any): string {
-  if (guard?.distance_miles !== undefined && guard?.distance_miles !== null && guard?.distance_miles !== "") {
-    const val = guard.distance_miles;
-    if (typeof val === "number") {
-      return `${val.toFixed(1)} mi`;
+  const rawDist = guard?.distance_miles ?? guard?.distance;
+  if (rawDist !== undefined && rawDist !== null && rawDist !== "") {
+    const num = Number(rawDist);
+    if (!isNaN(num)) {
+      return `${num.toFixed(1)} mi`;
     }
-    return typeof val === "string" && val.endsWith("mi") ? val : `${val} mi`;
+    return typeof rawDist === "string" && rawDist.endsWith("mi") ? rawDist : `${rawDist} mi`;
   }
   return "-";
 }
