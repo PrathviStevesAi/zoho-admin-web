@@ -210,35 +210,37 @@ export function GuardFiltersAndMap({
             </Select>
           </div>
 
-          {locationType === "radius" && (
-            <>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-black">Site Location</Label>
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-                  <Autocomplete
-                    apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyAcL7f3q3X4BUlmdpjbo7ZY0GotX7Gh-sU"}
-                    value={centerLocation}
-                    onChange={(e: any) => onCenterLocationChange(e.target.value)}
-                    onPlaceSelected={onPlaceSelected}
-                    options={{
-                      types: ["geocode", "establishment"],
-                    }}
-                    placeholder="Search location with Google..."
-                    className="w-full h-10 pl-9 pr-8 bg-white border border-slate-200 rounded-lg text-xs text-black font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/10 transition-colors cursor-pointer"
-                    style={{ color: "#000000" }}
-                  />
-                  {centerLocation && (
-                    <button
-                      type="button"
-                      onClick={() => onCenterLocationChange("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer z-10"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+          {(locationType === "radius" || locationType === "city" || locationType === "state" || locationType === "country") && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-black">Site Location</Label>
+              <div className="relative">
+                <MapPin className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+                <Autocomplete
+                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyAcL7f3q3X4BUlmdpjbo7ZY0GotX7Gh-sU"}
+                  value={centerLocation}
+                  onChange={(e: any) => onCenterLocationChange(e.target.value)}
+                  onPlaceSelected={onPlaceSelected}
+                  options={{
+                    types: ["geocode", "establishment"],
+                  }}
+                  placeholder="Search location with Google..."
+                  className="w-full h-10 pl-9 pr-8 bg-white border border-slate-200 rounded-lg text-xs text-black font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/10 transition-colors cursor-pointer"
+                  style={{ color: "#000000" }}
+                />
+                {centerLocation && (
+                  <button
+                    type="button"
+                    onClick={() => onCenterLocationChange("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer z-10"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
+            </div>
+          )}
+
+          {locationType === "radius" && (
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold text-slate-800">Radius (Miles)</Label>
@@ -280,7 +282,6 @@ export function GuardFiltersAndMap({
                   </p>
                 </div>
               </div>
-            </>
           )}
 
           {locationType === "city" && (

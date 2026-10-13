@@ -158,7 +158,7 @@ export function AvailableGuardsFilterAndMap({
             </Select>
           </div>
 
-          {locationType === "radius" && (
+          {(locationType === "radius" || locationType === "city" || locationType === "state" || locationType === "country") && (
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-black">Site Location</Label>
               <div className="relative">

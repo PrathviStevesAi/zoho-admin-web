@@ -80,28 +80,46 @@ function FindAvailableGuardsContent() {
         params.location = centerLocation.trim();
       }
     } else if (locationType === "city") {
-      if (selectedCities.length === 0) {
-        toast.error("Please select at least one city");
+      if (selectedCities.length === 0 && !centerLocation.trim()) {
+        toast.error("Please select at least one city or enter a site location");
         return;
       }
       params.location_type = "cities";
-      params.cities = selectedCities;
+      if (selectedCities.length > 0) {
+        params.cities = selectedCities;
+      }
+      if (centerLocation && centerLocation.trim()) {
+        params.location = centerLocation.trim();
+      }
     } else if (locationType === "state") {
-      if (selectedStates.length === 0) {
-        toast.error("Please select at least one state");
+      if (selectedStates.length === 0 && !centerLocation.trim()) {
+        toast.error("Please select at least one state or enter a site location");
         return;
       }
       params.location_type = "states";
-      params.states = selectedStates;
+      if (selectedStates.length > 0) {
+        params.states = selectedStates;
+      }
+      if (centerLocation && centerLocation.trim()) {
+        params.location = centerLocation.trim();
+      }
     } else if (locationType === "country") {
-      if (selectedCountries.length === 0) {
-        toast.error("Please select at least one country");
+      if (selectedCountries.length === 0 && !centerLocation.trim()) {
+        toast.error("Please select at least one country or enter a site location");
         return;
       }
       params.location_type = "country";
-      params.country = selectedCountries;
+      if (selectedCountries.length > 0) {
+        params.country = selectedCountries;
+      }
+      if (centerLocation && centerLocation.trim()) {
+        params.location = centerLocation.trim();
+      }
     } else if (locationType === "all_guard" || locationType === "all") {
       params.location_type = "all_guard";
+      if (centerLocation && centerLocation.trim()) {
+        params.location = centerLocation.trim();
+      }
     }
 
     setIsGuardsLoading(true);
@@ -198,7 +216,15 @@ function FindAvailableGuardsContent() {
     }
   }, [allGuards]);
 
-  const displayedLocation = centerLocation.trim() || "United States";
+  const displayedLocation =
+    centerLocation.trim() ||
+    (locationType === "city" && selectedCities.length > 0
+      ? selectedCities.join(", ")
+      : locationType === "state" && selectedStates.length > 0
+      ? selectedStates.join(", ")
+      : locationType === "country" && selectedCountries.length > 0
+      ? selectedCountries.join(", ")
+      : "United States");
 
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6">
@@ -238,15 +264,33 @@ function FindAvailableGuardsContent() {
           countrySelectKey={countrySelectKey}
           selectedCities={selectedCities}
           availableCities={apiLocations.cities}
-          onAddCity={(c) => setSelectedCities((prev) => [...prev, c])}
+          onAddCity={(c) => {
+            setSelectedCities((prev) => [...prev, c]);
+            if (!centerLocation) {
+              const coords = getCoordinatesFromLocation(c);
+              if (coords) setMapCenter(coords);
+            }
+          }}
           onRemoveCity={(c) => setSelectedCities((prev) => prev.filter((item) => item !== c))}
           selectedStates={selectedStates}
           availableStates={apiLocations.states}
-          onAddState={(s) => setSelectedStates((prev) => [...prev, s])}
+          onAddState={(s) => {
+            setSelectedStates((prev) => [...prev, s]);
+            if (!centerLocation) {
+              const coords = getCoordinatesFromLocation(s);
+              if (coords) setMapCenter(coords);
+            }
+          }}
           onRemoveState={(s) => setSelectedStates((prev) => prev.filter((item) => item !== s))}
           selectedCountries={selectedCountries}
           availableCountries={apiLocations.countries}
-          onAddCountry={(co) => setSelectedCountries((prev) => [...prev, co])}
+          onAddCountry={(co) => {
+            setSelectedCountries((prev) => [...prev, co]);
+            if (!centerLocation) {
+              const coords = getCoordinatesFromLocation(co);
+              if (coords) setMapCenter(coords);
+            }
+          }}
           onRemoveCountry={(co) => setSelectedCountries((prev) => prev.filter((item) => item !== co))}
           isLocationsLoading={isLocationsLoading}
           isGuardsLoading={isGuardsLoading}

@@ -544,28 +544,46 @@ export function AvailableGuardsModule({
         params.location = centerLocation;
       }
     } else if (locationType === "city") {
-      if (selectedCities.length === 0) {
-        toast.error("Please select at least one city");
+      if (selectedCities.length === 0 && !centerLocation.trim()) {
+        toast.error("Please select at least one city or enter a site location");
         return;
       }
       params.location_type = "cities";
-      params.cities = selectedCities;
+      if (selectedCities.length > 0) {
+        params.cities = selectedCities;
+      }
+      if (centerLocation && centerLocation.trim()) {
+        params.location = centerLocation.trim();
+      }
     } else if (locationType === "state") {
-      if (selectedStates.length === 0) {
-        toast.error("Please select at least one state");
+      if (selectedStates.length === 0 && !centerLocation.trim()) {
+        toast.error("Please select at least one state or enter a site location");
         return;
       }
       params.location_type = "states";
-      params.states = selectedStates;
+      if (selectedStates.length > 0) {
+        params.states = selectedStates;
+      }
+      if (centerLocation && centerLocation.trim()) {
+        params.location = centerLocation.trim();
+      }
     } else if (locationType === "country") {
-      if (selectedCountries.length === 0) {
-        toast.error("Please select at least one country");
+      if (selectedCountries.length === 0 && !centerLocation.trim()) {
+        toast.error("Please select at least one country or enter a site location");
         return;
       }
       params.location_type = "country";
-      params.country = selectedCountries;
+      if (selectedCountries.length > 0) {
+        params.country = selectedCountries;
+      }
+      if (centerLocation && centerLocation.trim()) {
+        params.location = centerLocation.trim();
+      }
     } else if (locationType === "all_guard" || locationType === "all") {
       params.location_type = "all_guard";
+      if (centerLocation && centerLocation.trim()) {
+        params.location = centerLocation.trim();
+      }
     }
 
     setIsGuardsLoading(true);
