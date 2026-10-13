@@ -151,7 +151,7 @@ export default function BroadcastNotificationsPage() {
 
     const timer = setTimeout(() => {
       fetchEstimate();
-    }, 300);
+    }, 1000);
 
     return () => {
       isCancelled = true;
