@@ -471,9 +471,14 @@ export function AvailableGuardsFilterAndMap({
           <div className="flex items-center gap-4 pt-2">
             <Button
               type="button"
-              disabled={isGuardsLoading}
+              disabled={isGuardsLoading || (locationType !== "all_guard" && locationType !== "all" && !centerLocation?.trim())}
               onClick={onSearchGuards}
-              className="h-10 px-5 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg text-xs font-bold shadow-md shadow-[#0064cb]/20 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-75 disabled:cursor-not-allowed"
+              title={
+                !centerLocation?.trim() && locationType !== "all_guard" && locationType !== "all"
+                  ? "Please enter a site location to search guards"
+                  : undefined
+              }
+              className="h-10 px-5 bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-lg text-xs font-bold shadow-md shadow-[#0064cb]/20 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
               {isGuardsLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

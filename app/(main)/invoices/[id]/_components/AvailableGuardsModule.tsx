@@ -531,6 +531,11 @@ export function AvailableGuardsModule({
 
   const [hasSearched, setHasSearched] = useState(false);
   const loadGuards = async () => {
+    if (locationType !== "all_guard" && locationType !== "all" && (!centerLocation || !centerLocation.trim())) {
+      toast.error("Please enter a site location");
+      return;
+    }
+
     const params: FetchGuardsByLocationParams = {
       account_status: "active",
       service: serviceFilter,
