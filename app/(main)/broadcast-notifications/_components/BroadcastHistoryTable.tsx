@@ -96,6 +96,13 @@ export function BroadcastHistoryTable({
     }
   };
 
+  const formatCost = (cost?: number | string | null) => {
+    if (cost === undefined || cost === null || cost === "") return null;
+    const num = typeof cost === "number" ? cost : parseFloat(String(cost));
+    if (isNaN(num)) return null;
+    return `$${num.toFixed(2)}`;
+  };
+
   const renderSourceBadge = (source: string) => {
     const s = String(source || "").toLowerCase();
     if (s === "in_app" || s === "app") {
@@ -174,6 +181,9 @@ export function BroadcastHistoryTable({
               <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3 w-[130px]">
                 Recipients
               </TableHead>
+              <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3 w-[120px]">
+                Estimate Cost
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="[&_tr:last-child]:border-b-0">
@@ -201,11 +211,14 @@ export function BroadcastHistoryTable({
                   <TableCell className="px-3 py-3.5">
                     <Skeleton className="h-6 w-24 rounded-full" />
                   </TableCell>
+                  <TableCell className="px-3 py-3.5">
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : historyList.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-64 text-center">
+                <TableCell colSpan={7} className="h-64 text-center">
                   <div className="flex flex-col items-center justify-center gap-3 py-10 max-w-sm mx-auto">
                     <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                       <History className="w-7 h-7" />
@@ -311,6 +324,19 @@ export function BroadcastHistoryTable({
                         <Users className="w-3.5 h-3.5 text-[#0064cb]" />
                         {Number(item.recipients_count ?? 0).toLocaleString()} Guards
                       </button>
+                    </TableCell>
+
+                    <TableCell className="py-3.5 px-3 whitespace-nowrap">
+                      {(() => {
+                        const costStr = formatCost(item.estimate_cost ?? item.estimate_value);
+                        return costStr ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200">
+                            {costStr}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-medium text-sm pl-2">-</span>
+                        );
+                      })()}
                     </TableCell>
                   </TableRow>
                 );

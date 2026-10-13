@@ -79,7 +79,6 @@ export async function estimateBroadcastNotificationAction(payload: {
     send_to_all: boolean;
     guard_ids?: string[];
     estimate_cost?: number;
-    estimate_value?: number;
 }): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
         console.log("[estimateBroadcastNotificationAction] Payload:", payload);
@@ -102,7 +101,6 @@ export async function sendBroadcastNotificationAction(payload: {
     send_sms: boolean;
     send_to_all: boolean;
     guard_ids: string[];
-    estimate_value?: number;
     estimate_cost?: number;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
@@ -113,7 +111,7 @@ export async function sendBroadcastNotificationAction(payload: {
             send_sms: payload.send_sms,
             send_to_all: payload.send_to_all,
             guard_ids: payload.guard_ids,
-            estimate_value: payload.estimate_value ?? payload.estimate_cost ?? 0,
+            estimate_cost: payload.estimate_cost ?? 0,
         };
         console.log("[sendBroadcastNotificationAction] Payload:", body);
         const response = await apiFetch<unknown>(`/api/v1/notification/broadcast`, {
@@ -147,6 +145,8 @@ export interface BroadcastHistoryItem {
     send_at: string;
     recipients_count: number;
     sent_by?: string | { name?: string; role?: string } | null;
+    estimate_cost?: number | string | null;
+    estimate_value?: number | string | null;
 }
 
 export interface BroadcastHistoryResponse {

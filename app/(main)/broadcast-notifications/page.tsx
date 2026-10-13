@@ -130,7 +130,6 @@ export default function BroadcastNotificationsPage() {
           send_to_all: recipientType === "all",
           guard_ids: recipientType === "all" ? [] : selectedGuardIds,
           estimate_cost: 0,
-          estimate_value: 0,
         });
 
         if (!isCancelled && res.success) {
@@ -183,15 +182,19 @@ export default function BroadcastNotificationsPage() {
 
     setIsSending(true);
     try {
-      const res = await sendBroadcastNotificationAction({
+      const payload = {
         title: "Broadcast Notification",
         message,
         send_to_all: recipientType === "all",
         guard_ids: recipientType === "all" ? [] : selectedGuardIds,
         send_in_app: sendViaInApp,
         send_sms: sendViaSms,
-        estimate_value: sendViaSms ? estimatedCost : 0,
-      });
+        estimate_cost: sendViaSms ? estimatedCost : 0,
+      };
+      console.log("[Send Blast Message] Payload:", payload);
+
+      const res = await sendBroadcastNotificationAction(payload);
+      console.log("[Send Blast Message] Response:", res);
 
       if (res.success) {
         toast.success(res.message || "Blast message sent successfully!");
