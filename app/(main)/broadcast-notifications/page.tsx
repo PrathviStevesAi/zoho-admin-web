@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   SendHorizontal,
@@ -16,13 +16,79 @@ import {
   ArrowLeft,
   RotateCcw,
   AlertCircle,
+  Calculator,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { sendBroadcastNotificationAction } from "@/actions/notification.actions";
+import {
+  sendBroadcastNotificationAction,
+  estimateBroadcastNotificationAction,
+} from "@/actions/notification.actions";
 import { SelectGuardsDialog } from "./_components/SelectGuardsDialog";
 import { BroadcastHistoryTable } from "./_components/BroadcastHistoryTable";
+
+function parseEstimateResponse(
+  res: any,
+  fallbackCount: number
+): { cost: number; count: number } {
+  const d = res?.data ?? res;
+
+  const parseNumeric = (val: any): number | null => {
+    if (typeof val === "number" && !isNaN(val)) return val;
+    if (typeof val === "string" && val.trim() !== "") {
+      const num = parseFloat(val.replace(/[^0-9.-]+/g, ""));
+      if (!isNaN(num)) return num;
+    }
+    return null;
+  };
+
+  let cost = 0;
+  const costCandidates = [
+    d?.estimated_cost,
+    d?.estimate_cost,
+    d?.estimate_value,
+    d?.cost,
+    d?.total_cost,
+    d?.amount,
+    res?.estimated_cost,
+    res?.estimate_cost,
+    res?.estimate_value,
+    res?.cost,
+  ];
+  for (const cand of costCandidates) {
+    const n = parseNumeric(cand);
+    if (n !== null) {
+      cost = n;
+      break;
+    }
+  }
+
+  let count = fallbackCount;
+  const countCandidates = [
+    d?.recipient_count,
+    d?.recipients_count,
+    d?.total_recipients,
+    d?.guard_count,
+    d?.guards_count,
+    d?.count,
+    res?.recipient_count,
+    res?.recipients_count,
+    res?.total_recipients,
+  ];
+  for (const cand of countCandidates) {
+    const n = parseNumeric(cand);
+    if (n !== null) {
+      count = n;
+      break;
+    }
+  }
+  if (count === fallbackCount && Array.isArray(d?.guard_ids)) {
+    count = d.guard_ids.length;
+  }
+
+  return { cost, count };
+}
 
 export default function BroadcastNotificationsPage() {
   const [activeTab, setActiveTab] = useState<"compose" | "history">("compose");
@@ -34,7 +100,65 @@ export default function BroadcastNotificationsPage() {
   const [isSending, setIsSending] = useState(false);
   const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
   const [isSelectGuardsDialogOpen, setIsSelectGuardsDialogOpen] = useState(false);
+  const [estimatedCost, setEstimatedCost] = useState<number>(0);
+  const [estimatedRecipientsCount, setEstimatedRecipientsCount] = useState<number>(0);
+  const [isEstimating, setIsEstimating] = useState(false);
   const isOverLimit = message.length > 1000;
+
+  useEffect(() => {
+    if (!sendViaSms) {
+      setEstimatedCost(0);
+      setEstimatedRecipientsCount(0);
+      return;
+    }
+
+    if (recipientType === "filter" && selectedGuardIds.length === 0) {
+      setEstimatedCost(0);
+      setEstimatedRecipientsCount(0);
+      return;
+    }
+
+    let isCancelled = false;
+    const fetchEstimate = async () => {
+      setIsEstimating(true);
+      try {
+        const res = await estimateBroadcastNotificationAction({
+          title: "Broadcast Notification",
+          message: message.trim() || "Broadcast notification",
+          send_in_app: sendViaInApp,
+          send_sms: sendViaSms,
+          send_to_all: recipientType === "all",
+          guard_ids: recipientType === "all" ? [] : selectedGuardIds,
+          estimate_cost: 0,
+          estimate_value: 0,
+        });
+
+        if (!isCancelled && res.success) {
+          const parsed = parseEstimateResponse(
+            res.data,
+            recipientType === "all" ? 0 : selectedGuardIds.length
+          );
+          setEstimatedCost(parsed.cost);
+          setEstimatedRecipientsCount(parsed.count);
+        }
+      } catch (err) {
+        console.error("Estimate fetch error:", err);
+      } finally {
+        if (!isCancelled) {
+          setIsEstimating(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(() => {
+      fetchEstimate();
+    }, 300);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [sendViaSms, sendViaInApp, recipientType, selectedGuardIds, message]);
 
   const handleSend = async () => {
     if (!message.trim()) {
@@ -66,6 +190,7 @@ export default function BroadcastNotificationsPage() {
         guard_ids: recipientType === "all" ? [] : selectedGuardIds,
         send_in_app: sendViaInApp,
         send_sms: sendViaSms,
+        estimate_value: sendViaSms ? estimatedCost : 0,
       });
 
       if (res.success) {
@@ -75,6 +200,8 @@ export default function BroadcastNotificationsPage() {
         setSendViaSms(false);
         setRecipientType("all");
         setSelectedGuardIds([]);
+        setEstimatedCost(0);
+        setEstimatedRecipientsCount(0);
         setHistoryTotalCount((prev) => (prev !== null ? prev + 1 : 1));
       } else {
         toast.error(res.error || "Failed to send blast message");
@@ -92,6 +219,8 @@ export default function BroadcastNotificationsPage() {
     setSendViaSms(false);
     setRecipientType("all");
     setSelectedGuardIds([]);
+    setEstimatedCost(0);
+    setEstimatedRecipientsCount(0);
   };
 
   const hasFormContent =
@@ -441,6 +570,53 @@ export default function BroadcastNotificationsPage() {
                 </div>
               </div>
             </div>
+
+            {sendViaSms && (
+              <div className="bg-[#FFFDF5] border border-[#FDE68A] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 shrink-0 rounded-xl bg-[#FEF3C7] flex items-center justify-center text-[#B45309]">
+                    <Calculator className="w-5 h-5" strokeWidth={2.2} />
+                  </div>
+
+                  <div className="h-9 w-px bg-amber-200/80 hidden sm:block" />
+
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-slate-800">
+                      Estimated SMS Cost
+                    </p>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-2xl sm:text-3xl font-extrabold text-[#B45309] tracking-tight">
+                        {isEstimating ? (
+                          <span className="inline-flex items-center gap-1.5 text-lg">
+                            <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                            <span className="text-sm font-semibold">Calculating...</span>
+                          </span>
+                        ) : (
+                          `$${estimatedCost.toFixed(2)}`
+                        )}
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">
+                        For{" "}
+                        {recipientType === "filter"
+                          ? estimatedRecipientsCount || selectedGuardIds.length
+                          : estimatedRecipientsCount || "all"}{" "}
+                        {recipientType === "filter" ? "selected guards" : "guards"} · Estimate only
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="h-8 w-px bg-amber-200/80 hidden md:block" />
+                  <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
+                    <div className="w-4 h-4 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                      i
+                    </div>
+                    <span>Final cost may vary by message length and carrier fees.</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="bg-slate-50/70 border-t border-slate-100 px-6 sm:px-8 py-4.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">

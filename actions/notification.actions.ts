@@ -71,6 +71,30 @@ export async function fetchShiftReportsAction(shiftId: string): Promise<{ succes
     }
 }
 
+export async function estimateBroadcastNotificationAction(payload: {
+    title?: string;
+    message?: string;
+    send_in_app?: boolean;
+    send_sms?: boolean;
+    send_to_all: boolean;
+    guard_ids?: string[];
+    estimate_cost?: number;
+    estimate_value?: number;
+}): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+        console.log("[estimateBroadcastNotificationAction] Payload:", payload);
+        const response = await apiFetch<any>(`/api/v1/notification/broadcast/estimate`, {
+            method: "POST",
+            body: JSON.stringify(payload),
+        });
+        console.log("[estimateBroadcastNotificationAction] Response:", response);
+        return { success: true, data: response };
+    } catch (error: any) {
+        console.error("Error estimating broadcast notification:", error);
+        return { success: false, error: error.message || "Failed to estimate broadcast cost" };
+    }
+}
+
 export async function sendBroadcastNotificationAction(payload: {
     title: string;
     message: string;
@@ -78,12 +102,23 @@ export async function sendBroadcastNotificationAction(payload: {
     send_sms: boolean;
     send_to_all: boolean;
     guard_ids: string[];
+    estimate_value?: number;
+    estimate_cost?: number;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-        console.log("[sendBroadcastNotificationAction] Payload:", payload);
+        const body = {
+            title: payload.title,
+            message: payload.message,
+            send_in_app: payload.send_in_app,
+            send_sms: payload.send_sms,
+            send_to_all: payload.send_to_all,
+            guard_ids: payload.guard_ids,
+            estimate_value: payload.estimate_value ?? payload.estimate_cost ?? 0,
+        };
+        console.log("[sendBroadcastNotificationAction] Payload:", body);
         const response = await apiFetch<unknown>(`/api/v1/notification/broadcast`, {
             method: "POST",
-            body: JSON.stringify(payload),
+            body: JSON.stringify(body),
         });
         return { success: true, message: (response as { message?: string })?.message || "Notification broadcasted successfully!" };
     } catch (error: unknown) {
