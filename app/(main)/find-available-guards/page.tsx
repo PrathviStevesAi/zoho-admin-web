@@ -207,15 +207,15 @@ function FindAvailableGuardsContent() {
           Dashboard
         </Link>
         <ChevronRight className="w-3.5 h-3.5" />
-        <span className="text-slate-700">User Management</span>
+        <span className="text-slate-700">Guard Management</span>
         <ChevronRight className="w-3.5 h-3.5" />
-        <span className="font-semibold text-slate-900">Find Available Guards</span>
+        <span className="font-semibold text-slate-900">Find Guards</span>
       </div>
 
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
           <UserSearch className="w-6 h-6 text-[#0064cb]" />
-          Find Available Guards
+          Find Guards
         </h1>
         <p className="text-xs text-slate-500 mt-1">
           Search, locate, and explore active security guards by geographic radius, cities, states, or service qualification.

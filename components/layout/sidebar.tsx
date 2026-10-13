@@ -53,6 +53,7 @@ const navGroups: NavGroup[] = [
     groupLabel: "Guard Management",
     items: [
       { label: "Guard Bank", icon: Shield, href: "/guard-bank" },
+      { label: "Find Guards", icon: UserSearch, href: "/find-available-guards" },
       { label: "Guard Price", icon: DollarSign, href: "/guard-price" },
       { label: "Member Activity", icon: History, href: "/member-activity" },
     ],
@@ -60,7 +61,6 @@ const navGroups: NavGroup[] = [
   {
     groupLabel: "User Management",
     items: [
-      { label: "Find Available Guards", icon: UserSearch, href: "/find-available-guards" },
       { label: "Membership", icon: CreditCard, href: "/membership" },
       {
         label: "Users",
