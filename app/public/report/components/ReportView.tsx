@@ -18,7 +18,7 @@ import {
   MessageSquarePlus
 } from "lucide-react";
 import Image from "next/image";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatExactApiDateTime } from "@/lib/utils";
 import { DynamicShiftMap } from "@/components/map/DynamicShiftMap";
 import { ShiftDARReportTab } from "@/components/shift/tabs/ShiftDARReportTab";
 import { ShiftIncidentReportsTab } from "@/components/shift/tabs/ShiftIncidentReportsTab";
@@ -49,7 +49,7 @@ export default function ReportView({ data, reportToken, shiftId }: ReportViewPro
   const formatTime = (timeString: string) => {
     if (!timeString) return "-";
     try {
-      return formatDate(timeString);
+      return formatExactApiDateTime(timeString) || "-";
     } catch (e) {
       return timeString;
     }
@@ -58,9 +58,24 @@ export default function ReportView({ data, reportToken, shiftId }: ReportViewPro
   const getDuration = (start: string, end: string) => {
     if (!start || !end) return "";
     try {
-      const startTime = DateTime.fromISO(start);
-      const endTime = DateTime.fromISO(end);
-      const diff = endTime.diff(startTime, ['hours', 'minutes']);
+      const parseComponents = (str: string) => {
+        const m = str.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})[T\s](\d{1,2}):(\d{1,2})/);
+        if (!m) return null;
+        return DateTime.fromObject(
+          {
+            year: parseInt(m[1], 10),
+            month: parseInt(m[2], 10),
+            day: parseInt(m[3], 10),
+            hour: parseInt(m[4], 10),
+            minute: parseInt(m[5], 10),
+          },
+          { zone: "UTC" }
+        );
+      };
+
+      const startTime = parseComponents(start) || DateTime.fromISO(start.replace(" ", "T"), { setZone: true });
+      const endTime = parseComponents(end) || DateTime.fromISO(end.replace(" ", "T"), { setZone: true });
+      const diff = endTime.diff(startTime, ["hours", "minutes"]);
       return `${Math.floor(diff.hours)}h ${Math.floor(diff.minutes)}m`;
     } catch (e) {
       return "";

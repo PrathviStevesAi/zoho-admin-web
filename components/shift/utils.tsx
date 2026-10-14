@@ -1,6 +1,6 @@
 import { Download, Maximize2, FileText } from "lucide-react";
 import { DateTime } from "luxon";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatExactApiDateTime } from "@/lib/utils";
 
 export const toUTCISO = (localDateTimeStr: string, timezone?: string) => {
   if (!localDateTimeStr) return null;
@@ -265,8 +265,11 @@ export const formatStatus = (status: string) => {
 export const formatDateTime = (dateStr: string, timezone?: string) => {
   if (!dateStr) return 'N/A';
   try {
-    const isoString = dateStr.replace(' ', 'T');
-    return formatDate(isoString, true, timezone);
+    if (timezone) {
+      const isoString = dateStr.replace(' ', 'T');
+      return formatDate(isoString, true, timezone);
+    }
+    return formatExactApiDateTime(dateStr, true);
   } catch {
     return 'N/A';
   }

@@ -88,6 +88,44 @@ export function formatDate(dateInput: string | Date | null | undefined, includeT
   }
 }
 
+/**
+ * Formats a date/time string exactly as provided by the backend API without
+ * adjusting for the client browser's local time zone.
+ * Handles ISO (e.g. "2026-09-15T12:30:00+05:30") and SQL (e.g. "2026-09-15 12:56:21.742116+05:30") formats.
+ */
+export function formatExactApiDateTime(
+  dateInput: string | null | undefined,
+  includeTime: boolean = true
+): string {
+  if (!dateInput || typeof dateInput !== "string") return dateInput || "";
+
+  const trimmed = dateInput.trim();
+  if (!trimmed) return "";
+
+  // Match ISO or SQL format: YYYY-MM-DD or YYYY-MM-DD[T or space]HH:mm(:ss)?
+  const match = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (!match) {
+    return formatDate(trimmed, includeTime) || trimmed;
+  }
+
+  const year = match[1];
+  const month = match[2].padStart(2, "0");
+  const day = match[3].padStart(2, "0");
+  const formattedDate = `${month}/${day}/${year}`;
+
+  if (!includeTime || match[4] === undefined || match[5] === undefined) {
+    return formattedDate;
+  }
+
+  let hourNum = parseInt(match[4], 10);
+  const minute = match[5].padStart(2, "0");
+  const ampm = hourNum >= 12 ? "PM" : "AM";
+  hourNum = hourNum % 12 || 12;
+  const hourStr = String(hourNum).padStart(2, "0");
+
+  return `${formattedDate}, ${hourStr}:${minute} ${ampm}`;
+}
+
 import { Country } from "country-state-city";
 
 export function toFullCountryName(countryInput?: string | null): string {
