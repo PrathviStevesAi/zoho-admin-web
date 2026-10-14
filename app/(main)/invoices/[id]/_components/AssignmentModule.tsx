@@ -16,15 +16,17 @@ import {
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormattedDate } from "@/components/ui/formatted-date";
+import { PersonnelProfileDropdown } from "@/components/personnel/PersonnelProfileDropdown";
+import { SelectedPersonnelProfile } from "@/lib/client-actions";
 
 interface AssignmentModuleProps {
   shifts: any[];
   isLoading: boolean;
   onDeleteShift: (id: string) => void;
   onUnassignGuard: (shiftOfferId: string, type: "lead_guard" | "standby_guard") => void;
-  onOpenSelectUser: (selectedIds: string[], type: "lead" | "standby") => void;
+  onOpenSelectUser: (selectedIds: string[], type: "lead" | "standby", personnel?: SelectedPersonnelProfile) => void;
   onBack: () => void;
-  pendingAssignments: Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number, type?: "lead" | "standby", flatQcRate?: number }>;
+  pendingAssignments: Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number, type?: "lead" | "standby", flatQcRate?: number, personnel?: SelectedPersonnelProfile, personnel_name?: string, personnel_profile_id?: string }>;
   onAdd: (shiftRates: Record<string, { hourlyRate?: number; perShiftRate?: number; travelFee?: number }>, clearSelection?: () => void) => void;
   isAssigning: boolean;
   onRemovePendingAssignment?: (shiftId: string) => void;
@@ -49,7 +51,7 @@ export function AssignmentModule({
   const formatPrice = (val: any) => {
     if (val === null || val === undefined || val === "") return "----";
     const num = Number(val);
-    if (isNaN(num)) return "----";
+    if (isNaN(num) || num <= 0) return "----";
     return `$${num.toFixed(2)}`;
   };
 
@@ -128,28 +130,38 @@ export function AssignmentModule({
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h3 className="text-sm font-bold text-slate-700">Select guards for shifts</h3>
               <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "text-[#0064cb] border-[#0064cb] hover:bg-blue-50 h-9 rounded-lg px-4 font-bold text-xs flex gap-2 transition-all cursor-pointer w-full sm:w-auto justify-center items-center shrink-0",
-                    isLeadDisabled && "opacity-50 pointer-events-none grayscale"
-                  )}
-                  onClick={() => onOpenSelectUser(selectedShifts, "lead")}
+                <PersonnelProfileDropdown
                   disabled={isLeadDisabled}
-                >
-                  Assign Lead Guard <Plus className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "text-amber-600 border-amber-600 hover:bg-amber-50 h-9 rounded-lg px-4 font-bold text-xs flex gap-2 transition-all cursor-pointer w-full sm:w-auto justify-center items-center shrink-0",
-                    isStandbyDisabled && "opacity-50 pointer-events-none grayscale"
-                  )}
-                  onClick={() => onOpenSelectUser(selectedShifts, "standby")}
+                  onSelect={(profile) => onOpenSelectUser(selectedShifts, "lead", profile)}
+                  trigger={
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "text-[#0064cb] border-[#0064cb] hover:bg-blue-50 h-9 rounded-lg px-4 font-bold text-xs flex gap-2 transition-all cursor-pointer w-full sm:w-auto justify-center items-center shrink-0",
+                        isLeadDisabled && "opacity-50 pointer-events-none grayscale"
+                      )}
+                      disabled={isLeadDisabled}
+                    >
+                      Assign Lead Guard <Plus className="w-3.5 h-3.5" />
+                    </Button>
+                  }
+                />
+                <PersonnelProfileDropdown
                   disabled={isStandbyDisabled}
-                >
-                  Assign Standby Guard <Plus className="w-3.5 h-3.5" />
-                </Button>
+                  onSelect={(profile) => onOpenSelectUser(selectedShifts, "standby", profile)}
+                  trigger={
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "text-amber-600 border-amber-600 hover:bg-amber-50 h-9 rounded-lg px-4 font-bold text-xs flex gap-2 transition-all cursor-pointer w-full sm:w-auto justify-center items-center shrink-0",
+                        isStandbyDisabled && "opacity-50 pointer-events-none grayscale"
+                      )}
+                      disabled={isStandbyDisabled}
+                    >
+                      Assign Standby Guard <Plus className="w-3.5 h-3.5" />
+                    </Button>
+                  }
+                />
               </div>
             </div>
             <div className="w-full">
@@ -262,16 +274,23 @@ export function AssignmentModule({
                           <FormattedDate date={shift.end_time} timezone={shift.timezone || 'UTC'} />
                         </TableCell>
                         <TableCell className="py-3 px-2 text-xs text-slate-800 font-medium">
-                          <span className={cn(
-                            pendingAssignments[shift.shift_id]
-                              ? "text-[#0064cb] font-semibold text-[13px] animate-pulse"
-                              : ""
-                          )}>
-                            {pendingAssignments[shift.shift_id]
-                              ? formatPrice(shiftRates[shift.shift_id]?.hourlyRate ?? pendingAssignments[shift.shift_id]?.hourlyRate)
-                              : formatPrice(shift.per_hour_rate)}
-                            {((pendingAssignments[shift.shift_id]?.hourlyRate || shift.per_hour_rate) !== null) && " /hr"}
-                          </span>
+                          {(() => {
+                            const rawRate = pendingAssignments[shift.shift_id]
+                              ? (shiftRates[shift.shift_id]?.hourlyRate ?? pendingAssignments[shift.shift_id]?.hourlyRate)
+                              : shift.per_hour_rate;
+                            const num = Number(rawRate);
+                            const hasValidRate = rawRate !== null && rawRate !== undefined && rawRate !== "" && !isNaN(num) && num > 0;
+
+                            return (
+                              <span className={cn(
+                                pendingAssignments[shift.shift_id] && hasValidRate
+                                  ? "text-[#0064cb] font-semibold text-[13px] animate-pulse"
+                                  : ""
+                              )}>
+                                {hasValidRate ? `${formatPrice(num)} /hr` : "----"}
+                              </span>
+                            );
+                          })()}
                         </TableCell>
 
 
@@ -291,9 +310,16 @@ export function AssignmentModule({
                                     <div className="w-5 h-5 rounded-full bg-blue-100 overflow-hidden shrink-0 flex items-center justify-center border border-blue-200">
                                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                                     </div>
-                                    <span className="text-[11px] font-semibold text-[#0064cb] animate-pulse truncate max-w-[100px]">
-                                      {name}
-                                    </span>
+                                    <div className="flex flex-col min-w-0 max-w-[120px] text-left">
+                                      <span className="text-[11px] font-semibold text-[#0064cb] animate-pulse truncate">
+                                        {name}
+                                      </span>
+                                      {pending.personnel_name && (
+                                        <span className="text-[9px] text-slate-400 truncate">
+                                          via {pending.personnel_name}
+                                        </span>
+                                      )}
+                                    </div>
                                     <button
                                       onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
                                       className="w-4 h-4 flex items-center justify-center bg-slate-100 hover:bg-red-100 hover:text-red-500 text-slate-500 rounded-full transition-all cursor-pointer shrink-0"
@@ -393,9 +419,16 @@ export function AssignmentModule({
                                     <div className="w-5 h-5 rounded-full bg-amber-100 overflow-hidden shrink-0 flex items-center justify-center border border-amber-200">
                                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                                     </div>
-                                    <span className="text-[11px] font-semibold text-amber-700 animate-pulse truncate max-w-[100px]">
-                                      {name}
-                                    </span>
+                                    <div className="flex flex-col min-w-0 max-w-[120px] text-left">
+                                      <span className="text-[11px] font-semibold text-amber-700 animate-pulse truncate">
+                                        {name}
+                                      </span>
+                                      {pending.personnel_name && (
+                                        <span className="text-[9px] text-amber-600/70 truncate">
+                                          via {pending.personnel_name}
+                                        </span>
+                                      )}
+                                    </div>
                                     <button
                                       onClick={() => onRemovePendingAssignment?.(shift.shift_id)}
                                       className="w-4 h-4 flex items-center justify-center bg-slate-100 hover:bg-red-100 hover:text-red-500 text-slate-500 rounded-full transition-all cursor-pointer shrink-0"

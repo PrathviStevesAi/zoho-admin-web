@@ -490,6 +490,7 @@ export interface FetchGuardsByLocationParams {
   account_status?: string;
   status?: string;
   page?: number | null;
+  personnel_profile_id?: string;
 }
 
 export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationParams = {}): Promise<FetchResponse<any>> {
@@ -505,6 +506,10 @@ export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationPa
 
   if (params.status) {
     query.append("status", params.status);
+  }
+
+  if (params.personnel_profile_id) {
+    query.append("personnel_profile_id", params.personnel_profile_id);
   }
 
   if (params.location_type) {
@@ -1142,6 +1147,67 @@ export async function clientFetchShiftReportsAction(params: {
     };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to fetch shift reports" };
+  }
+}
+
+export interface PersonnelProfileItem {
+  id: string;
+  name: string;
+  email?: string;
+  [key: string]: any;
+}
+
+export interface PersonnelProfilesResponseData {
+  fastguard: PersonnelProfileItem[];
+  agency: PersonnelProfileItem[];
+  agent: PersonnelProfileItem[];
+}
+
+export interface SelectedPersonnelProfile {
+  category: "fastguard" | "agency" | "agent";
+  categoryLabel: string;
+  id: string;
+  name: string;
+  email?: string;
+}
+
+export async function clientFetchPersonnelProfilesAction(
+  profileType?: "fastguard" | "agency" | "agent"
+): Promise<{ success: boolean; data?: PersonnelProfilesResponseData; error?: string }> {
+  try {
+    const endpoint = profileType
+      ? `/api/v1/personnel/profile/list?profile_type=${profileType}`
+      : `/api/v1/personnel/profile/list`;
+    const res = await clientApiFetch<any>(endpoint);
+    const payload = res?.data?.data || res?.data || res || {};
+
+    const normalizeList = (list: any[]): PersonnelProfileItem[] => {
+      if (!Array.isArray(list)) return [];
+      return list.map((item) => ({
+        ...item,
+        id: String(item.id || item.user_id || item.profile_id || ""),
+        name:
+          item.name ||
+          item.full_name ||
+          [item.first_name, item.last_name].filter(Boolean).join(" ") ||
+          "Unknown",
+        email: item.email || undefined,
+      }));
+    };
+
+    return {
+      success: true,
+      data: {
+        fastguard: normalizeList(payload.fastguard),
+        agency: normalizeList(payload.agency),
+        agent: normalizeList(payload.agent),
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to fetch personnel profiles",
+    };
   }
 }
 

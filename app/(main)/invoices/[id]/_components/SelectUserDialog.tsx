@@ -2,7 +2,8 @@
 
 import {
   clientFetchGuardsNewAction,
-  FetchGuardsByLocationParams
+  FetchGuardsByLocationParams,
+  SelectedPersonnelProfile
 } from "@/lib/client-actions";
 import { useState, useEffect, useCallback } from "react";
 import { X, XCircle, Star, Info } from "lucide-react";
@@ -43,9 +44,10 @@ interface SelectUserDialogProps {
   selectedShiftIds?: string[];
   assigningGuardId?: string | null;
   mode?: "lead" | "standby";
+  selectedPersonnel?: SelectedPersonnelProfile | null;
 }
 
-export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, assigningGuardId, mode = "lead" }: SelectUserDialogProps) {
+export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, assigningGuardId, mode = "lead", selectedPersonnel }: SelectUserDialogProps) {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userFilters, setUserFilters] = useState({
     country: "All Country",
@@ -78,6 +80,14 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [hourlyRate, setHourlyRate] = useState("");
   const [flatQcRate, setFlatQcRate] = useState("");
+
+  const hourlyRateLabel = selectedPersonnel && selectedPersonnel.category !== "fastguard"
+    ? `Per hour agreed rate paid to ${selectedPersonnel.name} ( ${selectedPersonnel.category === "agency" ? "Agency" : "Agent"} )`
+    : "Per hour paid to Fastguard Guard";
+
+  const flatQcRateLabel = selectedPersonnel && selectedPersonnel.category !== "fastguard"
+    ? `Flat QC Rate paid to ${selectedPersonnel.name} ( ${selectedPersonnel.category === "agency" ? "Agency" : "Agent"} )`
+    : "Flat QC Rate paid to Fastguard Standby Guard";
 
   useEffect(() => {
     if (isOpen) {
@@ -167,6 +177,10 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
       params.guard_level = userFilters.level;
     }
 
+    if (selectedPersonnel?.id) {
+      params.personnel_profile_id = selectedPersonnel.id;
+    }
+
     const res = await clientFetchGuardsNewAction(params);
     if (res.success && res.data) {
       setGuards(res.data);
@@ -189,14 +203,14 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
       });
     }
     setIsLoadingGuards(false);
-  }, [debouncedSearchQuery, userFilters]);
+  }, [debouncedSearchQuery, userFilters, selectedPersonnel?.id]);
 
   useEffect(() => {
     if (isOpen) {
       setCurrentPage(1);
       loadGuards(1);
     }
-  }, [isOpen, debouncedSearchQuery, userFilters, loadGuards]);
+  }, [isOpen, debouncedSearchQuery, userFilters, selectedPersonnel?.id, loadGuards]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -208,9 +222,18 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
       <DialogContent className="max-w-[90vw] 2xl:max-w-7xl p-0 overflow-hidden border-none shadow-2xl rounded-xl bg-white max-h-[90vh] flex flex-col sm:left-[calc(50%+35px)]">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-50">
           <div>
-            <DialogTitle className="text-xl font-bold text-slate-900">
-              {mode === "lead" ? "Select Lead Guard" : "Select Standby Guard"}
-            </DialogTitle>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <DialogTitle className="text-xl font-bold text-slate-900">
+                {mode === "lead" ? "Select Lead Guard" : "Select Standby Guard"}
+              </DialogTitle>
+              {selectedPersonnel && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#0064cb] border border-blue-200">
+                  <span className="text-slate-500 font-normal">Provider:</span>
+                  <span className="font-bold">{selectedPersonnel.name}</span>
+                  <span className="text-[10px] text-slate-400">({selectedPersonnel.categoryLabel || selectedPersonnel.category})</span>
+                </span>
+              )}
+            </div>
             <DialogDescription className="sr-only">
               Search and select a guard to assign to the selected shifts.
             </DialogDescription>
@@ -228,7 +251,9 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
             {mode === "lead" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="hourly_rate" className="text-[13px] font-medium text-slate-700">Hourly Rate Paid to Guard</Label>
+                  <Label htmlFor="hourly_rate" className="text-[13px] font-medium text-slate-700">
+                    {hourlyRateLabel}
+                  </Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
                     <Input
@@ -276,7 +301,9 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="flat_qc_rate" className="text-[13px] font-medium text-slate-700">Flat QC Rate to Guard</Label>
+                  <Label htmlFor="flat_qc_rate" className="text-[13px] font-medium text-slate-700">
+                    {flatQcRateLabel}
+                  </Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
                     <Input

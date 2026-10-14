@@ -62,6 +62,7 @@ export async function apiFetch<T>(
             errorData = { message: errorText || `API Request Failed with status ${response.status}` };
           }
         }
+        console.error(`[apiFetch] ERROR [${response.status}] ${url}:`, errorText);
         let detailMessage = "";
         if (typeof errorData.detail === "string") {
           try {
@@ -75,6 +76,14 @@ export async function apiFetch<T>(
           } catch (e) {
             detailMessage = errorData.detail;
           }
+        } else if (Array.isArray(errorData.detail)) {
+          detailMessage = errorData.detail
+            .map((e: any) => {
+              if (typeof e === "string") return e;
+              const field = Array.isArray(e.loc) ? e.loc.filter((l: any) => l !== "body").join(".") : "field";
+              return `${field ? field + ": " : ""}${e.msg || e.message || JSON.stringify(e)}`;
+            })
+            .join("; ");
         } else {
           detailMessage = errorData.detail?.error || errorData.detail?.message || errorData.message || `API Request Failed with status ${response.status}`;
         }

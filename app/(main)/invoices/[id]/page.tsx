@@ -5,6 +5,7 @@ import {
   clientFetchInvoiceShiftsAction,
   clientFetchSecurityServicesAction,
   clientFetchAvailableGuardsAction,
+  SelectedPersonnelProfile
 } from "@/lib/client-actions";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -125,8 +126,9 @@ export default function InvoiceDetailsPage() {
   const [rowSchedules, setRowSchedules] = useState<Record<string, any>>({});
   const [isSelectUserOpen, setIsSelectUserOpen] = useState(false);
   const [selectedShiftIds, setSelectedShiftIds] = useState<string[]>([]);
-  const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number, type: "lead" | "standby", flatQcRate?: number }>>({});
+  const [pendingAssignments, setPendingAssignments] = useState<Record<string, { guard_id: string, guard_name: string, hourlyRate?: number, travelFee?: number, type: "lead" | "standby", flatQcRate?: number, personnel?: SelectedPersonnelProfile, personnel_name?: string, personnel_profile_id?: string }>>({});
   const [assignmentType, setAssignmentType] = useState<"lead" | "standby">("lead");
+  const [selectedPersonnel, setSelectedPersonnel] = useState<SelectedPersonnelProfile | null>(null);
 
   const [verifyWarning, setVerifyWarning] = useState<{
     isOpen: boolean;
@@ -679,6 +681,7 @@ export default function InvoiceDetailsPage() {
     }
 
     const newAssignments = { ...pendingAssignments };
+    const resolvedProfileId = selectedPersonnel?.id || guard.personnel_profile?.id || guard.personnel_profile_id;
     selectedShiftIds.forEach(id => {
       newAssignments[id] = {
         guard_id: guard.guard_id,
@@ -686,38 +689,45 @@ export default function InvoiceDetailsPage() {
         hourlyRate: rates.hourlyRate,
         travelFee: rates.travelFee,
         flatQcRate: rates.flatQcRate,
-        type: assignmentType
+        type: assignmentType,
+        personnel: selectedPersonnel || undefined,
+        personnel_name: selectedPersonnel?.name || guard.personnel_profile?.name,
+        personnel_profile_id: resolvedProfileId,
       };
     });
     setPendingAssignments(newAssignments);
     setIsSelectUserOpen(false);
+    setSelectedPersonnel(null);
     setSelectedShiftIds([]);
     toast.success(`Guard ${guard.first_name} ${guard.last_name} selected for ${selectedShiftIds.length} shifts`);
   };
 
   const handleAssignGuards = async (shiftRates?: any, clearSelection?: () => void) => {
-    const leadGroups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; travelFee?: number }> = {};
-    const standbyGroups: Record<string, { guard_id: string; shift_ids: string[]; flatQcRate?: number }> = {};
+    const leadGroups: Record<string, { guard_id: string; shift_ids: string[]; hourlyRate?: number; travelFee?: number; personnel_profile_id?: string }> = {};
+    const standbyGroups: Record<string, { guard_id: string; shift_ids: string[]; flatQcRate?: number; personnel_profile_id?: string }> = {};
 
     Object.entries(pendingAssignments).forEach(([shiftId, data]) => {
+      const profileId = data.personnel_profile_id || data.personnel?.id;
       if (data.type === "standby") {
-        const key = `${data.guard_id}_${data.flatQcRate ?? ""}`;
+        const key = `${data.guard_id}_${data.flatQcRate ?? ""}_${profileId ?? ""}`;
         if (!standbyGroups[key]) {
           standbyGroups[key] = {
             guard_id: data.guard_id,
             shift_ids: [],
-            flatQcRate: data.flatQcRate
+            flatQcRate: data.flatQcRate,
+            personnel_profile_id: profileId,
           };
         }
         standbyGroups[key].shift_ids.push(shiftId);
       } else {
-        const key = `${data.guard_id}_${data.hourlyRate ?? ""}_${data.travelFee ?? ""}`;
+        const key = `${data.guard_id}_${data.hourlyRate ?? ""}_${data.travelFee ?? ""}_${profileId ?? ""}`;
         if (!leadGroups[key]) {
           leadGroups[key] = {
             guard_id: data.guard_id,
             shift_ids: [],
             hourlyRate: data.hourlyRate,
-            travelFee: data.travelFee
+            travelFee: data.travelFee,
+            personnel_profile_id: profileId,
           };
         }
         leadGroups[key].shift_ids.push(shiftId);
@@ -725,35 +735,28 @@ export default function InvoiceDetailsPage() {
     });
 
     const leadAssignments = Object.values(leadGroups).map((group) => {
+      const parsedHourly = Number(group.hourlyRate);
       const assignment: any = {
         guard_id: group.guard_id,
+        personnel_profile_id: group.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e",
         shift_ids: group.shift_ids,
       };
-
-      const parsedHourly = Number(group.hourlyRate);
-      if (!isNaN(parsedHourly) && parsedHourly >= 1) {
+      if (!isNaN(parsedHourly) && parsedHourly > 0) {
         assignment.per_hour_rate = parsedHourly;
       }
-
-      const parsedTravel = Number(group.travelFee);
-      if (!isNaN(parsedTravel) && parsedTravel >= 1) {
-        assignment.travel_fee = parsedTravel;
-      }
-
       return assignment;
     });
 
     const standbyAssignments = Object.values(standbyGroups).map((group) => {
+      const parsedQcRate = Number(group.flatQcRate);
       const assignment: any = {
         guard_id: group.guard_id,
-        shift_ids: group.shift_ids
+        personnel_profile_id: group.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e",
+        shift_ids: group.shift_ids,
       };
-
-      const parsedQcRate = Number(group.flatQcRate);
       if (!isNaN(parsedQcRate) && parsedQcRate > 0) {
         assignment.qc_flat_rate = parsedQcRate;
       }
-
       return assignment;
     });
 
@@ -765,20 +768,36 @@ export default function InvoiceDetailsPage() {
     setIsAssigning(true);
 
     const allAssignmentsForVerify = [
-      ...leadAssignments.map((a: any) => ({ guard_id: a.guard_id, shift_ids: a.shift_ids })),
-      ...standbyAssignments.map((a: any) => ({ guard_id: a.guard_id, shift_ids: a.shift_ids }))
+      ...leadAssignments.map((a: any) => ({
+        guard_id: a.guard_id,
+        shift_ids: a.shift_ids,
+        personnel_profile_id: a.personnel_profile_id,
+      })),
+      ...standbyAssignments.map((a: any) => ({
+        guard_id: a.guard_id,
+        shift_ids: a.shift_ids,
+        personnel_profile_id: a.personnel_profile_id,
+      }))
     ];
-    const verifyGroups: Record<string, string[]> = {};
+    const verifyGroups: Record<string, { guard_id: string; shift_ids: string[]; personnel_profile_id: string }> = {};
     allAssignmentsForVerify.forEach((a: any) => {
-      if (!verifyGroups[a.guard_id]) verifyGroups[a.guard_id] = [];
-      verifyGroups[a.guard_id].push(...a.shift_ids);
+      const key = `${a.guard_id}_${a.personnel_profile_id}`;
+      if (!verifyGroups[key]) {
+        verifyGroups[key] = {
+          guard_id: a.guard_id,
+          personnel_profile_id: a.personnel_profile_id,
+          shift_ids: []
+        };
+      }
+      verifyGroups[key].shift_ids.push(...a.shift_ids);
     });
 
     const verifyPayload = {
       invoice_id: id,
-      assignments: Object.entries(verifyGroups).map(([guard_id, shift_ids]) => ({
-        guard_id,
-        shift_ids: Array.from(new Set(shift_ids))
+      assignments: Object.values(verifyGroups).map((g) => ({
+        guard_id: g.guard_id,
+        shift_ids: Array.from(new Set(g.shift_ids)),
+        personnel_profile_id: g.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e"
       }))
     };
 
@@ -1023,9 +1042,10 @@ export default function InvoiceDetailsPage() {
           shifts={shifts}
           isLoading={isShiftsLoading}
           onDeleteShift={handleDeleteShift}
-          onOpenSelectUser={(ids, type) => {
+          onOpenSelectUser={(ids, type, personnel) => {
             setSelectedShiftIds(ids);
             setAssignmentType(type);
+            setSelectedPersonnel(personnel || null);
             setIsSelectUserOpen(true);
           }}
           onBack={() => setIsAssignGuardOpen(false)}
@@ -1106,10 +1126,14 @@ export default function InvoiceDetailsPage() {
 
       <SelectUserDialog
         isOpen={isSelectUserOpen}
-        onClose={() => setIsSelectUserOpen(false)}
+        onClose={() => {
+          setIsSelectUserOpen(false);
+          setSelectedPersonnel(null);
+        }}
         onSelect={handleGuardSelect}
         selectedShiftIds={selectedShiftIds}
         mode={assignmentType}
+        selectedPersonnel={selectedPersonnel}
       />
 
       <EditLocationDialog

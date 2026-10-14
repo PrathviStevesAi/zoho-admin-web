@@ -891,12 +891,12 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   const handleNewAssignSelect = async (guard: any, rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number }) => {
     const targetGuardId = guard.id || guard.guard_id;
-    if (!shift) return;
-    const invoiceId = shift.invoice_id;
-    if (!invoiceId) {
+    if (!shift || !shift.invoice_id) {
       toast.error("Invoice ID not found for this shift.");
       return;
     }
+    const invoiceId = shift.invoice_id;
+    const personnelProfileId = guard.personnel_profile?.id || guard.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e";
     setIsAssigningGuard(targetGuardId);
 
     const verifyPayload = {
@@ -904,7 +904,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       assignments: [
         {
           guard_id: targetGuardId,
-          shift_ids: [shiftId]
+          shift_ids: [shiftId],
+          personnel_profile_id: personnelProfileId,
         }
       ]
     };
@@ -934,12 +935,17 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   const executeAssignment = async (guard: any, rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number }) => {
     const targetGuardId = guard.id || guard.guard_id;
+    const personnelProfileId = guard.personnel_profile?.id || guard.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e";
     if (!shift || !shift.invoice_id) return;
     const invoiceId = shift.invoice_id;
     setIsAssigningGuard(targetGuardId);
 
     if (isReassign) {
-      const payload = { shift_id: shiftId, guard_id: targetGuardId };
+      const payload: any = {
+        shift_id: shiftId,
+        guard_id: targetGuardId,
+        personnel_profile_id: personnelProfileId,
+      };
       const res = assignRole === "standby_guard"
         ? await reassignStandbyGuardAction(payload)
         : await reassignLeadGuardAction(payload);
@@ -956,9 +962,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         invoice_id: invoiceId,
         guard_id: targetGuardId,
         shift_id: shiftId,
+        personnel_profile_id: personnelProfileId,
       };
       if (rates.per_hour_rate && rates.per_hour_rate > 0) actionPayload.per_hour_rate = rates.per_hour_rate;
-      if (rates.travel_fee && rates.travel_fee > 0) actionPayload.travel_fee = rates.travel_fee;
       if (rates.qc_flat_rate && rates.qc_flat_rate > 0) actionPayload.qc_flat_rate = rates.qc_flat_rate;
 
       const res = assignRole === "standby_guard"

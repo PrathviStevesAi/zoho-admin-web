@@ -49,9 +49,10 @@ interface NewAssignGuardPanelProps {
     qc_flat_rate?: number;
   };
   assignRole?: "lead_guard" | "standby_guard";
+  personnel_profile_id?: string;
 }
 
-export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates, assignRole }: NewAssignGuardPanelProps) {
+export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates, assignRole, personnel_profile_id }: NewAssignGuardPanelProps) {
   const [hourlyRate, setHourlyRate] = useState("");
   const [flatQcRate, setFlatQcRate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -127,6 +128,10 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
       params.guard_level = filters.level;
     }
 
+    if (personnel_profile_id) {
+      params.personnel_profile_id = personnel_profile_id;
+    }
+
     const res = await clientFetchGuardsNewAction(params);
     if (res.success && res.data) {
       setGuards(res.data);
@@ -149,12 +154,12 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
       });
     }
     setIsLoadingGuards(false);
-  }, [debouncedSearchQuery, filters]);
+  }, [debouncedSearchQuery, filters, personnel_profile_id]);
 
   useEffect(() => {
     setCurrentPage(1);
     loadGuards(1);
-  }, [debouncedSearchQuery, filters, loadGuards]);
+  }, [debouncedSearchQuery, filters, personnel_profile_id, loadGuards]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -192,7 +197,6 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
     if (!isNaN(hr) && hr > 0) rates.per_hour_rate = hr;
     if (!isNaN(qc) && qc > 0) rates.qc_flat_rate = qc;
 
-    resetFields();
     onSelect(guard, rates);
   };
 
@@ -238,7 +242,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         ) : assignRole === "standby_guard" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
             <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-slate-700">Flat QC Rate to Guard</Label>
+              <Label className="text-[13px] font-medium text-slate-700">Flat QC Rate paid to Fastguard Standby Guard</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
                 <Input
@@ -276,7 +280,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
             <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-slate-700">Hourly Rate paid to Guard</Label>
+              <Label className="text-[13px] font-medium text-slate-700">Per hour paid to Fastguard Guard</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
                 <Input
