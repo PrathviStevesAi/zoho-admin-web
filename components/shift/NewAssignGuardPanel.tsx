@@ -2,7 +2,8 @@
 
 import {
   clientFetchGuardsNewAction,
-  FetchGuardsByLocationParams
+  FetchGuardsByLocationParams,
+  SelectedPersonnelProfile
 } from "@/lib/client-actions";
 
 import { useState, useEffect, useCallback } from "react";
@@ -50,12 +51,23 @@ interface NewAssignGuardPanelProps {
   };
   assignRole?: "lead_guard" | "standby_guard";
   personnel_profile_id?: string;
+  selectedPersonnel?: SelectedPersonnelProfile | null;
 }
 
-export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates, assignRole, personnel_profile_id }: NewAssignGuardPanelProps) {
+export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates, assignRole, personnel_profile_id, selectedPersonnel }: NewAssignGuardPanelProps) {
   const [hourlyRate, setHourlyRate] = useState("");
   const [flatQcRate, setFlatQcRate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const activePersonnelProfileId = selectedPersonnel?.id || personnel_profile_id;
+
+  const hourlyRateLabel = selectedPersonnel && selectedPersonnel.category !== "fastguard"
+    ? `Per hour agreed rate paid to ${selectedPersonnel.name} ( ${selectedPersonnel.category === "agency" ? "Agency" : "Agent"} )`
+    : "Per hour paid to Fastguard Guard";
+
+  const flatQcRateLabel = selectedPersonnel && selectedPersonnel.category !== "fastguard"
+    ? `Flat QC Rate paid to ${selectedPersonnel.name} ( ${selectedPersonnel.category === "agency" ? "Agency" : "Agent"} )`
+    : "Flat QC Rate paid to Fastguard Standby Guard";
   const [filters, setFilters] = useState({
     country: "",
     state: "",
@@ -87,7 +99,12 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
 
   useEffect(() => {
     const loadLocations = async () => {
-      const res = await fetchLocationAction(filters.country, filters.state, "approved");
+      const res = await fetchLocationAction(
+        filters.country,
+        filters.state,
+        "approved",
+        activePersonnelProfileId
+      );
       if (res.success && res.data) {
         setLocations({
           countries: ["All Country", ...res.data.countries],
@@ -97,7 +114,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
       }
     };
     loadLocations();
-  }, [filters.country, filters.state]);
+  }, [filters.country, filters.state, activePersonnelProfileId]);
 
   const loadGuards = useCallback(async (page: number = 1) => {
     setIsLoadingGuards(true);
@@ -128,8 +145,8 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
       params.guard_level = filters.level;
     }
 
-    if (personnel_profile_id) {
-      params.personnel_profile_id = personnel_profile_id;
+    if (activePersonnelProfileId) {
+      params.personnel_profile_id = activePersonnelProfileId;
     }
 
     const res = await clientFetchGuardsNewAction(params);
@@ -154,12 +171,12 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
       });
     }
     setIsLoadingGuards(false);
-  }, [debouncedSearchQuery, filters, personnel_profile_id]);
+  }, [debouncedSearchQuery, filters, activePersonnelProfileId]);
 
   useEffect(() => {
     setCurrentPage(1);
     loadGuards(1);
-  }, [debouncedSearchQuery, filters, personnel_profile_id, loadGuards]);
+  }, [debouncedSearchQuery, filters, activePersonnelProfileId, loadGuards]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -203,11 +220,20 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="px-6 py-5 flex justify-between items-center">
-        <h2 className="text-xl font-bold text-[#0f172a]">
-          {isReassign
-            ? (assignRole === "standby_guard" ? "Re-Assign Standby Guard" : "Re-Assign Lead Guard")
-            : (assignRole === "standby_guard" ? "Select Standby Guard" : "Select Lead Guard")}
-        </h2>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h2 className="text-xl font-bold text-[#0f172a]">
+            {isReassign
+              ? (assignRole === "standby_guard" ? "Re-Assign Standby Guard" : "Re-Assign Lead Guard")
+              : (assignRole === "standby_guard" ? "Select Standby Guard" : "Select Lead Guard")}
+          </h2>
+          {selectedPersonnel && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#0064cb] border border-blue-200">
+              <span className="text-slate-500 font-normal">Provider:</span>
+              <span className="font-bold">{selectedPersonnel.name}</span>
+              <span className="text-[10px] text-slate-400">({selectedPersonnel.categoryLabel || selectedPersonnel.category})</span>
+            </span>
+          )}
+        </div>
         <button
           onClick={handleClose}
           className="p-1 text-slate-500 hover:text-slate-800 transition-colors"
@@ -242,7 +268,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         ) : assignRole === "standby_guard" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
             <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-slate-700">Flat QC Rate paid to Fastguard Standby Guard</Label>
+              <Label className="text-[13px] font-medium text-slate-700">{flatQcRateLabel}</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
                 <Input
@@ -280,7 +306,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
             <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-slate-700">Per hour paid to Fastguard Guard</Label>
+              <Label className="text-[13px] font-medium text-slate-700">{hourlyRateLabel}</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
                 <Input

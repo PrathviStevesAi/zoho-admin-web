@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
 import { getPreviousPath, popPreviousPath } from "@/lib/navigation-history";
+import { PersonnelProfileDropdown } from "@/components/personnel/PersonnelProfileDropdown";
+import { SelectedPersonnelProfile } from "@/lib/client-actions";
 
 interface ShiftHeaderProps {
   shift: Shift | null;
@@ -32,12 +34,12 @@ interface ShiftHeaderProps {
   onManualStart: () => void;
   isEndingShift?: boolean;
   onManualEnd?: () => void;
-  onAssignGuard: () => void;
-  onNewAssignGuard: () => void;
-  onAssignLeadGuard: () => void;
-  onAssignStandbyGuard: () => void;
-  onReassignLeadGuard: () => void;
-  onReassignStandbyGuard: () => void;
+  onAssignGuard?: (profile?: SelectedPersonnelProfile) => void;
+  onNewAssignGuard?: (profile?: SelectedPersonnelProfile) => void;
+  onAssignLeadGuard: (profile?: SelectedPersonnelProfile) => void;
+  onAssignStandbyGuard: (profile?: SelectedPersonnelProfile) => void;
+  onReassignLeadGuard: (profile?: SelectedPersonnelProfile) => void;
+  onReassignStandbyGuard: (profile?: SelectedPersonnelProfile) => void;
   onFindStandbyGuard?: () => void;
   onCancelService?: () => void;
   onCallRecording?: () => void;
@@ -329,6 +331,8 @@ export function ShiftHeader({
         {(() => {
           if (!shift) return null;
           const buttons: any[] = [];
+          const paymentStatus = shift?.payment_status?.toLowerCase();
+          const isPaymentDisabled = !paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid";
 
           if (shift.action && typeof shift.action === "object") {
             const act = shift.action;
@@ -338,6 +342,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "indigo" as const,
                 onClick: onAssignGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onAssignGuard?.(profile),
               });
             }
             if (act.is_new_assigned) {
@@ -346,6 +352,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "blue" as const,
                 onClick: onNewAssignGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onNewAssignGuard?.(profile),
               });
             }
             if (act.is_new_lead_assigned) {
@@ -354,6 +362,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "blue" as const,
                 onClick: onAssignLeadGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onAssignLeadGuard(profile),
               });
             }
             if (act.is_new_standby_assigned) {
@@ -362,6 +372,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "yellow" as const,
                 onClick: onAssignStandbyGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onAssignStandbyGuard(profile),
               });
             }
             if (act.is_lead_reassigned) {
@@ -370,6 +382,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "indigo" as const,
                 onClick: onReassignLeadGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onReassignLeadGuard(profile),
               });
             }
             if (act.is_standby_reassigned) {
@@ -378,6 +392,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "yellow" as const,
                 onClick: onReassignStandbyGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onReassignStandbyGuard(profile),
               });
             }
             if (act.is_find_standby_guard) {
@@ -474,45 +490,60 @@ export function ShiftHeader({
             return `${words.join(" ")}\n${lastWord}`;
           };
 
-          return buttons.map((action, idx) => (
-            <button
-              key={idx}
-              className="flex flex-col items-center gap-1.5 group cursor-pointer border-none bg-transparent focus:outline-none"
-              onClick={action.onClick}
-              disabled={action.isLoading}
-            >
-              <div
-                className={cn(
-                  "w-12 h-12 rounded-full border-2 flex items-center justify-center shadow-sm transition-colors",
-                  action.color === "emerald" && "border-emerald-500 text-emerald-500 group-hover:bg-emerald-50",
-                  action.color === "blue" &&
-                  (isSettingsOpen && action.label === "Setting"
-                    ? "border-[#0064cb] text-[#0064cb] bg-blue-50"
-                    : "border-[#0064cb] text-[#0064cb] group-hover:bg-blue-50"),
-                  action.color === "orange" && "border-orange-500 text-orange-500 group-hover:bg-orange-50",
-                  action.color === "indigo" && "border-indigo-500 text-indigo-500 group-hover:bg-indigo-50",
-                  action.color === "teal" && "border-teal-500 text-teal-500 group-hover:bg-teal-50",
-                  action.color === "yellow" && "border-yellow-500 text-yellow-600 group-hover:bg-yellow-50",
-                  action.color === "slate" && "border-slate-400 text-slate-800 group-hover:bg-slate-50",
-                  action.color === "red" && "border-red-400 text-red-500 group-hover:bg-red-50"
-                )}
+          return buttons.map((action, idx) => {
+            const buttonElement = (
+              <button
+                type="button"
+                className="flex flex-col items-center gap-1.5 group cursor-pointer border-none bg-transparent focus:outline-none"
+                onClick={action.isProviderDropdown && !isPaymentDisabled ? undefined : action.onClick}
+                disabled={action.isLoading}
               >
-                {action.isLoading ? (
-                  <Loader2 className="w-5.5 h-5.5 animate-spin" />
-                ) : (
-                  <action.icon className="w-5.5 h-5.5" />
-                )}
-              </div>
-              <span
-                className={cn(
-                  "text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight whitespace-pre-line",
-                  isSettingsOpen && action.label === "Setting" && "text-[#0064cb]"
-                )}
-              >
-                {formatLabel(action.label)}
-              </span>
-            </button>
-          ));
+                <div
+                  className={cn(
+                    "w-12 h-12 rounded-full border-2 flex items-center justify-center shadow-sm transition-colors",
+                    action.color === "emerald" && "border-emerald-500 text-emerald-500 group-hover:bg-emerald-50",
+                    action.color === "blue" &&
+                    (isSettingsOpen && action.label === "Setting"
+                      ? "border-[#0064cb] text-[#0064cb] bg-blue-50"
+                      : "border-[#0064cb] text-[#0064cb] group-hover:bg-blue-50"),
+                    action.color === "orange" && "border-orange-500 text-orange-500 group-hover:bg-orange-50",
+                    action.color === "indigo" && "border-indigo-500 text-indigo-500 group-hover:bg-indigo-50",
+                    action.color === "teal" && "border-teal-500 text-teal-500 group-hover:bg-teal-50",
+                    action.color === "yellow" && "border-yellow-500 text-yellow-600 group-hover:bg-yellow-50",
+                    action.color === "slate" && "border-slate-400 text-slate-800 group-hover:bg-slate-50",
+                    action.color === "red" && "border-red-400 text-red-500 group-hover:bg-red-50"
+                  )}
+                >
+                  {action.isLoading ? (
+                    <Loader2 className="w-5.5 h-5.5 animate-spin" />
+                  ) : (
+                    <action.icon className="w-5.5 h-5.5" />
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight whitespace-pre-line",
+                    isSettingsOpen && action.label === "Setting" && "text-[#0064cb]"
+                  )}
+                >
+                  {formatLabel(action.label)}
+                </span>
+              </button>
+            );
+
+            if (action.isProviderDropdown && !isPaymentDisabled && action.onSelectProfile) {
+              return (
+                <PersonnelProfileDropdown
+                  key={idx}
+                  align="center"
+                  onSelect={action.onSelectProfile}
+                  trigger={buttonElement}
+                />
+              );
+            }
+
+            return <div key={idx}>{buttonElement}</div>;
+          });
         })()}
       </div>
     </div>

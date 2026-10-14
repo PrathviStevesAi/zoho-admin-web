@@ -45,9 +45,10 @@ interface SelectUserDialogProps {
   assigningGuardId?: string | null;
   mode?: "lead" | "standby";
   selectedPersonnel?: SelectedPersonnelProfile | null;
+  personnel_profile_id?: string;
 }
 
-export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, assigningGuardId, mode = "lead", selectedPersonnel }: SelectUserDialogProps) {
+export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, assigningGuardId, mode = "lead", selectedPersonnel, personnel_profile_id }: SelectUserDialogProps) {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userFilters, setUserFilters] = useState({
     country: "All Country",
@@ -132,10 +133,17 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
     }
   };
 
+  const activePersonnelProfileId = selectedPersonnel?.id || personnel_profile_id;
+
   useEffect(() => {
     if (isOpen) {
       const loadLocations = async () => {
-        const res = await fetchLocationAction(userFilters.country, userFilters.state, "approved");
+        const res = await fetchLocationAction(
+          userFilters.country,
+          userFilters.state,
+          "approved",
+          activePersonnelProfileId
+        );
         if (res.success && res.data) {
           setLocations({
             countries: ["All Country", ...res.data.countries],
@@ -146,7 +154,7 @@ export function SelectUserDialog({ isOpen, onClose, onSelect, selectedShiftIds, 
       };
       loadLocations();
     }
-  }, [isOpen, userFilters.country, userFilters.state]);
+  }, [isOpen, userFilters.country, userFilters.state, activePersonnelProfileId]);
 
   const loadGuards = useCallback(async (page: number = 1) => {
     setIsLoadingGuards(true);

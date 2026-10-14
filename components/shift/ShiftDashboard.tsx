@@ -3,7 +3,8 @@
 import {
   clientFetchShiftDetailsAction,
   clientFetchCommentsAction,
-  clientFetchGuardTrackingAction
+  clientFetchGuardTrackingAction,
+  SelectedPersonnelProfile,
 } from "@/lib/client-actions";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -103,6 +104,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [isStandbyGuardsOpen, setIsStandbyGuardsOpen] = useState(false);
   const [isReassign, setIsReassign] = useState(false);
   const [assignRole, setAssignRole] = useState<"lead_guard" | "standby_guard">("lead_guard");
+  const [selectedPersonnel, setSelectedPersonnel] = useState<SelectedPersonnelProfile | null>(null);
   const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
   const [isManualStartOpen, setIsManualStartOpen] = useState(false);
@@ -803,7 +805,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     }
   };
 
-  const handleAssignGuard = () => {
+  const handleAssignGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
@@ -812,13 +814,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setIsNewAssignOpen(true);
     setIsReassign(true);
     setIsSettingsOpen(false);
     setIsStandbyGuardsOpen(false);
   };
 
-  const handleNewAssignGuard = () => {
+  const handleNewAssignGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
@@ -827,19 +830,21 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setIsNewAssignOpen(true);
     setIsReassign(false);
     setIsSettingsOpen(false);
     setIsStandbyGuardsOpen(false);
   };
 
-  const handleAssignLeadGuard = () => {
+  const handleAssignLeadGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
       toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", { duration: 5000 });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setAssignRole("lead_guard");
     setIsReassign(false);
     setIsNewAssignOpen(true);
@@ -847,13 +852,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsStandbyGuardsOpen(false);
   };
 
-  const handleAssignStandbyGuard = () => {
+  const handleAssignStandbyGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
       toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", { duration: 5000 });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setAssignRole("standby_guard");
     setIsReassign(false);
     setIsNewAssignOpen(true);
@@ -861,13 +867,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsStandbyGuardsOpen(false);
   };
 
-  const handleReassignLeadGuard = () => {
+  const handleReassignLeadGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
       toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", { duration: 5000 });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setAssignRole("lead_guard");
     setIsReassign(true);
     setIsNewAssignOpen(true);
@@ -875,13 +882,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsStandbyGuardsOpen(false);
   };
 
-  const handleReassignStandbyGuard = () => {
+  const handleReassignStandbyGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
       toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", { duration: 5000 });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setAssignRole("standby_guard");
     setIsReassign(true);
     setIsNewAssignOpen(true);
@@ -896,7 +904,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       return;
     }
     const invoiceId = shift.invoice_id;
-    const personnelProfileId = guard.personnel_profile?.id || guard.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e";
+    const personnelProfileId = selectedPersonnel?.id || guard.personnel_profile?.id || guard.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e";
     setIsAssigningGuard(targetGuardId);
 
     const verifyPayload = {
@@ -935,7 +943,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   const executeAssignment = async (guard: any, rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number }) => {
     const targetGuardId = guard.id || guard.guard_id;
-    const personnelProfileId = guard.personnel_profile?.id || guard.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e";
+    const personnelProfileId = selectedPersonnel?.id || guard.personnel_profile?.id || guard.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e";
     if (!shift || !shift.invoice_id) return;
     const invoiceId = shift.invoice_id;
     setIsAssigningGuard(targetGuardId);
@@ -953,6 +961,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success(res.message || "Shift reassigned successfully");
         setIsNewAssignOpen(false);
+        setSelectedPersonnel(null);
         Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
         setActionError({ isOpen: true, message: res.error || "Failed to reassign guard" });
@@ -974,6 +983,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success(res.message || "Guard assigned successfully");
         setIsNewAssignOpen(false);
+        setSelectedPersonnel(null);
         Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
         setActionError({ isOpen: true, message: res.error || "Failed to assign guard" });
@@ -1030,7 +1040,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         isNotApproveShiftOpen={isNotApproveShiftOpen}
         isCallRecordingsOpen={isCallRecordingsOpen}
         isReassign={isReassign}
-        onCloseNewAssign={() => setIsNewAssignOpen(false)}
+        onCloseNewAssign={() => {
+          setIsNewAssignOpen(false);
+          setSelectedPersonnel(null);
+        }}
         onCloseStandbyGuards={() => setIsStandbyGuardsOpen(false)}
         onCloseSendReport={() => setIsSendReportOpen(false)}
         onCloseApproveShift={() => setIsApproveShiftOpen(false)}
@@ -1074,10 +1087,15 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       {isNewAssignOpen ? (
         <NewAssignGuardPanel
           onSelect={handleNewAssignSelect}
-          onClose={() => setIsNewAssignOpen(false)}
+          onClose={() => {
+            setIsNewAssignOpen(false);
+            setSelectedPersonnel(null);
+          }}
           assigningGuardId={isAssigningGuard}
           isReassign={isReassign}
           assignRole={assignRole}
+          selectedPersonnel={selectedPersonnel}
+          personnel_profile_id={selectedPersonnel?.id}
           initialRates={{
             per_hour_rate: shift?.per_hour_rate ?? undefined,
             per_shift_rate: shift?.per_shift_rate ?? undefined,

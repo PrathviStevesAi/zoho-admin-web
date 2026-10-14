@@ -398,13 +398,19 @@ export async function clientFetchSecurityServicesAction(): Promise<{ success: bo
 }
 
 
-export async function clientFetchLocationAction(country?: string, state?: string, status?: string): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
+export async function clientFetchLocationAction(
+  country?: string,
+  state?: string,
+  status?: string,
+  personnel_profile_id?: string
+): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
   try {
     let url = `/api/v1/guard/location`;
     const params = new URLSearchParams();
     if (status) params.append("status", status);
     if (country && country !== "All Country") params.append("country", country);
     if (state && state !== "All State") params.append("state", state);
+    if (personnel_profile_id) params.append("personnel_profile_id", personnel_profile_id);
     const qs = params.toString();
     if (qs) url += `?${qs}`;
 

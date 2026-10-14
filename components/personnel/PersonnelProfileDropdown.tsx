@@ -160,7 +160,7 @@ export function PersonnelProfileDropdown({
       <DropdownMenuContent
         align={align}
         sideOffset={sideOffset}
-        className="w-64 p-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 animate-in fade-in-50 zoom-in-95 duration-100"
+        className="w-64 p-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-100"
       >
         <div className="px-2.5 py-1.5 flex items-center justify-between">
           <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
@@ -210,34 +210,36 @@ export function PersonnelProfileDropdown({
               </DropdownMenuSubTrigger>
 
               <DropdownMenuSubContent
-                className="w-64 max-h-[320px] overflow-y-auto p-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 custom-scrollbar"
+                className="w-64 p-0 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col"
                 sideOffset={8}
               >
-                <div className="px-2.5 py-1 mb-1">
+                <div className="px-3 py-2 border-b border-slate-100 bg-white shrink-0">
                   <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                     Agencies
                   </span>
                 </div>
-                {agencies.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-xs text-slate-400">
-                    No agencies available
-                  </div>
-                ) : (
-                  agencies.map((agency) => (
-                    <DropdownMenuItem
-                      key={agency.id}
-                      onClick={() => handleSelectAgency(agency)}
-                      className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer hover:bg-purple-50/80 focus:bg-purple-50/80 data-[highlighted]:bg-purple-50/80 transition-colors group"
-                    >
-                      <div className="w-6 h-6 rounded-md bg-purple-100/60 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-600 group-focus:bg-purple-600 group-data-[highlighted]:bg-purple-600 group-hover:text-white group-focus:text-white group-data-[highlighted]:text-white transition-colors">
-                        <Building2 className="w-3.5 h-3.5 text-purple-600 group-hover:!text-white group-focus:!text-white group-data-[highlighted]:!text-white transition-colors" />
-                      </div>
-                      <span className="text-xs font-semibold text-slate-800 group-hover:text-purple-700 group-focus:text-purple-700 group-data-[highlighted]:text-purple-700 truncate min-w-0 flex-1">
-                        {agency.name}
-                      </span>
-                    </DropdownMenuItem>
-                  ))
-                )}
+                <div className="max-h-[260px] overflow-y-auto p-1.5 custom-scrollbar">
+                  {agencies.length === 0 ? (
+                    <div className="px-3 py-4 text-center text-xs text-slate-400">
+                      No agencies available
+                    </div>
+                  ) : (
+                    agencies.map((agency) => (
+                      <DropdownMenuItem
+                        key={agency.id}
+                        onClick={() => handleSelectAgency(agency)}
+                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer hover:bg-purple-50/80 focus:bg-purple-50/80 data-[highlighted]:bg-purple-50/80 transition-colors group"
+                      >
+                        <div className="w-6 h-6 rounded-md bg-purple-100/60 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-600 group-focus:bg-purple-600 group-data-[highlighted]:bg-purple-600 group-hover:text-white group-focus:text-white group-data-[highlighted]:text-white transition-colors">
+                          <Building2 className="w-3.5 h-3.5 text-purple-600 group-hover:!text-white group-focus:!text-white group-data-[highlighted]:!text-white transition-colors" />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-800 group-hover:text-purple-700 group-focus:text-purple-700 group-data-[highlighted]:text-purple-700 truncate min-w-0 flex-1">
+                          {agency.name}
+                        </span>
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </div>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
 
@@ -257,34 +259,36 @@ export function PersonnelProfileDropdown({
               </DropdownMenuSubTrigger>
 
               <DropdownMenuSubContent
-                className="w-64 max-h-[320px] overflow-y-auto p-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 custom-scrollbar"
+                className="w-64 p-0 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col"
                 sideOffset={8}
               >
-                <div className="px-2.5 py-1 mb-1">
+                <div className="px-3 py-2 border-b border-slate-100 bg-white shrink-0">
                   <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                     Agents
                   </span>
                 </div>
-                {agents.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-xs text-slate-400">
-                    No agents available
-                  </div>
-                ) : (
-                  agents.map((agent) => (
-                    <DropdownMenuItem
-                      key={agent.id}
-                      onClick={() => handleSelectAgent(agent)}
-                      className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer hover:bg-emerald-50/80 focus:bg-emerald-50/80 data-[highlighted]:bg-emerald-50/80 transition-colors group"
-                    >
-                      <div className="w-6 h-6 rounded-md bg-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-focus:bg-emerald-600 group-data-[highlighted]:bg-emerald-600 group-hover:text-white group-focus:text-white group-data-[highlighted]:text-white transition-colors">
-                        <UserCheck className="w-3.5 h-3.5 text-emerald-600 group-hover:!text-white group-focus:!text-white group-data-[highlighted]:!text-white transition-colors" />
-                      </div>
-                      <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-700 group-focus:text-emerald-700 group-data-[highlighted]:text-emerald-700 truncate min-w-0 flex-1">
-                        {agent.name}
-                      </span>
-                    </DropdownMenuItem>
-                  ))
-                )}
+                <div className="max-h-[260px] overflow-y-auto p-1.5 custom-scrollbar">
+                  {agents.length === 0 ? (
+                    <div className="px-3 py-4 text-center text-xs text-slate-400">
+                      No agents available
+                    </div>
+                  ) : (
+                    agents.map((agent) => (
+                      <DropdownMenuItem
+                        key={agent.id}
+                        onClick={() => handleSelectAgent(agent)}
+                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer hover:bg-emerald-50/80 focus:bg-emerald-50/80 data-[highlighted]:bg-emerald-50/80 transition-colors group"
+                      >
+                        <div className="w-6 h-6 rounded-md bg-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-focus:bg-emerald-600 group-data-[highlighted]:bg-emerald-600 group-hover:text-white group-focus:text-white group-data-[highlighted]:text-white transition-colors">
+                          <UserCheck className="w-3.5 h-3.5 text-emerald-600 group-hover:!text-white group-focus:!text-white group-data-[highlighted]:!text-white transition-colors" />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-700 group-focus:text-emerald-700 group-data-[highlighted]:text-emerald-700 truncate min-w-0 flex-1">
+                          {agent.name}
+                        </span>
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </div>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           </>
