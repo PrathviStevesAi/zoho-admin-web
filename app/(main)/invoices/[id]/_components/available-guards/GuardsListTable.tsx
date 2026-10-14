@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, Star } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -105,8 +105,10 @@ export function GuardsListTable({
               <TableHead className="w-[50px] text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3 text-center">#</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">NAME</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">EMAIL</TableHead>
+              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">PHONE NUMBER</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">CITY, STATE</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">DISTANCE</TableHead>
+              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">GUARD LEVEL</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">ARMED</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">UNARMED</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">STATUS</TableHead>
@@ -115,7 +117,7 @@ export function GuardsListTable({
           <TableBody>
             {isGuardsLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center">
+                <TableCell colSpan={11} className="py-10 text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
                   <span className="text-xs text-slate-500 font-medium mt-2 block">Loading guards...</span>
                 </TableCell>
@@ -152,11 +154,34 @@ export function GuardsListTable({
                     )}
                   </TableCell>
                   <TableCell className="text-xs text-slate-600 py-2.5 px-4">{guard.email || "-"}</TableCell>
+                  <TableCell className="text-xs text-slate-600 py-2.5 px-4 whitespace-nowrap">{guard.phone_number || "-"}</TableCell>
                   <TableCell className="text-xs text-slate-600 py-2.5 px-4">
                     {getCityState(guard)}
                   </TableCell>
                   <TableCell className="text-xs font-medium text-slate-700 py-2.5 px-4">
                     {getDistance(guard)}
+                  </TableCell>
+                  <TableCell className="py-2.5 px-4 text-center whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1">
+                      {guard.guard_level === 3 ? (
+                        <>
+                          <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                          <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                          <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                        </>
+                      ) : guard.guard_level === 2 ? (
+                        <>
+                          <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                          <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                        </>
+                      ) : guard.guard_level === 1 ? (
+                        <>
+                          <Star className="w-4 h-4 fill-green-600 text-green-600" />
+                        </>
+                      ) : (
+                        <span className="text-slate-400 text-xs font-medium">---</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="py-2.5 px-4 text-center text-xs text-slate-700">
                     {guard.armed ? "Yes" : "No"}
@@ -178,7 +203,7 @@ export function GuardsListTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center text-slate-600 font-medium text-xs">
+                <TableCell colSpan={11} className="py-8 text-center text-slate-600 font-medium text-xs">
                   No guards found matching filters. Try adjusting your location or radius.
                 </TableCell>
               </TableRow>

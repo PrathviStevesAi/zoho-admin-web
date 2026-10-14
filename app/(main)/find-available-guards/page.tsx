@@ -16,6 +16,7 @@ import { AvailableGuardsListTable } from "./_components/AvailableGuardsListTable
 import {
   LocationType,
   ServiceFilterType,
+  GuardLevelFilterType,
 } from "@/app/(main)/invoices/[id]/_components/available-guards/types";
 import {
   getCoordinatesFromLocation,
@@ -24,6 +25,7 @@ import {
 function FindAvailableGuardsContent() {
   const [locationType, setLocationType] = useState<LocationType>("radius");
   const [serviceFilter, setServiceFilter] = useState<ServiceFilterType>("all");
+  const [guardLevelFilter, setGuardLevelFilter] = useState<GuardLevelFilterType>("all");
   const [radiusMiles, setRadiusMiles] = useState<number>(50);
   const [centerLocation, setCenterLocation] = useState<string>("");
   const [mapCenter, setMapCenter] = useState<[number, number]>([38.0000, -97.0000]);
@@ -75,6 +77,7 @@ function FindAvailableGuardsContent() {
     const params: FetchGuardsByLocationParams = {
       account_status: "active",
       service: serviceFilter,
+      guard_level: guardLevelFilter !== "all" ? Number(guardLevelFilter) : undefined,
       page: null,
     };
 
@@ -149,6 +152,7 @@ function FindAvailableGuardsContent() {
   }, [
     locationType,
     serviceFilter,
+    guardLevelFilter,
     radiusMiles,
     centerLocation,
     selectedCities,
@@ -188,6 +192,7 @@ function FindAvailableGuardsContent() {
   const handleResetFilters = () => {
     setLocationType("radius");
     setServiceFilter("all");
+    setGuardLevelFilter("all");
     setRadiusMiles(50);
     setCenterLocation("");
     setMapCenter([38.0000, -97.0000]);
@@ -259,6 +264,8 @@ function FindAvailableGuardsContent() {
           onLocationTypeChange={(type) => setLocationType(type)}
           serviceFilter={serviceFilter}
           onServiceFilterChange={(svc) => setServiceFilter(svc)}
+          guardLevelFilter={guardLevelFilter}
+          onGuardLevelFilterChange={(lvl) => setGuardLevelFilter(lvl)}
           centerLocation={centerLocation}
           onCenterLocationChange={handleCenterLocationChange}
           onPlaceSelected={handlePlaceSelected}

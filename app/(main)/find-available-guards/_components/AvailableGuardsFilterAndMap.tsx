@@ -13,6 +13,8 @@ import {
   Loader2,
   Search,
   Info,
+  Star,
+  Award,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,7 @@ import { DynamicAvailableGuardsMap } from "./DynamicAvailableGuardsMap";
 import {
   LocationType,
   ServiceFilterType,
+  GuardLevelFilterType,
 } from "@/app/(main)/invoices/[id]/_components/available-guards/types";
 
 interface AvailableGuardsFilterAndMapProps {
@@ -36,6 +39,8 @@ interface AvailableGuardsFilterAndMapProps {
   onLocationTypeChange: (val: LocationType) => void;
   serviceFilter: ServiceFilterType;
   onServiceFilterChange: (val: ServiceFilterType) => void;
+  guardLevelFilter: GuardLevelFilterType;
+  onGuardLevelFilterChange: (val: GuardLevelFilterType) => void;
   centerLocation: string;
   onCenterLocationChange: (val: string) => void;
   onPlaceSelected?: (place: any) => void;
@@ -70,6 +75,8 @@ export function AvailableGuardsFilterAndMap({
   onLocationTypeChange,
   serviceFilter,
   onServiceFilterChange,
+  guardLevelFilter,
+  onGuardLevelFilterChange,
   centerLocation,
   onCenterLocationChange,
   onPlaceSelected,
@@ -158,36 +165,34 @@ export function AvailableGuardsFilterAndMap({
             </Select>
           </div>
 
-          {(locationType === "radius" || locationType === "city" || locationType === "state" || locationType === "country") && (
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-black">Site Location</Label>
-              <div className="relative">
-                <MapPin className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-                <Autocomplete
-                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyAcL7f3q3X4BUlmdpjbo7ZY0GotX7Gh-sU"}
-                  value={centerLocation}
-                  onChange={(e: any) => onCenterLocationChange(e.target.value)}
-                  onPlaceSelected={onPlaceSelected}
-                  options={{
-                    types: ["geocode", "establishment"],
-                  }}
-                  placeholder="Enter site location..."
-                  className="w-full h-10 pl-9 pr-8 bg-white border border-slate-200 rounded-lg text-xs text-black font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/10 transition-colors"
-                  style={{ color: "#000000" }}
-                />
-                {centerLocation && (
-                  <button
-                    type="button"
-                    onClick={() => onCenterLocationChange("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer z-10"
-                    title="Clear location"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold text-black">Site Location</Label>
+            <div className="relative">
+              <MapPin className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+              <Autocomplete
+                apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyAcL7f3q3X4BUlmdpjbo7ZY0GotX7Gh-sU"}
+                value={centerLocation}
+                onChange={(e: any) => onCenterLocationChange(e.target.value)}
+                onPlaceSelected={onPlaceSelected}
+                options={{
+                  types: ["geocode", "establishment"],
+                }}
+                placeholder="Enter site location..."
+                className="w-full h-10 pl-9 pr-8 bg-white border border-slate-200 rounded-lg text-xs text-black font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/10 transition-colors"
+                style={{ color: "#000000" }}
+              />
+              {centerLocation && (
+                <button
+                  type="button"
+                  onClick={() => onCenterLocationChange("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer z-10"
+                  title="Clear location"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-          )}
+          </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs font-bold text-slate-800">Service</Label>
@@ -229,6 +234,52 @@ export function AvailableGuardsFilterAndMap({
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                     <span>Unarmed</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold text-slate-800">Guard Level</Label>
+            <Select
+              value={guardLevelFilter}
+              onValueChange={(val: GuardLevelFilterType) => onGuardLevelFilterChange(val)}
+            >
+              <SelectTrigger className="w-full h-10 bg-white border-slate-200 rounded-lg text-xs font-medium cursor-pointer flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Award className="w-3.5 h-3.5 text-blue-600" />
+                  <span>
+                    {guardLevelFilter === "all" && "All"}
+                    {guardLevelFilter === "1" && "Level 1"}
+                    {guardLevelFilter === "2" && "Level 2"}
+                    {guardLevelFilter === "3" && "Level 3"}
+                  </span>
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-white border-slate-200 shadow-xl cursor-pointer">
+                <SelectItem value="all" className="text-xs cursor-pointer py-2">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-3.5 h-3.5 text-blue-600" />
+                    <span>All</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="1" className="text-xs cursor-pointer py-2">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Level 1</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="2" className="text-xs cursor-pointer py-2">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Level 2</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="3" className="text-xs cursor-pointer py-2">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Level 3</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -511,6 +562,12 @@ export function AvailableGuardsFilterAndMap({
               )}
               <span className="text-slate-300">|</span>
               <span>Service: <strong className="text-slate-900 capitalize">{serviceFilter}</strong></span>
+              {guardLevelFilter && guardLevelFilter !== "all" && (
+                <>
+                  <span className="text-slate-300">|</span>
+                  <span>Level: <strong className="text-slate-900">{guardLevelFilter}</strong></span>
+                </>
+              )}
               <span className="text-slate-300">|</span>
               <span>Guards found: <strong className="text-[#0064cb] font-bold">{allGuards.length}</strong></span>
             </div>

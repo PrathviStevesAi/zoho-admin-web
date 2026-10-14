@@ -19,6 +19,7 @@ import {
   MatrixAvailabilityType,
   LocationType,
   ServiceFilterType,
+  GuardLevelFilterType,
   NotificationSourceType,
 } from "./available-guards/types";
 import {
@@ -53,6 +54,7 @@ export function AvailableGuardsModule({
   const [notificationSource, setNotificationSource] = useState<NotificationSourceType>("in_app");
   const [locationType, setLocationType] = useState<LocationType>("radius");
   const [serviceFilter, setServiceFilter] = useState<ServiceFilterType>("all");
+  const [guardLevelFilter, setGuardLevelFilter] = useState<GuardLevelFilterType>("all");
 
   const [sentShifts, setSentShifts] = useState<any[]>([]);
   const [isSentShiftsLoading, setIsSentShiftsLoading] = useState(false);
@@ -517,17 +519,16 @@ export function AvailableGuardsModule({
   };
 
   const isCustomRadiusLocation = useMemo(() => {
-    if (locationType !== "radius") return false;
     if (!centerLocation || !centerLocation.trim()) return false;
     return centerLocation.trim().toLowerCase() !== dynamicSiteLocation.trim().toLowerCase();
-  }, [locationType, centerLocation, dynamicSiteLocation]);
+  }, [centerLocation, dynamicSiteLocation]);
 
   const mapDisplayedLocation = useMemo(() => {
-    if (locationType === "radius" && isCustomRadiusLocation && centerLocation) {
+    if (isCustomRadiusLocation && centerLocation) {
       return centerLocation;
     }
-    return dynamicSiteLocation;
-  }, [locationType, isCustomRadiusLocation, centerLocation, dynamicSiteLocation]);
+    return centerLocation?.trim() || dynamicSiteLocation;
+  }, [isCustomRadiusLocation, centerLocation, dynamicSiteLocation]);
 
   const [hasSearched, setHasSearched] = useState(false);
   const loadGuards = async () => {
@@ -539,6 +540,7 @@ export function AvailableGuardsModule({
     const params: FetchGuardsByLocationParams = {
       account_status: "active",
       service: serviceFilter,
+      guard_level: guardLevelFilter !== "all" ? Number(guardLevelFilter) : undefined,
       page: null,
     };
 
@@ -686,6 +688,7 @@ export function AvailableGuardsModule({
   const resetFilters = () => {
     setLocationType("radius");
     setServiceFilter("all");
+    setGuardLevelFilter("all");
     setNotificationSource("in_app");
     setRadiusMiles(50);
     setCenterLocation(dynamicSiteLocation);
@@ -763,7 +766,7 @@ export function AvailableGuardsModule({
 
     setIsFinding(true);
     try {
-      const locationToSend = (locationType === "radius" && centerLocation)
+      const locationToSend = centerLocation?.trim()
         ? centerLocation
         : dynamicSiteLocation;
 
@@ -872,6 +875,8 @@ export function AvailableGuardsModule({
               onLocationTypeChange={handleLocationTypeChange}
               serviceFilter={serviceFilter}
               onServiceFilterChange={setServiceFilter}
+              guardLevelFilter={guardLevelFilter}
+              onGuardLevelFilterChange={setGuardLevelFilter}
               centerLocation={centerLocation}
               onCenterLocationChange={handleCenterLocationChange}
               onPlaceSelected={handlePlaceSelect}
@@ -898,7 +903,7 @@ export function AvailableGuardsModule({
               onResetFilters={resetFilters}
               mapDisplayedLocation={mapDisplayedLocation}
               dynamicSiteLocation={dynamicSiteLocation}
-              mapCenter={locationType === "radius" && isCustomRadiusLocation ? mapCenter : initialCoordinates}
+              mapCenter={isCustomRadiusLocation ? mapCenter : initialCoordinates}
               allGuards={allGuards}
               selectedGuardIds={selectedGuardIds}
               onSelectGuard={handleSelectGuard}

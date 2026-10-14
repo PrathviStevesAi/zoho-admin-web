@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { Loader2, Download } from "lucide-react";
+import { Loader2, Download, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { exportToExcel } from "@/lib/excel-utils";
 import { toast } from "sonner";
@@ -158,8 +158,10 @@ export function AvailableGuardsListTable({
               <TableHead className="w-10 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-2 text-center">#</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">NAME</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">EMAIL</TableHead>
+              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">PHONE NUMBER</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">CITY, STATE</TableHead>
               <TableHead className="w-24 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">DISTANCE</TableHead>
+              <TableHead className="w-28 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3 text-center">GUARD LEVEL</TableHead>
               <TableHead className="w-20 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-2 text-center">ARMED</TableHead>
               <TableHead className="w-20 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-2 text-center">UNARMED</TableHead>
               <TableHead className="w-24 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-2 text-center">STATUS</TableHead>
@@ -168,7 +170,7 @@ export function AvailableGuardsListTable({
           <TableBody>
             {isGuardsLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center">
+                <TableCell colSpan={11} className="py-10 text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
                   <span className="text-xs text-slate-500 font-medium mt-2 block">Loading guards...</span>
                 </TableCell>
@@ -208,11 +210,36 @@ export function AvailableGuardsListTable({
                   <TableCell className="text-xs text-slate-600 py-2.5 px-3 truncate max-w-[220px]" title={guard.email || ""}>
                     {guard.email || "-"}
                   </TableCell>
+                  <TableCell className="text-xs text-slate-600 py-2.5 px-3 whitespace-nowrap" title={guard.phone_number || ""}>
+                    {guard.phone_number || "-"}
+                  </TableCell>
                   <TableCell className="text-xs text-slate-600 py-2.5 px-3 truncate max-w-[180px]" title={getCityState(guard)}>
                     {getCityState(guard)}
                   </TableCell>
                   <TableCell className="text-xs font-semibold text-slate-700 py-2.5 px-3 whitespace-nowrap">
                     {getDistance(guard)}
+                  </TableCell>
+                  <TableCell className="text-xs py-2.5 px-3 text-center whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1">
+                      {guard.guard_level === 3 ? (
+                        <>
+                          <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                          <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                          <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                        </>
+                      ) : guard.guard_level === 2 ? (
+                        <>
+                          <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                          <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                        </>
+                      ) : guard.guard_level === 1 ? (
+                        <>
+                          <Star className="w-4 h-4 fill-green-600 text-green-600" />
+                        </>
+                      ) : (
+                        <span className="text-slate-400 text-xs font-medium">---</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-xs py-2.5 px-2 text-center whitespace-nowrap">
                     {guard.armed ? (
@@ -246,7 +273,7 @@ export function AvailableGuardsListTable({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={11}
                   className="py-12 text-center text-xs text-slate-500"
                 >
                   No guards found matching filters. Try adjusting your location or radius.

@@ -8,6 +8,7 @@ import { GuardsListTable } from "./GuardsListTable";
 import {
   LocationType,
   ServiceFilterType,
+  GuardLevelFilterType,
   NotificationSourceType,
 } from "./types";
 
@@ -23,6 +24,8 @@ interface SelectGuardsStepProps {
   onLocationTypeChange: (val: LocationType) => void;
   serviceFilter: ServiceFilterType;
   onServiceFilterChange: (val: ServiceFilterType) => void;
+  guardLevelFilter: GuardLevelFilterType;
+  onGuardLevelFilterChange: (val: GuardLevelFilterType) => void;
   centerLocation: string;
   onCenterLocationChange: (val: string) => void;
   onPlaceSelected: (place: any) => void;
@@ -73,6 +76,8 @@ export function SelectGuardsStep({
   onLocationTypeChange,
   serviceFilter,
   onServiceFilterChange,
+  guardLevelFilter,
+  onGuardLevelFilterChange,
   centerLocation,
   onCenterLocationChange,
   onPlaceSelected,
@@ -137,6 +142,8 @@ export function SelectGuardsStep({
         onLocationTypeChange={onLocationTypeChange}
         serviceFilter={serviceFilter}
         onServiceFilterChange={onServiceFilterChange}
+        guardLevelFilter={guardLevelFilter}
+        onGuardLevelFilterChange={onGuardLevelFilterChange}
         centerLocation={centerLocation}
         onCenterLocationChange={onCenterLocationChange}
         onPlaceSelected={onPlaceSelected}

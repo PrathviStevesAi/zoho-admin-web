@@ -527,7 +527,7 @@ export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationPa
     query.append("service", params.service.toLowerCase());
   }
 
-  if (params.guard_level !== undefined && params.guard_level !== null && params.guard_level !== "" && params.guard_level !== "All") {
+  if (params.guard_level !== undefined && params.guard_level !== null && params.guard_level !== "" && String(params.guard_level).toLowerCase() !== "all") {
     query.append("guard_level", params.guard_level.toString());
   }
 

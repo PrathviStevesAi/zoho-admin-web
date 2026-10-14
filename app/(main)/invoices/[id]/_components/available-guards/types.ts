@@ -26,6 +26,8 @@ export type LocationType =
 
 export type ServiceFilterType = "all" | "both" | "armed" | "unarmed";
 
+export type GuardLevelFilterType = "all" | "1" | "2" | "3";
+
 export type NotificationSourceType = "in_app" | "sms" | "both";
 
 export interface AvailableInvoiceShift {
