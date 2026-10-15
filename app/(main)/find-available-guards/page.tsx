@@ -26,6 +26,7 @@ function FindAvailableGuardsContent() {
   const [locationType, setLocationType] = useState<LocationType>("radius");
   const [serviceFilter, setServiceFilter] = useState<ServiceFilterType>("all");
   const [guardLevelFilter, setGuardLevelFilter] = useState<GuardLevelFilterType>("all");
+  const [providerFilter, setProviderFilter] = useState<string>("all");
   const [radiusMiles, setRadiusMiles] = useState<number>(50);
   const [centerLocation, setCenterLocation] = useState<string>("");
   const [mapCenter, setMapCenter] = useState<[number, number]>([38.0000, -97.0000]);
@@ -78,6 +79,7 @@ function FindAvailableGuardsContent() {
       account_status: "active",
       service: serviceFilter,
       guard_level: guardLevelFilter !== "all" ? Number(guardLevelFilter) : undefined,
+      personnel_profile_id: providerFilter !== "all" ? providerFilter : undefined,
       page: null,
     };
 
@@ -153,6 +155,7 @@ function FindAvailableGuardsContent() {
     locationType,
     serviceFilter,
     guardLevelFilter,
+    providerFilter,
     radiusMiles,
     centerLocation,
     selectedCities,
@@ -193,6 +196,7 @@ function FindAvailableGuardsContent() {
     setLocationType("radius");
     setServiceFilter("all");
     setGuardLevelFilter("all");
+    setProviderFilter("all");
     setRadiusMiles(50);
     setCenterLocation("");
     setMapCenter([38.0000, -97.0000]);
@@ -266,6 +270,8 @@ function FindAvailableGuardsContent() {
           onServiceFilterChange={(svc) => setServiceFilter(svc)}
           guardLevelFilter={guardLevelFilter}
           onGuardLevelFilterChange={(lvl) => setGuardLevelFilter(lvl)}
+          providerFilter={providerFilter}
+          onProviderFilterChange={(prov) => setProviderFilter(prov)}
           centerLocation={centerLocation}
           onCenterLocationChange={handleCenterLocationChange}
           onPlaceSelected={handlePlaceSelected}

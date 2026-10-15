@@ -26,6 +26,8 @@ interface SelectGuardsStepProps {
   onServiceFilterChange: (val: ServiceFilterType) => void;
   guardLevelFilter: GuardLevelFilterType;
   onGuardLevelFilterChange: (val: GuardLevelFilterType) => void;
+  providerFilter?: string;
+  onProviderFilterChange?: (val: string) => void;
   centerLocation: string;
   onCenterLocationChange: (val: string) => void;
   onPlaceSelected: (place: any) => void;
@@ -78,6 +80,8 @@ export function SelectGuardsStep({
   onServiceFilterChange,
   guardLevelFilter,
   onGuardLevelFilterChange,
+  providerFilter = "all",
+  onProviderFilterChange,
   centerLocation,
   onCenterLocationChange,
   onPlaceSelected,
@@ -144,6 +148,8 @@ export function SelectGuardsStep({
         onServiceFilterChange={onServiceFilterChange}
         guardLevelFilter={guardLevelFilter}
         onGuardLevelFilterChange={onGuardLevelFilterChange}
+        providerFilter={providerFilter}
+        onProviderFilterChange={onProviderFilterChange}
         centerLocation={centerLocation}
         onCenterLocationChange={onCenterLocationChange}
         onPlaceSelected={onPlaceSelected}

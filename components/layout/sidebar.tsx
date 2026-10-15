@@ -20,6 +20,9 @@ import {
   FileText,
   CreditCard,
   UserSearch,
+  Building2,
+  UserCheck,
+  ShieldCheck,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -56,6 +59,14 @@ const navGroups: NavGroup[] = [
       { label: "Find Guards", icon: UserSearch, href: "/find-available-guards" },
       { label: "Guard Price", icon: DollarSign, href: "/guard-price" },
       { label: "Member Activity", icon: History, href: "/member-activity" },
+    ],
+  },
+  {
+    groupLabel: "Provider Management",
+    items: [
+      { label: "FastGuard Service", icon: ShieldCheck, href: "/provider-management/fastguard" },
+      { label: "Agency", icon: Building2, href: "/provider-management/agency" },
+      { label: "Agent", icon: UserCheck, href: "/provider-management/agent" },
     ],
   },
   {

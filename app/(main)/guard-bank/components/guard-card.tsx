@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Trash2, User, Building2, MapPin, Mail, Phone, Eye, UserCheck, UserX, Shield } from "lucide-react";
+import { Trash2, User, Building2, MapPin, Mail, Phone, Eye, UserCheck, UserX, Shield, ShieldCheck, Briefcase } from "lucide-react";
 
 interface GuardCardProps {
   guard: {
@@ -15,6 +15,13 @@ interface GuardCardProps {
     phone_number?: string;
     performed_by?: string | null;
     account_status?: string | null;
+    personnel_profile?: {
+      id?: string;
+      name?: string;
+      type?: string;
+      profile_type?: string;
+    } | null;
+    [key: string]: any;
   };
   status: "record_touched" | "approved" | "disqualified";
   onDelete?: (id: string) => void;
@@ -109,6 +116,48 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
     );
   };
 
+  const getPersonnelProfileSection = () => {
+    const profile = guard.personnel_profile;
+    const profileName =
+      (typeof profile === "object" ? profile?.name : null) ||
+      (typeof profile === "string" ? profile : null) ||
+      (guard as any)?.personnel_profile_name ||
+      (guard as any)?.personnel_name;
+
+    if (!profileName) return null;
+
+    const rawType = String(
+      (typeof profile === "object" ? profile?.type || profile?.profile_type : "") || ""
+    ).toLowerCase().trim();
+
+    const Icon =
+      rawType === "agency"
+        ? Building2
+        : rawType === "agent"
+        ? UserCheck
+        : rawType === "fastguard"
+        ? ShieldCheck
+        : Briefcase;
+
+    const iconColor =
+      rawType === "agency"
+        ? "text-purple-600"
+        : rawType === "agent"
+        ? "text-emerald-600"
+        : rawType === "fastguard"
+        ? "text-[#0064cb]"
+        : "text-slate-500";
+
+    return (
+      <div className="flex items-center gap-2 text-[12px] text-slate-700 pt-0.5">
+        <Icon className={`w-3.5 h-3.5 shrink-0 ${iconColor}`} />
+        <span className="truncate font-medium text-slate-800" title={profileName}>
+          {profileName}
+        </span>
+      </div>
+    );
+  };
+
   const handleCardClick = () => {
     if (guard.id) {
       router.push(`/guard-bank/${guard.id}`);
@@ -162,6 +211,7 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
 
           {getPerformedBySection()}
           {getAccountStatusSection()}
+          {getPersonnelProfileSection()}
         </div>
       </div>
     </div>

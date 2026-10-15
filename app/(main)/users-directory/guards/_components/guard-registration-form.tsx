@@ -44,6 +44,7 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     reliableTransport: "",
     holdUnarmedLicense: "",
     holdArmedLicense: "",
+    personnel_profile_id: "all",
     englishProficiency: "",
     voluntaryGender: "",
     raceEthnicity: "",
@@ -127,6 +128,10 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     const payload = {
       email: formData.email,
       phone_number: formattedPhone,
+      personnel_profile_id:
+        formData.personnel_profile_id && formData.personnel_profile_id !== "all"
+          ? formData.personnel_profile_id
+          : undefined,
       license_number: formData.licenseNumber,
       license_expiration_date: formData.licenseExpirationDate,
       resume_url: typeof formData.resumeFile === 'string' ? formData.resumeFile : "",

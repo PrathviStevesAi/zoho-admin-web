@@ -11,6 +11,7 @@ import { fetchLocationAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { GuardProviderFilter } from "@/app/(main)/guard-bank/components/guard-provider-filter";
 import {
   Dialog,
   DialogContent,
@@ -63,7 +64,8 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
     state: "All State",
     city: "All City",
     service: "All",
-    level: "All"
+    level: "All",
+    provider: "all",
   });
   const [locations, setLocations] = useState<{ countries: string[], states: string[], cities: string[] }>({
     countries: [],
@@ -83,7 +85,8 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
     (userFilters.state && userFilters.state !== "All State") ||
     (userFilters.city && userFilters.city !== "All City") ||
     (userFilters.service && userFilters.service !== "All") ||
-    (userFilters.level && userFilters.level !== "All");
+    (userFilters.level && userFilters.level !== "All") ||
+    (userFilters.provider && userFilters.provider !== "all");
 
   useEffect(() => {
     if (!isOpen) {
@@ -93,7 +96,8 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
         state: "All State",
         city: "All City",
         service: "All",
-        level: "All"
+        level: "All",
+        provider: "all",
       });
       setShowMobileFilters(false);
       setTotalGuards(0);
@@ -147,6 +151,10 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
           params.guard_level = userFilters.level;
         }
 
+        if (userFilters.provider && userFilters.provider !== "all") {
+          params.personnel_profile_id = userFilters.provider;
+        }
+
         const res = await clientFetchGuardsNewAction(params);
         if (res.success && res.data) {
           setGuards(res.data);
@@ -176,7 +184,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
         <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50/10">
           <div className="space-y-2.5 shrink-0">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
-              <div className="space-y-1 md:col-span-8 lg:col-span-9 w-full">
+              <div className="space-y-1 md:col-span-6 lg:col-span-6 w-full">
                 <Label className="text-[12px] font-semibold text-slate-700">Search</Label>
                 <div className="relative w-full">
                   <Input
@@ -200,7 +208,19 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                 </div>
               </div>
 
-              <div className="flex gap-2 items-end md:col-span-4 lg:col-span-3 w-full">
+              <div className="space-y-1 md:col-span-3 lg:col-span-3 w-full">
+                <Label className="text-[12px] font-semibold text-slate-700">Provider</Label>
+                <GuardProviderFilter
+                  value={userFilters.provider}
+                  onChange={(val) => {
+                    setUserFilters((prev) => ({ ...prev, provider: val }));
+                  }}
+                  allLabel="All"
+                  triggerClassName="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg text-xs"
+                />
+              </div>
+
+              <div className="flex gap-2 items-end md:col-span-3 lg:col-span-3 w-full">
                 <div className="space-y-1 flex-1 w-full">
                   <Label className="text-[12px] font-semibold text-slate-700">Service</Label>
                   <Select

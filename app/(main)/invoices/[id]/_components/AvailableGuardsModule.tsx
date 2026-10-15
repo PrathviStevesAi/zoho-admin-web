@@ -55,6 +55,7 @@ export function AvailableGuardsModule({
   const [locationType, setLocationType] = useState<LocationType>("radius");
   const [serviceFilter, setServiceFilter] = useState<ServiceFilterType>("all");
   const [guardLevelFilter, setGuardLevelFilter] = useState<GuardLevelFilterType>("all");
+  const [providerFilter, setProviderFilter] = useState<string>("all");
 
   const [sentShifts, setSentShifts] = useState<any[]>([]);
   const [isSentShiftsLoading, setIsSentShiftsLoading] = useState(false);
@@ -541,6 +542,7 @@ export function AvailableGuardsModule({
       account_status: "active",
       service: serviceFilter,
       guard_level: guardLevelFilter !== "all" ? Number(guardLevelFilter) : undefined,
+      personnel_profile_id: providerFilter !== "all" ? providerFilter : undefined,
       page: null,
     };
 
@@ -689,6 +691,7 @@ export function AvailableGuardsModule({
     setLocationType("radius");
     setServiceFilter("all");
     setGuardLevelFilter("all");
+    setProviderFilter("all");
     setNotificationSource("in_app");
     setRadiusMiles(50);
     setCenterLocation(dynamicSiteLocation);
@@ -877,6 +880,8 @@ export function AvailableGuardsModule({
               onServiceFilterChange={setServiceFilter}
               guardLevelFilter={guardLevelFilter}
               onGuardLevelFilterChange={setGuardLevelFilter}
+              providerFilter={providerFilter}
+              onProviderFilterChange={setProviderFilter}
               centerLocation={centerLocation}
               onCenterLocationChange={handleCenterLocationChange}
               onPlaceSelected={handlePlaceSelect}

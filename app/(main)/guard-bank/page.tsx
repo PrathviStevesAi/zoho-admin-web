@@ -23,6 +23,10 @@ import { GuardFilters } from "./components/guard-filters";
 import { GuardsTable } from "./components/guards-table";
 import { GuardCard } from "./components/guard-card";
 import { ConfirmationDialog } from "./components/confirmation-dialog";
+import {
+  clientFetchPersonnelProfilesAction,
+  PersonnelProfilesResponseData,
+} from "@/lib/client-actions";
 
 const tabs = [
   { id: "home", label: "Home", icon: Home },
@@ -60,6 +64,13 @@ function GuardBankContent() {
   const [selectedState, setSelectedState] = useState("all");
   const [selectedCity, setSelectedCity] = useState("all");
   const [selectedAccountStatus, setSelectedAccountStatus] = useState("all");
+  const [selectedProvider, setSelectedProvider] = useState("all");
+  const [providersData, setProvidersData] = useState<PersonnelProfilesResponseData>({
+    fastguard: [],
+    agency: [],
+    agent: [],
+  });
+  const [loadingProviders, setLoadingProviders] = useState(false);
   const [locations, setLocations] = useState<{
     countries: string[];
     states: string[];
@@ -76,10 +87,29 @@ function GuardBankContent() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    const fetchProviders = async () => {
+      setLoadingProviders(true);
+      try {
+        const res = await clientFetchPersonnelProfilesAction();
+        if (res.success && res.data) {
+          setProvidersData(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch personnel profiles:", err);
+      } finally {
+        setLoadingProviders(false);
+      }
+    };
+
+    fetchProviders();
+  }, []);
+
+  useEffect(() => {
     setSelectedCountry("all");
     setSelectedState("all");
     setSelectedCity("all");
     setSelectedAccountStatus("all");
+    setSelectedProvider("all");
     setSearch("");
     setCurrentPage(1);
     if (activeTab === "home") {
@@ -91,7 +121,7 @@ function GuardBankContent() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, selectedCountry, selectedState, selectedCity, selectedAccountStatus]);
+  }, [debouncedSearch, selectedCountry, selectedState, selectedCity, selectedAccountStatus, selectedProvider]);
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -113,6 +143,9 @@ function GuardBankContent() {
         }
         if (selectedState && selectedState !== "all") {
           url += `&state=${selectedState}`;
+        }
+        if (activeTab !== "home" && selectedProvider && selectedProvider !== "all") {
+          url += `&personnel_profile_id=${encodeURIComponent(selectedProvider)}`;
         }
 
         const res = await fetch(url, {
@@ -149,7 +182,7 @@ function GuardBankContent() {
     };
 
     fetchLocations();
-  }, [activeTab, selectedCountry, selectedState]);
+  }, [activeTab, selectedCountry, selectedState, selectedProvider]);
 
   const fetchGuards = async () => {
     let status = "";
@@ -181,6 +214,9 @@ function GuardBankContent() {
       if (activeTab !== "home" && selectedAccountStatus && selectedAccountStatus !== "all") {
         url += `&account_status=${encodeURIComponent(selectedAccountStatus)}`;
       }
+      if (activeTab !== "home" && selectedProvider && selectedProvider !== "all") {
+        url += `&personnel_profile_id=${encodeURIComponent(selectedProvider)}`;
+      }
 
       url += `&_t=${Date.now()}`;
 
@@ -201,7 +237,6 @@ function GuardBankContent() {
 
       const data = await res.json().catch(() => null);
       if (data && data.success && Array.isArray(data.data)) {
-        // Sanitize guards data to ensure only valid guard objects are kept
         const cleanGuards = data.data.filter((g: any) => g && typeof g === "object" && !("success" in g && !g.id));
         setGuardsData(cleanGuards);
         setTotalCount(typeof data.total === "number" ? data.total : (data.pagination?.total || cleanGuards.length));
@@ -220,7 +255,7 @@ function GuardBankContent() {
 
   useEffect(() => {
     fetchGuards();
-  }, [activeTab, currentPage, pageSize, debouncedSearch, selectedCountry, selectedState, selectedCity, selectedAccountStatus]);
+  }, [activeTab, currentPage, pageSize, debouncedSearch, selectedCountry, selectedState, selectedCity, selectedAccountStatus, selectedProvider]);
 
   const handleDeleteGuard = (id: string) => {
     setDeleteConfirm({ isOpen: true, guardId: id });
@@ -422,6 +457,10 @@ function GuardBankContent() {
                   setSelectedCity={setSelectedCity}
                   selectedAccountStatus={selectedAccountStatus}
                   setSelectedAccountStatus={setSelectedAccountStatus}
+                  selectedProvider={selectedProvider}
+                  setSelectedProvider={setSelectedProvider}
+                  providersData={providersData}
+                  loadingProviders={loadingProviders}
                   locations={locations}
                   mounted={mounted}
                   isHomeTab={true}
@@ -460,6 +499,10 @@ function GuardBankContent() {
                   setSelectedCity={setSelectedCity}
                   selectedAccountStatus={selectedAccountStatus}
                   setSelectedAccountStatus={setSelectedAccountStatus}
+                  selectedProvider={selectedProvider}
+                  setSelectedProvider={setSelectedProvider}
+                  providersData={providersData}
+                  loadingProviders={loadingProviders}
                   locations={locations}
                   mounted={mounted}
                 />
@@ -521,6 +564,10 @@ function GuardBankContent() {
                   setSelectedCity={setSelectedCity}
                   selectedAccountStatus={selectedAccountStatus}
                   setSelectedAccountStatus={setSelectedAccountStatus}
+                  selectedProvider={selectedProvider}
+                  setSelectedProvider={setSelectedProvider}
+                  providersData={providersData}
+                  loadingProviders={loadingProviders}
                   locations={locations}
                   mounted={mounted}
                 />
@@ -582,6 +629,10 @@ function GuardBankContent() {
                   setSelectedCity={setSelectedCity}
                   selectedAccountStatus={selectedAccountStatus}
                   setSelectedAccountStatus={setSelectedAccountStatus}
+                  selectedProvider={selectedProvider}
+                  setSelectedProvider={setSelectedProvider}
+                  providersData={providersData}
+                  loadingProviders={loadingProviders}
                   locations={locations}
                   mounted={mounted}
                 />

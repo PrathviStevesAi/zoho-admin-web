@@ -3,6 +3,8 @@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { GuardProviderFilter } from "./guard-provider-filter";
+import { PersonnelProfilesResponseData } from "@/lib/client-actions";
 
 interface GuardFiltersProps {
   search: string;
@@ -15,6 +17,10 @@ interface GuardFiltersProps {
   setSelectedCity: (val: string) => void;
   selectedAccountStatus: string;
   setSelectedAccountStatus: (val: string) => void;
+  selectedProvider: string;
+  setSelectedProvider: (val: string) => void;
+  providersData?: PersonnelProfilesResponseData;
+  loadingProviders?: boolean;
   locations: {
     countries: string[];
     states: string[];
@@ -35,6 +41,10 @@ export function GuardFilters({
   setSelectedCity,
   selectedAccountStatus,
   setSelectedAccountStatus,
+  selectedProvider,
+  setSelectedProvider,
+  providersData,
+  loadingProviders = false,
   locations,
   mounted,
   isHomeTab = false
@@ -88,35 +98,47 @@ export function GuardFilters({
     );
   };
 
+  if (isHomeTab) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="space-y-1.5">
+          <label className={labelClass}>{searchLabel}</label>
+          <Input
+            placeholder={searchPlaceholder}
+            className="h-10 bg-slate-50 border-slate-200"
+            value={typeof search === "string" ? search : ""}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelClass}>Country</label>
+          {renderSelect(selectedCountry, setSelectedCountry, "All Countries", locations?.countries || [], "All Countries")}
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelClass}>State</label>
+          {renderSelect(selectedState, setSelectedState, "All States", locations?.states || [], "All States")}
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelClass}>City</label>
+          {renderSelect(selectedCity, setSelectedCity, "All Cities", locations?.cities || [], "All Cities")}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={cn(
-      "grid gap-4",
-      isHomeTab
-        ? "grid-cols-1 md:grid-cols-4"
-        : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"
-    )}>
-      <div className="space-y-1.5">
-        <label className={labelClass}>{searchLabel}</label>
-        <Input
-          placeholder={searchPlaceholder}
-          className="h-10 bg-slate-50 border-slate-200"
-          value={typeof search === "string" ? search : ""}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-      <div className="space-y-1.5">
-        <label className={labelClass}>Country</label>
-        {renderSelect(selectedCountry, setSelectedCountry, "All Countries", locations?.countries || [], "All Countries")}
-      </div>
-      <div className="space-y-1.5">
-        <label className={labelClass}>State</label>
-        {renderSelect(selectedState, setSelectedState, "All States", locations?.states || [], "All States")}
-      </div>
-      <div className="space-y-1.5">
-        <label className={labelClass}>City</label>
-        {renderSelect(selectedCity, setSelectedCity, "All Cities", locations?.cities || [], "All Cities")}
-      </div>
-      {!isHomeTab && (
+    <div className="space-y-4">
+      {/* 1st Row: Search, Status, Provider */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="space-y-1.5">
+          <label className={labelClass}>{searchLabel}</label>
+          <Input
+            placeholder={searchPlaceholder}
+            className="h-10 bg-slate-50 border-slate-200"
+            value={typeof search === "string" ? search : ""}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         <div className="space-y-1.5">
           <label className={labelClass}>Status</label>
           {!mounted ? (
@@ -139,7 +161,33 @@ export function GuardFilters({
             </Select>
           )}
         </div>
-      )}
+        <div className="space-y-1.5">
+          <label className={labelClass}>Provider</label>
+          <GuardProviderFilter
+            value={selectedProvider}
+            onChange={setSelectedProvider}
+            providersData={providersData}
+            isLoading={loadingProviders}
+            mounted={mounted}
+          />
+        </div>
+      </div>
+
+      {/* 2nd Row: Country, State, City */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="space-y-1.5">
+          <label className={labelClass}>Country</label>
+          {renderSelect(selectedCountry, setSelectedCountry, "All Countries", locations?.countries || [], "All Countries")}
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelClass}>State</label>
+          {renderSelect(selectedState, setSelectedState, "All States", locations?.states || [], "All States")}
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelClass}>City</label>
+          {renderSelect(selectedCity, setSelectedCity, "All Cities", locations?.cities || [], "All Cities")}
+        </div>
+      </div>
     </div>
   );
 }

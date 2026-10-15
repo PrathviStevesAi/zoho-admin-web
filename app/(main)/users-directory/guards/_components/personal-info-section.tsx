@@ -17,6 +17,7 @@ import { City } from "country-state-city";
 import { CityAutocomplete } from "@/components/ui/city-autocomplete";
 import { lookupPostalCode } from "@/lib/postal-lookup";
 import { toFullCountryName } from "@/lib/utils";
+import { GuardProviderFilter } from "@/app/(main)/guard-bank/components/guard-provider-filter";
 
 export function PersonalInfoSection({ formData, setFormData, countries, selectedCountry, setIsDropdownOpen, isDropdownOpen }: any) {
   const [isEmailVerifying, setIsEmailVerifying] = useState(false);
@@ -560,6 +561,19 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
             </SelectContent>
           </Select>
           {formData.holdArmedLicenseError && <p className="text-xs text-red-500 font-medium mt-1">{formData.holdArmedLicenseError}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+            Provider
+          </label>
+          <GuardProviderFilter
+            value={formData.personnel_profile_id || "all"}
+            onChange={(val) => setFormData((prev: any) => ({ ...prev, personnel_profile_id: val }))}
+            allLabel="All"
+            showIcon={true}
+            triggerClassName="!h-11 bg-slate-50/50 border-slate-200 rounded-md text-sm"
+          />
         </div>
       </div>
     </div>

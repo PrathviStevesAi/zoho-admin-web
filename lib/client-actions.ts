@@ -502,7 +502,10 @@ export interface FetchGuardsByLocationParams {
 export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationParams = {}): Promise<FetchResponse<any>> {
   const query = new URLSearchParams();
 
-  const accountStatus = params.account_status || "active";
+  const accountStatus =
+    params.account_status && params.account_status.toLowerCase() !== "all"
+      ? params.account_status
+      : "active";
   query.append("account_status", accountStatus);
 
   if (params.page !== null) {
@@ -1187,6 +1190,25 @@ export async function clientFetchPersonnelProfilesAction(
     const res = await clientApiFetch<any>(endpoint);
     const payload = res?.data?.data || res?.data || res || {};
 
+    let fastguardList: any[] = [];
+    let agencyList: any[] = [];
+    let agentList: any[] = [];
+
+    if (Array.isArray(payload)) {
+      if (profileType === "fastguard") fastguardList = payload;
+      else if (profileType === "agency") agencyList = payload;
+      else if (profileType === "agent") agentList = payload;
+      else {
+        fastguardList = payload.filter((x: any) => x.type === "fastguard");
+        agencyList = payload.filter((x: any) => x.type === "agency");
+        agentList = payload.filter((x: any) => x.type === "agent");
+      }
+    } else {
+      fastguardList = payload.fastguard || [];
+      agencyList = payload.agency || [];
+      agentList = payload.agent || [];
+    }
+
     const normalizeList = (list: any[]): PersonnelProfileItem[] => {
       if (!Array.isArray(list)) return [];
       return list.map((item) => ({
@@ -1198,21 +1220,181 @@ export async function clientFetchPersonnelProfilesAction(
           [item.first_name, item.last_name].filter(Boolean).join(" ") ||
           "Unknown",
         email: item.email || undefined,
+        total_guards: typeof item.total_guards === "number" ? item.total_guards : (item.assigned_guards ?? 0),
+        phone: item.phone_no || item.phone_number || item.phone || undefined,
+        phone_no: item.phone_no || item.phone_number || item.phone || undefined,
       }));
     };
 
     return {
       success: true,
       data: {
-        fastguard: normalizeList(payload.fastguard),
-        agency: normalizeList(payload.agency),
-        agent: normalizeList(payload.agent),
+        fastguard: normalizeList(fastguardList),
+        agency: normalizeList(agencyList),
+        agent: normalizeList(agentList),
       },
     };
   } catch (error: any) {
     return {
       success: false,
       error: error?.message || "Failed to fetch personnel profiles",
+    };
+  }
+}
+
+export async function clientUpdateGuardProviderAction(
+  guardId: string,
+  personnelProfileId: string
+): Promise<{ success: boolean; message?: string; error?: string; data?: any }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/guard/bank/application/${guardId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        personnel_profile_id: personnelProfileId,
+      }),
+    });
+    return {
+      success: res?.success !== false,
+      message: res?.message || "Provider updated successfully",
+      data: res?.data || res,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to update provider",
+    };
+  }
+}
+
+export interface CreatePersonnelProfilePayload {
+  profile_type: "agency" | "agent" | "fastguard" | string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: {
+    zip?: string;
+    city?: string;
+    state?: string;
+    street?: string;
+    country?: string;
+  };
+  notes?: string;
+}
+
+export async function clientCreatePersonnelProfileAction(
+  payload: CreatePersonnelProfilePayload
+): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return {
+      success: res?.success !== false,
+      message: res?.message || "Profile created successfully",
+      data: res?.data || res,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to create profile",
+    };
+  }
+}
+
+export interface PersonnelProfileDetail {
+  id: string;
+  profile_type: "agency" | "agent" | "fastguard" | string;
+  name: string;
+  email: string;
+  phone_no?: string;
+  phone?: string;
+  phone_number?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zip?: string;
+    zip_code?: string;
+  };
+  notes?: string;
+  total_guards?: number;
+  assigned_guards?: number;
+  [key: string]: any;
+}
+
+export async function clientFetchPersonnelProfileByIdAction(
+  profileId: string,
+  type: string = "profile"
+): Promise<{ success: boolean; data?: PersonnelProfileDetail; error?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/${profileId}?type=${type}`);
+    const rawData = res?.data || res;
+    return {
+      success: res?.success !== false,
+      data: rawData,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to fetch profile details",
+    };
+  }
+}
+
+export interface UpdatePersonnelProfilePayload {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: {
+    street?: string;
+    zip?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+  };
+  notes?: string;
+}
+
+export async function clientUpdatePersonnelProfileByIdAction(
+  profileId: string,
+  payload: UpdatePersonnelProfilePayload
+): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/${profileId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    return {
+      success: res?.success !== false,
+      data: res?.data || res,
+      message: res?.message || "Profile updated successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to update profile",
+    };
+  }
+}
+
+export async function clientDeletePersonnelProfileByIdAction(
+  profileId: string
+): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/${profileId}`, {
+      method: "DELETE",
+    });
+    return {
+      success: res?.success !== false,
+      data: res?.data || res,
+      message: res?.message || "Profile deleted successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to delete profile",
     };
   }
 }

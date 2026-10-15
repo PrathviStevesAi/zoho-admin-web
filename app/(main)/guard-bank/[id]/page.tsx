@@ -34,6 +34,7 @@ import { GuardDocuments } from "../components/guard-documents";
 import { GuardPreviousEmployment } from "../components/guard-previous-employment";
 import { GuardNotesAndBadge } from "../components/guard-notes-and-badge";
 import { GuardHistoryDrawer } from "../components/guard-history-drawer";
+import { UpdateProviderDialog } from "../components/update-provider-dialog";
 
 const phoneCountries = [
   { name: "Argentina", code: "ar", dialCode: "+54" },
@@ -71,6 +72,7 @@ export default function GuardDetailPage() {
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isUpdateLevelModalOpen, setIsUpdateLevelModalOpen] = useState(false);
   const [isUpdatingLevel, setIsUpdatingLevel] = useState(false);
+  const [isUpdateProviderModalOpen, setIsUpdateProviderModalOpen] = useState(false);
   const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
@@ -247,7 +249,8 @@ export default function GuardDetailPage() {
       "english_language", "gender", "ethnicity", "veteran_status", "disability_status", "notes",
       "profile_img_url", "previous_employer_name", "previous_employer_position_and_duties",
       "previous_employment_start_date", "previous_employment_end_date",
-      "previous_employment_end_reason", "previous_employer_rehire_eligible"
+      "previous_employment_end_reason", "previous_employer_rehire_eligible",
+      "personnel_profile_id"
     ];
 
     const payload: any = {};
@@ -809,6 +812,7 @@ export default function GuardDetailPage() {
         getTabParam={getTabParam}
         getStatusBreadcrumb={getStatusBreadcrumb}
         setIsHistoryOpen={setIsHistoryOpen}
+        setIsUpdateProviderModalOpen={setIsUpdateProviderModalOpen}
         onUpdateAccountStatus={handleUpdateAccountStatus}
       />
 
@@ -925,6 +929,12 @@ export default function GuardDetailPage() {
       <BadgeCreateDialog isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} defaultName={`${guard.first_name || ""} ${guard.last_name || ""}`.trim()} defaultEmail={guard.email || ""} defaultHeadshotUrl={guard.headshot_image_url || ""} onSubmit={handleCreateBadgeSubmit} isSubmitting={isGeneratingBadge} />
       <BadgeViewDialog isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} badgeUrl={guard.guard_badge_url || ""} onDownload={handleDownloadBadge} onDelete={handleDeleteBadge} isDeleting={isDeletingBadge} />
       <GuardHistoryDrawer isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} history={guard?.history} />
+      <UpdateProviderDialog
+        isOpen={isUpdateProviderModalOpen}
+        onClose={() => setIsUpdateProviderModalOpen(false)}
+        guard={guard}
+        onSuccess={fetchGuardDetails}
+      />
     </div>
   );
 }

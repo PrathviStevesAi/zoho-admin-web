@@ -16,7 +16,8 @@ import {
   Archive,
   Unlock,
   ArchiveRestore,
-  CheckCircle2
+  CheckCircle2,
+  Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -45,6 +46,7 @@ interface GuardHeaderProps {
   getTabParam: () => string;
   getStatusBreadcrumb: () => string;
   setIsHistoryOpen?: (val: boolean) => void;
+  setIsUpdateProviderModalOpen?: (val: boolean) => void;
   onUpdateAccountStatus?: (status: string, reason?: string) => Promise<boolean | void> | boolean | void;
 }
 
@@ -61,6 +63,7 @@ export function GuardHeader({
   getTabParam,
   getStatusBreadcrumb,
   setIsHistoryOpen,
+  setIsUpdateProviderModalOpen,
   onUpdateAccountStatus
 }: GuardHeaderProps) {
   const router = useRouter();
@@ -220,6 +223,15 @@ export function GuardHeader({
                 >
                   <Clock className="w-4 h-4" />
                   History
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_update_provider && (
+                <DropdownMenuItem
+                  onClick={() => setIsUpdateProviderModalOpen?.(true)}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <Building2 className="w-4 h-4 text-[#0064cb]" />
+                  Update Provider
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={handleResendPassword} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">

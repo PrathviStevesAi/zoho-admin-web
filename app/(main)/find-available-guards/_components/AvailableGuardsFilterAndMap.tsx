@@ -33,6 +33,7 @@ import {
   ServiceFilterType,
   GuardLevelFilterType,
 } from "@/app/(main)/invoices/[id]/_components/available-guards/types";
+import { GuardProviderFilter } from "@/app/(main)/guard-bank/components/guard-provider-filter";
 
 interface AvailableGuardsFilterAndMapProps {
   locationType: LocationType;
@@ -41,6 +42,8 @@ interface AvailableGuardsFilterAndMapProps {
   onServiceFilterChange: (val: ServiceFilterType) => void;
   guardLevelFilter: GuardLevelFilterType;
   onGuardLevelFilterChange: (val: GuardLevelFilterType) => void;
+  providerFilter?: string;
+  onProviderFilterChange?: (val: string) => void;
   centerLocation: string;
   onCenterLocationChange: (val: string) => void;
   onPlaceSelected?: (place: any) => void;
@@ -77,6 +80,8 @@ export function AvailableGuardsFilterAndMap({
   onServiceFilterChange,
   guardLevelFilter,
   onGuardLevelFilterChange,
+  providerFilter = "all",
+  onProviderFilterChange,
   centerLocation,
   onCenterLocationChange,
   onPlaceSelected,
@@ -284,6 +289,16 @@ export function AvailableGuardsFilterAndMap({
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold text-slate-800">Provider</Label>
+            <GuardProviderFilter
+              value={providerFilter}
+              onChange={(val) => onProviderFilterChange?.(val)}
+              showIcon={true}
+              triggerClassName="bg-white rounded-lg text-xs font-medium"
+            />
           </div>
 
           {(locationType === "all_guard" || locationType === "all") && (
