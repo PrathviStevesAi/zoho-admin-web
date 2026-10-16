@@ -15,11 +15,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { GooglePlacesAutocomplete } from "@/components/ui/GooglePlacesAutocomplete";
 import {
   clientCreatePersonnelProfileAction,
   CreatePersonnelProfilePayload,
 } from "@/lib/client-actions";
+
+function countWords(str?: string): number {
+  if (!str || !str.trim()) return 0;
+  return str.trim().split(/\s+/).filter(Boolean).length;
+}
 
 // Exactly matching countries list from Register New Guard (personal-info-section.tsx)
 const COUNTRIES = [
@@ -254,9 +260,10 @@ export function AgencyRegistrationForm({
                     setName(e.target.value);
                     if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
                   }}
-                  className={`h-11 bg-slate-50/50 border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:ring-[#0064cb]/10 focus:border-[#0064cb] ${
-                    errors.name ? "border-red-500 focus-visible:ring-red-500" : ""
-                  }`}
+                  className={cn(
+                    "h-11 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0",
+                    errors.name && "border-red-500 focus-visible:ring-red-500"
+                  )}
                 />
                 {errors.name && <p className="text-xs text-red-500 font-medium">{errors.name}</p>}
               </div>
@@ -276,9 +283,10 @@ export function AgencyRegistrationForm({
                       setEmail(e.target.value);
                       if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
                     }}
-                    className={`h-11 pl-9 bg-slate-50/50 border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:ring-[#0064cb]/10 focus:border-[#0064cb] ${
-                      errors.email ? "border-red-500 focus-visible:ring-red-500" : ""
-                    }`}
+                    className={cn(
+                      "h-11 pl-9 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0",
+                      errors.email && "border-red-500 focus-visible:ring-red-500"
+                    )}
                   />
                 </div>
                 {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email}</p>}
@@ -289,11 +297,11 @@ export function AgencyRegistrationForm({
                 <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                   Phone Number
                 </label>
-                <div className="relative flex items-center h-11 bg-slate-50/50 border border-slate-200 rounded-md focus-within:ring-2 focus-within:ring-[#0064cb]/10 focus-within:border-[#0064cb] transition-all">
+                <div className="relative flex items-center h-11 bg-white border border-slate-200 rounded-md focus-within:ring-2 focus-within:ring-[#0064cb]/20 focus-within:border-[#0064cb] transition-all">
                   <button
                     type="button"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center gap-1.5 px-3 h-full rounded-l-md hover:bg-slate-100/50 border-r border-slate-200/80 transition-colors focus:outline-none cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 h-full rounded-l-md hover:bg-slate-50 border-r border-slate-200 transition-colors focus:outline-none cursor-pointer bg-slate-50/50"
                   >
                     <img
                       src={`https://flagcdn.com/w20/${selectedCountry.code}.png`}
@@ -310,7 +318,7 @@ export function AgencyRegistrationForm({
                       value={phoneNumber}
                       maxLength={15}
                       onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                      className="w-full h-full bg-transparent outline-none border-none pl-3 pr-3 text-slate-800 font-medium placeholder-slate-400 text-sm"
+                      className="w-full h-full bg-white outline-none border-none pl-3 pr-3 text-slate-800 font-medium placeholder-slate-400 text-sm rounded-r-md"
                     />
                   </div>
                   {isDropdownOpen && (
@@ -373,7 +381,7 @@ export function AgencyRegistrationForm({
                     }
                   }}
                   placeholder="Enter street address"
-                  className="h-11 bg-slate-50/50 border-slate-200 rounded-md text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:ring-[#0064cb]/10 focus:border-[#0064cb]"
+                  className="h-11 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0"
                 />
               </div>
 
@@ -391,7 +399,7 @@ export function AgencyRegistrationForm({
                     const sanitized = e.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10);
                     setZip(sanitized);
                   }}
-                  className="h-11 bg-slate-50/50 border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:ring-[#0064cb]/10 focus:border-[#0064cb]"
+                  className="h-11 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0"
                 />
               </div>
             </div>
@@ -410,9 +418,10 @@ export function AgencyRegistrationForm({
                     setCountry(e.target.value);
                     if (errors.country) setErrors((prev) => ({ ...prev, country: undefined }));
                   }}
-                  className={`h-11 bg-slate-50/50 border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:ring-[#0064cb]/10 focus:border-[#0064cb] ${
-                    errors.country ? "border-red-500 focus-visible:ring-red-500" : ""
-                  }`}
+                  className={cn(
+                    "h-11 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0",
+                    errors.country && "border-red-500 focus-visible:ring-red-500"
+                  )}
                 />
                 {errors.country && <p className="text-xs text-red-500 font-medium">{errors.country}</p>}
               </div>
@@ -429,9 +438,10 @@ export function AgencyRegistrationForm({
                     setState(e.target.value);
                     if (errors.state) setErrors((prev) => ({ ...prev, state: undefined }));
                   }}
-                  className={`h-11 bg-slate-50/50 border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:ring-[#0064cb]/10 focus:border-[#0064cb] ${
-                    errors.state ? "border-red-500 focus-visible:ring-red-500" : ""
-                  }`}
+                  className={cn(
+                    "h-11 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0",
+                    errors.state && "border-red-500 focus-visible:ring-red-500"
+                  )}
                 />
                 {errors.state && <p className="text-xs text-red-500 font-medium">{errors.state}</p>}
               </div>
@@ -448,9 +458,10 @@ export function AgencyRegistrationForm({
                     setCity(e.target.value);
                     if (errors.city) setErrors((prev) => ({ ...prev, city: undefined }));
                   }}
-                  className={`h-11 bg-slate-50/50 border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:ring-[#0064cb]/10 focus:border-[#0064cb] ${
-                    errors.city ? "border-red-500 focus-visible:ring-red-500" : ""
-                  }`}
+                  className={cn(
+                    "h-11 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0",
+                    errors.city && "border-red-500 focus-visible:ring-red-500"
+                  )}
                 />
                 {errors.city && <p className="text-xs text-red-500 font-medium">{errors.city}</p>}
               </div>
@@ -458,15 +469,35 @@ export function AgencyRegistrationForm({
 
             {/* ROW 4: Notes & Details (Optional) - Dedicated Textarea */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                Notes & Details (Optional)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  Notes & Details (Optional)
+                </label>
+                <span
+                  className={cn(
+                    "text-[11px] font-medium transition-colors",
+                    countWords(notes) >= 500 ? "text-amber-600 font-bold" : "text-slate-400"
+                  )}
+                >
+                  {countWords(notes)} / 500 words
+                </span>
+              </div>
               <textarea
                 placeholder="Enter any additional notes or details regarding operations, coverage, contracts, or contacts for this agency..."
                 value={notes}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                  const val = e.target.value;
+                  const words = val.trim().split(/\s+/).filter(Boolean);
+                  if (words.length > 500) {
+                    const truncated = words.slice(0, 500).join(" ");
+                    setNotes(truncated);
+                    toast.warning("Notes & Details cannot exceed 500 words");
+                    return;
+                  }
+                  setNotes(val);
+                }}
                 rows={4}
-                className="w-full min-h-[110px] p-3.5 bg-slate-50/50 border border-slate-200 rounded-md text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0064cb]/10 focus:border-[#0064cb] transition-all resize-y"
+                className="w-full min-h-[110px] p-3.5 bg-white border border-slate-200 rounded-md text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 transition-all resize-y shadow-xs"
               />
             </div>
           </CardContent>

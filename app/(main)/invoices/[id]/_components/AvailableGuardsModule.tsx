@@ -56,7 +56,6 @@ export function AvailableGuardsModule({
   const [serviceFilter, setServiceFilter] = useState<ServiceFilterType>("all");
   const [guardLevelFilter, setGuardLevelFilter] = useState<GuardLevelFilterType>("all");
   const [providerFilter, setProviderFilter] = useState<string>("all");
-
   const [sentShifts, setSentShifts] = useState<any[]>([]);
   const [isSentShiftsLoading, setIsSentShiftsLoading] = useState(false);
 

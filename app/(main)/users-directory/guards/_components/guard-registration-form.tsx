@@ -14,7 +14,6 @@ import {
 } from "./status-sections";
 import { GuardLevelSection } from "./guard-level-section";
 import { registerGuardAction } from "@/actions/auth.actions";
-import { Country } from "country-state-city";
 import { toFullCountryName } from "@/lib/utils";
 
 export function GuardRegistrationForm({ onBack, countries }: any) {

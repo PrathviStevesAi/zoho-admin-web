@@ -1343,6 +1343,47 @@ export async function clientFetchPersonnelProfileByIdAction(
   }
 }
 
+export interface PersonnelSubdataResponse<T = any> {
+  success: boolean;
+  page?: number;
+  page_size?: number;
+  total?: number;
+  data?: T[];
+  error?: string;
+}
+
+export async function clientFetchPersonnelProfileSubdataAction<T = any>(
+  profileId: string,
+  type: "guards" | "shifts" | "attachments" | string,
+  page: number = 1,
+  search?: string,
+  pageSize: number = 15
+): Promise<PersonnelSubdataResponse<T>> {
+  try {
+    let url = `/api/v1/personnel/profile/${profileId}?type=${type}&page=${page}&page_size=${pageSize}&limit=${pageSize}`;
+    if (search && search.trim()) {
+      url += `&search=${encodeURIComponent(search.trim())}`;
+    }
+    const res = await clientApiFetch<any>(url);
+    if (!res) {
+      return { success: false, error: "Empty response from server" };
+    }
+    const list = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
+    return {
+      success: res.success !== false,
+      page: typeof res.page === "number" ? res.page : page,
+      page_size: typeof res.page_size === "number" ? res.page_size : pageSize,
+      total: typeof res.total === "number" ? res.total : list.length,
+      data: list,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || `Failed to fetch ${type}`,
+    };
+  }
+}
+
 export interface UpdatePersonnelProfilePayload {
   name?: string;
   email?: string;
@@ -1398,4 +1439,108 @@ export async function clientDeletePersonnelProfileByIdAction(
     };
   }
 }
+
+export interface AddGuardsToPersonnelProfilePayload {
+  personnel_profile_id: string;
+  guard_ids: string[];
+}
+
+export async function clientAddGuardsToPersonnelProfileAction(
+  payload: AddGuardsToPersonnelProfilePayload
+): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/guards`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return {
+      success: res?.success !== false,
+      data: res?.data || res,
+      message: res?.message || "Guards added successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to add guards to profile",
+    };
+  }
+}
+
+export interface GeneratePersonnelMediaUploadUrlPayload {
+  file_name: string;
+  type?: string;
+  personnel_profile_id: string;
+}
+
+export async function clientGeneratePersonnelMediaUploadUrlAction(
+  payload: GeneratePersonnelMediaUploadUrlPayload
+): Promise<{ success: boolean; data?: { signed_url: string; file_path: string }; error?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/shift/media/generate-upload-url`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const data = res?.data || res;
+    return {
+      success: true,
+      data: {
+        signed_url: data?.signed_url || data?.url,
+        file_path: data?.file_path || data?.path || data?.signed_url?.split("?")[0],
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to generate upload URL",
+    };
+  }
+}
+
+export interface AddPersonnelProfileAttachmentPayload {
+  personnel_profile_id: string;
+  url: string;
+  file_name: string;
+}
+
+export async function clientAddPersonnelProfileAttachmentAction(
+  payload: AddPersonnelProfileAttachmentPayload
+): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/attachment`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return {
+      success: res?.success !== false,
+      data: res?.data || res,
+      message: res?.message || "Attachment uploaded successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to save attachment",
+    };
+  }
+}
+
+export async function clientDeletePersonnelProfileAttachmentAction(
+  attachmentId: string
+): Promise<{ success: boolean; error?: string; message?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/attachment/${attachmentId}`, {
+      method: "DELETE",
+    });
+    return {
+      success: res?.success !== false,
+      message: typeof res === "string" ? res : (res?.message || "Attachment deleted successfully"),
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to delete attachment",
+    };
+  }
+}
+
+
 

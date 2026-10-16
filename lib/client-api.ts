@@ -75,11 +75,14 @@ export async function clientApiFetch<T>(
       }
       
       const successText = await response.text();
+      if (!successText || !successText.trim()) {
+        return { success: true } as any;
+      }
       let data: any;
       try {
         data = JSON.parse(successText);
       } catch (err) {
-        throw new Error(`Invalid response format from server.`);
+        return successText as any;
       }
       return data;
     } catch (error: any) {

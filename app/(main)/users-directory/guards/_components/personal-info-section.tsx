@@ -24,7 +24,6 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
   const [isPhoneVerifying, setIsPhoneVerifying] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-
   const [countryOptions, setCountryOptions] = useState<string[]>([]);
   const [stateOptions, setStateOptions] = useState<SubcontractorState[]>([]);
   const [cityOptions, setCityOptions] = useState<any[]>([]);
@@ -33,12 +32,10 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
   const [isZipLoading, setIsZipLoading] = useState(false);
   const [zipLocationMessage, setZipLocationMessage] = useState<string | null>(null);
   const [zipErrorMessage, setZipErrorMessage] = useState<string | null>(null);
-
   const normalizedCountry = toFullCountryName(formData.addressCountry);
 
   useEffect(() => {
     let isCancelled = false;
-
     async function loadInitialLocations() {
       setIsCountriesLoading(true);
       if (normalizedCountry) {
@@ -423,11 +420,10 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
               onBlur={() => {
                 if (formData.zipCode) handleZipLookup(formData.zipCode, true);
               }}
-              className={`h-11 bg-slate-50/50 pr-8 ${
-                zipErrorMessage || formData.zipCodeError
+              className={`h-11 bg-slate-50/50 pr-8 ${zipErrorMessage || formData.zipCodeError
                   ? "border-red-500 ring-1 ring-red-500 focus-visible:ring-red-500"
                   : ""
-              }`}
+                }`}
             />
             {isZipLoading && (
               <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
@@ -472,8 +468,8 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
                   isStatesLoading
                     ? "Loading states..."
                     : !normalizedCountry
-                    ? "Select Country first"
-                    : "Select State"
+                      ? "Select Country first"
+                      : "Select State"
                 }
               />
             </SelectTrigger>

@@ -17,7 +17,6 @@ interface SelectGuardsStepProps {
   onCancel: () => void;
   onSendJobOpportunity: () => void;
   isFinding: boolean;
-
   notificationSource: NotificationSourceType;
   onNotificationSourceChange: (val: NotificationSourceType) => void;
   locationType: LocationType;
@@ -33,7 +32,6 @@ interface SelectGuardsStepProps {
   onPlaceSelected: (place: any) => void;
   radiusMiles: number;
   onRadiusChange: (val: number | ((prev: number) => number)) => void;
-
   citySelectKey: number;
   stateSelectKey: number;
   countrySelectKey: number;
@@ -41,26 +39,21 @@ interface SelectGuardsStepProps {
   availableCities: string[];
   onAddCity: (city: string) => void;
   onRemoveCity: (city: string) => void;
-
   selectedStates: string[];
   availableStates: string[];
   onAddState: (state: string) => void;
   onRemoveState: (state: string) => void;
-
   selectedCountries: string[];
   availableCountries: string[];
   onAddCountry: (country: string) => void;
   onRemoveCountry: (country: string) => void;
   isLocationsLoading: boolean;
-
   isGuardsLoading: boolean;
   onSearchGuards: () => void;
   onResetFilters: () => void;
-
   mapDisplayedLocation: string;
   dynamicSiteLocation: string;
   mapCenter: [number, number];
-
   allGuards: any[];
   selectedGuardIds: string[];
   onSelectGuard: (id: string, checked: boolean) => void;

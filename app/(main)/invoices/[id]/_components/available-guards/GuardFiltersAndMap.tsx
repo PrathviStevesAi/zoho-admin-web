@@ -40,13 +40,11 @@ interface GuardFiltersAndMapProps {
   onGuardLevelFilterChange: (val: GuardLevelFilterType) => void;
   providerFilter?: string;
   onProviderFilterChange?: (val: string) => void;
-
   centerLocation: string;
   onCenterLocationChange: (val: string) => void;
   onPlaceSelected: (place: any) => void;
   radiusMiles: number;
   onRadiusChange: (val: number | ((prev: number) => number)) => void;
-
   citySelectKey: number;
   stateSelectKey: number;
   countrySelectKey: number;
@@ -54,22 +52,18 @@ interface GuardFiltersAndMapProps {
   availableCities: string[];
   onAddCity: (city: string) => void;
   onRemoveCity: (city: string) => void;
-
   selectedStates: string[];
   availableStates: string[];
   onAddState: (state: string) => void;
   onRemoveState: (state: string) => void;
-
   selectedCountries: string[];
   availableCountries: string[];
   onAddCountry: (country: string) => void;
   onRemoveCountry: (country: string) => void;
   isLocationsLoading: boolean;
-
   isGuardsLoading: boolean;
   onSearchGuards: () => void;
   onResetFilters: () => void;
-
   mapDisplayedLocation: string;
   mapCenter: [number, number];
   allGuards: any[];
@@ -306,47 +300,46 @@ export function GuardFiltersAndMap({
           </div>
 
           {locationType === "radius" && (
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-800">Radius (Miles)</Label>
-                <div className="flex items-center gap-3">
-                  <div className="relative w-36 shrink-0 flex items-center">
-                    <Input
-                      type="number"
-                      min={5}
-                      max={5000}
-                      step={5}
-                      value={radiusMiles}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        onRadiusChange(val > 0 ? val : 50);
-                      }}
-                      className="w-full h-10 pr-14 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:border-[#0064cb]"
-                    />
-                    <div className="absolute right-1 flex items-center gap-0.5">
-                      <button
-                        type="button"
-                        onClick={() => onRadiusChange((prev) => Math.max(5, prev - 5))}
-                        className="w-6 h-7 flex items-center justify-center rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
-                        title="Decrease by 5 miles"
-                      >
-                        -
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onRadiusChange((prev) => prev + 5)}
-                        className="w-6 h-7 flex items-center justify-center rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
-                        title="Increase by 5 miles"
-                      >
-                        +
-                      </button>
-                    </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">Radius (Miles)</Label>
+              <div className="flex items-center gap-3">
+                <div className="relative w-36 shrink-0 flex items-center">
+                  <Input
+                    type="number"
+                    min={5}
+                    max={5000}
+                    step={5}
+                    value={radiusMiles}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      onRadiusChange(val > 0 ? val : 50);
+                    }}
+                    className="w-full h-10 pr-14 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800 focus:border-[#0064cb]"
+                  />
+                  <div className="absolute right-1 flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => onRadiusChange((prev) => Math.max(5, prev - 5))}
+                      className="w-6 h-7 flex items-center justify-center rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                      title="Decrease by 5 miles"
+                    >
+                      -
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onRadiusChange((prev) => prev + 5)}
+                      className="w-6 h-7 flex items-center justify-center rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                      title="Increase by 5 miles"
+                    >
+                      +
+                    </button>
                   </div>
-                  <p className="text-xs text-slate-500 font-normal">
-                    Find guards within {radiusMiles} miles.
-                  </p>
                 </div>
+                <p className="text-xs text-slate-500 font-normal">
+                  Find guards within {radiusMiles} miles.
+                </p>
               </div>
+            </div>
           )}
 
           {locationType === "city" && (

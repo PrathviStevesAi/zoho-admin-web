@@ -5,7 +5,7 @@ import {
   FetchGuardsByLocationParams
 } from "@/lib/client-actions";
 import { useState, useEffect } from "react";
-import { XCircle, Star, Info } from "lucide-react";
+import { XCircle, Star, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchLocationAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
@@ -53,11 +53,12 @@ export interface GuardItem {
 interface SelectGuardsDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (guardIds: string[]) => void;
+  onConfirm: (guardIds: string[]) => void | Promise<void>;
   initialSelectedIds: string[];
+  isSubmitting?: boolean;
 }
 
-export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelectedIds }: SelectGuardsDialogProps) {
+export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelectedIds, isSubmitting }: SelectGuardsDialogProps) {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userFilters, setUserFilters] = useState({
     country: "All Country",
@@ -77,7 +78,21 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
   const [isLoadingGuards, setIsLoadingGuards] = useState(false);
   const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds || []);
+  const [internalSubmitting, setInternalSubmitting] = useState(false);
+  const submitting = isSubmitting ?? internalSubmitting;
+
+  const handleConfirm = async () => {
+    try {
+      setInternalSubmitting(true);
+      await Promise.resolve(onConfirm(selectedIds));
+      onClose();
+    } catch (err) {
+      console.error("Failed to confirm selected guards:", err);
+    } finally {
+      setInternalSubmitting(false);
+    }
+  };
 
   const isFilterActive =
     Boolean(debouncedSearchQuery && debouncedSearchQuery.trim()) ||
@@ -101,8 +116,10 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
       });
       setShowMobileFilters(false);
       setTotalGuards(0);
+    } else {
+      setSelectedIds(initialSelectedIds || []);
     }
-  }, [isOpen]);
+  }, [isOpen, initialSelectedIds]);
 
   useEffect(() => {
     if (isOpen) {
@@ -500,17 +517,17 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
           <Button
             variant="outline"
             onClick={onClose}
+            disabled={submitting}
             className="h-9 px-4 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 rounded-lg cursor-pointer text-xs transition-all"
           >
             Cancel
           </Button>
           <Button
-            onClick={() => {
-              onConfirm(selectedIds);
-              onClose();
-            }}
-            className="h-9 px-6 bg-[#0064cb] hover:bg-[#0052ae] text-white font-bold rounded-lg cursor-pointer text-xs shadow-sm transition-all"
+            disabled={submitting}
+            onClick={handleConfirm}
+            className="h-9 px-6 bg-[#0064cb] hover:bg-[#0052ae] text-white font-bold rounded-lg cursor-pointer text-xs shadow-sm transition-all flex items-center gap-2"
           >
+            {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />}
             Select Guards ({selectedIds.length})
           </Button>
         </div>

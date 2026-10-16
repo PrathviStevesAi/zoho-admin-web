@@ -41,8 +41,10 @@ import {
   PersonnelProfileDetail,
   UpdatePersonnelProfilePayload,
 } from "@/lib/client-actions";
+import { PersonnelGuardsTable } from "./PersonnelGuardsTable";
+import { PersonnelShiftsTable } from "./PersonnelShiftsTable";
+import { PersonnelDocumentsTable } from "./PersonnelDocumentsTable";
 
-// Exactly matching countries list from Register New Guard (personal-info-section.tsx)
 const COUNTRIES = [
   { name: "Argentina", code: "ar", dialCode: "+54" },
   { name: "Bolivia", code: "bo", dialCode: "+591" },
@@ -64,7 +66,6 @@ function parsePhoneWithCountry(rawPhone: string) {
   if (!rawPhone) return { country: COUNTRIES[11], number: "" };
   const cleaned = rawPhone.trim();
 
-  // Match known country by dialCode (sorted descending by length)
   const sorted = [...COUNTRIES].sort((a, b) => b.dialCode.length - a.dialCode.length);
   for (const c of sorted) {
     if (cleaned.startsWith(c.dialCode)) {
@@ -72,17 +73,19 @@ function parsePhoneWithCountry(rawPhone: string) {
       return { country: c, number: rest };
     }
   }
-
-  // Fallback: digits only
   const digits = cleaned.replace(/[^\d]/g, "");
   return { country: COUNTRIES[11], number: digits };
 }
 
 function formatPhoneDisplay(rawPhone?: string): string {
   if (!rawPhone || rawPhone === "---") return "---";
-  // Display without space after country code (e.g. +51145787475888)
   const trimmed = rawPhone.trim().replace(/\s+/g, "");
   return trimmed || "---";
+}
+
+function countWords(str?: string): number {
+  if (!str || !str.trim()) return 0;
+  return str.trim().split(/\s+/).filter(Boolean).length;
 }
 
 interface ProviderDetailViewProps {
@@ -95,8 +98,11 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
   const [profile, setProfile] = useState<PersonnelProfileDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Edit Mode States
+  type DetailTab = "general" | "guards" | "shifts" | "documents";
+  const [activeTab, setActiveTab] = useState<DetailTab>("general");
+  const [guardsCount, setGuardsCount] = useState<number | undefined>(undefined);
+  const [shiftsCount, setShiftsCount] = useState<number | undefined>(undefined);
+  const [documentsCount, setDocumentsCount] = useState<number | undefined>(undefined);
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -116,10 +122,8 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
     notes: "",
   });
 
-  // Delete Dialog State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
   const isAgent = type === "agent";
   const entityLabel = isAgent ? "Agent" : "Agency";
   const parentDirectoryPath = `/provider-management/${type}`;
@@ -149,6 +153,9 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
       const res = await clientFetchPersonnelProfileByIdAction(id);
       if (res.success && res.data) {
         setProfile(res.data);
+        if (typeof res.data.total_guards === "number") {
+          setGuardsCount(res.data.total_guards);
+        }
         const initData = initEditFormData(res.data);
         setEditForm(initData);
         const countryObj = COUNTRIES.find((c) => c.code === initData.phoneCountryCode) || COUNTRIES[11];
@@ -180,18 +187,27 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
 
   const hasChanges = Boolean(
     initialValues &&
-      (editForm.name.trim() !== initialValues.name.trim() ||
-        editForm.email.trim() !== initialValues.email.trim() ||
-        currentPhoneFormatted !== initialPhoneFormatted ||
-        editForm.street.trim() !== initialValues.street.trim() ||
-        editForm.zip.trim() !== initialValues.zip.trim() ||
-        editForm.country.trim() !== initialValues.country.trim() ||
-        editForm.state.trim() !== initialValues.state.trim() ||
-        editForm.city.trim() !== initialValues.city.trim() ||
-        editForm.notes.trim() !== initialValues.notes.trim())
+    (editForm.name.trim() !== initialValues.name.trim() ||
+      editForm.email.trim() !== initialValues.email.trim() ||
+      currentPhoneFormatted !== initialPhoneFormatted ||
+      editForm.street.trim() !== initialValues.street.trim() ||
+      editForm.zip.trim() !== initialValues.zip.trim() ||
+      editForm.country.trim() !== initialValues.country.trim() ||
+      editForm.state.trim() !== initialValues.state.trim() ||
+      editForm.city.trim() !== initialValues.city.trim() ||
+      editForm.notes.trim() !== initialValues.notes.trim())
   );
 
   const handleEditChange = (field: string, value: string) => {
+    if (field === "notes") {
+      const words = value.trim().split(/\s+/).filter(Boolean);
+      if (words.length > 500) {
+        const truncated = value.split(/\s+/).slice(0, 500).join(" ");
+        setEditForm((prev) => ({ ...prev, notes: truncated }));
+        toast.warning("Word limit reached: maximum 500 words allowed");
+        return;
+      }
+    }
     setEditForm((prev) => ({ ...prev, [field]: value }));
     if (formErrors[field]) {
       setFormErrors((prev) => {
@@ -200,6 +216,18 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
         return updated;
       });
     }
+  };
+
+  const handleTabChange = (newTab: DetailTab) => {
+    if (isEditing && hasChanges) {
+      if (!window.confirm("You have unsaved changes. Discard changes and switch tab?")) {
+        return;
+      }
+    }
+    if (isEditing) {
+      handleCancelEdit();
+    }
+    setActiveTab(newTab);
   };
 
   const handleCancelEdit = () => {
@@ -236,7 +264,6 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
     setIsSavingEdit(true);
 
     try {
-      // Send phone without space after the country code e.g. "+51145787475888"
       const payloadPhone = editForm.phoneDigits.trim()
         ? `${selectedPhoneCountry.dialCode}${editForm.phoneDigits.trim()}`
         : undefined;
@@ -289,7 +316,6 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
     }
   };
 
-  // Skeleton Loader
   if (isLoading) {
     return (
       <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-6 animate-in fade-in duration-300 pb-20">
@@ -337,7 +363,6 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
     );
   }
 
-  // Error State
   if (error || !profile) {
     return (
       <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-6 animate-in fade-in duration-300">
@@ -390,7 +415,6 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
 
   return (
     <div className="p-0 sm:p-4 md:p-6 max-w-[1200px] mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
-      {/* 1. Top Header & Breadcrumbs */}
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
           <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">
@@ -445,65 +469,51 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
               </div>
             )}
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="h-9 w-9 p-0 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border-none shadow-sm cursor-pointer flex items-center justify-center"
+            {activeTab === "general" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="h-9 w-9 p-0 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border-none shadow-sm cursor-pointer flex items-center justify-center"
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48 p-1.5 rounded-xl border-slate-100 shadow-xl bg-white text-slate-700 font-medium text-[13px]"
                 >
-                  <MoreVertical className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-48 p-1.5 rounded-xl border-slate-100 shadow-xl bg-white text-slate-700 font-medium text-[13px]"
-              >
-                <DropdownMenuItem
-                  onClick={() => {
-                    if (profile) {
-                      const initData = initEditFormData(profile);
-                      setEditForm(initData);
-                      const countryObj = COUNTRIES.find((c) => c.code === initData.phoneCountryCode) || COUNTRIES[11];
-                      setSelectedPhoneCountry(countryObj);
-                      setFormErrors({});
-                    }
-                    setIsEditing(true);
-                  }}
-                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
-                >
-                  <Edit2 className="w-4 h-4 text-[#0064cb]" />
-                  <span>Edit Details</span>
-                </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setActiveTab("general");
+                      if (profile) {
+                        const initData = initEditFormData(profile);
+                        setEditForm(initData);
+                        const countryObj = COUNTRIES.find((c) => c.code === initData.phoneCountryCode) || COUNTRIES[11];
+                        setSelectedPhoneCountry(countryObj);
+                        setFormErrors({});
+                      }
+                      setIsEditing(true);
+                    }}
+                    className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                  >
+                    <Edit2 className="w-4 h-4 text-[#0064cb]" />
+                    <span>Edit Details</span>
+                  </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  disabled
-                  className="gap-2 py-2.5 opacity-50 cursor-not-allowed text-slate-400 select-none"
-                >
-                  <Calendar className="w-4 h-4" />
-                  <span>Shift View</span>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  disabled
-                  className="gap-2 py-2.5 opacity-50 cursor-not-allowed text-slate-400 select-none"
-                >
-                  <Shield className="w-4 h-4" />
-                  <span>Guard View</span>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => setIsDeleteModalOpen(true)}
-                  className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 focus:text-red-600 rounded-lg text-red-500 hover:text-red-600"
-                >
-                  <Trash2 className="w-4 h-4 text-red-500" />
-                  <span>Delete</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 focus:text-red-600 rounded-lg text-red-500 hover:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <span>Delete</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
-        {/* Mobile Edit Actions */}
         {isEditing && (
           <div className="flex sm:hidden items-center justify-end gap-2 w-full pt-2">
             <Button
@@ -526,42 +536,43 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
         )}
       </div>
 
-      {/* 2. Profile Summary Card */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 sm:p-6 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6">
-        {/* Avatar Icon */}
         <div className="relative shrink-0">
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-center justify-center text-[#0064cb] shadow-sm">
             <IconComp className="w-10 h-10 sm:w-12 sm:h-12" />
           </div>
         </div>
 
-        {/* Profile Name & Quick Info */}
-        <div className="space-y-2 flex-1 min-w-0 flex flex-col items-center sm:items-start text-center sm:text-left w-full">
-          <h2 className="text-xl sm:text-[22px] font-bold text-slate-900 truncate">
+        <div className="space-y-2 flex-1 min-w-0 flex flex-col items-center sm:items-start text-center sm:text-left w-full overflow-hidden">
+          <h2 className="text-xl sm:text-[22px] font-bold text-slate-900 break-words break-all max-w-full">
             {profile.name || "Unnamed Profile"}
           </h2>
 
-          {/* Quick Metadata Strip */}
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-5 gap-y-2 text-xs text-slate-600 font-medium pt-1">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-5 gap-y-2 text-xs text-slate-600 font-medium pt-1 max-w-full overflow-hidden">
             {profile.email && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0 max-w-full">
                 <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="text-slate-800">{profile.email}</span>
+                <span className="text-slate-800 break-all">{profile.email}</span>
               </div>
             )}
 
             {displayPhoneNumber !== "---" && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="text-slate-800">{displayPhoneNumber}</span>
               </div>
             )}
 
-            {(profile.address?.city || profile.address?.country) && (
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="text-slate-800">
-                  {[profile.address?.city, profile.address?.state, profile.address?.country]
+            {(profile.address?.city || profile.address?.country || profile.address?.street) && (
+              <div className="flex items-start sm:items-center gap-1.5 min-w-0 max-w-full overflow-hidden">
+                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5 sm:mt-0" />
+                <span
+                  className="text-slate-800 break-words break-all text-xs"
+                  title={[profile.address?.street, profile.address?.city, profile.address?.state, profile.address?.country]
+                    .filter(Boolean)
+                    .join(", ")}
+                >
+                  {[profile.address?.street, profile.address?.city, profile.address?.state, profile.address?.country]
                     .filter(Boolean)
                     .join(", ")}
                 </span>
@@ -571,299 +582,431 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
         </div>
       </div>
 
-      {/* 3. Single Consolidated Details Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-7 space-y-7">
-        {/* General Information Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-[#0064cb]">
+      <div className="px-3 sm:px-6">
+        <div className="flex items-center gap-6 sm:gap-8 border-b border-slate-200 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none">
+          <button
+            type="button"
+            onClick={() => handleTabChange("general")}
+            className={cn(
+              "cursor-pointer flex items-center gap-2 pb-3 pt-1 px-1 text-sm transition-all whitespace-nowrap -mb-px border-b-2 shrink-0",
+              activeTab === "general"
+                ? "border-[#0064cb] text-[#0064cb] font-bold"
+                : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 font-semibold"
+            )}
+          >
             <Building2 className="w-4 h-4" />
-            <h3 className="font-bold text-slate-800 text-[14px]">General Information</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-6">
-            <div className="space-y-1">
-              <span className="text-[11px] text-slate-500 font-semibold block">
-                {entityLabel} Name {isEditing && <span className="text-red-500">*</span>}
+            <span>General Information</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("guards")}
+            className={cn(
+              "cursor-pointer flex items-center gap-2 pb-3 pt-1 px-1 text-sm transition-all whitespace-nowrap -mb-px border-b-2 shrink-0",
+              activeTab === "guards"
+                ? "border-[#0064cb] text-[#0064cb] font-bold"
+                : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 font-semibold"
+            )}
+          >
+            <Shield className="w-4 h-4" />
+            <span>Guards</span>
+            {typeof guardsCount === "number" && (
+              <span
+                className={cn(
+                  "text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors",
+                  activeTab === "guards"
+                    ? "bg-blue-100 text-[#0064cb]"
+                    : "bg-slate-100 text-slate-600"
+                )}
+              >
+                {guardsCount}
               </span>
-              {isEditing ? (
-                <>
-                  <Input
-                    value={editForm.name}
-                    onChange={(e) => handleEditChange("name", e.target.value)}
-                    placeholder={`Enter ${entityLabel} Name`}
-                    className={cn(
-                      "h-10 text-sm mt-1 rounded-md",
-                      formErrors.name && "border-red-500 focus-visible:ring-red-500"
-                    )}
-                  />
-                  {formErrors.name && (
-                    <p className="text-xs text-red-500 font-medium mt-1">{formErrors.name}</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-[13px] font-bold text-slate-800">
-                  {profile.name || "N/A"}
-                </p>
-              )}
-            </div>
+            )}
+          </button>
 
-            <div className="space-y-1">
-              <span className="text-[11px] text-slate-500 font-semibold block">
-                Email Address {isEditing && <span className="text-red-500">*</span>}
+          <button
+            type="button"
+            onClick={() => handleTabChange("shifts")}
+            className={cn(
+              "cursor-pointer flex items-center gap-2 pb-3 pt-1 px-1 text-sm transition-all whitespace-nowrap -mb-px border-b-2 shrink-0",
+              activeTab === "shifts"
+                ? "border-[#0064cb] text-[#0064cb] font-bold"
+                : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 font-semibold"
+            )}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Shifts</span>
+            {typeof shiftsCount === "number" && (
+              <span
+                className={cn(
+                  "text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors",
+                  activeTab === "shifts"
+                    ? "bg-blue-100 text-[#0064cb]"
+                    : "bg-slate-100 text-slate-600"
+                )}
+              >
+                {shiftsCount}
               </span>
-              {isEditing ? (
-                <>
-                  <Input
-                    value={editForm.email}
-                    onChange={(e) => handleEditChange("email", e.target.value)}
-                    placeholder="Enter Email Address"
-                    className={cn(
-                      "h-10 text-sm mt-1 rounded-md",
-                      formErrors.email && "border-red-500 focus-visible:ring-red-500"
-                    )}
-                  />
-                  {formErrors.email && (
-                    <p className="text-xs text-red-500 font-medium mt-1">{formErrors.email}</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-[13px] font-bold text-slate-800">
-                  {profile.email || "N/A"}
-                </p>
-              )}
-            </div>
+            )}
+          </button>
 
-            {/* Phone Number Field with country code space support */}
-            <div className="space-y-1">
-              <span className="text-[11px] text-slate-500 font-semibold block">
-                Phone Number
-              </span>
-              {isEditing ? (
-                <div className="relative flex items-center h-10 bg-surface border border-border rounded-md focus-within:ring-2 focus-within:ring-[#0064cb]/10 focus-within:border-[#0064cb] transition-all mt-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsPhoneDropdownOpen(!isPhoneDropdownOpen)}
-                    className="flex items-center gap-1.5 px-3 h-full rounded-l-md hover:bg-slate-100/50 border-r border-slate-200/80 transition-colors focus:outline-none cursor-pointer"
-                  >
-                    <img
-                      src={`https://flagcdn.com/w20/${selectedPhoneCountry.code}.png`}
-                      alt={selectedPhoneCountry.name}
-                      className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
-                    />
-                    <span className="text-sm font-semibold text-slate-700">{selectedPhoneCountry.dialCode}</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-                  </button>
-                  <div className="relative flex-1 h-full flex items-center">
-                    <input
-                      type="text"
-                      placeholder="Enter phone number"
-                      value={editForm.phoneDigits}
-                      maxLength={15}
-                      onChange={(e) => handleEditChange("phoneDigits", e.target.value.replace(/\D/g, ""))}
-                      className="w-full h-full bg-transparent outline-none border-none pl-3 pr-3 text-slate-900 font-medium placeholder:text-muted-foreground text-sm"
-                    />
-                  </div>
-                  {isPhoneDropdownOpen && (
-                    <div
-                      className="fixed inset-0 z-40 cursor-default"
-                      onClick={() => setIsPhoneDropdownOpen(false)}
-                    />
-                  )}
-                  {isPhoneDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-[260px] max-h-[220px] overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50">
-                      {COUNTRIES.map((c) => (
-                        <button
-                          key={c.code}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPhoneCountry(c);
-                            setIsPhoneDropdownOpen(false);
-                          }}
-                          className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-slate-50 transition-colors text-left cursor-pointer"
-                        >
-                          <img
-                            src={`https://flagcdn.com/w20/${c.code}.png`}
-                            alt={c.name}
-                            className="w-5 h-3.5 object-cover rounded-sm"
-                          />
-                          <span className="text-sm font-medium text-slate-700 flex-1">{c.name}</span>
-                          <span className="text-xs font-bold text-slate-500">{c.dialCode}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-[13px] font-bold text-slate-800">
-                  {displayPhoneNumber}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-slate-100" />
-
-        {/* Address & Location Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-[#0064cb]">
-            <MapPin className="w-4 h-4" />
-            <h3 className="font-bold text-slate-800 text-[14px]">Address & Location</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-6">
-            <div className="space-y-1 sm:col-span-2">
-              <span className="text-[11px] text-slate-500 font-semibold block">
-                Street Address
-              </span>
-              {isEditing ? (
-                <Input
-                  value={editForm.street}
-                  onChange={(e) => handleEditChange("street", e.target.value)}
-                  placeholder="Enter Street Address"
-                  className="h-10 text-sm mt-1 rounded-md"
-                />
-              ) : (
-                <p className="text-[13px] font-bold text-slate-800">
-                  {profile.address?.street || "N/A"}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-[11px] text-slate-500 font-semibold block">
-                Zip / Postal Code
-              </span>
-              {isEditing ? (
-                <Input
-                  value={editForm.zip}
-                  maxLength={10}
-                  onChange={(e) => {
-                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9\s\-]/g, "");
-                    handleEditChange("zip", sanitized);
-                  }}
-                  placeholder="Enter Zip Code"
-                  className="h-10 text-sm mt-1 rounded-md"
-                />
-              ) : (
-                <p className="text-[13px] font-bold text-slate-800">
-                  {profile.address?.zip || profile.address?.zip_code || "N/A"}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-[11px] text-slate-500 font-semibold block">
-                Country {isEditing && <span className="text-red-500">*</span>}
-              </span>
-              {isEditing ? (
-                <>
-                  <Input
-                    value={editForm.country}
-                    onChange={(e) => handleEditChange("country", e.target.value)}
-                    placeholder="Enter Country"
-                    className={cn(
-                      "h-10 text-sm mt-1 rounded-md",
-                      formErrors.country && "border-red-500 focus-visible:ring-red-500"
-                    )}
-                  />
-                  {formErrors.country && (
-                    <p className="text-xs text-red-500 font-medium mt-1">{formErrors.country}</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-[13px] font-bold text-slate-800">
-                  {profile.address?.country || "N/A"}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-[11px] text-slate-500 font-semibold block">
-                State / Province {isEditing && <span className="text-red-500">*</span>}
-              </span>
-              {isEditing ? (
-                <>
-                  <Input
-                    value={editForm.state}
-                    onChange={(e) => handleEditChange("state", e.target.value)}
-                    placeholder="Enter State / Province"
-                    className={cn(
-                      "h-10 text-sm mt-1 rounded-md",
-                      formErrors.state && "border-red-500 focus-visible:ring-red-500"
-                    )}
-                  />
-                  {formErrors.state && (
-                    <p className="text-xs text-red-500 font-medium mt-1">{formErrors.state}</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-[13px] font-bold text-slate-800">
-                  {profile.address?.state || "N/A"}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-[11px] text-slate-500 font-semibold block">
-                City {isEditing && <span className="text-red-500">*</span>}
-              </span>
-              {isEditing ? (
-                <>
-                  <Input
-                    value={editForm.city}
-                    onChange={(e) => handleEditChange("city", e.target.value)}
-                    placeholder="Enter City"
-                    className={cn(
-                      "h-10 text-sm mt-1 rounded-md",
-                      formErrors.city && "border-red-500 focus-visible:ring-red-500"
-                    )}
-                  />
-                  {formErrors.city && (
-                    <p className="text-xs text-red-500 font-medium mt-1">{formErrors.city}</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-[13px] font-bold text-slate-800">
-                  {profile.address?.city || "N/A"}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-slate-100" />
-
-        {/* Notes & Details Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-[#0064cb]">
+          <button
+            type="button"
+            onClick={() => handleTabChange("documents")}
+            className={cn(
+              "cursor-pointer flex items-center gap-2 pb-3 pt-1 px-1 text-sm transition-all whitespace-nowrap -mb-px border-b-2 shrink-0",
+              activeTab === "documents"
+                ? "border-[#0064cb] text-[#0064cb] font-bold"
+                : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 font-semibold"
+            )}
+          >
             <FileText className="w-4 h-4" />
-            <h3 className="font-bold text-slate-800 text-[14px]">Notes & Additional Details</h3>
-          </div>
-          {isEditing ? (
-            <div className="space-y-1.5">
-              <span className="text-[11px] text-slate-500 font-semibold block">
-                Notes & Details (Optional)
+            <span>Documents</span>
+            {typeof documentsCount === "number" && (
+              <span
+                className={cn(
+                  "text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors",
+                  activeTab === "documents"
+                    ? "bg-blue-100 text-[#0064cb]"
+                    : "bg-slate-100 text-slate-600"
+                )}
+              >
+                {documentsCount}
               </span>
-              <textarea
-                value={editForm.notes}
-                onChange={(e) => handleEditChange("notes", e.target.value)}
-                rows={4}
-                placeholder={`Enter any additional notes or details regarding operations, coverage, contracts, or contacts for this ${entityLabel.toLowerCase()}...`}
-                className="w-full min-h-[120px] rounded-md border border-border bg-surface p-3.5 text-sm text-slate-900 font-medium placeholder:text-muted-foreground placeholder:text-sm placeholder:font-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all resize-y"
-              />
-            </div>
-          ) : profile.notes ? (
-            <p className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-wrap pl-6">
-              {profile.notes}
-            </p>
-          ) : (
-            <p className="text-[13px] text-slate-400 italic pl-6">
-              No notes available
-            </p>
-          )}
+            )}
+          </button>
         </div>
       </div>
 
-      {/* 4. Delete Confirmation Dialog */}
+      {activeTab === "general" && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-7 space-y-7 animate-in fade-in duration-300">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#0064cb]">
+              <Building2 className="w-4 h-4" />
+              <h3 className="font-bold text-slate-800 text-[14px]">General Information</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-6">
+              <div className="space-y-1 min-w-0">
+                <span className="text-[11px] text-slate-500 font-semibold block">
+                  {entityLabel} Name {isEditing && <span className="text-red-500">*</span>}
+                </span>
+                {isEditing ? (
+                  <>
+                    <Input
+                      value={editForm.name}
+                      onChange={(e) => handleEditChange("name", e.target.value)}
+                      placeholder={`Enter ${entityLabel} Name`}
+                      className={cn(
+                        "h-10 text-sm rounded-md bg-white border-slate-200 text-slate-900 shadow-xs focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0 focus-visible:border-[#0064cb]",
+                        formErrors.name && "border-red-500 focus-visible:ring-red-500"
+                      )}
+                    />
+                    {formErrors.name && (
+                      <p className="text-xs text-red-500 font-medium mt-1">{formErrors.name}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-[13px] font-bold text-slate-800 break-words break-all">
+                    {profile.name || "N/A"}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1 min-w-0">
+                <span className="text-[11px] text-slate-500 font-semibold block">
+                  Email Address {isEditing && <span className="text-red-500">*</span>}
+                </span>
+                {isEditing ? (
+                  <>
+                    <Input
+                      value={editForm.email}
+                      onChange={(e) => handleEditChange("email", e.target.value)}
+                      placeholder="Enter Email Address"
+                      className={cn(
+                        "h-10 text-sm rounded-md bg-white border-slate-200 text-slate-900 shadow-xs focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0 focus-visible:border-[#0064cb]",
+                        formErrors.email && "border-red-500 focus-visible:ring-red-500"
+                      )}
+                    />
+                    {formErrors.email && (
+                      <p className="text-xs text-red-500 font-medium mt-1">{formErrors.email}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-[13px] font-bold text-slate-800 break-words break-all">
+                    {profile.email || "N/A"}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1 min-w-0">
+                <span className="text-[11px] text-slate-500 font-semibold block">
+                  Phone Number
+                </span>
+                {isEditing ? (
+                  <div className="relative flex items-center h-10 bg-white border border-slate-200 rounded-md focus-within:ring-2 focus-within:ring-[#0064cb]/20 focus-within:border-[#0064cb] transition-all shadow-xs">
+                    <button
+                      type="button"
+                      onClick={() => setIsPhoneDropdownOpen(!isPhoneDropdownOpen)}
+                      className="flex items-center gap-1.5 px-3 h-full rounded-l-md hover:bg-slate-50 border-r border-slate-200 transition-colors focus:outline-none cursor-pointer bg-slate-50/50 shrink-0"
+                    >
+                      <img
+                        src={`https://flagcdn.com/w20/${selectedPhoneCountry.code}.png`}
+                        alt={selectedPhoneCountry.name}
+                        className="w-5 h-3.5 object-cover rounded-sm shadow-sm"
+                      />
+                      <span className="text-sm font-semibold text-slate-700">{selectedPhoneCountry.dialCode}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
+                    <div className="relative flex-1 h-full flex items-center min-w-0">
+                      <input
+                        type="text"
+                        placeholder="Enter phone number"
+                        value={editForm.phoneDigits}
+                        maxLength={15}
+                        onChange={(e) => handleEditChange("phoneDigits", e.target.value.replace(/\D/g, ""))}
+                        className="w-full h-full bg-white outline-none border-none pl-3 pr-3 text-slate-900 font-medium placeholder:text-muted-foreground text-sm rounded-r-md"
+                      />
+                    </div>
+                    {isPhoneDropdownOpen && (
+                      <div
+                        className="fixed inset-0 z-40 cursor-default"
+                        onClick={() => setIsPhoneDropdownOpen(false)}
+                      />
+                    )}
+                    {isPhoneDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-[260px] max-h-[220px] overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50">
+                        {COUNTRIES.map((c) => (
+                          <button
+                            key={c.code}
+                            type="button"
+                            onClick={() => {
+                              setSelectedPhoneCountry(c);
+                              setIsPhoneDropdownOpen(false);
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+                          >
+                            <img
+                              src={`https://flagcdn.com/w20/${c.code}.png`}
+                              alt={c.name}
+                              className="w-5 h-3.5 object-cover rounded-sm"
+                            />
+                            <span className="text-sm font-medium text-slate-700 flex-1">{c.name}</span>
+                            <span className="text-xs font-bold text-slate-500">{c.dialCode}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[13px] font-bold text-slate-800 break-words break-all">
+                    {displayPhoneNumber}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100" />
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#0064cb]">
+              <MapPin className="w-4 h-4" />
+              <h3 className="font-bold text-slate-800 text-[14px]">Address & Location</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-6">
+              <div className="space-y-1 sm:col-span-2 min-w-0">
+                <span className="text-[11px] text-slate-500 font-semibold block">
+                  Street Address
+                </span>
+                {isEditing ? (
+                  <Input
+                    value={editForm.street}
+                    onChange={(e) => handleEditChange("street", e.target.value)}
+                    placeholder="Enter Street Address"
+                    className="h-10 text-sm rounded-md bg-white border-slate-200 text-slate-900 shadow-xs focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0 focus-visible:border-[#0064cb]"
+                  />
+                ) : (
+                  <p className="text-[13px] font-bold text-slate-800 break-words break-all">
+                    {profile.address?.street || "N/A"}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1 min-w-0">
+                <span className="text-[11px] text-slate-500 font-semibold block">
+                  Zip / Postal Code
+                </span>
+                {isEditing ? (
+                  <Input
+                    value={editForm.zip}
+                    maxLength={10}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9\s\-]/g, "");
+                      handleEditChange("zip", sanitized);
+                    }}
+                    placeholder="Enter Zip Code"
+                    className="h-10 text-sm rounded-md bg-white border-slate-200 text-slate-900 shadow-xs focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0 focus-visible:border-[#0064cb]"
+                  />
+                ) : (
+                  <p className="text-[13px] font-bold text-slate-800 break-words break-all">
+                    {profile.address?.zip || profile.address?.zip_code || "N/A"}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1 min-w-0">
+                <span className="text-[11px] text-slate-500 font-semibold block">
+                  Country {isEditing && <span className="text-red-500">*</span>}
+                </span>
+                {isEditing ? (
+                  <>
+                    <Input
+                      value={editForm.country}
+                      onChange={(e) => handleEditChange("country", e.target.value)}
+                      placeholder="Enter Country"
+                      className={cn(
+                        "h-10 text-sm rounded-md bg-white border-slate-200 text-slate-900 shadow-xs focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0 focus-visible:border-[#0064cb]",
+                        formErrors.country && "border-red-500 focus-visible:ring-red-500"
+                      )}
+                    />
+                    {formErrors.country && (
+                      <p className="text-xs text-red-500 font-medium mt-1">{formErrors.country}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-[13px] font-bold text-slate-800 break-words break-all">
+                    {profile.address?.country || "N/A"}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1 min-w-0">
+                <span className="text-[11px] text-slate-500 font-semibold block">
+                  State / Province {isEditing && <span className="text-red-500">*</span>}
+                </span>
+                {isEditing ? (
+                  <>
+                    <Input
+                      value={editForm.state}
+                      onChange={(e) => handleEditChange("state", e.target.value)}
+                      placeholder="Enter State / Province"
+                      className={cn(
+                        "h-10 text-sm rounded-md bg-white border-slate-200 text-slate-900 shadow-xs focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0 focus-visible:border-[#0064cb]",
+                        formErrors.state && "border-red-500 focus-visible:ring-red-500"
+                      )}
+                    />
+                    {formErrors.state && (
+                      <p className="text-xs text-red-500 font-medium mt-1">{formErrors.state}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-[13px] font-bold text-slate-800 break-words break-all">
+                    {profile.address?.state || "N/A"}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1 min-w-0">
+                <span className="text-[11px] text-slate-500 font-semibold block">
+                  City {isEditing && <span className="text-red-500">*</span>}
+                </span>
+                {isEditing ? (
+                  <>
+                    <Input
+                      value={editForm.city}
+                      onChange={(e) => handleEditChange("city", e.target.value)}
+                      placeholder="Enter City"
+                      className={cn(
+                        "h-10 text-sm rounded-md bg-white border-slate-200 text-slate-900 shadow-xs focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 focus-visible:ring-offset-0 focus-visible:border-[#0064cb]",
+                        formErrors.city && "border-red-500 focus-visible:ring-red-500"
+                      )}
+                    />
+                    {formErrors.city && (
+                      <p className="text-xs text-red-500 font-medium mt-1">{formErrors.city}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-[13px] font-bold text-slate-800 break-words break-all">
+                    {profile.address?.city || "N/A"}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100" />
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#0064cb]">
+              <FileText className="w-4 h-4" />
+              <h3 className="font-bold text-slate-800 text-[14px]">Notes & Additional Details</h3>
+            </div>
+            {isEditing ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500 font-semibold block">
+                    Notes & Details (Optional)
+                  </span>
+                  <span
+                    className={cn(
+                      "text-[11px] font-medium",
+                      countWords(editForm.notes) >= 500
+                        ? "text-amber-600 font-bold"
+                        : "text-slate-400"
+                    )}
+                  >
+                    {countWords(editForm.notes)} / 500 words
+                  </span>
+                </div>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => handleEditChange("notes", e.target.value)}
+                  rows={4}
+                  placeholder={`Enter any additional notes or details regarding operations, coverage, contracts, or contacts for this ${entityLabel.toLowerCase()}...`}
+                  className="w-full min-h-[120px] rounded-md border border-slate-200 bg-white p-3.5 text-sm text-slate-900 font-medium placeholder:text-muted-foreground placeholder:text-sm placeholder:font-normal focus:outline-none focus:border-[#0064cb] focus:ring-2 focus:ring-[#0064cb]/20 transition-all resize-y shadow-xs"
+                />
+              </div>
+            ) : profile.notes ? (
+              <p className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-wrap break-words break-all pl-6">
+                {profile.notes}
+              </p>
+            ) : (
+              <p className="text-[13px] text-slate-400 italic pl-6">
+                No notes available
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "guards" && (
+        <div className="animate-in fade-in duration-300">
+          <PersonnelGuardsTable
+            profileId={id}
+            entityLabel={entityLabel}
+            onCountChange={(count) => setGuardsCount(count)}
+          />
+        </div>
+      )}
+
+      {activeTab === "shifts" && (
+        <div className="animate-in fade-in duration-300">
+          <PersonnelShiftsTable
+            profileId={id}
+            entityLabel={entityLabel}
+            onCountChange={(count) => setShiftsCount(count)}
+          />
+        </div>
+      )}
+
+      {activeTab === "documents" && (
+        <div className="animate-in fade-in duration-300">
+          <PersonnelDocumentsTable
+            profileId={id}
+            entityLabel={entityLabel}
+            onCountChange={(count) => setDocumentsCount(count)}
+          />
+        </div>
+      )}
+
       <ConfirmationDialog
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
