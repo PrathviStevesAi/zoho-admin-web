@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Check,
   Loader2,
+  UserX,
 } from "lucide-react";
 import {
   clientFetchPersonnelProfilesAction,
@@ -36,7 +37,11 @@ export interface GuardProviderFilterProps {
   triggerClassName?: string;
   showIcon?: boolean;
   allLabel?: string;
+  showUnassigned?: boolean;
+  showAll?: boolean;
 }
+
+const FASTGUARD_DEFAULT_ID = "afa86a21-72e8-4629-85a7-b1f2052f278e";
 
 export function GuardProviderFilter({
   value = "all",
@@ -47,6 +52,8 @@ export function GuardProviderFilter({
   triggerClassName,
   showIcon = false,
   allLabel,
+  showUnassigned = false,
+  showAll = true,
 }: GuardProviderFilterProps) {
   const [internalProvidersData, setInternalProvidersData] = useState<PersonnelProfilesResponseData>({
     fastguard: [],
@@ -89,7 +96,11 @@ export function GuardProviderFilter({
       return { selectedLabel: allLabel || (showIcon ? "All" : "All Providers"), selectedType: "all" };
     }
 
-    if (fastguards.some((fg) => String(fg.id) === String(value))) {
+    if (value === "unassigned") {
+      return { selectedLabel: "No Assign Provider", selectedType: "unassigned" };
+    }
+
+    if (value === FASTGUARD_DEFAULT_ID || fastguards.some((fg) => String(fg.id) === String(value))) {
       const found = fastguards.find((fg) => String(fg.id) === String(value));
       return { selectedLabel: found?.name || "FastGuard Service", selectedType: "fastguard" };
     }
@@ -114,6 +125,8 @@ export function GuardProviderFilter({
       ? UserCheck
       : selectedType === "fastguard"
       ? ShieldCheck
+      : selectedType === "unassigned"
+      ? UserX
       : Users;
 
   const triggerIconColor =
@@ -123,6 +136,8 @@ export function GuardProviderFilter({
       ? "text-emerald-600"
       : selectedType === "fastguard"
       ? "text-blue-600"
+      : selectedType === "unassigned"
+      ? "text-amber-600"
       : "text-blue-600";
 
   if (!mounted) {
@@ -172,41 +187,81 @@ export function GuardProviderFilter({
           )}
         </div>
 
-        <DropdownMenuItem
-          onClick={() => onChange("all")}
-          className={cn(
-            "flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer hover:bg-blue-50/80 focus:bg-blue-50/80 data-[highlighted]:bg-blue-50/80 transition-colors group",
-            value === "all" ? "bg-blue-50/80 font-semibold" : ""
-          )}
-        >
-          <div
+        {showAll && (
+          <DropdownMenuItem
+            onClick={() => onChange("all")}
             className={cn(
-              "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-              "bg-blue-100/70 text-[#0064cb] group-hover:bg-[#0064cb] group-focus:bg-[#0064cb] group-data-[highlighted]:bg-[#0064cb] group-hover:text-white group-focus:text-white group-data-[highlighted]:text-white",
-              value === "all" ? "bg-[#0064cb] text-white" : ""
+              "flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer hover:bg-blue-50/80 focus:bg-blue-50/80 data-[highlighted]:bg-blue-50/80 transition-colors group",
+              value === "all" ? "bg-blue-50/80 font-semibold" : ""
             )}
           >
-            <Users
+            <div
               className={cn(
-                "w-4 h-4 transition-colors group-hover:!text-white group-focus:!text-white group-data-[highlighted]:!text-white",
-                value === "all" ? "!text-white" : "text-[#0064cb]"
-              )}
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <span
-              className={cn(
-                "text-xs font-bold block truncate transition-colors group-hover:text-[#0064cb] group-focus:text-[#0064cb] group-data-[highlighted]:text-[#0064cb]",
-                value === "all" ? "text-[#0064cb]" : "text-slate-900"
+                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                "bg-blue-100/70 text-[#0064cb] group-hover:bg-[#0064cb] group-focus:bg-[#0064cb] group-data-[highlighted]:bg-[#0064cb] group-hover:text-white group-focus:text-white group-data-[highlighted]:text-white",
+                value === "all" ? "bg-[#0064cb] text-white" : ""
               )}
             >
-              All
-            </span>
-          </div>
-          {value === "all" && <Check className="w-4 h-4 text-[#0064cb]" />}
-        </DropdownMenuItem>
+              <Users
+                className={cn(
+                  "w-4 h-4 transition-colors group-hover:!text-white group-focus:!text-white group-data-[highlighted]:!text-white",
+                  value === "all" ? "!text-white" : "text-[#0064cb]"
+                )}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span
+                className={cn(
+                  "text-xs font-bold block truncate transition-colors group-hover:text-[#0064cb] group-focus:text-[#0064cb] group-data-[highlighted]:text-[#0064cb]",
+                  value === "all" ? "text-[#0064cb]" : "text-slate-900"
+                )}
+              >
+                All
+              </span>
+            </div>
+            {value === "all" && <Check className="w-4 h-4 text-[#0064cb]" />}
+          </DropdownMenuItem>
+        )}
 
-        <DropdownMenuSeparator className="my-1 bg-slate-100" />
+        {showUnassigned && (
+          <DropdownMenuItem
+            onClick={() => onChange("unassigned")}
+            className={cn(
+              "flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer hover:bg-amber-50/80 focus:bg-amber-50/80 data-[highlighted]:bg-amber-50/80 transition-colors group",
+              value === "unassigned" ? "bg-amber-50/80 font-semibold" : ""
+            )}
+          >
+            <div
+              className={cn(
+                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                "bg-amber-100/70 text-amber-600 group-hover:bg-amber-600 group-focus:bg-amber-600 group-data-[highlighted]:bg-amber-600 group-hover:text-white group-focus:text-white group-data-[highlighted]:text-white",
+                value === "unassigned" ? "bg-amber-600 text-white" : ""
+              )}
+            >
+              <UserX
+                className={cn(
+                  "w-4 h-4 transition-colors group-hover:!text-white group-focus:!text-white group-data-[highlighted]:!text-white",
+                  value === "unassigned" ? "!text-white" : "text-amber-600"
+                )}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span
+                className={cn(
+                  "text-xs font-bold block truncate transition-colors group-hover:text-amber-700 group-focus:text-amber-700 group-data-[highlighted]:text-amber-700",
+                  value === "unassigned" ? "text-amber-700" : "text-slate-900"
+                )}
+              >
+                No Assign Provider
+              </span>
+            </div>
+            {value === "unassigned" && <Check className="w-4 h-4 text-amber-600" />}
+          </DropdownMenuItem>
+        )}
+
+        {(showAll || showUnassigned) && (
+          <DropdownMenuSeparator className="my-1 bg-slate-100" />
+        )}
 
         {fastguards.length > 1 ? (
           <DropdownMenuSub>

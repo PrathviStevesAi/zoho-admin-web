@@ -106,9 +106,10 @@ export default function BroadcastNotificationsPage() {
   const isOverLimit = message.length > 1000;
 
   useEffect(() => {
-    if (!sendViaSms) {
+    if (!sendViaSms || !message.trim()) {
       setEstimatedCost(0);
       setEstimatedRecipientsCount(0);
+      setIsEstimating(false);
       return;
     }
 
@@ -124,7 +125,7 @@ export default function BroadcastNotificationsPage() {
       try {
         const res = await estimateBroadcastNotificationAction({
           title: "Broadcast Notification",
-          message: message.trim() || "Broadcast notification",
+          message: message.trim(),
           send_in_app: sendViaInApp,
           send_sms: sendViaSms,
           send_to_all: recipientType === "all",
@@ -574,7 +575,7 @@ export default function BroadcastNotificationsPage() {
               </div>
             </div>
 
-            {sendViaSms && (
+            {sendViaSms && message.trim().length > 0 && (
               <div className="bg-[#FFFDF5] border border-[#FDE68A] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in duration-300">
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 shrink-0 rounded-xl bg-[#FEF3C7] flex items-center justify-center text-[#B45309]">

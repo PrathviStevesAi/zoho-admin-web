@@ -109,9 +109,13 @@ export function ProviderDirectoryTable({ type }: ProviderDirectoryTableProps) {
         <AgencyRegistrationForm
           type={type}
           onBack={() => setView("list")}
-          onSuccess={() => {
-            setView("list");
-            loadData();
+          onSuccess={(newId) => {
+            if (newId) {
+              router.push(`/provider-management/${type}/${newId}`);
+            } else {
+              setView("list");
+              loadData();
+            }
           }}
         />
       </div>

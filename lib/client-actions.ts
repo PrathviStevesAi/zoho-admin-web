@@ -497,6 +497,7 @@ export interface FetchGuardsByLocationParams {
   status?: string;
   page?: number | null;
   personnel_profile_id?: string;
+  is_app_download?: boolean | string | null;
 }
 
 export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationParams = {}): Promise<FetchResponse<any>> {
@@ -519,6 +520,15 @@ export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationPa
 
   if (params.personnel_profile_id) {
     query.append("personnel_profile_id", params.personnel_profile_id);
+  }
+
+  if (
+    params.is_app_download !== undefined &&
+    params.is_app_download !== null &&
+    params.is_app_download !== "all" &&
+    params.is_app_download !== ""
+  ) {
+    query.append("is_app_download", String(params.is_app_download));
   }
 
   if (params.location_type) {
@@ -1360,7 +1370,7 @@ export async function clientFetchPersonnelProfileSubdataAction<T = any>(
   pageSize: number = 15
 ): Promise<PersonnelSubdataResponse<T>> {
   try {
-    let url = `/api/v1/personnel/profile/${profileId}?type=${type}&page=${page}&page_size=${pageSize}&limit=${pageSize}`;
+    let url = `/api/v1/personnel/profile/${profileId}?type=${type}&page=${page}`;
     if (search && search.trim()) {
       url += `&search=${encodeURIComponent(search.trim())}`;
     }
@@ -1372,7 +1382,7 @@ export async function clientFetchPersonnelProfileSubdataAction<T = any>(
     return {
       success: res.success !== false,
       page: typeof res.page === "number" ? res.page : page,
-      page_size: typeof res.page_size === "number" ? res.page_size : pageSize,
+      page_size: typeof res.page_size === "number" ? res.page_size : (typeof res.limit === "number" ? res.limit : (pageSize || 20)),
       total: typeof res.total === "number" ? res.total : list.length,
       data: list,
     };

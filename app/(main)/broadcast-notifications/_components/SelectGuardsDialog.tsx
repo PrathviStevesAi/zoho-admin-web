@@ -48,6 +48,15 @@ export interface GuardItem {
   guard_level?: number;
   account_status?: string;
   status?: boolean;
+  personnel_profile?: {
+    id?: string;
+    name?: string;
+    profile_type?: string;
+    type?: string;
+  } | null;
+  profile_type?: string;
+  personnel_profile_id?: string;
+  is_app_download?: boolean;
 }
 
 interface SelectGuardsDialogProps {
@@ -233,6 +242,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                     setUserFilters((prev) => ({ ...prev, provider: val }));
                   }}
                   allLabel="All"
+                  showUnassigned={true}
                   triggerClassName="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg text-xs"
                 />
               </div>
@@ -369,7 +379,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
           </div>
 
           <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col flex-1 min-h-0 bg-white shadow-sm">
-            <Table className="border-collapse min-w-[1200px]">
+            <Table className="border-collapse min-w-[1350px]">
               <TableHeader className="bg-white sticky top-0 z-20">
                 <TableRow className="hover:bg-transparent border-b border-slate-100">
                   <TableHead className="w-[80px] py-2.5 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-100 text-center">
@@ -397,6 +407,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                   <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100">NAME</TableHead>
                   <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100">EMAIL</TableHead>
                   <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100">PHONE NO.</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100 whitespace-nowrap">PROVIDER NAME</TableHead>
                   <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100">
                     <div className="flex items-center gap-1">
                       GUARD LEVEL
@@ -426,6 +437,9 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                       </TableCell>
                       <TableCell className="py-3.5 px-4 border-r border-slate-100">
                         <Skeleton className="h-4 w-24 rounded" />
+                      </TableCell>
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100">
+                        <Skeleton className="h-4 w-28 rounded" />
                       </TableCell>
                       <TableCell className="py-3.5 px-4 border-r border-slate-100">
                         <Skeleton className="h-4 w-16 rounded" />
@@ -467,8 +481,11 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                       <TableCell className="text-[13px] text-slate-700 py-2.5 px-4 border-r border-slate-200/80 font-medium">
                         {guard.email}
                       </TableCell>
-                      <TableCell className="text-[13px] text-slate-700 py-2.5 px-4 border-r border-slate-200/80 font-medium">
+                      <TableCell className="text-[13px] text-slate-700 py-2.5 px-4 border-r border-slate-200/80 font-medium whitespace-nowrap">
                         {guard.phone_number || "-"}
+                      </TableCell>
+                      <TableCell className="text-[13px] text-slate-800 py-2.5 px-4 border-r border-slate-200/80 font-medium whitespace-nowrap">
+                        {guard.personnel_profile?.name || (String(guard.personnel_profile?.profile_type || guard.profile_type || "").toLowerCase().trim() === "fastguard" ? "FastGuard Service" : "---")}
                       </TableCell>
                       <TableCell className="py-2.5 px-4 border-r border-slate-200/80 font-medium">
                         <div className="flex items-center gap-1">
@@ -505,7 +522,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-8 text-center text-slate-700">No guards found</TableCell>
+                    <TableCell colSpan={10} className="py-8 text-center text-slate-700">No guards found</TableCell>
                   </TableRow>
                 )}
               </TableBody>

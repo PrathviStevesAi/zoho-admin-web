@@ -59,7 +59,7 @@ export function PersonnelShiftsTable({
   onCountChange,
 }: PersonnelShiftsTableProps) {
   const router = useRouter();
-  const PAGE_SIZE = 15;
+  const PAGE_SIZE = 20;
   const [shifts, setShifts] = useState<PersonnelShiftItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -83,7 +83,8 @@ export function PersonnelShiftsTable({
         setShifts(res.data);
         const count = typeof res.total === "number" ? res.total : res.data.length;
         setTotalCount(count);
-        setPageSize(PAGE_SIZE);
+        const effectiveSize = typeof res.page_size === "number" && res.page_size > 0 ? res.page_size : PAGE_SIZE;
+        setPageSize(effectiveSize);
         if (onCountChange && !debouncedSearch) {
           onCountChange(count);
         }

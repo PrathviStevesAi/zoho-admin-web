@@ -43,7 +43,7 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     reliableTransport: "",
     holdUnarmedLicense: "",
     holdArmedLicense: "",
-    personnel_profile_id: "all",
+    personnel_profile_id: "afa86a21-72e8-4629-85a7-b1f2052f278e",
     englishProficiency: "",
     voluntaryGender: "",
     raceEthnicity: "",
@@ -130,7 +130,7 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
       personnel_profile_id:
         formData.personnel_profile_id && formData.personnel_profile_id !== "all"
           ? formData.personnel_profile_id
-          : undefined,
+          : "afa86a21-72e8-4629-85a7-b1f2052f278e",
       license_number: formData.licenseNumber,
       license_expiration_date: formData.licenseExpirationDate,
       resume_url: typeof formData.resumeFile === 'string' ? formData.resumeFile : "",

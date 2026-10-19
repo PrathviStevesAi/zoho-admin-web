@@ -67,6 +67,13 @@ export interface AssignedGuard {
   name?: string;
 }
 
+export interface PersonnelProfileSummary {
+  id?: string;
+  name?: string;
+  profile_type?: string;
+  [key: string]: any;
+}
+
 export interface LeadGuard {
   guard_id?: string;
   first_name?: string;
@@ -75,6 +82,7 @@ export interface LeadGuard {
   phone_no?: string;
   shift_status?: string;
   execution_time?: ExecutionTime | string | null;
+  personnel_profile?: PersonnelProfileSummary | null;
 }
 
 export interface StandbyGuard {
@@ -84,6 +92,7 @@ export interface StandbyGuard {
   application_id?: string;
   phone_no?: string;
   shift_status?: string;
+  personnel_profile?: PersonnelProfileSummary | null;
 }
 
 export interface Shift {

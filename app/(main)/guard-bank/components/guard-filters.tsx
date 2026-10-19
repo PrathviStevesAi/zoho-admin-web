@@ -2,7 +2,6 @@
 
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { GuardProviderFilter } from "./guard-provider-filter";
 import { PersonnelProfilesResponseData } from "@/lib/client-actions";
 
@@ -128,7 +127,6 @@ export function GuardFilters({
 
   return (
     <div className="space-y-4">
-      {/* 1st Row: Search, Status, Provider */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <label className={labelClass}>{searchLabel}</label>
@@ -169,11 +167,11 @@ export function GuardFilters({
             providersData={providersData}
             isLoading={loadingProviders}
             mounted={mounted}
+            showUnassigned={true}
           />
         </div>
       </div>
 
-      {/* 2nd Row: Country, State, City */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <label className={labelClass}>Country</label>

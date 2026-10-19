@@ -1,4 +1,5 @@
 import { Mail, Phone, ChevronDown, CheckCircle2, XCircle, Calendar, Plus, Loader2, Building2, UserCheck, ShieldCheck, Briefcase } from "lucide-react";
+import Link from "next/link";
 import { FormattedDate } from "@/components/ui/formatted-date";
 import { cn } from "@/lib/utils";
 import { useState, useRef } from "react";
@@ -329,6 +330,22 @@ export function GuardProfileSummary({
             ? "text-[#0064cb]"
             : "text-slate-500";
 
+        const providerId =
+          (typeof provider === "object" ? provider?.id || provider?.profile_id : null) ||
+          guard?.personnel_profile_id;
+
+        const isFastGuard =
+          rawProviderType === "fastguard" ||
+          providerId === "afa86a21-72e8-4629-85a7-b1f2052f278e" ||
+          (Boolean(providerName) && providerName.toLowerCase().includes("fastguard"));
+
+        const providerHref =
+          isFastGuard
+            ? `/provider-management/fastguard`
+            : providerId && (rawProviderType === "agency" || rawProviderType === "agent")
+            ? `/provider-management/${rawProviderType}/${providerId}`
+            : null;
+
         return (
           <div className="flex flex-row items-start justify-between lg:justify-start gap-4 sm:gap-12 lg:pl-10 lg:border-l lg:border-slate-100 pt-4 sm:pt-6 lg:pt-0 border-t lg:border-t-0 border-slate-100 w-full lg:w-auto mt-2 lg:mt-0">
             <div className="space-y-3">
@@ -346,9 +363,19 @@ export function GuardProfileSummary({
                 <span className="text-[11px] sm:text-[12px] text-slate-500 font-medium">Provider</span>
                 <div className="flex items-center gap-1.5 text-slate-700">
                   <ProviderIcon className={`w-4 h-4 shrink-0 ${providerIconColor}`} />
-                  <span className="text-[13px] font-bold text-slate-800 truncate max-w-[180px]" title={providerName || "Unassigned"}>
-                    {providerName || "Unassigned"}
-                  </span>
+                  {providerHref && providerName ? (
+                    <Link
+                      href={providerHref}
+                      className="text-[13px] font-bold text-[#0064cb] hover:underline truncate max-w-[180px] transition-colors"
+                      title={providerName}
+                    >
+                      {providerName}
+                    </Link>
+                  ) : (
+                    <span className="text-[13px] font-bold text-slate-800 truncate max-w-[180px]" title={providerName || "Unassigned"}>
+                      {providerName || "Unassigned"}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

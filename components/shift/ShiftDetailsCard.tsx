@@ -649,6 +649,36 @@ export function ShiftDetailsCard({
                 </SectionRow>
               )}
 
+              <SectionRow label="Provider Name">
+                {(() => {
+                  const rawType = String(
+                    leadGuard.personnel_profile?.profile_type ||
+                    (leadGuard as any)?.profile_type ||
+                    ""
+                  ).toLowerCase().trim();
+                  const providerName =
+                    leadGuard.personnel_profile?.name ||
+                    (rawType === "fastguard" ? "FastGuard Service" : null);
+
+                  if (providerName && leadGuard.personnel_profile?.id && (rawType === "agency" || rawType === "agent")) {
+                    return (
+                      <Link
+                        href={`/provider-management/${rawType}/${leadGuard.personnel_profile.id}`}
+                        className="text-[#0064cb] hover:underline text-sm font-medium"
+                      >
+                        {providerName}
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <span className={cn("text-sm font-medium", providerName ? "text-slate-800" : "text-slate-400")}>
+                      {providerName || "---"}
+                    </span>
+                  );
+                })()}
+              </SectionRow>
+
               {(() => {
                 const execTime: ExecutionTime | undefined =
                   (typeof leadGuard?.execution_time === "object" && leadGuard?.execution_time
@@ -833,6 +863,36 @@ export function ShiftDetailsCard({
                   </span>
                 </SectionRow>
               )}
+
+              <SectionRow label="Provider Name">
+                {(() => {
+                  const rawType = String(
+                    standbyGuard.personnel_profile?.profile_type ||
+                    (standbyGuard as any)?.profile_type ||
+                    ""
+                  ).toLowerCase().trim();
+                  const providerName =
+                    standbyGuard.personnel_profile?.name ||
+                    (rawType === "fastguard" ? "FastGuard Service" : null);
+
+                  if (providerName && standbyGuard.personnel_profile?.id && (rawType === "agency" || rawType === "agent")) {
+                    return (
+                      <Link
+                        href={`/provider-management/${rawType}/${standbyGuard.personnel_profile.id}`}
+                        className="text-[#0064cb] hover:underline text-sm font-medium"
+                      >
+                        {providerName}
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <span className={cn("text-sm font-medium", providerName ? "text-slate-800" : "text-slate-400")}>
+                      {providerName || "---"}
+                    </span>
+                  );
+                })()}
+              </SectionRow>
             </>
           ) : (
             <div className="mx-5 my-4 bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex items-center gap-4">

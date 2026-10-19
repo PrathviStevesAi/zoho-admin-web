@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Trash2, User, Building2, MapPin, Mail, Phone, Eye, UserCheck, UserX, Shield, ShieldCheck, Briefcase } from "lucide-react";
 
 interface GuardCardProps {
@@ -139,6 +140,22 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
         ? ShieldCheck
         : Briefcase;
 
+    const profileId =
+      (typeof profile === "object" ? profile?.id || (profile as any)?.profile_id : null) ||
+      (guard as any)?.personnel_profile_id;
+
+    const isFastGuard =
+      rawType === "fastguard" ||
+      profileId === "afa86a21-72e8-4629-85a7-b1f2052f278e" ||
+      profileName.toLowerCase().includes("fastguard");
+
+    const profileHref =
+      isFastGuard
+        ? `/provider-management/fastguard`
+        : profileId && (rawType === "agency" || rawType === "agent")
+        ? `/provider-management/${rawType}/${profileId}`
+        : null;
+
     const iconColor =
       rawType === "agency"
         ? "text-purple-600"
@@ -151,9 +168,20 @@ export function GuardCard({ guard, status, onDelete }: GuardCardProps) {
     return (
       <div className="flex items-center gap-2 text-[12px] text-slate-700 pt-0.5">
         <Icon className={`w-3.5 h-3.5 shrink-0 ${iconColor}`} />
-        <span className="truncate font-medium text-slate-800" title={profileName}>
-          {profileName}
-        </span>
+        {profileHref ? (
+          <Link
+            href={profileHref}
+            onClick={(e) => e.stopPropagation()}
+            className="truncate font-medium text-[#0064cb] hover:underline"
+            title={profileName}
+          >
+            {profileName}
+          </Link>
+        ) : (
+          <span className="truncate font-medium text-slate-800" title={profileName}>
+            {profileName}
+          </span>
+        )}
       </div>
     );
   };

@@ -106,6 +106,7 @@ export function GuardsListTable({
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">NAME</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">EMAIL</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">PHONE NUMBER</TableHead>
+              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 whitespace-nowrap">PROVIDER NAME</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">CITY, STATE</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4">DISTANCE</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-4 text-center">GUARD LEVEL</TableHead>
@@ -117,13 +118,22 @@ export function GuardsListTable({
           <TableBody>
             {isGuardsLoading ? (
               <TableRow>
-                <TableCell colSpan={11} className="py-10 text-center">
+                <TableCell colSpan={12} className="py-10 text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
                   <span className="text-xs text-slate-500 font-medium mt-2 block">Loading guards...</span>
                 </TableCell>
               </TableRow>
             ) : allGuards.length > 0 ? (
-              allGuards.map((guard, index) => (
+              allGuards.map((guard, index) => {
+                const rawType = String(
+                  guard.personnel_profile?.profile_type ||
+                  guard.personnel_profile?.type ||
+                  guard.profile_type ||
+                  ""
+                ).toLowerCase().trim();
+                const providerName = guard.personnel_profile?.name || (rawType === "fastguard" ? "FastGuard Service" : "---");
+
+                return (
                 <TableRow
                   key={guard.guard_id || index}
                   className="border-slate-50 hover:bg-slate-50/40 transition-colors"
@@ -155,6 +165,13 @@ export function GuardsListTable({
                   </TableCell>
                   <TableCell className="text-xs text-slate-600 py-2.5 px-4">{guard.email || "-"}</TableCell>
                   <TableCell className="text-xs text-slate-600 py-2.5 px-4 whitespace-nowrap">{guard.phone_number || "-"}</TableCell>
+                  <TableCell className="text-xs py-2.5 px-4 whitespace-nowrap">
+                    {providerName !== "---" ? (
+                      <span className="text-slate-800 font-medium">{providerName}</span>
+                    ) : (
+                      <span className="text-slate-400">---</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-xs text-slate-600 py-2.5 px-4">
                     {getCityState(guard)}
                   </TableCell>
@@ -200,10 +217,11 @@ export function GuardsListTable({
                     </span>
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             ) : (
               <TableRow>
-                <TableCell colSpan={11} className="py-8 text-center text-slate-600 font-medium text-xs">
+                <TableCell colSpan={12} className="py-8 text-center text-slate-600 font-medium text-xs">
                   No guards found matching filters. Try adjusting your location or radius.
                 </TableCell>
               </TableRow>

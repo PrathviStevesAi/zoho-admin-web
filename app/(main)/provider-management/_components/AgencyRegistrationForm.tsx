@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Building2,
   ArrowLeft,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { GooglePlacesAutocomplete } from "@/components/ui/GooglePlacesAutocomplete";
 import {
   clientCreatePersonnelProfileAction,
+  clientFetchPersonnelProfilesAction,
   CreatePersonnelProfilePayload,
 } from "@/lib/client-actions";
 
@@ -47,7 +49,7 @@ const COUNTRIES = [
 
 interface AgencyRegistrationFormProps {
   onBack: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (createdId?: string) => void;
   type?: "agency" | "agent" | "fastguard";
 }
 
@@ -56,6 +58,7 @@ export function AgencyRegistrationForm({
   onSuccess,
   type = "agency",
 }: AgencyRegistrationFormProps) {
+  const router = useRouter();
   const isAgent = type === "agent";
   const entityLabel = isAgent ? "Agent" : "Agency";
 
@@ -157,8 +160,42 @@ export function AgencyRegistrationForm({
 
       if (res.success) {
         toast.success(res.message || `${entityLabel} created successfully!`);
-        if (onSuccess) {
-          onSuccess();
+
+        let createdId =
+          res?.data?.id ||
+          res?.data?.profile_id ||
+          res?.data?.personnel_profile_id ||
+          res?.data?._id ||
+          (res as any)?.id ||
+          (res as any)?.profile_id;
+
+        // If ID wasn't in direct create response, fetch profile list to find newly created profile ID by email/name
+        if (!createdId) {
+          try {
+            const listRes = await clientFetchPersonnelProfilesAction(type);
+            const list =
+              type === "agency"
+                ? listRes?.data?.agency
+                : type === "agent"
+                ? listRes?.data?.agent
+                : listRes?.data?.fastguard;
+            const match = list?.find(
+              (p: any) =>
+                (p.email && email && p.email.toLowerCase() === email.trim().toLowerCase()) ||
+                (p.name && name && p.name.toLowerCase() === name.trim().toLowerCase())
+            );
+            if (match?.id) {
+              createdId = match.id;
+            }
+          } catch (e) {
+            console.error("Failed to fetch profiles to find new ID", e);
+          }
+        }
+
+        if (createdId) {
+          router.push(`/provider-management/${type}/${createdId}`);
+        } else if (onSuccess) {
+          onSuccess(createdId);
         } else {
           onBack();
         }

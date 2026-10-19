@@ -13,6 +13,8 @@ import {
   Loader2,
   X,
   AlertCircle,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -145,6 +147,34 @@ function DocumentFileBadge({ fileName }: { fileName?: string }) {
     );
   }
 
+  if (["csv", "xls", "xlsx"].includes(ext)) {
+    return (
+      <div className="relative w-8 h-10 shrink-0 select-none">
+        <svg viewBox="0 0 32 40" className="w-full h-full drop-shadow-xs" fill="none">
+          <path
+            d="M2 4C2 2.89543 2.89543 2 4 2H20L30 12V36C30 37.1046 29.1046 38 28 38H4C2.89543 38 2 37.1046 2 36V4Z"
+            fill="#059669"
+          />
+          <path
+            d="M20 2V10C20 11.1046 20.8954 12 22 12H30L20 2Z"
+            fill="#6EE7B7"
+          />
+          <text
+            x="16"
+            y="26"
+            textAnchor="middle"
+            fill="white"
+            fontSize="8"
+            fontWeight="bold"
+            fontFamily="system-ui, -apple-system, sans-serif"
+          >
+            {ext.toUpperCase()}
+          </text>
+        </svg>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-8 h-10 shrink-0 select-none">
       <svg viewBox="0 0 32 40" className="w-full h-full drop-shadow-xs" fill="none">
@@ -163,12 +193,157 @@ function DocumentFileBadge({ fileName }: { fileName?: string }) {
   );
 }
 
+function CsvPreviewRenderer({ url, fileName }: { url: string; fileName: string }) {
+  const [rows, setRows] = useState<string[][]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const fetchCsv = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        if (!active) return;
+
+        const lines = text
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+        const parsedRows = lines.map((line) => {
+          const result: string[] = [];
+          let current = "";
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === "," && !inQuotes) {
+              result.push(current.trim());
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        });
+
+        setRows(parsedRows);
+      } catch (err) {
+        if (!active) return;
+        setError("Preview is not directly embeddable for this file type. You can download or open the file.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    fetchCsv();
+    return () => {
+      active = false;
+    };
+  }, [url]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 gap-2">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0064cb]" />
+        <span className="text-xs text-slate-500 font-medium">Loading preview...</span>
+      </div>
+    );
+  }
+
+  if (error || rows.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-6 max-w-sm">
+        <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-center mb-3 text-[#0064cb]">
+          <FileText className="w-8 h-8" />
+        </div>
+        <h4 className="text-sm font-bold text-slate-800 break-all">{fileName}</h4>
+        <p className="text-xs text-slate-500 mt-2">
+          {error || "File is empty."}
+        </p>
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <a href={url} download={fileName} target="_blank" rel="noopener noreferrer">
+            <Button size="sm" className="bg-[#0064cb] hover:bg-[#0052ae] text-white text-xs font-semibold h-8 px-4 cursor-pointer">
+              <Download className="w-3.5 h-3.5 mr-1.5" /> Download
+            </Button>
+          </a>
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            <Button size="sm" variant="outline" className="text-xs font-semibold h-8 px-3 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer">
+              <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Open in New Tab
+            </Button>
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  const [headerRow, ...dataRows] = rows;
+
+  return (
+    <div className="w-full h-full max-h-[65vh] flex flex-col bg-white">
+      <div className="p-2 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 px-3">
+        <span className="text-[11px] font-semibold text-slate-500">
+          Showing {rows.length} row{rows.length !== 1 ? "s" : ""}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <a href={url} download={fileName} target="_blank" rel="noopener noreferrer">
+            <Button size="sm" variant="ghost" className="h-7 text-xs text-[#0064cb] hover:bg-blue-50 font-semibold px-2 cursor-pointer">
+              <Download className="w-3.5 h-3.5 mr-1" /> Download
+            </Button>
+          </a>
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            <Button size="sm" variant="ghost" className="h-7 text-xs text-slate-600 hover:bg-slate-100 font-semibold px-2 cursor-pointer">
+              <ExternalLink className="w-3.5 h-3.5 mr-1" /> Open
+            </Button>
+          </a>
+        </div>
+      </div>
+      <div className="overflow-auto flex-1 max-h-[58vh]">
+        <table className="w-full border-collapse text-left text-xs">
+          {headerRow && (
+            <thead className="bg-slate-100/90 sticky top-0 z-10">
+              <tr>
+                <th className="py-2 px-3 font-bold text-slate-600 border-b border-slate-200 text-center w-10">#</th>
+                {headerRow.map((col, idx) => (
+                  <th key={idx} className="py-2 px-3 font-bold text-slate-700 border-b border-slate-200 whitespace-nowrap">
+                    {col || `Col ${idx + 1}`}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          )}
+          <tbody className="divide-y divide-slate-100">
+            {dataRows.map((row, rIdx) => (
+              <tr key={rIdx} className="hover:bg-slate-50/80 transition-colors">
+                <td className="py-1.5 px-3 text-[11px] text-slate-400 font-mono text-center bg-slate-50/30">
+                  {rIdx + 1}
+                </td>
+                {headerRow.map((_, cIdx) => (
+                  <td key={cIdx} className="py-1.5 px-3 text-slate-700 whitespace-nowrap max-w-[200px] truncate" title={row[cIdx] || ""}>
+                    {row[cIdx] || "-"}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function PersonnelDocumentsTable({
   profileId,
   entityLabel,
   onCountChange,
 }: PersonnelDocumentsTableProps) {
-  const PAGE_SIZE = 15;
+  const PAGE_SIZE = 20;
   const [documents, setDocuments] = useState<PersonnelDocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -203,7 +378,8 @@ export function PersonnelDocumentsTable({
         setDocuments(res.data);
         const count = typeof res.total === "number" ? res.total : res.data.length;
         setTotalCount(count);
-        setPageSize(PAGE_SIZE);
+        const effectiveSize = typeof res.page_size === "number" && res.page_size > 0 ? res.page_size : PAGE_SIZE;
+        setPageSize(effectiveSize);
         if (onCountChange && !debouncedSearch) {
           onCountChange(count);
         }
@@ -800,7 +976,7 @@ export function PersonnelDocumentsTable({
           if (!open) setPreviewDoc(null);
         }}
       >
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-6 rounded-2xl bg-white border border-slate-100 shadow-2xl overflow-hidden">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col p-6 rounded-2xl bg-white border border-slate-100 shadow-2xl overflow-hidden">
           {previewDoc && (() => {
             const fileName =
               previewDoc.file_name ||
@@ -857,6 +1033,7 @@ export function PersonnelDocumentsTable({
               ["png", "jpg", "jpeg", "webp", "gif", "svg", "bmp", "ico"].includes(ext) ||
               (url ? url.startsWith("data:image") || url.includes(".png") || url.includes(".jpg") || url.includes(".jpeg") || url.includes(".webp") : false);
             const isPdf = ext === "pdf" || (url ? url.includes(".pdf") : false);
+            const isCsv = ext === "csv" || ext === "tsv";
 
             return (
               <>
@@ -890,18 +1067,29 @@ export function PersonnelDocumentsTable({
                       title={fileName}
                       className="w-full h-[65vh] border-0 bg-white"
                     />
+                  ) : url && isCsv ? (
+                    <CsvPreviewRenderer url={url} fileName={fileName} />
                   ) : url ? (
                     <div className="flex flex-col items-center justify-center text-center p-6 max-w-sm">
                       <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-center mb-3 text-[#0064cb]">
                         <FileText className="w-8 h-8" />
                       </div>
                       <h4 className="text-sm font-bold text-slate-800 break-all">{fileName}</h4>
-                      {docId && (
-                        <p className="text-[11px] text-slate-400 font-mono mt-1">ID: {docId}</p>
-                      )}
                       <p className="text-xs text-slate-500 mt-2">
-                        Preview is not directly embeddable for this file type.
+                        Preview is not directly embeddable for this file type. You can download or open the file to view it.
                       </p>
+                      <div className="mt-4 flex items-center justify-center gap-2">
+                        <a href={url} download={fileName} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" className="bg-[#0064cb] hover:bg-[#0052ae] text-white text-xs font-semibold h-8 px-4 cursor-pointer">
+                            <Download className="w-3.5 h-3.5 mr-1.5" /> Download
+                          </Button>
+                        </a>
+                        <a href={url} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" variant="outline" className="text-xs font-semibold h-8 px-3 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer">
+                            <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Open in New Tab
+                          </Button>
+                        </a>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center text-center p-6 max-w-sm">
@@ -911,11 +1099,6 @@ export function PersonnelDocumentsTable({
                       <h4 className="text-sm font-bold text-slate-800 break-all">
                         {fileName}
                       </h4>
-                      {docId && (
-                        <p className="text-[11px] text-slate-400 font-mono mt-1">
-                          ID: {docId}
-                        </p>
-                      )}
                       <p className="text-xs text-slate-500 mt-2">
                         Document uploaded on {formatDate(dateStr)}.
                       </p>
@@ -930,14 +1113,28 @@ export function PersonnelDocumentsTable({
                   <span className="text-xs text-slate-400 font-medium">
                     {ext ? `${ext.toUpperCase()} File` : "Document"}
                   </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setPreviewDoc(null)}
-                    className="h-9 px-5 text-xs font-semibold rounded-lg border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
-                  >
-                    Close
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {url && (
+                      <a href={url} download={fileName} target="_blank" rel="noopener noreferrer">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-9 px-4 text-xs font-semibold rounded-lg bg-[#0064cb] hover:bg-[#0052ae] text-white cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1.5" />
+                          Download
+                        </Button>
+                      </a>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setPreviewDoc(null)}
+                      className="h-9 px-5 text-xs font-semibold rounded-lg border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                    >
+                      Close
+                    </Button>
+                  </div>
                 </DialogFooter>
               </>
             );

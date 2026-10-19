@@ -58,7 +58,7 @@ export function PersonnelGuardsTable({
   onCountChange,
 }: PersonnelGuardsTableProps) {
   const router = useRouter();
-  const PAGE_SIZE = 15;
+  const PAGE_SIZE = 20;
   const [guards, setGuards] = useState<PersonnelGuardItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -83,7 +83,8 @@ export function PersonnelGuardsTable({
         setGuards(res.data);
         const count = typeof res.total === "number" ? res.total : res.data.length;
         setTotalCount(count);
-        setPageSize(PAGE_SIZE);
+        const effectiveSize = typeof res.page_size === "number" && res.page_size > 0 ? res.page_size : PAGE_SIZE;
+        setPageSize(effectiveSize);
         if (onCountChange && !debouncedSearch) {
           onCountChange(count);
         }

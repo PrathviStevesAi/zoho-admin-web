@@ -564,9 +564,9 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
             Provider
           </label>
           <GuardProviderFilter
-            value={formData.personnel_profile_id || "all"}
+            value={formData.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e"}
             onChange={(val) => setFormData((prev: any) => ({ ...prev, personnel_profile_id: val }))}
-            allLabel="All"
+            showAll={false}
             showIcon={true}
             triggerClassName="!h-11 bg-slate-50/50 border-slate-200 rounded-md text-sm"
           />

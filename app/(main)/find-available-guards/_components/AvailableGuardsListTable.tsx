@@ -88,18 +88,29 @@ export function AvailableGuardsListTable({
         ? allGuards.filter((g) => selectedGuardIdsSet.has(g.guard_id))
         : allGuards;
 
-    const dataToExport = exportList.map((g, idx) => ({
-      "#": idx + 1,
-      Name: `${g.first_name || ""} ${g.last_name || ""}`.trim() || g.name || "-",
-      Email: g.email || "-",
-      "Phone Number": g.phone_number || "-",
-      "City, State": getCityState(g),
-      Distance: getDistance(g),
-      Armed: g.armed ? "Yes" : "No",
-      Unarmed: g.unarmed ? "Yes" : "No",
-      "Guard Level": g.guard_level !== undefined && g.guard_level !== null ? g.guard_level : "-",
-      Status: g.account_status || "Active",
-    }));
+    const dataToExport = exportList.map((g, idx) => {
+      const rawType = String(
+        g.personnel_profile?.profile_type ||
+        g.personnel_profile?.type ||
+        g.profile_type ||
+        ""
+      ).toLowerCase().trim();
+      const providerName = g.personnel_profile?.name || (rawType === "fastguard" ? "FastGuard Service" : "-");
+
+      return {
+        "#": idx + 1,
+        Name: `${g.first_name || ""} ${g.last_name || ""}`.trim() || g.name || "-",
+        Email: g.email || "-",
+        "Phone Number": g.phone_number || "-",
+        "Provider Name": providerName,
+        "City, State": getCityState(g),
+        Distance: getDistance(g),
+        Armed: g.armed ? "Yes" : "No",
+        Unarmed: g.unarmed ? "Yes" : "No",
+        "Guard Level": g.guard_level !== undefined && g.guard_level !== null ? g.guard_level : "-",
+        Status: g.account_status || "Active",
+      };
+    });
 
     exportToExcel(
       dataToExport,
@@ -142,8 +153,8 @@ export function AvailableGuardsListTable({
 
       <div className="w-full">
         <Table
-          containerClassName={cn("w-full overflow-x-hidden", hasVerticalScroll && "max-h-[620px] overflow-y-auto")}
-          className="w-full"
+          containerClassName={cn("w-full overflow-x-auto", hasVerticalScroll && "max-h-[620px] overflow-y-auto")}
+          className="w-full min-w-[1150px]"
         >
           <TableHeader className={cn("bg-slate-50", hasVerticalScroll && "sticky top-0 z-20 shadow-sm")}>
             <TableRow className="hover:bg-transparent border-slate-100">
@@ -159,6 +170,7 @@ export function AvailableGuardsListTable({
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">NAME</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">EMAIL</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">PHONE NUMBER</TableHead>
+              <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3 whitespace-nowrap">PROVIDER NAME</TableHead>
               <TableHead className="text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">CITY, STATE</TableHead>
               <TableHead className="w-24 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3">DISTANCE</TableHead>
               <TableHead className="w-28 text-[11px] font-bold text-slate-700 uppercase py-2.5 px-3 text-center">GUARD LEVEL</TableHead>
@@ -170,13 +182,22 @@ export function AvailableGuardsListTable({
           <TableBody>
             {isGuardsLoading ? (
               <TableRow>
-                <TableCell colSpan={11} className="py-10 text-center">
+                <TableCell colSpan={12} className="py-10 text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0064cb]" />
                   <span className="text-xs text-slate-500 font-medium mt-2 block">Loading guards...</span>
                 </TableCell>
               </TableRow>
             ) : allGuards.length > 0 ? (
-              allGuards.map((guard, index) => (
+              allGuards.map((guard, index) => {
+                const rawType = String(
+                  guard.personnel_profile?.profile_type ||
+                  guard.personnel_profile?.type ||
+                  guard.profile_type ||
+                  ""
+                ).toLowerCase().trim();
+                const providerName = guard.personnel_profile?.name || (rawType === "fastguard" ? "FastGuard Service" : "---");
+
+                return (
                 <TableRow
                   key={guard.guard_id || index}
                   className="border-slate-50 hover:bg-slate-50/40 transition-colors"
@@ -212,6 +233,13 @@ export function AvailableGuardsListTable({
                   </TableCell>
                   <TableCell className="text-xs text-slate-600 py-2.5 px-3 whitespace-nowrap" title={guard.phone_number || ""}>
                     {guard.phone_number || "-"}
+                  </TableCell>
+                  <TableCell className="text-xs py-2.5 px-3 whitespace-nowrap">
+                    {providerName !== "---" ? (
+                      <span className="text-slate-800 font-medium">{providerName}</span>
+                    ) : (
+                      <span className="text-slate-400">---</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-xs text-slate-600 py-2.5 px-3 truncate max-w-[180px]" title={getCityState(guard)}>
                     {getCityState(guard)}
@@ -269,11 +297,12 @@ export function AvailableGuardsListTable({
                     </span>
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={11}
+                  colSpan={12}
                   className="py-12 text-center text-xs text-slate-500"
                 >
                   No guards found matching filters. Try adjusting your location or radius.
