@@ -268,6 +268,80 @@ export function ShiftExpensesCard({
     setIsAddingExpense(false);
   };
 
+  const formatProfileType = (type?: string) => {
+    const t = String(type || "").toLowerCase().trim();
+    if (t === "agency") return "Agency";
+    if (t === "agent") return "Agent";
+    if (t === "fastguard") return "Fastguard";
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
+  };
+
+  const getHourlyRateLabel = () => {
+    if (!shift) return "Per hour paid to Fastguard Guard";
+    const leadProfile =
+      (shift as any).lead_shift_personnel_profile ||
+      shift.lead_guard?.personnel_profile ||
+      (shift as any).lead_personnel_profile;
+
+    const rawType = String(
+      leadProfile?.profile_type ||
+      leadProfile?.type ||
+      ""
+    ).toLowerCase().trim();
+
+    const name = leadProfile?.name?.trim();
+
+    if (rawType === "agency" || rawType === "agent") {
+      const typeLabel = formatProfileType(rawType);
+      const providerDisplayName = name || (rawType === "agency" ? "Agency" : "Agent");
+      return `Per hour agreed rate paid to ${providerDisplayName} ( ${typeLabel} )`;
+    }
+
+    if (rawType === "fastguard" || (name && name.toLowerCase().includes("fastguard"))) {
+      return "Per hour paid to Fastguard Guard";
+    }
+
+    if (name && rawType) {
+      const typeLabel = formatProfileType(rawType);
+      return `Per hour agreed rate paid to ${name}${typeLabel ? ` ( ${typeLabel} )` : ""}`;
+    }
+
+    return "Per hour paid to Fastguard Guard";
+  };
+
+  const getFlatQcRateLabel = () => {
+    if (!shift) return "Flat QC Rate paid to Fastguard Standby Guard";
+    const standbyProfile =
+      (shift as any).standby_shift_personnel_profile ||
+      shift.standby_guard?.personnel_profile ||
+      (shift as any).standby_personnel_profile;
+
+    const rawType = String(
+      standbyProfile?.profile_type ||
+      standbyProfile?.type ||
+      ""
+    ).toLowerCase().trim();
+
+    const name = standbyProfile?.name?.trim();
+
+    if (rawType === "agency" || rawType === "agent") {
+      const typeLabel = formatProfileType(rawType);
+      const providerDisplayName = name || (rawType === "agency" ? "Agency" : "Agent");
+      return `Flat QC Rate paid to ${providerDisplayName} ( ${typeLabel} )`;
+    }
+
+    if (rawType === "fastguard" || (name && name.toLowerCase().includes("fastguard"))) {
+      return "Flat QC Rate paid to Fastguard Standby Guard";
+    }
+
+    if (name && rawType) {
+      const typeLabel = formatProfileType(rawType);
+      return `Flat QC Rate paid to ${name}${typeLabel ? ` ( ${typeLabel} )` : ""}`;
+    }
+
+    return "Flat QC Rate paid to Fastguard Standby Guard";
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-[12px] font-bold text-[#0064cb] uppercase tracking-widest pl-1">
@@ -286,8 +360,8 @@ export function ShiftExpensesCard({
             <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
               {editingField === "per_hour_rate" ? (
                 <div className="w-full flex flex-col gap-2">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                    Hourly Rate Paid to Guard
+                  <Label className="text-xs font-medium text-slate-600">
+                    {getHourlyRateLabel()}
                   </Label>
                   <Input
                     type="number"
@@ -319,8 +393,8 @@ export function ShiftExpensesCard({
                 </div>
               ) : (
                 <>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">
-                    HOURLY RATE PAID TO GUARD
+                  <span className="text-xs font-medium text-slate-600">
+                    {getHourlyRateLabel()}
                   </span>
                   <div className="flex items-center gap-4">
                     <span className="text-sm font-bold text-slate-900">
@@ -336,8 +410,8 @@ export function ShiftExpensesCard({
             <div className="flex items-center justify-between p-4 bg-slate-50/50">
               {editingField === "qc_flat_rate" ? (
                 <div className="w-full flex flex-col gap-2">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                    Flat QC Rate Paid to Guard
+                  <Label className="text-xs font-medium text-slate-600">
+                    {getFlatQcRateLabel()}
                   </Label>
                   <Input
                     type="number"
@@ -369,8 +443,8 @@ export function ShiftExpensesCard({
                 </div>
               ) : (
                 <>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">
-                    FLAT QC RATE PAID TO GUARD
+                  <span className="text-xs font-medium text-slate-600">
+                    {getFlatQcRateLabel()}
                   </span>
                   <div className="flex items-center gap-4">
                     <span className="text-sm font-bold text-slate-900">

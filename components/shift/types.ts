@@ -129,6 +129,8 @@ export interface Shift {
   security_service_id?: string | null;
   security_service?: string | null;
   call_id?: string | null;
+  lead_shift_personnel_profile?: PersonnelProfileSummary | null;
+  standby_shift_personnel_profile?: PersonnelProfileSummary | null;
   lead_guard?: LeadGuard;
   standby_guard?: StandbyGuard;
   shift_extension_requests?: ShiftExtensionRequest[];
