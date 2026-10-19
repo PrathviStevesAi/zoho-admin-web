@@ -14,7 +14,6 @@ import {
   X,
   AlertCircle,
   Download,
-  ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -267,15 +266,10 @@ function CsvPreviewRenderer({ url, fileName }: { url: string; fileName: string }
         <p className="text-xs text-slate-500 mt-2">
           {error || "File is empty."}
         </p>
-        <div className="mt-4 flex items-center justify-center gap-2">
+        <div className="mt-4 flex items-center justify-center">
           <a href={url} download={fileName} target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-[#0064cb] hover:bg-[#0052ae] text-white text-xs font-semibold h-8 px-4 cursor-pointer">
               <Download className="w-3.5 h-3.5 mr-1.5" /> Download
-            </Button>
-          </a>
-          <a href={url} target="_blank" rel="noopener noreferrer">
-            <Button size="sm" variant="outline" className="text-xs font-semibold h-8 px-3 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer">
-              <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Open in New Tab
             </Button>
           </a>
         </div>
@@ -295,11 +289,6 @@ function CsvPreviewRenderer({ url, fileName }: { url: string; fileName: string }
           <a href={url} download={fileName} target="_blank" rel="noopener noreferrer">
             <Button size="sm" variant="ghost" className="h-7 text-xs text-[#0064cb] hover:bg-blue-50 font-semibold px-2 cursor-pointer">
               <Download className="w-3.5 h-3.5 mr-1" /> Download
-            </Button>
-          </a>
-          <a href={url} target="_blank" rel="noopener noreferrer">
-            <Button size="sm" variant="ghost" className="h-7 text-xs text-slate-600 hover:bg-slate-100 font-semibold px-2 cursor-pointer">
-              <ExternalLink className="w-3.5 h-3.5 mr-1" /> Open
             </Button>
           </a>
         </div>
@@ -1076,17 +1065,12 @@ export function PersonnelDocumentsTable({
                       </div>
                       <h4 className="text-sm font-bold text-slate-800 break-all">{fileName}</h4>
                       <p className="text-xs text-slate-500 mt-2">
-                        Preview is not directly embeddable for this file type. You can download or open the file to view it.
+                        Preview is not directly embeddable for this file type. You can download the file to view it.
                       </p>
-                      <div className="mt-4 flex items-center justify-center gap-2">
+                      <div className="mt-4 flex items-center justify-center">
                         <a href={url} download={fileName} target="_blank" rel="noopener noreferrer">
                           <Button size="sm" className="bg-[#0064cb] hover:bg-[#0052ae] text-white text-xs font-semibold h-8 px-4 cursor-pointer">
                             <Download className="w-3.5 h-3.5 mr-1.5" /> Download
-                          </Button>
-                        </a>
-                        <a href={url} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" variant="outline" className="text-xs font-semibold h-8 px-3 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer">
-                            <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Open in New Tab
                           </Button>
                         </a>
                       </div>

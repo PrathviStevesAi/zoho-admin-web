@@ -29,7 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export interface GuardProviderFilterProps {
-  value: string;
+  value?: string;
   onChange: (val: string) => void;
   providersData?: PersonnelProfilesResponseData;
   isLoading?: boolean;
@@ -37,6 +37,7 @@ export interface GuardProviderFilterProps {
   triggerClassName?: string;
   showIcon?: boolean;
   allLabel?: string;
+  placeholder?: string;
   showUnassigned?: boolean;
   showAll?: boolean;
 }
@@ -52,6 +53,7 @@ export function GuardProviderFilter({
   triggerClassName,
   showIcon = false,
   allLabel,
+  placeholder = "Select...",
   showUnassigned = false,
   showAll = true,
 }: GuardProviderFilterProps) {
@@ -93,6 +95,9 @@ export function GuardProviderFilter({
 
   const { selectedLabel, selectedType } = useMemo(() => {
     if (!value || value === "all") {
+      if (!value) {
+        return { selectedLabel: placeholder || "Select...", selectedType: "none" };
+      }
       return { selectedLabel: allLabel || (showIcon ? "All" : "All Providers"), selectedType: "all" };
     }
 
@@ -115,8 +120,8 @@ export function GuardProviderFilter({
       return { selectedLabel: found?.name || "Agent", selectedType: "agent" };
     }
 
-    return { selectedLabel: allLabel || (showIcon ? "All" : "All Providers"), selectedType: "all" };
-  }, [value, fastguards, agencies, agents, showIcon, allLabel]);
+    return { selectedLabel: placeholder || allLabel || (showIcon ? "All" : "All Providers"), selectedType: "none" };
+  }, [value, fastguards, agencies, agents, showIcon, allLabel, placeholder]);
 
   const TriggerIcon =
     selectedType === "agency"
@@ -159,13 +164,20 @@ export function GuardProviderFilter({
             triggerClassName
           )}
         >
-          {showIcon ? (
+          {showIcon && selectedType !== "none" ? (
             <div className="flex items-center gap-2 min-w-0">
               <TriggerIcon className={cn("w-3.5 h-3.5 shrink-0", triggerIconColor)} />
               <span className="truncate text-left">{selectedLabel}</span>
             </div>
           ) : (
-            <span className="truncate text-left font-medium text-slate-700">
+            <span
+              className={cn(
+                "truncate text-left",
+                selectedType === "none"
+                  ? "text-slate-400 font-normal"
+                  : "font-medium text-slate-700"
+              )}
+            >
               {selectedLabel}
             </span>
           )}

@@ -16,7 +16,7 @@ import {
 import { City } from "country-state-city";
 import { CityAutocomplete } from "@/components/ui/city-autocomplete";
 import { lookupPostalCode } from "@/lib/postal-lookup";
-import { toFullCountryName } from "@/lib/utils";
+import { cn, toFullCountryName } from "@/lib/utils";
 import { GuardProviderFilter } from "@/app/(main)/guard-bank/components/guard-provider-filter";
 
 export function PersonalInfoSection({ formData, setFormData, countries, selectedCountry, setIsDropdownOpen, isDropdownOpen }: any) {
@@ -561,15 +561,32 @@ export function PersonalInfoSection({ formData, setFormData, countries, selected
 
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-            Provider
+            Provider <span className="text-red-500">*</span>
           </label>
           <GuardProviderFilter
-            value={formData.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e"}
-            onChange={(val) => setFormData((prev: any) => ({ ...prev, personnel_profile_id: val }))}
+            value={formData.personnel_profile_id || ""}
+            onChange={(val) =>
+              setFormData((prev: any) => ({
+                ...prev,
+                personnel_profile_id: val,
+                personnelProfileError: "",
+              }))
+            }
             showAll={false}
             showIcon={true}
-            triggerClassName="!h-11 bg-slate-50/50 border-slate-200 rounded-md text-sm"
+            placeholder="Select..."
+            triggerClassName={cn(
+              "!h-11 bg-slate-50/50 rounded-md text-sm",
+              formData.personnelProfileError
+                ? "border-red-500 ring-1 ring-red-500"
+                : "border-slate-200"
+            )}
           />
+          {formData.personnelProfileError && (
+            <p className="text-xs text-red-500 font-medium mt-1">
+              {formData.personnelProfileError}
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -43,7 +43,8 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     reliableTransport: "",
     holdUnarmedLicense: "",
     holdArmedLicense: "",
-    personnel_profile_id: "afa86a21-72e8-4629-85a7-b1f2052f278e",
+    personnel_profile_id: "",
+    personnelProfileError: "",
     englishProficiency: "",
     voluntaryGender: "",
     raceEthnicity: "",
@@ -100,6 +101,10 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
       newErrors.holdArmedLicenseError = "Armed license selection is required";
       hasRequiredError = true;
     }
+    if (!formData.personnel_profile_id || formData.personnel_profile_id === "all") {
+      newErrors.personnelProfileError = "Provider is required";
+      hasRequiredError = true;
+    }
     if (!formData.guardLevel) {
       newErrors.guardLevelError = "Guard level is required";
       hasRequiredError = true;
@@ -127,10 +132,7 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     const payload = {
       email: formData.email,
       phone_number: formattedPhone,
-      personnel_profile_id:
-        formData.personnel_profile_id && formData.personnel_profile_id !== "all"
-          ? formData.personnel_profile_id
-          : "afa86a21-72e8-4629-85a7-b1f2052f278e",
+      personnel_profile_id: formData.personnel_profile_id,
       license_number: formData.licenseNumber,
       license_expiration_date: formData.licenseExpirationDate,
       resume_url: typeof formData.resumeFile === 'string' ? formData.resumeFile : "",
