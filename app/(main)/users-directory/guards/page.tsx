@@ -27,6 +27,7 @@ import {
   Building2,
   UserCheck,
   ShieldCheck,
+  Smartphone,
 } from "lucide-react";
 import { GuardRegistrationForm } from "./_components/guard-registration-form";
 import Link from "next/link";
@@ -343,11 +344,17 @@ export default function GuardDirectoryPage() {
                 {appDownloadedFilter === "true" && (
                   <div className="sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 flex items-center justify-center my-2 sm:my-0">
                     {isLoading ? (
-                      <Skeleton className="h-7 w-48 rounded-full" />
+                      <Skeleton className="h-[38px] w-56 rounded-full" />
                     ) : (
-                      <span className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-semibold bg-[#0064cb]/10 text-[#0064cb] border border-[#0064cb]/20 shadow-sm">
-                        Total App Download Count: {pagination?.total ?? 0}
-                      </span>
+                      <div className="inline-flex items-center gap-2.5 px-4 h-[38px] rounded-full bg-slate-50 border border-slate-200 shadow-xs">
+                        <Smartphone className="w-4 h-4 text-[#0064cb] shrink-0" />
+                        <span className="text-xs font-semibold text-black whitespace-nowrap">
+                          Total App Download Count:
+                        </span>
+                        <span className="text-sm font-bold text-emerald-600 tabular-nums">
+                          {pagination?.total ?? 0}
+                        </span>
+                      </div>
                     )}
                   </div>
                 )}
