@@ -27,6 +27,7 @@ import {
 } from "@/actions/notification.actions";
 import { SelectGuardsDialog } from "./_components/SelectGuardsDialog";
 import { BroadcastHistoryTable } from "./_components/BroadcastHistoryTable";
+import { SmsBalanceCard } from "./_components/SmsBalanceCard";
 
 function parseEstimateResponse(
   res: any,
@@ -103,6 +104,8 @@ export default function BroadcastNotificationsPage() {
   const [estimatedCost, setEstimatedCost] = useState<number>(0);
   const [estimatedRecipientsCount, setEstimatedRecipientsCount] = useState<number>(0);
   const [isEstimating, setIsEstimating] = useState(false);
+  const [isEstimateReady, setIsEstimateReady] = useState(true);
+  const [balanceRefreshTrigger, setBalanceRefreshTrigger] = useState(0);
   const isOverLimit = message.length > 1000;
 
   useEffect(() => {
@@ -110,18 +113,23 @@ export default function BroadcastNotificationsPage() {
       setEstimatedCost(0);
       setEstimatedRecipientsCount(0);
       setIsEstimating(false);
+      setIsEstimateReady(true);
       return;
     }
 
     if (recipientType === "filter" && selectedGuardIds.length === 0) {
       setEstimatedCost(0);
       setEstimatedRecipientsCount(0);
+      setIsEstimating(false);
+      setIsEstimateReady(true);
       return;
     }
 
+    setIsEstimating(true);
+    setIsEstimateReady(false);
+
     let isCancelled = false;
     const fetchEstimate = async () => {
-      setIsEstimating(true);
       try {
         const res = await estimateBroadcastNotificationAction({
           title: "Broadcast Notification",
@@ -146,13 +154,14 @@ export default function BroadcastNotificationsPage() {
       } finally {
         if (!isCancelled) {
           setIsEstimating(false);
+          setIsEstimateReady(true);
         }
       }
     };
 
     const timer = setTimeout(() => {
       fetchEstimate();
-    }, 1000);
+    }, 600);
 
     return () => {
       isCancelled = true;
@@ -173,6 +182,11 @@ export default function BroadcastNotificationsPage() {
 
     if (!sendViaInApp && !sendViaSms) {
       toast.error("Please select at least one sending method (In-App Notification or Twilio SMS)");
+      return;
+    }
+
+    if (sendViaSms && !isEstimateReady) {
+      toast.error("Please wait until the estimated SMS cost calculation completes");
       return;
     }
 
@@ -199,6 +213,9 @@ export default function BroadcastNotificationsPage() {
 
       if (res.success) {
         toast.success(res.message || "Blast message sent successfully!");
+        if (sendViaSms) {
+          setBalanceRefreshTrigger((prev) => prev + 1);
+        }
         setMessage("");
         setSendViaInApp(false);
         setSendViaSms(false);
@@ -225,6 +242,8 @@ export default function BroadcastNotificationsPage() {
     setSelectedGuardIds([]);
     setEstimatedCost(0);
     setEstimatedRecipientsCount(0);
+    setIsEstimating(false);
+    setIsEstimateReady(true);
   };
 
   const hasFormContent =
@@ -243,19 +262,23 @@ export default function BroadcastNotificationsPage() {
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-slate-600 font-medium">Blast Messages</span>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all cursor-pointer shadow-xs"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Blast Messages</h1>
-            <p className="text-xs sm:text-sm text-slate-500 font-normal">
-              Send important announcements and updates to guards in real-time.
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all cursor-pointer shadow-xs"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Blast Messages</h1>
+              <p className="text-xs sm:text-sm text-slate-500 font-normal">
+                Send important announcements and updates to guards in real-time.
+              </p>
+            </div>
           </div>
+
+          <SmsBalanceCard refreshTrigger={balanceRefreshTrigger} />
         </div>
       </div>
 
@@ -662,24 +685,30 @@ export default function BroadcastNotificationsPage() {
                 </Button>
               )}
 
-              <Button
-                type="button"
-                onClick={handleSend}
-                disabled={isSending || isOverLimit}
-                className="h-11 px-6 bg-[#0064cb] hover:bg-[#0052ae] text-white font-semibold text-sm rounded-lg flex items-center gap-2 shadow-sm shadow-blue-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-              >
-                {isSending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Sending...</span>
-                  </>
-                ) : (
-                  <>
-                    <SendHorizontal className="w-4 h-4" />
-                    <span>Send Blast Message</span>
-                  </>
-                )}
-              </Button>
+              {(() => {
+                const isEstimatePending =
+                  sendViaSms && message.trim().length > 0 && !isEstimateReady;
+                return (
+                  <Button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={isSending || isOverLimit || isEstimatePending}
+                    className="h-11 px-6 bg-[#0064cb] hover:bg-[#0052ae] text-white font-semibold text-sm rounded-lg flex items-center gap-2 shadow-sm shadow-blue-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <SendHorizontal className="w-4 h-4" />
+                        <span>Send Blast Message</span>
+                      </>
+                    )}
+                  </Button>
+                );
+              })()}
             </div>
           </div>
         </div>
