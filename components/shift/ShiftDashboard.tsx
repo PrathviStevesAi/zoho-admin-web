@@ -6,7 +6,7 @@ import {
   clientFetchGuardTrackingAction,
   SelectedPersonnelProfile,
 } from "@/lib/client-actions";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -565,6 +565,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     guard_break_max_duration: string;
     guard_break_limit: string;
     geofence_radius: string;
+    is_required_attachment: string;
   }) => {
     setIsSavingSettings(true);
 
@@ -586,6 +587,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       shift?.geofence_radius !== undefined && shift?.geofence_radius !== null
         ? String(shift.geofence_radius)
         : "150";
+    const initialIsRequiredAttachment =
+      shift?.is_required_attachment !== undefined && shift?.is_required_attachment !== null
+        ? String(shift.is_required_attachment)
+        : "";
 
     const payload: any = {
       shift_id: shiftId,
@@ -615,6 +620,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       payload.geofence_radius =
         settings.geofence_radius === "" ? 150 : Number(settings.geofence_radius);
       dirty = true;
+    }
+    if (settings.is_required_attachment !== initialIsRequiredAttachment) {
+      dirty = true;
+    }
+    if (settings.is_required_attachment !== "") {
+      payload.is_required_attachment = settings.is_required_attachment === "true";
+    } else if (initialIsRequiredAttachment !== "") {
+      payload.is_required_attachment = null;
     }
 
     if (!dirty) {
@@ -1004,7 +1017,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_abandon"].includes(shift.status?.toLowerCase())
       : false);
 
-  const settingsFormState = {
+  const settingsFormState = useMemo(() => ({
     checkpoint_create_interval:
       shift?.checkpoint_create_interval !== undefined &&
         shift?.checkpoint_create_interval !== null &&
@@ -1023,7 +1036,17 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       shift?.geofence_radius !== undefined && shift?.geofence_radius !== null
         ? String(shift.geofence_radius)
         : "150",
-  };
+    is_required_attachment:
+      shift?.is_required_attachment !== undefined && shift?.is_required_attachment !== null
+        ? String(shift.is_required_attachment)
+        : "",
+  }), [
+    shift?.checkpoint_create_interval,
+    shift?.break_max_time,
+    shift?.total_break_limit,
+    shift?.geofence_radius,
+    shift?.is_required_attachment,
+  ]);
 
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6">

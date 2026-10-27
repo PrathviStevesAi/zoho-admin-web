@@ -111,6 +111,7 @@ export interface Shift {
   report_token?: string;
   is_report_send?: boolean;
   is_travel_guard?: boolean;
+  is_required_attachment?: boolean;
   assigned_guard?: string | AssignedGuard;
   scheduled_for?: ShiftTime;
   execution_time?: ExecutionTime;

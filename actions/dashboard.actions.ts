@@ -1157,6 +1157,8 @@ export async function updateShiftDetailsAction(payload: {
   per_hour_rate?: number;
   per_shift_rate?: number;
   travel_fee?: number;
+  geofence_radius?: number;
+  is_required_attachment?: boolean | null;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     console.log("[Server Action] updateShiftDetailsAction PATCH Payload to /api/v1/shift/details:", JSON.stringify(payload, null, 2));
