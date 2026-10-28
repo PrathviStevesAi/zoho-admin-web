@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -13,7 +13,9 @@ import {
   ChevronRight,
   ArrowLeft,
   FileText,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -141,17 +143,36 @@ function ShiftReportContent() {
   // Filters: start date defaults to last Sunday, end date to current date
   const [startDate, setStartDate] = useState(() => formatDateToYMD(getLastSunday()));
   const [endDate, setEndDate] = useState(() => formatDateToYMD(new Date()));
+  const [tempStartDate, setTempStartDate] = useState(startDate);
+  const [tempEndDate, setTempEndDate] = useState(endDate);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [invoiceQuery, setInvoiceQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedInvoiceQuery, setDebouncedInvoiceQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [isApplyingDates, setIsApplyingDates] = useState(false);
+  const isApplyingDatesRef = useRef(false);
 
-  const loadReports = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedInvoiceQuery(invoiceQuery);
+      setDebouncedSearchQuery(searchQuery);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [invoiceQuery, searchQuery]);
+
+  const loadReports = useCallback(async (
+    start = startDate,
+    end = endDate,
+    search = debouncedSearchQuery,
+    invoice = debouncedInvoiceQuery
+  ) => {
     setIsLoading(true);
     const res = await clientFetchShiftReportsAction({
-      start_date: startDate,
-      end_date: endDate,
-      search: searchQuery.trim() || undefined,
-      invoice_no: invoiceQuery.trim() || undefined,
+      start_date: start,
+      end_date: end,
+      search: search.trim() || undefined,
+      invoice_no: invoice.trim() || undefined,
     });
 
     if (res.success && res.data) {
@@ -174,14 +195,33 @@ function ShiftReportContent() {
       });
     }
     setIsLoading(false);
-  };
+  }, [startDate, endDate, debouncedSearchQuery, debouncedInvoiceQuery]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadReports();
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [startDate, endDate, invoiceQuery, searchQuery]);
+    if (isApplyingDatesRef.current) return;
+    loadReports(startDate, endDate, debouncedSearchQuery, debouncedInvoiceQuery);
+  }, [startDate, endDate, debouncedSearchQuery, debouncedInvoiceQuery]);
+
+  const handleApplyDates = async () => {
+    if (isApplyingDates) return;
+    if (tempStartDate && tempEndDate && tempStartDate > tempEndDate) {
+      toast.error("Start date cannot be after end date");
+      return;
+    }
+    setIsApplyingDates(true);
+    isApplyingDatesRef.current = true;
+    try {
+      setStartDate(tempStartDate);
+      setEndDate(tempEndDate);
+      await loadReports(tempStartDate, tempEndDate, debouncedSearchQuery, debouncedInvoiceQuery);
+      setIsDatePickerOpen(false);
+    } finally {
+      setIsApplyingDates(false);
+      setTimeout(() => {
+        isApplyingDatesRef.current = false;
+      }, 50);
+    }
+  };
 
   const handleExport = () => {
     if (!allReports || allReports.length === 0) return;
@@ -283,7 +323,14 @@ function ShiftReportContent() {
                   <div className="relative">
                     <button
                       type="button"
-                      onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                      onClick={() => {
+                        if (isApplyingDates) return;
+                        if (!isDatePickerOpen) {
+                          setTempStartDate(startDate);
+                          setTempEndDate(endDate);
+                        }
+                        setIsDatePickerOpen(!isDatePickerOpen);
+                      }}
                       className="flex items-center gap-2.5 h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100/70 transition-colors cursor-pointer shadow-sm min-w-[210px]"
                     >
                       <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
@@ -294,15 +341,24 @@ function ShiftReportContent() {
                       <>
                         <div
                           className="fixed inset-0 z-40"
-                          onClick={() => setIsDatePickerOpen(false)}
+                          onClick={() => {
+                            if (isApplyingDates) return;
+                            setTempStartDate(startDate);
+                            setTempEndDate(endDate);
+                            setIsDatePickerOpen(false);
+                          }}
                         />
                         <div className="absolute top-full left-0 mt-2 p-4 bg-white border border-slate-200 rounded-xl shadow-xl z-50 animate-in fade-in duration-100 min-w-[300px] space-y-3">
                           <div className="space-y-1">
                             <label className="text-[10px] font-bold uppercase text-slate-500">Start Date</label>
                             <Input
                               type="date"
-                              value={startDate}
-                              onChange={(e) => setStartDate(e.target.value)}
+                              disabled={isApplyingDates}
+                              value={tempStartDate}
+                              onChange={(e) => setTempStartDate(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleApplyDates();
+                              }}
                               className="h-9 bg-slate-50 border-slate-200 rounded-lg text-xs"
                             />
                           </div>
@@ -310,8 +366,12 @@ function ShiftReportContent() {
                             <label className="text-[10px] font-bold uppercase text-slate-500">End Date</label>
                             <Input
                               type="date"
-                              value={endDate}
-                              onChange={(e) => setEndDate(e.target.value)}
+                              disabled={isApplyingDates}
+                              value={tempEndDate}
+                              onChange={(e) => setTempEndDate(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleApplyDates();
+                              }}
                               className="h-9 bg-slate-50 border-slate-200 rounded-lg text-xs"
                             />
                           </div>
@@ -320,9 +380,10 @@ function ShiftReportContent() {
                               type="button"
                               variant="ghost"
                               size="sm"
+                              disabled={isApplyingDates}
                               onClick={() => {
-                                setStartDate(formatDateToYMD(getLastSunday()));
-                                setEndDate(formatDateToYMD(new Date()));
+                                setTempStartDate(formatDateToYMD(getLastSunday()));
+                                setTempEndDate(formatDateToYMD(new Date()));
                               }}
                               className="text-xs text-slate-500 hover:text-slate-800 h-8 px-2"
                             >
@@ -331,10 +392,18 @@ function ShiftReportContent() {
                             <Button
                               type="button"
                               size="sm"
-                              onClick={() => setIsDatePickerOpen(false)}
-                              className="bg-[#0064cb] hover:bg-[#0052ae] text-white text-xs h-8 px-3 rounded-lg font-bold"
+                              disabled={isApplyingDates}
+                              onClick={handleApplyDates}
+                              className="bg-[#0064cb] hover:bg-[#0052ae] text-white text-xs h-8 px-3 rounded-lg font-bold flex items-center gap-1.5 min-w-[75px] justify-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                              Apply
+                              {isApplyingDates ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Applying...</span>
+                                </>
+                              ) : (
+                                "Apply"
+                              )}
                             </Button>
                           </div>
                         </div>
