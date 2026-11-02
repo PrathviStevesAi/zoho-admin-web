@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
 import NotificationProvider from "@/components/NotificationProvider";
@@ -6,14 +7,19 @@ import { ShieldAlert } from "lucide-react";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 import { fetchProfileAction } from "@/actions/profile.actions";
 import { SessionUpdater } from "@/components/auth/SessionUpdater";
+import { NavigationTracker } from "@/components/navigation/NavigationTracker";
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  let currentRole = session?.user?.role as string;
+  let currentRole = typeof session?.user?.role === "string" ? session.user.role : "";
 
-  const profileRes = await fetchProfileAction();
-  if (profileRes.success && profileRes.data?.role) {
-    currentRole = profileRes.data.role;
+  try {
+    const profileRes = await fetchProfileAction();
+    if (profileRes && profileRes.success && profileRes.data?.role && typeof profileRes.data.role === "string") {
+      currentRole = profileRes.data.role;
+    }
+  } catch (err) {
+    console.error("MainLayout: fetchProfileAction failed:", err);
   }
 
   if (currentRole !== "admin" && currentRole !== "member") {
@@ -33,6 +39,9 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex min-h-screen bg-background">
+      <Suspense fallback={null}>
+        <NavigationTracker />
+      </Suspense>
       <SessionUpdater currentRole={currentRole} />
       <NotificationProvider />
       <Sidebar userRole={currentRole} />

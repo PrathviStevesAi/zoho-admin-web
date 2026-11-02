@@ -11,30 +11,6 @@ export default function NotificationProvider() {
     const pathname = usePathname();
     const { status } = useSession();
 
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            let originalError = console.error;
-            if (process.env.NODE_ENV !== "production") {
-                console.error = (...args) => {
-                    const argStr = typeof args[0] === "string" ? args[0] : "";
-                    const isZegoError = argStr.includes("【ZIMManager】") || argStr.includes("[ZIMManager]") || argStr.includes("【ZEGOCLOUD】");
-                    const isUnhandledZego = argStr.includes("unhandledRejection") && args[1] && args[1].message && typeof args[1].message === 'string' && args[1].message.includes("exceed user mau limit");
-                    
-                    if (isZegoError || isUnhandledZego) {
-                        console.warn("Suppressed Zego SDK error log:", ...args);
-                        return;
-                    }
-                    originalError.apply(console, args);
-                };
-            }
-
-            return () => {
-                if (process.env.NODE_ENV !== "production") {
-                    console.error = originalError;
-                }
-            };
-        }
-    }, []);
 
     useEffect(() => {
         console.log("NotificationProvider Status change...", status);

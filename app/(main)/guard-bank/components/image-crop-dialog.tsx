@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 
@@ -128,6 +128,7 @@ export function ImageCropDialog({ isOpen, onClose, imageSrc, onCropApplied }: Im
       <DialogContent className="max-w-md bg-white p-6 rounded-lg shadow-xl font-sans border border-slate-100">
         <DialogHeader className="border-b border-slate-100 pb-3 flex flex-row items-center justify-between">
           <DialogTitle className="text-lg font-bold text-slate-800">Free Crop Image</DialogTitle>
+          <DialogDescription className="sr-only">Crop and adjust guard headshot photo</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 pt-4">

@@ -1,16 +1,18 @@
 "use client";
 
 import {
-  clientFetchGuardsAction
+  clientFetchGuardsNewAction,
+  FetchGuardsByLocationParams,
+  SelectedPersonnelProfile
 } from "@/lib/client-actions";
 
-import { useState, useEffect } from "react";
-import { Search, X, XCircle, DollarSign, Loader2, Star, Info } from "lucide-react";
-import { fetchLocationAction, } from "@/actions/dashboard.actions";
+import { useState, useEffect, useCallback } from "react";
+import { X, XCircle, Loader2, Star, Info } from "lucide-react";
+import { fetchLocationAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
+import { Pagination } from "@/components/table/pagination";
 import { Input } from "@/components/ui/input";
-import { FormattedDate } from "@/components/ui/formatted-date";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -48,17 +50,28 @@ interface NewAssignGuardPanelProps {
     qc_flat_rate?: number;
   };
   assignRole?: "lead_guard" | "standby_guard";
+  personnel_profile_id?: string;
+  selectedPersonnel?: SelectedPersonnelProfile | null;
 }
 
-export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates, assignRole }: NewAssignGuardPanelProps) {
+export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isReassign, initialRates, assignRole, personnel_profile_id, selectedPersonnel }: NewAssignGuardPanelProps) {
   const [hourlyRate, setHourlyRate] = useState("");
   const [flatQcRate, setFlatQcRate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const activePersonnelProfileId = selectedPersonnel?.id || personnel_profile_id;
+
+  const hourlyRateLabel = selectedPersonnel && selectedPersonnel.category !== "fastguard"
+    ? `Per hour agreed rate paid to ${selectedPersonnel.name} ( ${selectedPersonnel.category === "agency" ? "Agency" : "Agent"} )`
+    : "Per hour paid to Fastguard Guard";
+
+  const flatQcRateLabel = selectedPersonnel && selectedPersonnel.category !== "fastguard"
+    ? `Flat QC Rate paid to ${selectedPersonnel.name} ( ${selectedPersonnel.category === "agency" ? "Agency" : "Agent"} )`
+    : "Flat QC Rate paid to Fastguard Standby Guard";
   const [filters, setFilters] = useState({
     country: "",
     state: "",
     city: "",
-    status: "all",
     service: "All",
     level: "All"
   });
@@ -68,15 +81,30 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
     cities: []
   });
   const [guards, setGuards] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  }>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    total_pages: 1,
+  });
   const [isLoadingGuards, setIsLoadingGuards] = useState(false);
-  const [pagination, setPagination] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearchQuery = useDebounceValue(searchQuery, 500);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => {
     const loadLocations = async () => {
-      const res = await fetchLocationAction(filters.country, filters.state, "approved");
+      const res = await fetchLocationAction(
+        filters.country,
+        filters.state,
+        "approved",
+        activePersonnelProfileId
+      );
       if (res.success && res.data) {
         setLocations({
           countries: ["All Country", ...res.data.countries],
@@ -86,41 +114,87 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
       }
     };
     loadLocations();
-  }, [filters.country, filters.state]);
+  }, [filters.country, filters.state, activePersonnelProfileId]);
+
+  const loadGuards = useCallback(async (page: number = 1) => {
+    setIsLoadingGuards(true);
+    const params: FetchGuardsByLocationParams = {
+      account_status: "active",
+      page: page
+    };
+
+    if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+      params.search = debouncedSearchQuery.trim();
+    }
+
+    if (filters.city && filters.city !== "All City") {
+      params.cities = filters.city;
+    }
+    if (filters.state && filters.state !== "All State") {
+      params.states = filters.state;
+    }
+    if (filters.country && filters.country !== "All Country") {
+      params.country = filters.country;
+    }
+
+    if (filters.service && filters.service !== "All") {
+      params.service = filters.service.toLowerCase();
+    }
+
+    if (filters.level && filters.level !== "All") {
+      params.guard_level = filters.level;
+    }
+
+    if (activePersonnelProfileId) {
+      params.personnel_profile_id = activePersonnelProfileId;
+    }
+
+    const res = await clientFetchGuardsNewAction(params);
+    if (res.success && res.data) {
+      setGuards(res.data);
+      const limit = res.pagination?.limit || 10;
+      const total = res.pagination?.total ?? res.data.length;
+      const totalPages = res.pagination?.total_pages || Math.ceil(total / limit) || 1;
+      setPagination({
+        page: res.pagination?.page || page,
+        limit,
+        total,
+        total_pages: totalPages
+      });
+    } else {
+      setGuards([]);
+      setPagination({
+        page: 1,
+        limit: 10,
+        total: 0,
+        total_pages: 1
+      });
+    }
+    setIsLoadingGuards(false);
+  }, [debouncedSearchQuery, filters, activePersonnelProfileId]);
 
   useEffect(() => {
-    const loadGuards = async () => {
-      setIsLoadingGuards(true);
-      let armed = "";
-      let unarmed = "";
-      if (filters.service === "armed") armed = "true";
-      if (filters.service === "unarmed") unarmed = "true";
-      if (filters.service === "both") { armed = "true"; unarmed = "true"; }
+    setCurrentPage(1);
+    loadGuards(1);
+  }, [debouncedSearchQuery, filters, activePersonnelProfileId, loadGuards]);
 
-      const res = await clientFetchGuardsAction({
-        page: currentPage,
-        search: debouncedSearchQuery,
-        status: filters.status === "all" ? "" : filters.status,
-        city: filters.city,
-        state: filters.state,
-        country: filters.country,
-        level: filters.level === "All" ? "" : filters.level,
-        armed,
-        unarmed
-      });
-      if (res.success && res.data) {
-        setGuards(res.data);
-        setPagination(res.pagination);
-      }
-      setIsLoadingGuards(false);
-    };
-    loadGuards();
-  }, [currentPage, debouncedSearchQuery, filters]);
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    loadGuards(newPage);
+  };
 
   const resetFields = () => {
     setHourlyRate("");
     setFlatQcRate("");
     setSearchQuery("");
+    setCurrentPage(1);
+    setGuards([]);
+    setPagination({
+      page: 1,
+      limit: 10,
+      total: 0,
+      total_pages: 1
+    });
   };
 
   const handleClose = () => {
@@ -140,18 +214,26 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
     if (!isNaN(hr) && hr > 0) rates.per_hour_rate = hr;
     if (!isNaN(qc) && qc > 0) rates.qc_flat_rate = qc;
 
-    resetFields();
     onSelect(guard, rates);
   };
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="px-6 py-5 flex justify-between items-center">
-        <h2 className="text-xl font-bold text-[#0f172a]">
-          {isReassign
-            ? (assignRole === "standby_guard" ? "Re-Assign Standby Guard" : "Re-Assign Lead Guard")
-            : (assignRole === "standby_guard" ? "Select Standby Guard" : "Select Lead Guard")}
-        </h2>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h2 className="text-xl font-bold text-[#0f172a]">
+            {isReassign
+              ? (assignRole === "standby_guard" ? "Re-Assign Standby Guard" : "Re-Assign Lead Guard")
+              : (assignRole === "standby_guard" ? "Select Standby Guard" : "Select Lead Guard")}
+          </h2>
+          {selectedPersonnel && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#0064cb] border border-blue-200">
+              <span className="text-slate-500 font-normal">Provider:</span>
+              <span className="font-bold">{selectedPersonnel.name}</span>
+              <span className="text-[10px] text-slate-400">({selectedPersonnel.categoryLabel || selectedPersonnel.category})</span>
+            </span>
+          )}
+        </div>
         <button
           onClick={handleClose}
           className="p-1 text-slate-500 hover:text-slate-800 transition-colors"
@@ -186,7 +268,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         ) : assignRole === "standby_guard" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
             <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-slate-700">Flat QC Rate to Guard</Label>
+              <Label className="text-[13px] font-medium text-slate-700">{flatQcRateLabel}</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
                 <Input
@@ -224,7 +306,7 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
             <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-slate-700">Hourly Rate paid to Guard</Label>
+              <Label className="text-[13px] font-medium text-slate-700">{hourlyRateLabel}</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
                 <Input
@@ -273,12 +355,17 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         </div>
 
         <div className={cn(
-          "grid grid-cols-1 md:grid-cols-6 gap-4 md:grid",
+          "grid grid-cols-1 md:grid-cols-5 gap-4 md:grid",
           showMobileFilters ? "grid" : "hidden"
         )}>
           <div className="space-y-1.5 w-full">
             <Label className="text-[13px] font-medium text-slate-700">Country</Label>
-            <Select value={filters.country} onValueChange={(val) => setFilters(prev => ({ ...prev, country: val }))}>
+            <Select
+              value={filters.country}
+              onValueChange={(val) => {
+                setFilters(prev => ({ ...prev, country: val, state: "All State", city: "All City" }));
+              }}
+            >
               <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
                 <SelectValue placeholder="Select Country" />
               </SelectTrigger>
@@ -292,7 +379,12 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
 
           <div className="space-y-1.5 w-full">
             <Label className="text-[13px] font-medium text-slate-700">State</Label>
-            <Select value={filters.state} onValueChange={(val) => setFilters(prev => ({ ...prev, state: val }))}>
+            <Select
+              value={filters.state}
+              onValueChange={(val) => {
+                setFilters(prev => ({ ...prev, state: val, city: "All City" }));
+              }}
+            >
               <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
                 <SelectValue placeholder="Select State" />
               </SelectTrigger>
@@ -306,7 +398,12 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
 
           <div className="space-y-1.5 w-full">
             <Label className="text-[13px] font-medium text-slate-700">City</Label>
-            <Select value={filters.city} onValueChange={(val) => setFilters(prev => ({ ...prev, city: val }))}>
+            <Select
+              value={filters.city}
+              onValueChange={(val) => {
+                setFilters(prev => ({ ...prev, city: val }));
+              }}
+            >
               <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
                 <SelectValue placeholder="Select City" />
               </SelectTrigger>
@@ -319,22 +416,13 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
           </div>
 
           <div className="space-y-1.5 w-full">
-            <Label className="text-[13px] font-medium text-slate-700">Status</Label>
-            <Select value={filters.status} onValueChange={(val) => setFilters(prev => ({ ...prev, status: val }))}>
-              <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-slate-200 shadow-xl z-[200]">
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="true">Active</SelectItem>
-                <SelectItem value="false">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5 w-full">
             <Label className="text-[13px] font-medium text-slate-700">Service</Label>
-            <Select value={filters.service} onValueChange={(val) => setFilters(prev => ({ ...prev, service: val }))}>
+            <Select
+              value={filters.service}
+              onValueChange={(val) => {
+                setFilters(prev => ({ ...prev, service: val }));
+              }}
+            >
               <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
@@ -349,7 +437,12 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
 
           <div className="space-y-1.5 w-full">
             <Label className="text-[13px] font-medium text-slate-700">Guard Level</Label>
-            <Select value={filters.level} onValueChange={(val) => setFilters(prev => ({ ...prev, level: val }))}>
+            <Select
+              value={filters.level}
+              onValueChange={(val) => {
+                setFilters(prev => ({ ...prev, level: val }));
+              }}
+            >
               <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
@@ -364,144 +457,152 @@ export function NewAssignGuardPanel({ onSelect, onClose, assigningGuardId, isRea
         </div>
       </div>
 
-      <div className="px-6 pb-4">
+      <div className="px-6 pb-4 space-y-2.5">
         <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col min-h-[300px] bg-white shadow-sm">
           <Table className="border-collapse min-w-[1200px]" scrollbarClass="custom-scrollbar-visible">
             <TableHeader className="bg-white sticky top-0 z-20">
-                <TableRow className="hover:bg-transparent border-b border-slate-100">
-                  <TableHead className="w-[140px] py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-100">ACTION</TableHead>
-                  <TableHead className="w-[80px] text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">#</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">NAME</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">EMAIL</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">PHONE NO.</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">
-                    <div className="flex items-center gap-1">
-                      GUARD LEVEL
-                      <Info className="w-3.5 h-3.5 text-slate-400" />
-                    </div>
-                  </TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">ARMED</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">UNARMED</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">ADDRESS</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">LAST ACTIVE</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6">STATUS</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoadingGuards ? (
-                  Array.from({ length: 5 }).map((_, index) => (
-                    <TableRow key={index} className="border-b border-slate-50">
-                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                        <Skeleton className="h-6 w-24 rounded-lg" />
-                      </TableCell>
-                      <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
-                        <Skeleton className="h-4 w-6 mx-auto" />
-                      </TableCell>
-                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                        <Skeleton className="h-4 w-28" />
-                      </TableCell>
-                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                        <Skeleton className="h-4 w-36" />
-                      </TableCell>
-                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                        <Skeleton className="h-4 w-24" />
-                      </TableCell>
-                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                        <Skeleton className="h-4 w-16" />
-                      </TableCell>
-                      <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
-                        <Skeleton className="h-4 w-10 mx-auto" />
-                      </TableCell>
-                      <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
-                        <Skeleton className="h-4 w-10 mx-auto" />
-                      </TableCell>
-                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                        <Skeleton className="h-4 w-40" />
-                      </TableCell>
-                      <TableCell className="py-4 px-6 border-r border-slate-50/50">
-                        <Skeleton className="h-4 w-24" />
-                      </TableCell>
-                      <TableCell className="py-4 px-6">
-                        <Skeleton className="h-5 w-16 rounded-full" />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : guards.length > 0 ? (
-                  guards.map((guard, index) => (
-                    <TableRow key={guard.guard_id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="py-5 px-6 border-r border-slate-50/50">
-                        <button
-                          onClick={() => handleSelectGuard(guard)}
-                          disabled={assigningGuardId === guard.guard_id}
-                          className="cursor-pointer text-[13px] font-bold text-[#0064cb] hover:text-[#0052ae] flex items-center gap-2 transition-all disabled:opacity-50"
-                        >
-                          {assigningGuardId === guard.guard_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                          Select Guard
-                        </button>
-                      </TableCell>
-                      <TableCell className="text-[13px] text-slate-800 py-5 px-6 border-r border-slate-50/50 text-center">
-                        {(currentPage - 1) * 10 + index + 1}
-                      </TableCell>
-                      <TableCell className="text-[13px] font-medium text-slate-600 py-5 px-6 border-r border-slate-50/50">
-                        {guard.first_name} {guard.last_name}
-                      </TableCell>
-                      <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
-                        {guard.email}
-                      </TableCell>
-                      <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
-                        {guard.phone_number || "-"}
-                      </TableCell>
-                      <TableCell className="py-5 px-6 border-r border-slate-50/50">
-                        <div className="flex items-center gap-1">
-                          {guard.guard_level === 3 ? (
-                            <>
-                              <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
-                              <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
-                              <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
-                            </>
-                          ) : guard.guard_level === 2 ? (
-                            <>
-                              <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
-                              <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
-                            </>
-                          ) : guard.guard_level === 1 ? (
-                            <>
-                              <Star className="w-4 h-4 fill-green-600 text-green-600" />
-                            </>
-                          ) : (
-                            <span className="text-slate-400 text-xs font-medium">---</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50 text-center">
-                        {guard.armed ? "Yes" : "No"}
-                      </TableCell>
-                      <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50 text-center">
-                        {guard.unarmed ? "Yes" : "No"}
-                      </TableCell>
-                      <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
-                        {guard.address || "-"}
-                      </TableCell>
-                      <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
-                        {guard.last_active_at ? <FormattedDate date={guard.last_active_at} includeTime={false} /> : "-"}
-                      </TableCell>
-                      <TableCell className="py-5 px-6">
-                        <span className={cn(
-                          "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                          guard.status ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-                        )}>
-                          {guard.status ? "Active" : "Inactive"}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={11} className="py-8 text-center text-slate-700">No guards found</TableCell>
+              <TableRow className="hover:bg-transparent border-b border-slate-100">
+                <TableHead className="w-[140px] py-4 px-6 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-100">ACTION</TableHead>
+                <TableHead className="w-[80px] text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">#</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">NAME</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">EMAIL</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">PHONE NO.</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">
+                  <div className="flex items-center gap-1">
+                    GUARD LEVEL
+                    <Info className="w-3.5 h-3.5 text-slate-400" />
+                  </div>
+                </TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">ARMED</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100 text-center">UNARMED</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6 border-r border-slate-100">ADDRESS</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-4 px-6">STATUS</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoadingGuards ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={index} className="border-b border-slate-50">
+                    <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                      <Skeleton className="h-6 w-24 rounded-lg" />
+                    </TableCell>
+                    <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                    </TableCell>
+                    <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                      <Skeleton className="h-4 w-28" />
+                    </TableCell>
+                    <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                      <Skeleton className="h-4 w-36" />
+                    </TableCell>
+                    <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                      <Skeleton className="h-4 w-10 mx-auto" />
+                    </TableCell>
+                    <TableCell className="py-4 px-6 border-r border-slate-50/50 text-center">
+                      <Skeleton className="h-4 w-10 mx-auto" />
+                    </TableCell>
+                    <TableCell className="py-4 px-6 border-r border-slate-50/50">
+                      <Skeleton className="h-4 w-40" />
+                    </TableCell>
+                    <TableCell className="py-4 px-6">
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-              </Table>
+                ))
+              ) : guards.length > 0 ? (
+                guards.map((guard, index) => (
+                  <TableRow key={guard.guard_id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                    <TableCell className="py-5 px-6 border-r border-slate-50/50">
+                      <button
+                        onClick={() => handleSelectGuard(guard)}
+                        disabled={assigningGuardId === guard.guard_id}
+                        className="cursor-pointer text-[13px] font-bold text-[#0064cb] hover:text-[#0052ae] flex items-center gap-2 transition-all disabled:opacity-50"
+                      >
+                        {assigningGuardId === guard.guard_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                        Select Guard
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-[13px] text-slate-800 py-5 px-6 border-r border-slate-50/50 text-center">
+                      {(pagination.page - 1) * pagination.limit + index + 1}
+                    </TableCell>
+                    <TableCell className="text-[13px] font-medium text-slate-600 py-5 px-6 border-r border-slate-50/50">
+                      {guard.first_name} {guard.last_name}
+                    </TableCell>
+                    <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
+                      {guard.email}
+                    </TableCell>
+                    <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
+                      {guard.phone_number || "-"}
+                    </TableCell>
+                    <TableCell className="py-5 px-6 border-r border-slate-50/50">
+                      <div className="flex items-center gap-1">
+                        {guard.guard_level === 3 ? (
+                          <>
+                            <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                            <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                            <Star className="w-4 h-4 fill-purple-600 text-purple-600" />
+                          </>
+                        ) : guard.guard_level === 2 ? (
+                          <>
+                            <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                            <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+                          </>
+                        ) : guard.guard_level === 1 ? (
+                          <>
+                            <Star className="w-4 h-4 fill-green-600 text-green-600" />
+                          </>
+                        ) : (
+                          <span className="text-slate-400 text-xs font-medium">---</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50 text-center">
+                      {guard.armed ? "Yes" : "No"}
+                    </TableCell>
+                    <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50 text-center">
+                      {guard.unarmed ? "Yes" : "No"}
+                    </TableCell>
+                    <TableCell className="text-[13px] text-slate-700 py-5 px-6 border-r border-slate-50/50">
+                      {guard.address || "-"}
+                    </TableCell>
+                    <TableCell className="py-5 px-6">
+                      {(() => {
+                        const isActive = guard.account_status === "active" || guard.status === true || guard.status === "active";
+                        return (
+                          <span className={cn(
+                            "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
+                            isActive ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
+                          )}>
+                            {isActive ? "Active" : "Inactive"}
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={10} className="py-8 text-center text-slate-700">No guards found</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          {pagination.total > 0 && (
+            <Pagination
+              page={currentPage}
+              totalPages={pagination.total_pages}
+              totalItems={pagination.total}
+              limit={pagination.limit}
+              onPageChange={handlePageChange}
+              isPending={isLoadingGuards}
+            />
+          )}
         </div>
       </div>
 

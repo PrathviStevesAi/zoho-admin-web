@@ -3,9 +3,10 @@
 import {
   clientFetchShiftDetailsAction,
   clientFetchCommentsAction,
-  clientFetchGuardTrackingAction
+  clientFetchGuardTrackingAction,
+  SelectedPersonnelProfile,
 } from "@/lib/client-actions";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -14,6 +15,7 @@ import {
   updateShiftDetailsAction,
   cancelShiftServiceAction,
   manualStartShiftAction,
+  manualEndShiftAction,
   assignGuardToShiftAction,
   reassignGuardToShiftAction,
   assignLeadGuardAction,
@@ -41,6 +43,7 @@ import { NewAssignGuardPanel } from "./NewAssignGuardPanel";
 import { StandbyGuardsPanel } from "./StandbyGuardsPanel";
 import { EditShiftLocationDialog } from "./dialogs/EditShiftLocationDialog";
 import { ManualStartShiftDialog } from "./dialogs/ManualStartShiftDialog";
+import { ManualEndShiftDialog } from "./dialogs/ManualEndShiftDialog";
 import { FilePreviewDialog } from "./dialogs/FilePreviewDialog";
 import { SendReportCard } from "./SendReportCard";
 import { ApproveShiftCard } from "./ApproveShiftCard";
@@ -101,15 +104,18 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
   const [isStandbyGuardsOpen, setIsStandbyGuardsOpen] = useState(false);
   const [isReassign, setIsReassign] = useState(false);
   const [assignRole, setAssignRole] = useState<"lead_guard" | "standby_guard">("lead_guard");
+  const [selectedPersonnel, setSelectedPersonnel] = useState<SelectedPersonnelProfile | null>(null);
   const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
   const [isCancelServiceOpen, setIsCancelServiceOpen] = useState(false);
   const [isManualStartOpen, setIsManualStartOpen] = useState(false);
+  const [isManualEndOpen, setIsManualEndOpen] = useState(false);
   const [isSendReportOpen, setIsSendReportOpen] = useState(false);
   const [isApproveShiftOpen, setIsApproveShiftOpen] = useState(false);
   const [isNotApproveShiftOpen, setIsNotApproveShiftOpen] = useState(false);
   const [isCallRecordingsOpen, setIsCallRecordingsOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [isStartingShift, setIsStartingShift] = useState(false);
+  const [isEndingShift, setIsEndingShift] = useState(false);
   const [isSendingReport, setIsSendingReport] = useState(false);
   const [isApprovingShift, setIsApprovingShift] = useState(false);
   const [isNotApprovingShift, setIsNotApprovingShift] = useState(false);
@@ -559,6 +565,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     guard_break_max_duration: string;
     guard_break_limit: string;
     geofence_radius: string;
+    is_required_attachment: string;
   }) => {
     setIsSavingSettings(true);
 
@@ -580,6 +587,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       shift?.geofence_radius !== undefined && shift?.geofence_radius !== null
         ? String(shift.geofence_radius)
         : "150";
+    const initialIsRequiredAttachment =
+      shift?.is_required_attachment !== undefined && shift?.is_required_attachment !== null
+        ? String(shift.is_required_attachment)
+        : "";
 
     const payload: any = {
       shift_id: shiftId,
@@ -609,6 +620,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       payload.geofence_radius =
         settings.geofence_radius === "" ? 150 : Number(settings.geofence_radius);
       dirty = true;
+    }
+    if (settings.is_required_attachment !== initialIsRequiredAttachment) {
+      dirty = true;
+    }
+    if (settings.is_required_attachment !== "") {
+      payload.is_required_attachment = settings.is_required_attachment === "true";
+    } else if (initialIsRequiredAttachment !== "") {
+      payload.is_required_attachment = null;
     }
 
     if (!dirty) {
@@ -648,6 +667,28 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       toast.error(err.message || "Failed to start shift");
     } finally {
       setIsStartingShift(false);
+    }
+  };
+
+  const handleManualEndShiftConfirm = async (reason: string) => {
+    setIsEndingShift(true);
+    try {
+      const res = await manualEndShiftAction({
+        shift_id: shiftId,
+        end_type: "admin",
+        manual_shift_end_reason: reason,
+      });
+      if (res.success) {
+        toast.success(res.message || "Shift ended");
+        setIsManualEndOpen(false);
+        Promise.all([loadShiftDetails(), loadReportsDetails()]);
+      } else {
+        toast.error(res.error || "Failed to end shift");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to end shift");
+    } finally {
+      setIsEndingShift(false);
     }
   };
 
@@ -777,7 +818,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     }
   };
 
-  const handleAssignGuard = () => {
+  const handleAssignGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
@@ -786,13 +827,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setIsNewAssignOpen(true);
     setIsReassign(true);
     setIsSettingsOpen(false);
     setIsStandbyGuardsOpen(false);
   };
 
-  const handleNewAssignGuard = () => {
+  const handleNewAssignGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
@@ -801,19 +843,21 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setIsNewAssignOpen(true);
     setIsReassign(false);
     setIsSettingsOpen(false);
     setIsStandbyGuardsOpen(false);
   };
 
-  const handleAssignLeadGuard = () => {
+  const handleAssignLeadGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
       toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", { duration: 5000 });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setAssignRole("lead_guard");
     setIsReassign(false);
     setIsNewAssignOpen(true);
@@ -821,13 +865,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsStandbyGuardsOpen(false);
   };
 
-  const handleAssignStandbyGuard = () => {
+  const handleAssignStandbyGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
       toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", { duration: 5000 });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setAssignRole("standby_guard");
     setIsReassign(false);
     setIsNewAssignOpen(true);
@@ -835,13 +880,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsStandbyGuardsOpen(false);
   };
 
-  const handleReassignLeadGuard = () => {
+  const handleReassignLeadGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
       toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", { duration: 5000 });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setAssignRole("lead_guard");
     setIsReassign(true);
     setIsNewAssignOpen(true);
@@ -849,13 +895,14 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
     setIsStandbyGuardsOpen(false);
   };
 
-  const handleReassignStandbyGuard = () => {
+  const handleReassignStandbyGuard = (profile?: SelectedPersonnelProfile) => {
     if (!shift) return;
     const paymentStatus = shift.payment_status?.toLowerCase();
     if (!paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid") {
       toast.error("The payment status should be Paid or Net term client to assign the shift to Guard.", { duration: 5000 });
       return;
     }
+    setSelectedPersonnel(profile || null);
     setAssignRole("standby_guard");
     setIsReassign(true);
     setIsNewAssignOpen(true);
@@ -865,12 +912,12 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   const handleNewAssignSelect = async (guard: any, rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number }) => {
     const targetGuardId = guard.id || guard.guard_id;
-    if (!shift) return;
-    const invoiceId = shift.invoice_id;
-    if (!invoiceId) {
+    if (!shift || !shift.invoice_id) {
       toast.error("Invoice ID not found for this shift.");
       return;
     }
+    const invoiceId = shift.invoice_id;
+    const personnelProfileId = selectedPersonnel?.id || guard.personnel_profile?.id || guard.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e";
     setIsAssigningGuard(targetGuardId);
 
     const verifyPayload = {
@@ -878,7 +925,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       assignments: [
         {
           guard_id: targetGuardId,
-          shift_ids: [shiftId]
+          shift_ids: [shiftId],
+          personnel_profile_id: personnelProfileId,
         }
       ]
     };
@@ -908,12 +956,17 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
 
   const executeAssignment = async (guard: any, rates: { per_hour_rate?: number; per_shift_rate?: number; travel_fee?: number; qc_flat_rate?: number }) => {
     const targetGuardId = guard.id || guard.guard_id;
+    const personnelProfileId = selectedPersonnel?.id || guard.personnel_profile?.id || guard.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e";
     if (!shift || !shift.invoice_id) return;
     const invoiceId = shift.invoice_id;
     setIsAssigningGuard(targetGuardId);
 
     if (isReassign) {
-      const payload = { shift_id: shiftId, guard_id: targetGuardId };
+      const payload: any = {
+        shift_id: shiftId,
+        guard_id: targetGuardId,
+        personnel_profile_id: personnelProfileId,
+      };
       const res = assignRole === "standby_guard"
         ? await reassignStandbyGuardAction(payload)
         : await reassignLeadGuardAction(payload);
@@ -921,6 +974,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success(res.message || "Shift reassigned successfully");
         setIsNewAssignOpen(false);
+        setSelectedPersonnel(null);
         Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
         setActionError({ isOpen: true, message: res.error || "Failed to reassign guard" });
@@ -930,9 +984,9 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         invoice_id: invoiceId,
         guard_id: targetGuardId,
         shift_id: shiftId,
+        personnel_profile_id: personnelProfileId,
       };
       if (rates.per_hour_rate && rates.per_hour_rate > 0) actionPayload.per_hour_rate = rates.per_hour_rate;
-      if (rates.travel_fee && rates.travel_fee > 0) actionPayload.travel_fee = rates.travel_fee;
       if (rates.qc_flat_rate && rates.qc_flat_rate > 0) actionPayload.qc_flat_rate = rates.qc_flat_rate;
 
       const res = assignRole === "standby_guard"
@@ -942,6 +996,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       if (res.success) {
         toast.success(res.message || "Guard assigned successfully");
         setIsNewAssignOpen(false);
+        setSelectedPersonnel(null);
         Promise.all([loadShiftDetails(), loadReportsDetails()]);
       } else {
         setActionError({ isOpen: true, message: res.error || "Failed to assign guard" });
@@ -962,7 +1017,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       ? ["shift_created", "shift_planned", "shift_accepted", "shift_refused", "shift_abandon"].includes(shift.status?.toLowerCase())
       : false);
 
-  const settingsFormState = {
+  const settingsFormState = useMemo(() => ({
     checkpoint_create_interval:
       shift?.checkpoint_create_interval !== undefined &&
         shift?.checkpoint_create_interval !== null &&
@@ -981,7 +1036,17 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       shift?.geofence_radius !== undefined && shift?.geofence_radius !== null
         ? String(shift.geofence_radius)
         : "150",
-  };
+    is_required_attachment:
+      shift?.is_required_attachment !== undefined && shift?.is_required_attachment !== null
+        ? String(shift.is_required_attachment)
+        : "",
+  }), [
+    shift?.checkpoint_create_interval,
+    shift?.break_max_time,
+    shift?.total_break_limit,
+    shift?.geofence_radius,
+    shift?.is_required_attachment,
+  ]);
 
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6">
@@ -998,7 +1063,10 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         isNotApproveShiftOpen={isNotApproveShiftOpen}
         isCallRecordingsOpen={isCallRecordingsOpen}
         isReassign={isReassign}
-        onCloseNewAssign={() => setIsNewAssignOpen(false)}
+        onCloseNewAssign={() => {
+          setIsNewAssignOpen(false);
+          setSelectedPersonnel(null);
+        }}
         onCloseStandbyGuards={() => setIsStandbyGuardsOpen(false)}
         onCloseSendReport={() => setIsSendReportOpen(false)}
         onCloseApproveShift={() => setIsApproveShiftOpen(false)}
@@ -1006,6 +1074,8 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onCloseCallRecordings={() => setIsCallRecordingsOpen(false)}
         isStartingShift={isStartingShift}
         onManualStart={() => setIsManualStartOpen(true)}
+        isEndingShift={isEndingShift}
+        onManualEnd={() => setIsManualEndOpen(true)}
         onAssignGuard={handleAssignGuard}
         onNewAssignGuard={handleNewAssignGuard}
         onAssignLeadGuard={handleAssignLeadGuard}
@@ -1026,7 +1096,7 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
             toast.error("No guard assigned to this shift yet.");
             return;
           }
-          startCall(guardId as string, shiftId);
+          startCall(guardId as string, shiftId, shift?.shift_no);
         }}
         onJoinVideoCall={async () => {
           toast.info("Incoming/Outgoing calls are now managed automatically.");
@@ -1040,10 +1110,15 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
       {isNewAssignOpen ? (
         <NewAssignGuardPanel
           onSelect={handleNewAssignSelect}
-          onClose={() => setIsNewAssignOpen(false)}
+          onClose={() => {
+            setIsNewAssignOpen(false);
+            setSelectedPersonnel(null);
+          }}
           assigningGuardId={isAssigningGuard}
           isReassign={isReassign}
           assignRole={assignRole}
+          selectedPersonnel={selectedPersonnel}
+          personnel_profile_id={selectedPersonnel?.id}
           initialRates={{
             per_hour_rate: shift?.per_hour_rate ?? undefined,
             per_shift_rate: shift?.per_shift_rate ?? undefined,
@@ -1334,6 +1409,13 @@ export function ShiftDashboard({ shiftId, notificationId }: ShiftDashboardProps)
         onClose={() => setIsManualStartOpen(false)}
         onConfirm={handleManualStartShiftConfirm}
         isSaving={isStartingShift}
+      />
+
+      <ManualEndShiftDialog
+        isOpen={isManualEndOpen}
+        onClose={() => setIsManualEndOpen(false)}
+        onConfirm={handleManualEndShiftConfirm}
+        isSaving={isEndingShift}
       />
 
       <ActionErrorDialog

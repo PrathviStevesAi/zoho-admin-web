@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Country } from "country-state-city";
+import { toFullCountryName } from "@/lib/utils";
 import { submitSubcontractorApplicationAction } from "@/actions/subcontractor.actions";
 import { EmailAndPhoneSection } from "./sections/EmailAndPhoneSection";
 import { ContactInformationSection } from "./sections/ContactInformationSection";
@@ -34,7 +36,7 @@ const formSchema = z.object({
   country: z.string().trim().min(1, "Country is required"),
   state: z.string().trim().min(1, "State is required"),
   city: z.string().trim().min(1, "City is required"),
-  zipCode: z.string().trim().min(1, "Zip Code is required").max(10, "Zip Code cannot exceed 10 characters").regex(/^[a-zA-Z0-9]+$/, "Zip Code can only contain letters and numbers"),
+  zipCode: z.string().trim().min(1, "Zip Code is required").max(15, "Zip Code cannot exceed 15 characters").regex(/^[a-zA-Z0-9\s\-]+$/, "Zip Code can only contain letters, numbers, spaces, and hyphens"),
   phoneCode: z.string().min(1, "Code required"),
   phone: z.string().trim().min(10, "Phone number required"),
   howHeard: z.string().min(1, "This field is required"),
@@ -66,6 +68,8 @@ const formSchema = z.object({
 export type FormValues = z.infer<typeof formSchema>;
 
 const getPayload = (data: FormValues) => {
+  const fullCountryName = toFullCountryName(data.country);
+
   return {
     email: data.email,
     phone_number: `${data.phoneCode}${data.phone}`.replace(/\s+/g, ""),
@@ -80,7 +84,7 @@ const getPayload = (data: FormValues) => {
     first_name: data.firstName,
     last_name: data.lastName,
     street_address: data.address,
-    country: data.country,
+    country: fullCountryName,
     state: data.state,
     city: data.city,
     zip_code: data.zipCode,
@@ -124,7 +128,7 @@ export default function SubcontractorForm() {
       driver_license: "",
       firewatch_certificate: "",
       verificationVideo: "",
-      country: "",
+      country: "United States",
       state: "",
       city: "",
       gender: "",

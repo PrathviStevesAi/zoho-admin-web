@@ -13,6 +13,13 @@ export default function GlobalError({
     console.error("Global Error Boundary caught an error:", error);
   }, [error]);
 
+  const errorMessage =
+    typeof error?.message === "string"
+      ? error.message
+      : typeof (error as any)?.error === "string"
+      ? (error as any).error
+      : "An unexpected error occurred. Please try again.";
+
   return (
     <html lang="en">
       <body className="flex min-h-[100dvh] flex-col items-center justify-center bg-slate-50 p-4 text-center">
@@ -30,9 +37,9 @@ export default function GlobalError({
         <h2 className="text-2xl font-bold mb-3 text-slate-800">Critical Application Error</h2>
         <div className="text-slate-600 mb-8 max-w-md bg-white p-4 rounded-lg shadow-sm border border-slate-200">
           <span className="font-semibold block mb-2 text-slate-700">Error Details:</span>
-          <code className="text-sm text-red-600 break-words">{error.message || "An unexpected error occurred. Please try again."}</code>
-          {error.digest && (
-            <div className="mt-2 text-xs text-slate-500">Digest: {error.digest}</div>
+          <code className="text-sm text-red-600 break-words">{errorMessage}</code>
+          {error?.digest && (
+            <div className="mt-2 text-xs text-slate-500">Digest: {String(error.digest)}</div>
           )}
         </div>
         <div className="flex gap-4">

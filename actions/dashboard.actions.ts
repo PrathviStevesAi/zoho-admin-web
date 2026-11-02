@@ -474,13 +474,19 @@ export async function createShiftAction(payload: {
     return { success: false, error: message };
   }
 }
-export async function fetchLocationAction(country?: string, state?: string, status?: string): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
+export async function fetchLocationAction(
+  country?: string,
+  state?: string,
+  status?: string,
+  personnel_profile_id?: string
+): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
   try {
     let url = `/api/v1/guard/location`;
     const params = new URLSearchParams();
     if (status) params.append("status", status);
     if (country && country !== "All Country") params.append("country", country);
     if (state && state !== "All State") params.append("state", state);
+    if (personnel_profile_id) params.append("personnel_profile_id", personnel_profile_id);
     const qs = params.toString();
     if (qs) url += `?${qs}`;
 
@@ -541,6 +547,63 @@ export async function fetchGuardsAction(params: {
   }
 }
 
+export async function fetchGuardsNewAction(params: {
+  location_type?: string;
+  location?: string;
+  cities?: string[] | string;
+  states?: string[] | string;
+  country?: string[] | string;
+  radius?: number | string;
+  search?: string;
+  service?: string;
+  guard_level?: number | string;
+  account_status?: string;
+  page?: number | null;
+  personnel_profile_id?: string;
+} = {}): Promise<FetchResponse<any>> {
+  const query = new URLSearchParams();
+  query.append("status", params.account_status || "active");
+  query.append("account_status", params.account_status || "active");
+  if (params.page !== undefined && params.page !== null) query.append("page", params.page.toString());
+  if (params.personnel_profile_id) query.append("personnel_profile_id", params.personnel_profile_id);
+  if (params.location_type) query.append("location_type", params.location_type);
+  if (params.location) query.append("location", params.location);
+  if (params.radius !== undefined && params.radius !== null && params.radius !== "") query.append("radius", params.radius.toString());
+  if (params.search) query.append("search", params.search);
+  if (params.service) query.append("service", params.service);
+  if (params.guard_level !== undefined && params.guard_level !== null && params.guard_level !== "") query.append("guard_level", params.guard_level.toString());
+  if (params.cities) {
+    if (Array.isArray(params.cities)) params.cities.forEach(c => c && query.append("cities", c));
+    else query.append("cities", params.cities);
+  }
+  if (params.states) {
+    if (Array.isArray(params.states)) params.states.forEach(s => s && query.append("states", s));
+    else query.append("states", params.states);
+  }
+  if (params.country) {
+    if (Array.isArray(params.country)) params.country.forEach(c => c && query.append("country", c));
+    else query.append("country", params.country);
+  }
+
+  try {
+    const data = await apiFetch<any>(
+      `/api/v1/guard/list/new?${query.toString()}`
+    );
+    const guardsList = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+    const totalCount = data?.total !== undefined && data?.total !== null ? data.total : guardsList.length;
+    const pagination = {
+      page: data?.page || 1,
+      limit: data?.page_size || guardsList.length || 10,
+      total: totalCount,
+      total_pages: data?.page_size ? Math.ceil(totalCount / data.page_size) : 1
+    };
+    return { success: true, data: guardsList, pagination };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
 export async function assignGuardsAction(payload: {
   invoice_id: string;
   assignments: {
@@ -549,18 +612,40 @@ export async function assignGuardsAction(payload: {
     per_hour_rate?: number | null;
     qc_flat_rate?: number | null;
     travel_fee?: number | null;
+    personnel_profile_id?: string | null;
   }[];
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
+    const sanitizedAssignments = payload.assignments.map(a => {
+      const item: any = {
+        guard_id: a.guard_id,
+        personnel_profile_id: a.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e",
+        shift_ids: a.shift_ids,
+      };
+      if (typeof a.per_hour_rate === "number" && !isNaN(a.per_hour_rate) && a.per_hour_rate > 0) {
+        item.per_hour_rate = a.per_hour_rate;
+      }
+      if (typeof a.qc_flat_rate === "number" && !isNaN(a.qc_flat_rate) && a.qc_flat_rate > 0) {
+        item.qc_flat_rate = a.qc_flat_rate;
+      }
+      return item;
+    });
+    const body = {
+      invoice_id: payload.invoice_id,
+      assignments: sanitizedAssignments,
+    };
+    console.log("[API Request] POST /api/v1/shift/assign-lead-guard Payload:", JSON.stringify(body, null, 2));
     const res = await apiFetch<{ success: boolean; message?: string }>(
       `/api/v1/shift/assign-lead-guard`,
       {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       }
     );
+    console.log("[API Response] POST /api/v1/shift/assign-lead-guard Response:", res);
     return { success: true, message: res.message };
   } catch (error: any) {
+    console.error("[API Error] POST /api/v1/shift/assign-lead-guard Error:", error?.message || error);
     const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
@@ -574,18 +659,40 @@ export async function assignStandbyGuardsAction(payload: {
     per_hour_rate?: number | null;
     qc_flat_rate?: number | null;
     travel_fee?: number | null;
+    personnel_profile_id?: string | null;
   }[];
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
+    const sanitizedAssignments = payload.assignments.map(a => {
+      const item: any = {
+        guard_id: a.guard_id,
+        personnel_profile_id: a.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e",
+        shift_ids: a.shift_ids,
+      };
+      if (typeof a.per_hour_rate === "number" && !isNaN(a.per_hour_rate) && a.per_hour_rate > 0) {
+        item.per_hour_rate = a.per_hour_rate;
+      }
+      if (typeof a.qc_flat_rate === "number" && !isNaN(a.qc_flat_rate) && a.qc_flat_rate > 0) {
+        item.qc_flat_rate = a.qc_flat_rate;
+      }
+      return item;
+    });
+    const body = {
+      invoice_id: payload.invoice_id,
+      assignments: sanitizedAssignments,
+    };
+    console.log("[API Request] POST /api/v1/shift/assign-standby-guard Payload:", JSON.stringify(body, null, 2));
     const res = await apiFetch<{ success: boolean; message?: string }>(
       `/api/v1/shift/assign-standby-guard`,
       {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       }
     );
+    console.log("[API Response] POST /api/v1/shift/assign-standby-guard Response:", res);
     return { success: true, message: res.message };
   } catch (error: any) {
+    console.error("[API Error] POST /api/v1/shift/assign-standby-guard Error:", error?.message || error);
     const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }
@@ -596,21 +703,34 @@ export async function verifyGuardAssignmentAction(payload: {
   assignments: {
     guard_id: string;
     shift_ids: string[];
+    personnel_profile_id?: string | null;
   }[];
 }): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
+    const sanitizedAssignments = payload.assignments.map(a => ({
+      guard_id: a.guard_id,
+      shift_ids: a.shift_ids,
+      personnel_profile_id: a.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e",
+    }));
+    const body = {
+      invoice_id: payload.invoice_id,
+      assignments: sanitizedAssignments,
+    };
+    console.log("[API Request] POST /api/v1/shift/verify-guard-assignment Payload:", JSON.stringify(body, null, 2));
     const res = await apiFetch<{ success: boolean; data?: any; message?: string }>(
       `/api/v1/shift/verify-guard-assignment`,
       {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       }
     );
+    console.log("[API Response] POST /api/v1/shift/verify-guard-assignment Response:", res);
     if (res.success === false && res.data) {
       return { success: false, data: res.data, error: res.message };
     }
     return { success: res.success !== false, data: res.data, error: res.message };
   } catch (error: any) {
+    console.error("[API Error] POST /api/v1/shift/verify-guard-assignment Error:", error?.message || error);
     const message = error.message || "Something went wrong";
     if (error.data) {
       return { success: false, data: error.data, error: message };
@@ -675,15 +795,20 @@ export async function assignLeadGuardAction(payload: {
   per_hour_rate?: number;
   qc_flat_rate?: number;
   travel_fee?: number;
+  personnel_profile_id?: string | null;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const assignmentItem: any = {
       guard_id: payload.guard_id,
+      personnel_profile_id: payload.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e",
       shift_ids: [payload.shift_id],
-      ...(payload.per_hour_rate && payload.per_hour_rate > 0 ? { per_hour_rate: payload.per_hour_rate } : {}),
-      ...(payload.qc_flat_rate && payload.qc_flat_rate > 0 ? { qc_flat_rate: payload.qc_flat_rate } : {}),
-      ...(payload.travel_fee && payload.travel_fee > 0 ? { travel_fee: payload.travel_fee } : {}),
     };
+    if (typeof payload.per_hour_rate === "number" && !isNaN(payload.per_hour_rate) && payload.per_hour_rate > 0) {
+      assignmentItem.per_hour_rate = payload.per_hour_rate;
+    }
+    if (typeof payload.qc_flat_rate === "number" && !isNaN(payload.qc_flat_rate) && payload.qc_flat_rate > 0) {
+      assignmentItem.qc_flat_rate = payload.qc_flat_rate;
+    }
     const body = {
       invoice_id: payload.invoice_id,
       assignments: [assignmentItem],
@@ -712,15 +837,20 @@ export async function assignStandbyGuardAction(payload: {
   per_hour_rate?: number;
   qc_flat_rate?: number;
   travel_fee?: number;
+  personnel_profile_id?: string | null;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const assignmentItem: any = {
       guard_id: payload.guard_id,
+      personnel_profile_id: payload.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e",
       shift_ids: [payload.shift_id],
-      ...(payload.per_hour_rate && payload.per_hour_rate > 0 ? { per_hour_rate: payload.per_hour_rate } : {}),
-      ...(payload.qc_flat_rate && payload.qc_flat_rate > 0 ? { qc_flat_rate: payload.qc_flat_rate } : {}),
-      ...(payload.travel_fee && payload.travel_fee > 0 ? { travel_fee: payload.travel_fee } : {}),
     };
+    if (typeof payload.per_hour_rate === "number" && !isNaN(payload.per_hour_rate) && payload.per_hour_rate > 0) {
+      assignmentItem.per_hour_rate = payload.per_hour_rate;
+    }
+    if (typeof payload.qc_flat_rate === "number" && !isNaN(payload.qc_flat_rate) && payload.qc_flat_rate > 0) {
+      assignmentItem.qc_flat_rate = payload.qc_flat_rate;
+    }
     const body = {
       invoice_id: payload.invoice_id,
       assignments: [assignmentItem],
@@ -745,14 +875,20 @@ export async function assignStandbyGuardAction(payload: {
 export async function reassignLeadGuardAction(payload: {
   shift_id: string;
   guard_id: string;
+  personnel_profile_id?: string | null;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
-    console.log("[API Request] POST /api/v1/shift/reassign-lead-guard Payload:", payload);
+    const body = {
+      shift_id: payload.shift_id,
+      guard_id: payload.guard_id,
+      personnel_profile_id: payload.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e",
+    };
+    console.log("[API Request] POST /api/v1/shift/reassign-lead-guard Payload:", body);
     const res = await apiFetch<{ success: boolean; message?: string }>(
       `/api/v1/shift/reassign-lead-guard`,
       {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       }
     );
     console.log("[API Response] POST /api/v1/shift/reassign-lead-guard Response:", res);
@@ -767,14 +903,20 @@ export async function reassignLeadGuardAction(payload: {
 export async function reassignStandbyGuardAction(payload: {
   shift_id: string;
   guard_id: string;
+  personnel_profile_id?: string | null;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
-    console.log("[API Request] POST /api/v1/shift/reassign-standby-guard Payload:", payload);
+    const body = {
+      shift_id: payload.shift_id,
+      guard_id: payload.guard_id,
+      personnel_profile_id: payload.personnel_profile_id || "afa86a21-72e8-4629-85a7-b1f2052f278e",
+    };
+    console.log("[API Request] POST /api/v1/shift/reassign-standby-guard Payload:", body);
     const res = await apiFetch<{ success: boolean; message?: string }>(
       `/api/v1/shift/reassign-standby-guard`,
       {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       }
     );
     console.log("[API Response] POST /api/v1/shift/reassign-standby-guard Response:", res);
@@ -919,16 +1061,18 @@ export async function findAvailableGuardsAction(payload: {
   invoice_id: string;
   shift_ids: string[];
   guard_ids: string[];
-}): Promise<{ success: boolean; message?: string; error?: string }> {
+  location?: string;
+  source?: string;
+}): Promise<{ success: boolean; message?: string; data?: any; error?: string }> {
   try {
-    const res = await apiFetch<{ success: boolean; message?: string }>(
+    const res = await apiFetch<{ success: boolean; message?: string; data?: any }>(
       `/api/v1/invoice/find-available-guards`,
       {
         method: "POST",
         body: JSON.stringify(payload),
       }
     );
-    return { success: true, message: res.message };
+    return { success: true, message: res.message, data: res.data };
   } catch (error: any) {
     const message = error.message || "Something went wrong";
     return { success: false, error: message };
@@ -1013,6 +1157,8 @@ export async function updateShiftDetailsAction(payload: {
   per_hour_rate?: number;
   per_shift_rate?: number;
   travel_fee?: number;
+  geofence_radius?: number;
+  is_required_attachment?: boolean | null;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     console.log("[Server Action] updateShiftDetailsAction PATCH Payload to /api/v1/shift/details:", JSON.stringify(payload, null, 2));
@@ -1043,6 +1189,26 @@ export async function manualStartShiftAction(payload: {
     return { success: true };
   } catch (error: any) {
     console.error("[Server Action] manualStartShiftAction error:", error);
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message };
+  }
+}
+
+export async function manualEndShiftAction(payload: {
+  shift_id: string;
+  end_type: string;
+  manual_shift_end_reason: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    console.log("[Server Action] manualEndShiftAction POST Payload to /api/v1/shift/manual-shift-end:", payload);
+    const result = await apiFetch<any>(`/api/v1/shift/manual-shift-end`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    console.log("[Server Action] manualEndShiftAction POST Response:", result);
+    return { success: true, message: result?.message || "Shift ended" };
+  } catch (error: any) {
+    console.error("[Server Action] manualEndShiftAction error:", error);
     const message = error.message || "Something went wrong";
     return { success: false, error: message };
   }

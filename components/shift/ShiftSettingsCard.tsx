@@ -10,6 +10,7 @@ interface ShiftSettingsForm {
   guard_break_max_duration: string;
   guard_break_limit: string;
   geofence_radius: string;
+  is_required_attachment: string;
 }
 
 interface ShiftSettingsCardProps {
@@ -32,6 +33,7 @@ export function ShiftSettingsCard({
     guard_break_max_duration: "",
     guard_break_limit: "1",
     geofence_radius: "150",
+    is_required_attachment: "",
   });
 
   useEffect(() => {
@@ -44,6 +46,10 @@ export function ShiftSettingsCard({
         guard_break_max_duration: initialSettings.guard_break_max_duration || "",
         guard_break_limit: initialSettings.guard_break_limit || "1",
         geofence_radius: initialSettings.geofence_radius || "150",
+        is_required_attachment:
+          initialSettings.is_required_attachment !== undefined && initialSettings.is_required_attachment !== null
+            ? String(initialSettings.is_required_attachment)
+            : "",
       });
     }
   }, [isOpen]);
@@ -59,7 +65,7 @@ export function ShiftSettingsCard({
         <h2 className="text-lg font-bold text-slate-800">Shift Settings</h2>
         <p className="text-xs text-slate-500 mt-1">Configure intervals, break durations and limits for this shift.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-1.5">
           <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Create Checkpoint Interval</Label>
           <select
@@ -96,6 +102,24 @@ export function ShiftSettingsCard({
           </div>
         </div>
         <div className="space-y-1.5">
+          <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Geofence Radius (Meters)</Label>
+          <Input
+            type="number"
+            min={0}
+            value={form.geofence_radius}
+            onKeyDown={(e) => {
+              if (e.key === "-" || e.key === "e" || e.key === ".") e.preventDefault();
+            }}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val.includes("-") || val.includes(".")) return;
+              setForm(prev => ({ ...prev, geofence_radius: val }));
+            }}
+            placeholder="e.g. 150"
+            className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
+          />
+        </div>
+        <div className="space-y-1.5">
           <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Guard Break Limit (Count)</Label>
           <Input
             type="number"
@@ -114,22 +138,16 @@ export function ShiftSettingsCard({
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Geofence Radius (Meters)</Label>
-          <Input
-            type="number"
-            min={0}
-            value={form.geofence_radius}
-            onKeyDown={(e) => {
-              if (e.key === "-" || e.key === "e" || e.key === ".") e.preventDefault();
-            }}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val.includes("-") || val.includes(".")) return;
-              setForm(prev => ({ ...prev, geofence_radius: val }));
-            }}
-            placeholder="e.g. 150"
-            className="h-11 bg-slate-50 border-slate-200 focus:bg-white focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800"
-          />
+          <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Require Attachments from Guard</Label>
+          <select
+            value={form.is_required_attachment}
+            onChange={(e) => setForm(prev => ({ ...prev, is_required_attachment: e.target.value }))}
+            className="w-full h-11 px-3 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0064cb]/5 focus:border-[#0064cb] rounded-lg text-sm text-slate-800 transition-all cursor-pointer"
+          >
+            <option value="">Select Attachments</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
         </div>
       </div>
       <div className="mt-6 pt-6 border-t border-slate-100 flex items-center justify-end gap-3">

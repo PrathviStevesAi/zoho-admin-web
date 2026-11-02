@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -10,7 +10,14 @@ import {
   Trash2,
   Loader2,
   Eye,
-  KeyRound
+  KeyRound,
+  Clock,
+  Ban,
+  Archive,
+  Unlock,
+  ArchiveRestore,
+  CheckCircle2,
+  Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -23,6 +30,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { clientResendGuardPasswordAction } from "@/lib/client-actions";
 import { ConfirmationDialog } from "./confirmation-dialog";
+import { AccountStatusDialog, AccountStatusActionType } from "./account-status-dialog";
+import { getPreviousPath, popPreviousPath } from "@/lib/navigation-history";
 
 interface GuardHeaderProps {
   guard: any;
@@ -36,6 +45,9 @@ interface GuardHeaderProps {
   setEditForm: (form: any) => void;
   getTabParam: () => string;
   getStatusBreadcrumb: () => string;
+  setIsHistoryOpen?: (val: boolean) => void;
+  setIsUpdateProviderModalOpen?: (val: boolean) => void;
+  onUpdateAccountStatus?: (status: string, reason?: string) => Promise<boolean | void> | boolean | void;
 }
 
 export function GuardHeader({
@@ -49,7 +61,10 @@ export function GuardHeader({
   setDeleteConfirmOpen,
   setEditForm,
   getTabParam,
-  getStatusBreadcrumb
+  getStatusBreadcrumb,
+  setIsHistoryOpen,
+  setIsUpdateProviderModalOpen,
+  onUpdateAccountStatus
 }: GuardHeaderProps) {
   const router = useRouter();
   const [resendPasswordConfirm, setResendPasswordConfirm] = useState<{
@@ -58,6 +73,28 @@ export function GuardHeader({
     guardName: string;
   }>({ isOpen: false, guardId: "", guardName: "" });
   const [isResendingPassword, setIsResendingPassword] = useState(false);
+
+  const [statusConfirm, setStatusConfirm] = useState<{
+    isOpen: boolean;
+    actionType: AccountStatusActionType;
+    accountStatus: string;
+  }>({ isOpen: false, actionType: "", accountStatus: "active" });
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  const handleActionClick = (actionType: AccountStatusActionType, targetStatus: string) => {
+    setStatusConfirm({ isOpen: true, actionType, accountStatus: targetStatus });
+  };
+
+  const handleConfirmStatusChange = async (reason?: string) => {
+    if (!statusConfirm.accountStatus || !onUpdateAccountStatus) return;
+    setIsUpdatingStatus(true);
+    try {
+      await onUpdateAccountStatus(statusConfirm.accountStatus, reason);
+      setStatusConfirm({ isOpen: false, actionType: "", accountStatus: "active" });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   const handleNavigateToOverview = () => {
     const targetGuardId = guard?.guard_id || guard?.user_id || guard?.id || "";
@@ -87,6 +124,21 @@ export function GuardHeader({
     setResendPasswordConfirm({ isOpen: false, guardId: "", guardName: "" });
   };
 
+  const [previousPath, setPreviousPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    const prev = getPreviousPath();
+    if (prev) {
+      setPreviousPath(prev);
+    }
+  }, []);
+
+  const handleBack = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const target = popPreviousPath() || previousPath || `/guard-bank?tab=${getTabParam()}`;
+    router.push(target);
+  };
+
   return (
     <div className="flex flex-col gap-3 w-full">
       <div className="flex flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 w-full">
@@ -94,14 +146,38 @@ export function GuardHeader({
           <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-slate-700 text-[11px] sm:text-[13px] mb-1">
             <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">Dashboard</Link>
             <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-            <Link href="/guard-bank" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Guard Bank</Link>
-            <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-            <Link href={`/guard-bank?tab=${getTabParam()}`} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">{getStatusBreadcrumb()}</Link>
+            {previousPath?.startsWith("/users-directory/guards") ? (
+              <>
+                <Link href="/users-directory/guards" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Users Directory</Link>
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                <Link href={previousPath} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Guards</Link>
+              </>
+            ) : previousPath?.startsWith("/users-directory/customers") ? (
+              <>
+                <Link href="/users-directory/customers" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Users Directory</Link>
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                <Link href={previousPath} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Customers</Link>
+              </>
+            ) : previousPath?.startsWith("/member-activity") ? (
+              <>
+                <Link href={previousPath} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Member Activity</Link>
+              </>
+            ) : (
+              <>
+                <Link href="/guard-bank" className="hover:text-[#0064cb] transition-colors whitespace-nowrap">Guard Bank</Link>
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                <Link href={`/guard-bank?tab=${getTabParam()}`} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">{getStatusBreadcrumb()}</Link>
+              </>
+            )}
             <ChevronRight className="w-3.5 h-3.5 shrink-0 hidden sm:block" />
             <span className="text-slate-600 font-medium whitespace-nowrap hidden sm:block">Guard Details</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link href={`/guard-bank?tab=${getTabParam()}`} className="p-1.5 sm:p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all">
+            <Link
+              href={previousPath || `/guard-bank?tab=${getTabParam()}`}
+              onClick={handleBack}
+              className="p-1.5 sm:p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all cursor-pointer"
+            >
               <ArrowLeft className="w-4 h-4 sm:w-4 sm:h-4" />
             </Link>
             <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">Guard Details</h1>
@@ -140,6 +216,24 @@ export function GuardHeader({
                   Edit Application
                 </DropdownMenuItem>
               )}
+              {guard.action?.is_show_history && (
+                <DropdownMenuItem
+                  onClick={() => setIsHistoryOpen?.(true)}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <Clock className="w-4 h-4" />
+                  History
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_update_provider && (
+                <DropdownMenuItem
+                  onClick={() => setIsUpdateProviderModalOpen?.(true)}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <Building2 className="w-4 h-4 text-[#0064cb]" />
+                  Update Provider
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={handleResendPassword} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                 <KeyRound className="w-4 h-4" />
                 Resend Password
@@ -148,6 +242,51 @@ export function GuardHeader({
                 <DropdownMenuItem onClick={() => setIsUpdateLevelModalOpen(true)} className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700">
                   <Shield className="w-4 h-4" />
                   Update Level
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_blocked && (
+                <DropdownMenuItem
+                  onClick={() => handleActionClick("blocked", "blocked")}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <Ban className="w-4 h-4 text-red-500" />
+                  Blocked
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_archived && (
+                <DropdownMenuItem
+                  onClick={() => handleActionClick("archived", "archived")}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <Archive className="w-4 h-4 text-slate-500" />
+                  Archived
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_unblocked && (
+                <DropdownMenuItem
+                  onClick={() => handleActionClick("unblocked", "active")}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <Unlock className="w-4 h-4 text-emerald-600" />
+                  Unblocked
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_unarchived && (
+                <DropdownMenuItem
+                  onClick={() => handleActionClick("unarchived", "active")}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <ArchiveRestore className="w-4 h-4 text-blue-600" />
+                  Unarchived
+                </DropdownMenuItem>
+              )}
+              {guard.action?.is_active && (
+                <DropdownMenuItem
+                  onClick={() => handleActionClick("active", "active")}
+                  className="cursor-pointer gap-2 py-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg text-slate-700"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Active
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={() => setDeleteConfirmOpen(true)} className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 focus:text-red-600 rounded-lg text-red-500 hover:text-red-600">
@@ -178,6 +317,15 @@ export function GuardHeader({
         cancelText="Cancel"
         isDanger={false}
         isLoading={isResendingPassword}
+      />
+
+      <AccountStatusDialog
+        isOpen={statusConfirm.isOpen}
+        onClose={() => setStatusConfirm({ isOpen: false, actionType: "", accountStatus: "active" })}
+        onConfirm={handleConfirmStatusChange}
+        actionType={statusConfirm.actionType}
+        guardName={`${guard?.first_name || ""} ${guard?.last_name || ""}`.trim() || guard?.name}
+        isLoading={isUpdatingStatus}
       />
     </div>
   );

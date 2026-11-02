@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Loader2 } from "lucide-react";
 
@@ -26,6 +26,7 @@ export function BadgeViewDialog({
       <DialogContent className="max-w-md bg-white p-6 rounded-lg shadow-xl font-sans flex flex-col items-center border border-slate-100">
         <DialogHeader className="border-b border-slate-100 pb-3 w-full flex flex-row items-center justify-between">
           <DialogTitle className="text-lg font-bold text-slate-800">Badge ID</DialogTitle>
+          <DialogDescription className="sr-only">View guard badge ID preview</DialogDescription>
         </DialogHeader>
         
         <div className="py-6 flex flex-col items-center justify-center">

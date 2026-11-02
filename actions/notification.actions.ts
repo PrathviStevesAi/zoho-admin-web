@@ -71,6 +71,29 @@ export async function fetchShiftReportsAction(shiftId: string): Promise<{ succes
     }
 }
 
+export async function estimateBroadcastNotificationAction(payload: {
+    title?: string;
+    message?: string;
+    send_in_app?: boolean;
+    send_sms?: boolean;
+    send_to_all: boolean;
+    guard_ids?: string[];
+    estimate_cost?: number;
+}): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+        console.log("[estimateBroadcastNotificationAction] Payload:", payload);
+        const response = await apiFetch<any>(`/api/v1/notification/broadcast/estimate`, {
+            method: "POST",
+            body: JSON.stringify(payload),
+        });
+        console.log("[estimateBroadcastNotificationAction] Response:", response);
+        return { success: true, data: response };
+    } catch (error: any) {
+        console.error("Error estimating broadcast notification:", error);
+        return { success: false, error: error.message || "Failed to estimate broadcast cost" };
+    }
+}
+
 export async function sendBroadcastNotificationAction(payload: {
     title: string;
     message: string;
@@ -78,12 +101,22 @@ export async function sendBroadcastNotificationAction(payload: {
     send_sms: boolean;
     send_to_all: boolean;
     guard_ids: string[];
+    estimate_cost?: number;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-        console.log("[sendBroadcastNotificationAction] Payload:", payload);
+        const body = {
+            title: payload.title,
+            message: payload.message,
+            send_in_app: payload.send_in_app,
+            send_sms: payload.send_sms,
+            send_to_all: payload.send_to_all,
+            guard_ids: payload.guard_ids,
+            estimate_cost: payload.estimate_cost ?? 0,
+        };
+        console.log("[sendBroadcastNotificationAction] Payload:", body);
         const response = await apiFetch<unknown>(`/api/v1/notification/broadcast`, {
             method: "POST",
-            body: JSON.stringify(payload),
+            body: JSON.stringify(body),
         });
         return { success: true, message: (response as { message?: string })?.message || "Notification broadcasted successfully!" };
     } catch (error: unknown) {
@@ -102,6 +135,85 @@ export async function deleteNotificationsAction(notificationIds: string[]): Prom
     } catch (error: any) {
         console.error(`Error deleting notifications:`, error);
         return { success: false, error: error.message || "Failed to delete notifications" };
+    }
+}
+
+export interface BroadcastHistoryItem {
+    id: string;
+    source: string;
+    message: string;
+    send_at: string;
+    recipients_count: number;
+    sent_by?: string | { name?: string; role?: string } | null;
+    estimate_cost?: number | string | null;
+    estimate_value?: number | string | null;
+}
+
+export interface BroadcastHistoryResponse {
+    success: boolean;
+    data: BroadcastHistoryItem[];
+    pagination: {
+        total: number;
+        page: number;
+        limit: number;
+    };
+    error?: string;
+}
+
+export async function fetchBroadcastHistoryAction(page: number = 1, limit: number = 20): Promise<BroadcastHistoryResponse> {
+    try {
+        const response = await apiFetch<BroadcastHistoryResponse>(
+            `/api/v1/notification/broadcast?type=history&page=${page}&limit=${limit}`
+        );
+        return response;
+    } catch (error: unknown) {
+        console.error("Error fetching broadcast history:", error);
+        return {
+            success: false,
+            data: [],
+            pagination: { total: 0, page: 1, limit: 20 },
+            error: (error as Error)?.message || "Failed to load broadcast history",
+        };
+    }
+}
+
+export interface BroadcastRecipientItem {
+    id: string;
+    name: string;
+    email: string;
+    address?: string;
+    phone_number?: string;
+}
+
+export interface BroadcastRecipientsResponse {
+    success: boolean;
+    data: BroadcastRecipientItem[];
+    pagination: {
+        total: number;
+        page: number;
+        limit: number;
+    };
+    error?: string;
+}
+
+export async function fetchBroadcastRecipientsAction(
+    messageId: string,
+    page: number = 1,
+    limit: number = 20
+): Promise<BroadcastRecipientsResponse> {
+    try {
+        const response = await apiFetch<BroadcastRecipientsResponse>(
+            `/api/v1/notification/broadcast?type=recipients&message_id=${messageId}&page=${page}&limit=${limit}`
+        );
+        return response;
+    } catch (error: unknown) {
+        console.error("Error fetching broadcast recipients:", error);
+        return {
+            success: false,
+            data: [],
+            pagination: { total: 0, page: 1, limit: 20 },
+            error: (error as Error)?.message || "Failed to load broadcast recipients",
+        };
     }
 }
 

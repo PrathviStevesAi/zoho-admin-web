@@ -1,7 +1,7 @@
 "use client";
 
 import { getSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -9,12 +9,16 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, toFullCountryName } from "@/lib/utils";
 import { FormattedDate } from "@/components/ui/formatted-date";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "../components/confirmation-dialog";
 import { BadgeCreateDialog } from "../components/badge-create-dialog";
 import { Country, State, City } from "country-state-city";
+import {
+  getSubcontractorLocationAction,
+  SubcontractorState,
+} from "@/actions/subcontractor.actions";
 import { US_STATE_CITY_DATA } from "../../../subcontractor/components/StaticData";
 
 const ALLOWED_COUNTRIES = ["US", "CA", "AR", "BO", "BR", "CL", "CO", "EC", "GY", "PY", "PE", "SR", "UY", "VE"];
@@ -29,6 +33,8 @@ import { GuardAddress } from "../components/guard-address";
 import { GuardDocuments } from "../components/guard-documents";
 import { GuardPreviousEmployment } from "../components/guard-previous-employment";
 import { GuardNotesAndBadge } from "../components/guard-notes-and-badge";
+import { GuardHistoryDrawer } from "../components/guard-history-drawer";
+import { UpdateProviderDialog } from "../components/update-provider-dialog";
 
 const phoneCountries = [
   { name: "Argentina", code: "ar", dialCode: "+54" },
@@ -58,6 +64,7 @@ export default function GuardDetailPage() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [notes, setNotes] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isGeneratingBadge, setIsGeneratingBadge] = useState(false);
@@ -65,6 +72,7 @@ export default function GuardDetailPage() {
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isUpdateLevelModalOpen, setIsUpdateLevelModalOpen] = useState(false);
   const [isUpdatingLevel, setIsUpdatingLevel] = useState(false);
+  const [isUpdateProviderModalOpen, setIsUpdateProviderModalOpen] = useState(false);
   const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
@@ -75,44 +83,110 @@ export default function GuardDetailPage() {
   const [localFileNames, setLocalFileNames] = useState<Record<string, string>>({});
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [countries, setCountries] = useState<any[]>([]);
-  const [states, setStates] = useState<any[]>([]);
+  const [countries, setCountries] = useState<string[]>([]);
+  const [states, setStates] = useState<SubcontractorState[]>([]);
   const [cities, setCities] = useState<any[]>([]);
+  const [isCountriesLoading, setIsCountriesLoading] = useState(false);
+  const [isStatesLoading, setIsStatesLoading] = useState(false);
+
+  const normalizedEditCountry = toFullCountryName(editForm.country);
 
   useEffect(() => {
-    const allCountries = Country.getAllCountries().filter(c => ALLOWED_COUNTRIES.includes(c.isoCode));
-    setCountries(allCountries);
+    let isCancelled = false;
+
+    async function loadInitialLocations() {
+      setIsCountriesLoading(true);
+      if (normalizedEditCountry) {
+        setIsStatesLoading(true);
+      }
+      try {
+        const res = await getSubcontractorLocationAction(normalizedEditCountry || undefined);
+        if (!isCancelled && res.success && res.data) {
+          if (res.data.countries?.length) {
+            setCountries(res.data.countries);
+          }
+          if (res.data.states) {
+            setStates(res.data.states);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading subcontractor locations in guard edit:", e);
+      } finally {
+        if (!isCancelled) {
+          setIsCountriesLoading(false);
+          setIsStatesLoading(false);
+        }
+      }
+    }
+
+    loadInitialLocations();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
+  const prevEditCountryRef = useRef<string>(normalizedEditCountry);
   useEffect(() => {
-    if (editForm.country === "US") {
-      const usStates = Object.entries(US_STATE_CITY_DATA).map(([name, data]) => ({
-        isoCode: data.short_code,
-        name: name,
-      }));
-      setStates(usStates);
-    } else if (editForm.country) {
-      setStates(State.getStatesOfCountry(editForm.country));
-    } else {
+    if (prevEditCountryRef.current === normalizedEditCountry) return;
+    prevEditCountryRef.current = normalizedEditCountry;
+
+    if (!normalizedEditCountry) {
       setStates([]);
+      return;
     }
-  }, [editForm.country]);
+
+    let isCancelled = false;
+    setIsStatesLoading(true);
+
+    getSubcontractorLocationAction(normalizedEditCountry)
+      .then((res) => {
+        if (!isCancelled && res.success && res.data) {
+          if (res.data.countries?.length) {
+            setCountries(res.data.countries);
+          }
+          setStates(res.data.states || []);
+        }
+      })
+      .catch((e) => {
+        console.error("Error fetching states in guard edit:", e);
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsStatesLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [normalizedEditCountry]);
 
   useEffect(() => {
-    if (editForm.country === "US" && editForm.state) {
-      const stateData = Object.values(US_STATE_CITY_DATA).find(s => s.short_code === editForm.state);
-      if (stateData) {
-        const usCities = stateData.cities.map(city => ({ name: city }));
-        setCities(usCities);
-      } else {
-        setCities([]);
+    const countryIso =
+      normalizedEditCountry === "United States"
+        ? "US"
+        : normalizedEditCountry === "Canada"
+        ? "CA"
+        : normalizedEditCountry;
+
+    if (countryIso && editForm.state) {
+      let stateCode = editForm.state;
+      if (editForm.state.length > 2) {
+        const found = states.find(
+          (s: any) =>
+            s.name?.toLowerCase() === editForm.state.toLowerCase() ||
+            s.short_code === editForm.state
+        );
+        if (found) stateCode = found.short_code;
       }
-    } else if (editForm.country && editForm.state) {
-      setCities(City.getCitiesOfState(editForm.country, editForm.state));
+      setCities(City.getCitiesOfState(countryIso, stateCode) || []);
+    } else if (countryIso === "US") {
+      setCities(City.getCitiesOfCountry("US") || []);
     } else {
       setCities([]);
     }
-  }, [editForm.state, editForm.country]);
+  }, [editForm.state, normalizedEditCountry, states]);
 
   const [selectedPhoneCountry, setSelectedPhoneCountry] = useState(phoneCountries[11]);
   const [isPhoneDropdownOpen, setIsPhoneDropdownOpen] = useState(false);
@@ -158,10 +232,11 @@ export default function GuardDetailPage() {
     if (!editForm.phone_number) errors.phone_number = "Phone number is required";
     if (!editForm.country) errors.country = "Country is required";
     if (!editForm.state) errors.state = "State is required";
+    if (editForm.zip_code_error) errors.zip_code = editForm.zip_code_error;
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
-      toast.error("Please fill all required fields");
+      toast.error(errors.zip_code || "Please fill all required fields");
       return;
     }
 
@@ -174,7 +249,8 @@ export default function GuardDetailPage() {
       "english_language", "gender", "ethnicity", "veteran_status", "disability_status", "notes",
       "profile_img_url", "previous_employer_name", "previous_employer_position_and_duties",
       "previous_employment_start_date", "previous_employment_end_date",
-      "previous_employment_end_reason", "previous_employer_rehire_eligible"
+      "previous_employment_end_reason", "previous_employer_rehire_eligible",
+      "personnel_profile_id"
     ];
 
     const payload: any = {};
@@ -183,7 +259,13 @@ export default function GuardDetailPage() {
       if (key.startsWith("previous_") && guard.previous_employee_info) {
         originalVal = guard.previous_employee_info[key];
       }
-      if (editForm[key] !== originalVal && allowedKeys.includes(key)) {
+      if (key === "country") {
+        const fullEditCountry = toFullCountryName(editForm[key]);
+        const fullOrigCountry = toFullCountryName(originalVal);
+        if (fullEditCountry && (fullEditCountry !== fullOrigCountry || editForm[key] !== originalVal)) {
+          payload[key] = fullEditCountry;
+        }
+      } else if (editForm[key] !== originalVal && allowedKeys.includes(key)) {
         if (key === "phone_number" && typeof editForm[key] === "string") {
           payload[key] = editForm[key].replace(/\s/g, "");
         } else {
@@ -378,6 +460,50 @@ export default function GuardDetailPage() {
       toast.error("An error occurred while updating the guard level");
     } finally {
       setIsUpdatingLevel(false);
+    }
+  };
+
+  const handleUpdateAccountStatus = async (accountStatus: string, reason?: string) => {
+    try {
+      const session = await getSession() as any;
+      const token = session?.accessToken;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const url = `${baseUrl}/api/v1/guard/bank/application/${id}`;
+
+      const payload: { account_status: string; reason?: string } = {
+        account_status: accountStatus
+      };
+
+      if (accountStatus === "archived") {
+        payload.reason = reason && reason.trim() !== "" ? reason.trim() : "Archived by admin";
+      } else if (accountStatus === "blocked" && reason && reason.trim() !== "") {
+        payload.reason = reason.trim();
+      }
+
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success !== false) {
+        toast.success(data.message || `Guard status updated successfully`);
+        fetchGuardDetails();
+        return true;
+      } else {
+        toast.error(getErrorMessage(data, "Failed to update guard status"));
+        return false;
+      }
+    } catch (error: any) {
+      console.error("Failed to update status:", error);
+      toast.error(error?.message || "An error occurred while updating status");
+      return false;
     }
   };
 
@@ -663,6 +789,9 @@ export default function GuardDetailPage() {
     if (key.startsWith("previous_") && guard.previous_employee_info) {
       originalVal = guard.previous_employee_info[key];
     }
+    if (key === "country") {
+      return toFullCountryName(editForm[key]) !== toFullCountryName(originalVal);
+    }
     return editForm[key] !== originalVal;
   });
 
@@ -682,6 +811,9 @@ export default function GuardDetailPage() {
         setEditForm={setEditForm}
         getTabParam={getTabParam}
         getStatusBreadcrumb={getStatusBreadcrumb}
+        setIsHistoryOpen={setIsHistoryOpen}
+        setIsUpdateProviderModalOpen={setIsUpdateProviderModalOpen}
+        onUpdateAccountStatus={handleUpdateAccountStatus}
       />
 
       <GuardProfileSummary
@@ -722,6 +854,8 @@ export default function GuardDetailPage() {
             states={states}
             cities={cities}
             formErrors={formErrors}
+            isCountriesLoading={isCountriesLoading}
+            isStatesLoading={isStatesLoading}
           />
 
           <GuardPreferences
@@ -794,6 +928,13 @@ export default function GuardDetailPage() {
       <ConfirmationDialog isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} onConfirm={handleDeleteApplication} title="Delete Guard Application?" description="Are you sure you want to delete this guard application? This action cannot be undone." confirmText="Yes, delete it" isDanger={true} isLoading={isDeleting} />
       <BadgeCreateDialog isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} defaultName={`${guard.first_name || ""} ${guard.last_name || ""}`.trim()} defaultEmail={guard.email || ""} defaultHeadshotUrl={guard.headshot_image_url || ""} onSubmit={handleCreateBadgeSubmit} isSubmitting={isGeneratingBadge} />
       <BadgeViewDialog isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} badgeUrl={guard.guard_badge_url || ""} onDownload={handleDownloadBadge} onDelete={handleDeleteBadge} isDeleting={isDeletingBadge} />
+      <GuardHistoryDrawer isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} history={guard?.history} />
+      <UpdateProviderDialog
+        isOpen={isUpdateProviderModalOpen}
+        onClose={() => setIsUpdateProviderModalOpen(false)}
+        guard={guard}
+        onSuccess={fetchGuardDetails}
+      />
     </div>
   );
 }

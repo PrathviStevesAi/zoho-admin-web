@@ -14,6 +14,7 @@ import {
 } from "./status-sections";
 import { GuardLevelSection } from "./guard-level-section";
 import { registerGuardAction } from "@/actions/auth.actions";
+import { toFullCountryName } from "@/lib/utils";
 
 export function GuardRegistrationForm({ onBack, countries }: any) {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -26,10 +27,11 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     email: "",
     phone: "",
     streetAddress: "",
-    addressCountry: "",
+    addressCountry: "United States",
     addressState: "",
     city: "",
     zipCode: "",
+    zipCodeError: "",
     licenseNumber: "",
     licenseExpirationDate: "",
     gender: "",
@@ -41,6 +43,8 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
     reliableTransport: "",
     holdUnarmedLicense: "",
     holdArmedLicense: "",
+    personnel_profile_id: "",
+    personnelProfileError: "",
     englishProficiency: "",
     voluntaryGender: "",
     raceEthnicity: "",
@@ -85,6 +89,22 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
       newErrors.stateError = "State is required";
       hasRequiredError = true;
     }
+    if (formData.zipCodeError) {
+      newErrors.zipCodeError = formData.zipCodeError;
+      hasRequiredError = true;
+    }
+    if (!formData.holdUnarmedLicense) {
+      newErrors.holdUnarmedLicenseError = "Unarmed license selection is required";
+      hasRequiredError = true;
+    }
+    if (!formData.holdArmedLicense) {
+      newErrors.holdArmedLicenseError = "Armed license selection is required";
+      hasRequiredError = true;
+    }
+    if (!formData.personnel_profile_id || formData.personnel_profile_id === "all") {
+      newErrors.personnelProfileError = "Provider is required";
+      hasRequiredError = true;
+    }
     if (!formData.guardLevel) {
       newErrors.guardLevelError = "Guard level is required";
       hasRequiredError = true;
@@ -107,9 +127,12 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
 
     const formattedPhone = `${selectedCountry.dialCode}${formData.phone}`;
 
+    const fullCountryName = toFullCountryName(formData.addressCountry);
+
     const payload = {
       email: formData.email,
       phone_number: formattedPhone,
+      personnel_profile_id: formData.personnel_profile_id,
       license_number: formData.licenseNumber,
       license_expiration_date: formData.licenseExpirationDate,
       resume_url: typeof formData.resumeFile === 'string' ? formData.resumeFile : "",
@@ -121,7 +144,7 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
       first_name: formData.firstName,
       last_name: formData.lastName,
       street_address: formData.streetAddress,
-      country: formData.addressCountry,
+      country: fullCountryName,
       state: formData.addressState,
       city: formData.city,
       zip_code: formData.zipCode,
@@ -211,7 +234,16 @@ export function GuardRegistrationForm({ onBack, countries }: any) {
           setFormData={setFormData}
         />
 
-        <div className="flex justify-center mt-8">
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isRegistering}
+            onClick={onBack}
+            className="cursor-pointer h-12 px-8 border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 rounded-xl font-bold transition-all active:scale-95 disabled:opacity-70 text-base"
+          >
+            Cancel
+          </Button>
           <Button
             type="submit"
             disabled={isRegistering}

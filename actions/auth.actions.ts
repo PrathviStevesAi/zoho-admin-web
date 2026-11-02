@@ -2,6 +2,7 @@
 
 import { signIn, auth, signOut } from "@/lib/auth";
 import { AuthError } from "next-auth";
+import { toFullCountryName } from "@/lib/utils";
 
 export async function preCheckLoginAction(formData: { email: string; password: string }) {
     try {
@@ -135,6 +136,13 @@ export async function registerGuardAction(guardData: any) {
 export async function registerCustomerAction(customerData: any) {
     try {
         const session = await auth();
+
+        if (customerData?.billing_address?.country) {
+            customerData.billing_address.country = toFullCountryName(customerData.billing_address.country) || "United States";
+        }
+        if (customerData?.service_address?.country) {
+            customerData.service_address.country = toFullCountryName(customerData.service_address.country) || "United States";
+        }
 
         console.log("Sending customer registration data:", customerData);
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/customer/register`, {

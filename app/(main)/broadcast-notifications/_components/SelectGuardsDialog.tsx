@@ -1,16 +1,17 @@
 "use client";
 
 import {
-  clientFetchGuardsAction
+  clientFetchGuardsNewAction,
+  FetchGuardsByLocationParams
 } from "@/lib/client-actions";
 import { useState, useEffect } from "react";
-import { XCircle } from "lucide-react";
+import { XCircle, Star, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchLocationAction } from "@/actions/dashboard.actions";
 import useDebounceValue from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Pagination } from "@/types/dashboard.types";
+import { GuardProviderFilter } from "@/app/(main)/guard-bank/components/guard-provider-filter";
 import {
   Dialog,
   DialogContent,
@@ -44,24 +45,37 @@ export interface GuardItem {
   armed?: boolean;
   unarmed?: boolean;
   address?: string;
+  guard_level?: number;
+  account_status?: string;
   status?: boolean;
+  personnel_profile?: {
+    id?: string;
+    name?: string;
+    profile_type?: string;
+    type?: string;
+  } | null;
+  profile_type?: string;
+  personnel_profile_id?: string;
+  is_app_download?: boolean;
 }
 
 interface SelectGuardsDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (guardIds: string[]) => void;
+  onConfirm: (guardIds: string[]) => void | Promise<void>;
   initialSelectedIds: string[];
+  isSubmitting?: boolean;
 }
 
-export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelectedIds }: SelectGuardsDialogProps) {
+export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelectedIds, isSubmitting }: SelectGuardsDialogProps) {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userFilters, setUserFilters] = useState({
     country: "All Country",
     state: "All State",
     city: "All City",
-    status: "all",
-    service: "All"
+    service: "All",
+    level: "All",
+    provider: "all",
   });
   const [locations, setLocations] = useState<{ countries: string[], states: string[], cities: string[] }>({
     countries: [],
@@ -69,19 +83,34 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
     cities: []
   });
   const [guards, setGuards] = useState<GuardItem[]>([]);
+  const [totalGuards, setTotalGuards] = useState<number>(0);
   const [isLoadingGuards, setIsLoadingGuards] = useState(false);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearchQuery = useDebounceValue(userSearchQuery, 500);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds || []);
+  const [internalSubmitting, setInternalSubmitting] = useState(false);
+  const submitting = isSubmitting ?? internalSubmitting;
+
+  const handleConfirm = async () => {
+    try {
+      setInternalSubmitting(true);
+      await Promise.resolve(onConfirm(selectedIds));
+      onClose();
+    } catch (err) {
+      console.error("Failed to confirm selected guards:", err);
+    } finally {
+      setInternalSubmitting(false);
+    }
+  };
+
   const isFilterActive =
-    debouncedSearchQuery !== "" ||
-    userFilters.country !== "All Country" ||
-    userFilters.state !== "All State" ||
-    userFilters.city !== "All City" ||
-    userFilters.status !== "all" ||
-    userFilters.service !== "All";
+    Boolean(debouncedSearchQuery && debouncedSearchQuery.trim()) ||
+    (userFilters.country && userFilters.country !== "All Country") ||
+    (userFilters.state && userFilters.state !== "All State") ||
+    (userFilters.city && userFilters.city !== "All City") ||
+    (userFilters.service && userFilters.service !== "All") ||
+    (userFilters.level && userFilters.level !== "All") ||
+    (userFilters.provider && userFilters.provider !== "all");
 
   useEffect(() => {
     if (!isOpen) {
@@ -90,13 +119,16 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
         country: "All Country",
         state: "All State",
         city: "All City",
-        status: "all",
-        service: "All"
+        service: "All",
+        level: "All",
+        provider: "all",
       });
-      setCurrentPage(1);
       setShowMobileFilters(false);
+      setTotalGuards(0);
+    } else {
+      setSelectedIds(initialSelectedIds || []);
     }
-  }, [isOpen]);
+  }, [isOpen, initialSelectedIds]);
 
   useEffect(() => {
     if (isOpen) {
@@ -118,31 +150,50 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
     if (isOpen) {
       const loadGuards = async () => {
         setIsLoadingGuards(true);
-        let armed = "";
-        let unarmed = "";
-        if (userFilters.service === "armed") armed = "true";
-        if (userFilters.service === "unarmed") unarmed = "true";
-        if (userFilters.service === "both") { armed = "true"; unarmed = "true"; }
+        const params: FetchGuardsByLocationParams = {
+          account_status: "active",
+          page: isFilterActive ? null : 1
+        };
 
-        const res = await clientFetchGuardsAction({
-          page: isFilterActive ? null : currentPage,
-          search: debouncedSearchQuery,
-          status: userFilters.status === "all" ? "" : userFilters.status,
-          city: userFilters.city === "All City" ? "" : userFilters.city,
-          state: userFilters.state === "All State" ? "" : userFilters.state,
-          country: userFilters.country === "All Country" ? "" : userFilters.country,
-          armed,
-          unarmed
-        });
+        if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+          params.search = debouncedSearchQuery.trim();
+        }
+
+        if (userFilters.city && userFilters.city !== "All City") {
+          params.cities = userFilters.city;
+        }
+        if (userFilters.state && userFilters.state !== "All State") {
+          params.states = userFilters.state;
+        }
+        if (userFilters.country && userFilters.country !== "All Country") {
+          params.country = userFilters.country;
+        }
+
+        if (userFilters.service && userFilters.service !== "All") {
+          params.service = userFilters.service.toLowerCase();
+        }
+
+        if (userFilters.level && userFilters.level !== "All") {
+          params.guard_level = userFilters.level;
+        }
+
+        if (userFilters.provider && userFilters.provider !== "all") {
+          params.personnel_profile_id = userFilters.provider;
+        }
+
+        const res = await clientFetchGuardsNewAction(params);
         if (res.success && res.data) {
           setGuards(res.data);
-          setPagination(res.pagination);
+          setTotalGuards(res.pagination?.total ?? res.data.length);
+        } else {
+          setGuards([]);
+          setTotalGuards(0);
         }
         setIsLoadingGuards(false);
       };
       loadGuards();
     }
-  }, [isOpen, currentPage, debouncedSearchQuery, userFilters]);
+  }, [isOpen, debouncedSearchQuery, userFilters, isFilterActive]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -156,49 +207,80 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
           </div>
         </div>
 
-        <div className="p-4 space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50/10">
-          <div className="space-y-2 shrink-0">
+        <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50/10">
+          <div className="space-y-2.5 shrink-0">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
-              <div className="space-y-1 md:col-span-12">
+              <div className="space-y-1 md:col-span-6 lg:col-span-6 w-full">
                 <Label className="text-[12px] font-semibold text-slate-700">Search</Label>
                 <div className="relative w-full">
                   <Input
                     value={userSearchQuery || ""}
                     onChange={(e) => {
                       setUserSearchQuery(e.target.value);
-                      setCurrentPage(1);
                     }}
                     placeholder="Search name or email..."
-                    className="w-full h-9 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-xs"
+                    className="w-full h-10 bg-white border-slate-200 focus:border-[#0064cb] focus:ring-[#0064cb]/10 rounded-lg text-sm"
                   />
                   {userSearchQuery && (
                     <button
                       onClick={() => {
                         setUserSearchQuery("");
-                        setCurrentPage(1);
                       }}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-350 hover:text-slate-800 cursor-pointer"
                     >
-                      <XCircle className="w-3.5 h-3.5" />
+                      <XCircle className="w-4 h-4" />
                     </button>
                   )}
                 </div>
               </div>
 
-              <div className="md:hidden w-full">
+              <div className="space-y-1 md:col-span-3 lg:col-span-3 w-full">
+                <Label className="text-[12px] font-semibold text-slate-700">Provider</Label>
+                <GuardProviderFilter
+                  value={userFilters.provider}
+                  onChange={(val) => {
+                    setUserFilters((prev) => ({ ...prev, provider: val }));
+                  }}
+                  allLabel="All"
+                  showUnassigned={true}
+                  triggerClassName="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg text-xs"
+                />
+              </div>
+
+              <div className="flex gap-2 items-end md:col-span-3 lg:col-span-3 w-full">
+                <div className="space-y-1 flex-1 w-full">
+                  <Label className="text-[12px] font-semibold text-slate-700">Service</Label>
+                  <Select
+                    value={userFilters.service}
+                    onValueChange={(val) => {
+                      setUserFilters(prev => ({ ...prev, service: val }));
+                    }}
+                  >
+                    <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border-slate-200 shadow-xl z-[200] text-xs">
+                      <SelectItem value="All" className="cursor-pointer text-xs">All</SelectItem>
+                      <SelectItem value="both" className="cursor-pointer text-xs">Both</SelectItem>
+                      <SelectItem value="armed" className="cursor-pointer text-xs">Armed</SelectItem>
+                      <SelectItem value="unarmed" className="cursor-pointer text-xs">Unarmed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setShowMobileFilters(prev => !prev)}
-                  className="h-9 px-4 rounded-lg font-bold text-xs border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer w-full"
+                  className="md:hidden h-10 px-3 rounded-lg font-bold text-xs border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                 >
-                  <span>{showMobileFilters ? "Hide Filters" : "Show Filters"}</span>
+                  <span>{showMobileFilters ? "Hide" : "Filters"}</span>
                   <span className={`transition-transform duration-200 text-[8px] ${showMobileFilters ? "rotate-180" : ""}`}>▼</span>
                 </button>
               </div>
             </div>
 
             <div className={cn(
-              "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5 md:grid",
+              "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 md:grid",
               showMobileFilters ? "grid" : "hidden"
             )}>
               <div className="space-y-1 w-full">
@@ -206,11 +288,10 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                 <Select
                   value={userFilters.country}
                   onValueChange={(val) => {
-                    setUserFilters(prev => ({ ...prev, country: val }));
-                    setCurrentPage(1);
+                    setUserFilters(prev => ({ ...prev, country: val, state: "All State", city: "All City" }));
                   }}
                 >
-                  <SelectTrigger className="w-full !h-9 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
+                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
                     <SelectValue placeholder="Select Country" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-slate-200 shadow-xl z-[200] text-xs">
@@ -226,11 +307,10 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                 <Select
                   value={userFilters.state}
                   onValueChange={(val) => {
-                    setUserFilters(prev => ({ ...prev, state: val }));
-                    setCurrentPage(1);
+                    setUserFilters(prev => ({ ...prev, state: val, city: "All City" }));
                   }}
                 >
-                  <SelectTrigger className="w-full !h-9 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
+                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
                     <SelectValue placeholder="Select State" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-slate-200 shadow-xl z-[200] text-xs">
@@ -247,10 +327,9 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                   value={userFilters.city}
                   onValueChange={(val) => {
                     setUserFilters(prev => ({ ...prev, city: val }));
-                    setCurrentPage(1);
                   }}
                 >
-                  <SelectTrigger className="w-full !h-9 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
+                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
                     <SelectValue placeholder="Select City" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-slate-200 shadow-xl z-[200] text-xs">
@@ -262,50 +341,45 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
               </div>
 
               <div className="space-y-1 w-full">
-                <Label className="text-[12px] font-semibold text-slate-700">Status</Label>
+                <Label className="text-[12px] font-semibold text-slate-700">Guard Level</Label>
                 <Select
-                  value={userFilters.status}
+                  value={userFilters.level}
                   onValueChange={(val) => {
-                    setUserFilters(prev => ({ ...prev, status: val }));
-                    setCurrentPage(1);
+                    setUserFilters(prev => ({ ...prev, level: val }));
                   }}
                 >
-                  <SelectTrigger className="w-full !h-9 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-slate-200 shadow-xl z-[200] text-xs">
-                    <SelectItem value="all" className="cursor-pointer text-xs">All Status</SelectItem>
-                    <SelectItem value="true" className="cursor-pointer text-xs">Active</SelectItem>
-                    <SelectItem value="false" className="cursor-pointer text-xs">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1 w-full">
-                <Label className="text-[12px] font-semibold text-slate-700">Service</Label>
-                <Select
-                  value={userFilters.service}
-                  onValueChange={(val) => {
-                    setUserFilters(prev => ({ ...prev, service: val }));
-                    setCurrentPage(1);
-                  }}
-                >
-                  <SelectTrigger className="w-full !h-9 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
+                  <SelectTrigger className="w-full !h-10 bg-white border-slate-200 focus:ring-[#0064cb]/10 focus:border-[#0064cb] rounded-lg cursor-pointer text-xs">
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-slate-200 shadow-xl z-[200] text-xs">
                     <SelectItem value="All" className="cursor-pointer text-xs">All</SelectItem>
-                    <SelectItem value="both" className="cursor-pointer text-xs">Both</SelectItem>
-                    <SelectItem value="armed" className="cursor-pointer text-xs">Armed</SelectItem>
-                    <SelectItem value="unarmed" className="cursor-pointer text-xs">Unarmed</SelectItem>
+                    <SelectItem value="1" className="cursor-pointer text-xs">1 Star</SelectItem>
+                    <SelectItem value="2" className="cursor-pointer text-xs">2 Stars</SelectItem>
+                    <SelectItem value="3" className="cursor-pointer text-xs">3 Stars</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
 
+          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-blue-50/60 border border-blue-100/80 text-slate-600 text-xs shrink-0">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-[#0064cb] shrink-0" />
+              <span>
+                {isFilterActive
+                  ? "Displaying filtered guards."
+                  : "Displaying 10 guards by default. Use the search or filters above to find specific guards."}
+              </span>
+            </div>
+            {guards.length > 0 && (
+              <span className="text-[11px] font-medium text-slate-500 whitespace-nowrap hidden sm:inline">
+                Showing {guards.length} of {totalGuards || guards.length} guards
+              </span>
+            )}
+          </div>
+
           <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col flex-1 min-h-0 bg-white shadow-sm">
-            <Table className="border-collapse min-w-[1200px]">
+            <Table className="border-collapse min-w-[1350px]">
               <TableHeader className="bg-white sticky top-0 z-20">
                 <TableRow className="hover:bg-transparent border-b border-slate-100">
                   <TableHead className="w-[80px] py-2.5 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-100 text-center">
@@ -333,10 +407,16 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                   <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100">NAME</TableHead>
                   <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100">EMAIL</TableHead>
                   <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100">PHONE NO.</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100 whitespace-nowrap">PROVIDER NAME</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100">
+                    <div className="flex items-center gap-1">
+                      GUARD LEVEL
+                      <Info className="w-3.5 h-3.5 text-slate-400" />
+                    </div>
+                  </TableHead>
                   <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100 text-center">ARMED</TableHead>
                   <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100 text-center">UNARMED</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 border-r border-slate-100">ADDRESS</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4 text-center">STATUS</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-700 uppercase tracking-wider py-2.5 px-4">ADDRESS</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -358,14 +438,20 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                       <TableCell className="py-3.5 px-4 border-r border-slate-100">
                         <Skeleton className="h-4 w-24 rounded" />
                       </TableCell>
-                      <TableCell className="py-3.5 px-4 border-r border-slate-100 text-center">
-                        <Skeleton className="h-4 w-8 rounded mx-auto" />
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100">
+                        <Skeleton className="h-4 w-28 rounded" />
+                      </TableCell>
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100">
+                        <Skeleton className="h-4 w-16 rounded" />
                       </TableCell>
                       <TableCell className="py-3.5 px-4 border-r border-slate-100 text-center">
                         <Skeleton className="h-4 w-8 rounded mx-auto" />
                       </TableCell>
-                      <TableCell className="py-3.5 px-4 text-center">
-                        <Skeleton className="h-5 w-14 rounded-full mx-auto" />
+                      <TableCell className="py-3.5 px-4 border-r border-slate-100 text-center">
+                        <Skeleton className="h-4 w-8 rounded mx-auto" />
+                      </TableCell>
+                      <TableCell className="py-3.5 px-4">
+                        <Skeleton className="h-4 w-32 rounded" />
                       </TableCell>
                     </TableRow>
                   ))
@@ -387,7 +473,7 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                         />
                       </TableCell>
                       <TableCell className="text-[13px] text-slate-800 py-2.5 px-4 border-r border-slate-200/80 text-center font-medium">
-                        {(currentPage - 1) * 10 + index + 1}
+                        {index + 1}
                       </TableCell>
                       <TableCell className="text-[13px] font-semibold text-slate-700 py-2.5 px-4 border-r border-slate-200/80">
                         {guard.first_name} {guard.last_name}
@@ -395,8 +481,33 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                       <TableCell className="text-[13px] text-slate-700 py-2.5 px-4 border-r border-slate-200/80 font-medium">
                         {guard.email}
                       </TableCell>
-                      <TableCell className="text-[13px] text-slate-700 py-2.5 px-4 border-r border-slate-200/80 font-medium">
+                      <TableCell className="text-[13px] text-slate-700 py-2.5 px-4 border-r border-slate-200/80 font-medium whitespace-nowrap">
                         {guard.phone_number || "-"}
+                      </TableCell>
+                      <TableCell className="text-[13px] text-slate-800 py-2.5 px-4 border-r border-slate-200/80 font-medium whitespace-nowrap">
+                        {guard.personnel_profile?.name || (String(guard.personnel_profile?.profile_type || guard.profile_type || "").toLowerCase().trim() === "fastguard" ? "FastGuard Service" : "---")}
+                      </TableCell>
+                      <TableCell className="py-2.5 px-4 border-r border-slate-200/80 font-medium">
+                        <div className="flex items-center gap-1">
+                          {guard.guard_level === 3 ? (
+                            <>
+                              <Star className="w-3.5 h-3.5 fill-purple-600 text-purple-600" />
+                              <Star className="w-3.5 h-3.5 fill-purple-600 text-purple-600" />
+                              <Star className="w-3.5 h-3.5 fill-purple-600 text-purple-600" />
+                            </>
+                          ) : guard.guard_level === 2 ? (
+                            <>
+                              <Star className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
+                              <Star className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
+                            </>
+                          ) : guard.guard_level === 1 ? (
+                            <>
+                              <Star className="w-3.5 h-3.5 fill-green-600 text-green-600" />
+                            </>
+                          ) : (
+                            <span className="text-slate-400 text-xs font-medium">---</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-[13px] text-slate-700 py-2.5 px-4 border-r border-slate-200/80 text-center font-medium">
                         {guard.armed ? "Yes" : "No"}
@@ -404,54 +515,18 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
                       <TableCell className="text-[13px] text-slate-700 py-2.5 px-4 border-r border-slate-200/80 text-center font-medium">
                         {guard.unarmed ? "Yes" : "No"}
                       </TableCell>
-                      <TableCell className="text-[13px] text-slate-700 py-2.5 px-4 border-r border-slate-200/80 font-medium">
+                      <TableCell className="text-[13px] text-slate-700 py-2.5 px-4 font-medium">
                         {guard.address || "-"}
-                      </TableCell>
-                      <TableCell className="py-2.5 px-4 text-center font-medium">
-                        <span className={cn(
-                          "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                          guard.status ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-                        )}>
-                          {guard.status ? "Active" : "Inactive"}
-                        </span>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-8 text-center text-slate-700">No guards found</TableCell>
+                    <TableCell colSpan={10} className="py-8 text-center text-slate-700">No guards found</TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
-
-            {!isFilterActive && pagination && pagination.total_pages > 1 && (
-              <div className="p-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/30 shrink-0">
-                <span className="text-xs text-slate-700 font-medium">
-                  Showing Page {currentPage} of {pagination.total_pages} ({pagination.total} guards total)
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage <= 1}
-                    onClick={() => setCurrentPage(prev => prev - 1)}
-                    className="cursor-pointer text-xs rounded-xl h-8 bg-white"
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage >= pagination.total_pages}
-                    onClick={() => setCurrentPage(prev => prev + 1)}
-                    className="cursor-pointer text-xs rounded-xl h-8 bg-white"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -459,17 +534,17 @@ export function SelectGuardsDialog({ isOpen, onClose, onConfirm, initialSelected
           <Button
             variant="outline"
             onClick={onClose}
+            disabled={submitting}
             className="h-9 px-4 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 rounded-lg cursor-pointer text-xs transition-all"
           >
             Cancel
           </Button>
           <Button
-            onClick={() => {
-              onConfirm(selectedIds);
-              onClose();
-            }}
-            className="h-9 px-6 bg-[#0064cb] hover:bg-[#0052ae] text-white font-bold rounded-lg cursor-pointer text-xs shadow-sm transition-all"
+            disabled={submitting}
+            onClick={handleConfirm}
+            className="h-9 px-6 bg-[#0064cb] hover:bg-[#0052ae] text-white font-bold rounded-lg cursor-pointer text-xs shadow-sm transition-all flex items-center gap-2"
           >
+            {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />}
             Select Guards ({selectedIds.length})
           </Button>
         </div>

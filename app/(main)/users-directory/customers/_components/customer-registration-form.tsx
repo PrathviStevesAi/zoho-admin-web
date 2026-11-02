@@ -28,7 +28,7 @@ import {
 import { Country, State, City } from "country-state-city";
 import { US_STATE_CITY_DATA } from "@/app/subcontractor/components/StaticData";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { cn, toFullCountryName } from "@/lib/utils";
 
 const countries = [
   { name: "Argentina", code: "ar", dialCode: "+54" },
@@ -49,6 +49,9 @@ const countries = [
 
 const ALLOWED_COUNTRIES: Record<string, string> = {
   US: "United States",
+  "United States": "United States",
+  CA: "Canada",
+  Canada: "Canada",
 };
 
 export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
@@ -81,13 +84,13 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
     billingState: "",
     billingStreet: "",
     billingAddress: "",
-    billingCountry: "US",
+    billingCountry: "United States",
     serviceZip: "",
     serviceCity: "",
     serviceState: "",
     serviceStreet: "",
     serviceAddress: "",
-    serviceCountry: "US",
+    serviceCountry: "United States",
     sameAsBilling: false,
   });
 
@@ -261,7 +264,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         state: formData.billingState,
         street: formData.billingStreet,
         address: formData.billingAddress,
-        country: formData.billingCountry === "US" ? "United States" : formData.billingCountry
+        country: toFullCountryName(formData.billingCountry) || "United States"
       },
       service_address: {
         zip: formData.sameAsBilling ? formData.billingZip : formData.serviceZip,
@@ -269,7 +272,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
         state: formData.sameAsBilling ? formData.billingState : formData.serviceState,
         street: formData.sameAsBilling ? formData.billingStreet : formData.serviceStreet,
         address: formData.sameAsBilling ? formData.billingAddress : formData.serviceAddress,
-        country: (formData.sameAsBilling ? formData.billingCountry : formData.serviceCountry) === "US" ? "United States" : (formData.sameAsBilling ? formData.billingCountry : formData.serviceCountry)
+        country: toFullCountryName(formData.sameAsBilling ? formData.billingCountry : formData.serviceCountry) || "United States"
       }
     });
 
@@ -656,7 +659,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
                   <Input
-                    value={ALLOWED_COUNTRIES[formData.billingCountry] || formData.billingCountry || "United States"}
+                    value={toFullCountryName(formData.billingCountry) || "United States"}
                     disabled
                     className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
                   />
@@ -756,7 +759,7 @@ export function CustomerRegistrationForm({ onBack }: { onBack: () => void }) {
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-800 uppercase tracking-wider ml-1">Country</label>
                   <Input
-                    value={ALLOWED_COUNTRIES[formData.serviceCountry] || formData.serviceCountry || "United States"}
+                    value={toFullCountryName(formData.serviceCountry) || "United States"}
                     disabled
                     className="h-12 bg-slate-50/50 border-slate-200 rounded-xl text-slate-800 font-medium"
                   />

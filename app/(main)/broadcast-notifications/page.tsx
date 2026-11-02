@@ -1,13 +1,99 @@
 "use client";
 
-import { useState } from "react";
-import { SendHorizontal, Loader2, Filter, Users, Smartphone, MessageSquare, Check } from "lucide-react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  SendHorizontal,
+  Loader2,
+  Filter,
+  Users,
+  Smartphone,
+  MessageSquare,
+  Check,
+  Pencil,
+  History,
+  ChevronRight,
+  ArrowLeft,
+  RotateCcw,
+  AlertCircle,
+  Calculator,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { sendBroadcastNotificationAction } from "@/actions/notification.actions";
+import { cn } from "@/lib/utils";
+import {
+  sendBroadcastNotificationAction,
+  estimateBroadcastNotificationAction,
+} from "@/actions/notification.actions";
 import { SelectGuardsDialog } from "./_components/SelectGuardsDialog";
+import { BroadcastHistoryTable } from "./_components/BroadcastHistoryTable";
+import { SmsBalanceCard } from "./_components/SmsBalanceCard";
+
+function parseEstimateResponse(
+  res: any,
+  fallbackCount: number
+): { cost: number; count: number } {
+  const d = res?.data ?? res;
+
+  const parseNumeric = (val: any): number | null => {
+    if (typeof val === "number" && !isNaN(val)) return val;
+    if (typeof val === "string" && val.trim() !== "") {
+      const num = parseFloat(val.replace(/[^0-9.-]+/g, ""));
+      if (!isNaN(num)) return num;
+    }
+    return null;
+  };
+
+  let cost = 0;
+  const costCandidates = [
+    d?.estimated_cost,
+    d?.estimate_cost,
+    d?.estimate_value,
+    d?.cost,
+    d?.total_cost,
+    d?.amount,
+    res?.estimated_cost,
+    res?.estimate_cost,
+    res?.estimate_value,
+    res?.cost,
+  ];
+  for (const cand of costCandidates) {
+    const n = parseNumeric(cand);
+    if (n !== null) {
+      cost = n;
+      break;
+    }
+  }
+
+  let count = fallbackCount;
+  const countCandidates = [
+    d?.recipient_count,
+    d?.recipients_count,
+    d?.total_recipients,
+    d?.guard_count,
+    d?.guards_count,
+    d?.count,
+    res?.recipient_count,
+    res?.recipients_count,
+    res?.total_recipients,
+  ];
+  for (const cand of countCandidates) {
+    const n = parseNumeric(cand);
+    if (n !== null) {
+      count = n;
+      break;
+    }
+  }
+  if (count === fallbackCount && Array.isArray(d?.guard_ids)) {
+    count = d.guard_ids.length;
+  }
+
+  return { cost, count };
+}
 
 export default function BroadcastNotificationsPage() {
+  const [activeTab, setActiveTab] = useState<"compose" | "history">("compose");
+  const [historyTotalCount, setHistoryTotalCount] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [sendViaInApp, setSendViaInApp] = useState(false);
   const [sendViaSms, setSendViaSms] = useState(false);
@@ -15,6 +101,73 @@ export default function BroadcastNotificationsPage() {
   const [isSending, setIsSending] = useState(false);
   const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
   const [isSelectGuardsDialogOpen, setIsSelectGuardsDialogOpen] = useState(false);
+  const [estimatedCost, setEstimatedCost] = useState<number>(0);
+  const [estimatedRecipientsCount, setEstimatedRecipientsCount] = useState<number>(0);
+  const [isEstimating, setIsEstimating] = useState(false);
+  const [isEstimateReady, setIsEstimateReady] = useState(true);
+  const [balanceRefreshTrigger, setBalanceRefreshTrigger] = useState(0);
+  const isOverLimit = message.length > 1000;
+
+  useEffect(() => {
+    if (!sendViaSms || !message.trim()) {
+      setEstimatedCost(0);
+      setEstimatedRecipientsCount(0);
+      setIsEstimating(false);
+      setIsEstimateReady(true);
+      return;
+    }
+
+    if (recipientType === "filter" && selectedGuardIds.length === 0) {
+      setEstimatedCost(0);
+      setEstimatedRecipientsCount(0);
+      setIsEstimating(false);
+      setIsEstimateReady(true);
+      return;
+    }
+
+    setIsEstimating(true);
+    setIsEstimateReady(false);
+
+    let isCancelled = false;
+    const fetchEstimate = async () => {
+      try {
+        const res = await estimateBroadcastNotificationAction({
+          title: "Broadcast Notification",
+          message: message.trim(),
+          send_in_app: sendViaInApp,
+          send_sms: sendViaSms,
+          send_to_all: recipientType === "all",
+          guard_ids: recipientType === "all" ? [] : selectedGuardIds,
+          estimate_cost: 0,
+        });
+
+        if (!isCancelled && res.success) {
+          const parsed = parseEstimateResponse(
+            res.data,
+            recipientType === "all" ? 0 : selectedGuardIds.length
+          );
+          setEstimatedCost(parsed.cost);
+          setEstimatedRecipientsCount(parsed.count);
+        }
+      } catch (err) {
+        console.error("Estimate fetch error:", err);
+      } finally {
+        if (!isCancelled) {
+          setIsEstimating(false);
+          setIsEstimateReady(true);
+        }
+      }
+    };
+
+    const timer = setTimeout(() => {
+      fetchEstimate();
+    }, 600);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [sendViaSms, sendViaInApp, recipientType, selectedGuardIds, message]);
 
   const handleSend = async () => {
     if (!message.trim()) {
@@ -22,8 +175,18 @@ export default function BroadcastNotificationsPage() {
       return;
     }
 
+    if (message.length > 1000) {
+      toast.error("Message cannot exceed 1,000 characters");
+      return;
+    }
+
     if (!sendViaInApp && !sendViaSms) {
       toast.error("Please select at least one sending method (In-App Notification or Twilio SMS)");
+      return;
+    }
+
+    if (sendViaSms && !isEstimateReady) {
+      toast.error("Please wait until the estimated SMS cost calculation completes");
       return;
     }
 
@@ -34,21 +197,33 @@ export default function BroadcastNotificationsPage() {
 
     setIsSending(true);
     try {
-      const res = await sendBroadcastNotificationAction({
+      const payload = {
         title: "Broadcast Notification",
         message,
         send_to_all: recipientType === "all",
         guard_ids: recipientType === "all" ? [] : selectedGuardIds,
         send_in_app: sendViaInApp,
         send_sms: sendViaSms,
-      });
+        estimate_cost: sendViaSms ? estimatedCost : 0,
+      };
+      console.log("[Send Blast Message] Payload:", payload);
+
+      const res = await sendBroadcastNotificationAction(payload);
+      console.log("[Send Blast Message] Response:", res);
 
       if (res.success) {
         toast.success(res.message || "Blast message sent successfully!");
-        setMessage("");
-        if (recipientType === "filter") {
-          setSelectedGuardIds([]);
+        if (sendViaSms) {
+          setBalanceRefreshTrigger((prev) => prev + 1);
         }
+        setMessage("");
+        setSendViaInApp(false);
+        setSendViaSms(false);
+        setRecipientType("all");
+        setSelectedGuardIds([]);
+        setEstimatedCost(0);
+        setEstimatedRecipientsCount(0);
+        setHistoryTotalCount((prev) => (prev !== null ? prev + 1 : 1));
       } else {
         toast.error(res.error || "Failed to send blast message");
       }
@@ -59,214 +234,492 @@ export default function BroadcastNotificationsPage() {
     }
   };
 
+  const handleResetForm = () => {
+    setMessage("");
+    setSendViaInApp(false);
+    setSendViaSms(false);
+    setRecipientType("all");
+    setSelectedGuardIds([]);
+    setEstimatedCost(0);
+    setEstimatedRecipientsCount(0);
+    setIsEstimating(false);
+    setIsEstimateReady(true);
+  };
+
+  const hasFormContent =
+    message.trim().length > 0 ||
+    sendViaInApp ||
+    sendViaSms ||
+    selectedGuardIds.length > 0;
+
   return (
-    <div className="p-0 sm:p-2 md:p-2 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 font-montserrat">
-      <div className="space-y-1.5 pl-1 sm:pl-2">
-        <h1 className="text-[26px] font-bold tracking-tight text-[#0f172a] mb-0">
-          Blast Messages
-        </h1>
-        <p className="text-[14px] text-slate-500 font-medium leading-relaxed">
-          Send important announcements and updates to guards in real-time.
-        </p>
-      </div>
-
-      <div className="bg-white border border-slate-100 rounded-[16px] shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden">
-        <div className="p-6 md:p-8 space-y-8">
-
-          <div className="space-y-2.5">
-            <label
-              htmlFor="notification-message"
-              className="text-[14px] font-bold text-[#0f172a] block"
+    <div className="p-0 sm:p-4 md:p-6 max-w-[1500px] mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-500 font-sans">
+      <div className="space-y-1">
+        <div className="flex items-center gap-2 text-slate-700 text-[13px] mb-1">
+          <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">
+            Dashboard
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span className="text-slate-600 font-medium">Blast Messages</span>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all cursor-pointer shadow-xs"
             >
-              Message
-            </label>
-            <div className="relative">
-              <textarea
-                id="notification-message"
-                value={message}
-                onChange={(e) => {
-                  if (e.target.value.length <= 1000) {
-                    setMessage(e.target.value);
-                  }
-                }}
-                placeholder="Enter your blast message here..."
-                rows={5}
-                className="w-full p-4 bg-white border border-slate-200 focus:border-[#0064cb] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#0064cb]/5 rounded-xl text-[14px] leading-relaxed text-slate-900 placeholder:text-slate-400 transition-all duration-300 resize-none pr-4 pb-12"
-              />
-              <div className="absolute bottom-3.5 right-4 text-[13px] font-medium text-slate-400 select-none">
-                {message.length} / 1000
-              </div>
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Blast Messages</h1>
+              <p className="text-xs sm:text-sm text-slate-500 font-normal">
+                Send important announcements and updates to guards in real-time.
+              </p>
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="text-[14px] font-bold text-[#0f172a] flex items-center gap-2">
-                Send Via <span className="text-[13px] text-slate-500 font-medium font-normal">(Select one or both)</span>
-              </label>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              <div
-                onClick={() => setSendViaInApp(!sendViaInApp)}
-                className={`relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer ${sendViaInApp
-                  ? "border-[#0064cb] shadow-[0_2px_8px_rgba(0,100,203,0.04)]"
-                  : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
-              >
-                <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-50/50 flex items-center justify-center">
-                  <Smartphone className="w-6 h-6 text-[#0064cb]" strokeWidth={2} />
-                </div>
-                <div className="space-y-1.5 flex-1 pr-6">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-[15px] font-bold text-[#0f172a]">In-App Notification</h3>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                      Recommended
-                    </span>
-                  </div>
-                  <p className="text-[13px] leading-relaxed text-slate-500 font-medium">
-                    Send a push notification to all guards through the app.
-                  </p>
-                </div>
-                <div className="absolute top-5 right-5">
-                  <div className={`w-[20px] h-[20px] rounded flex items-center justify-center transition-colors ${sendViaInApp ? "bg-[#0064cb]" : "bg-slate-100 border border-slate-200"
-                    }`}>
-                    {sendViaInApp && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                onClick={() => setSendViaSms(!sendViaSms)}
-                className={`relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer ${sendViaSms
-                  ? "border-[#0064cb] shadow-[0_2px_8px_rgba(0,100,203,0.04)]"
-                  : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
-              >
-                <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-50/50 flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-[#0064cb]" strokeWidth={2} />
-                </div>
-                <div className="space-y-1.5 flex-1 pr-6">
-                  <h3 className="text-[15px] font-bold text-[#0f172a]">Twilio SMS</h3>
-                  <p className="text-[13px] leading-relaxed text-slate-500 font-medium">
-                    Send a text message to guards mobile numbers.
-                  </p>
-                </div>
-                <div className="absolute top-5 right-5">
-                  <div className={`w-[20px] h-[20px] rounded flex items-center justify-center transition-colors ${sendViaSms ? "bg-[#0064cb]" : "bg-slate-100 border border-slate-200"
-                    }`}>
-                    {sendViaSms && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <label className="text-[14px] font-bold text-[#0f172a] block">
-              Recipient Selection
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              <div
-                onClick={() => setRecipientType("all")}
-                className={`relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer ${recipientType === "all"
-                  ? "border-[#0064cb] shadow-[0_2px_8px_rgba(0,100,203,0.04)]"
-                  : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
-              >
-                <div className="w-10 h-10 shrink-0 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-[#0064cb]" strokeWidth={2} />
-                </div>
-                <div className="space-y-1.5 flex-1 pr-6">
-                  <h3 className="text-[15px] font-bold text-[#0f172a]">Send to All Guards</h3>
-                  <p className="text-[13px] leading-relaxed text-slate-500 font-medium">
-                    Deliver this blast message to every active guard in the system.
-                  </p>
-                </div>
-                <div className="absolute top-[22px] right-5">
-                  <div className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${recipientType === "all" ? "border-[#0064cb]" : "border-slate-200"
-                    }`}>
-                    {recipientType === "all" && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#0064cb]" />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                onClick={() => {
-                  setRecipientType("filter");
-                  setIsSelectGuardsDialogOpen(true);
-                }}
-                className={`relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer ${recipientType === "filter"
-                  ? "border-[#0064cb] shadow-[0_2px_8px_rgba(0,100,203,0.04)]"
-                  : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
-              >
-                <div className="w-10 h-10 shrink-0 rounded-full border border-slate-100 flex items-center justify-center">
-                  <Filter className={`w-5 h-5 ${recipientType === "filter" ? "text-[#0064cb]" : "text-slate-400"}`} strokeWidth={2} />
-                </div>
-                <div className="space-y-1.5 flex-1 pr-6">
-                  <h3 className="text-[15px] font-bold text-[#0f172a]">Filter Guards</h3>
-                  <p className="text-[13px] leading-relaxed text-slate-500 font-medium">
-                    Select specific guards based on location, services or distance.
-                  </p>
-                  {recipientType === "filter" && selectedGuardIds.length > 0 && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-[#0064cb] bg-blue-50 px-2.5 py-1 rounded-md">
-                        {selectedGuardIds.length} guards selected
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsSelectGuardsDialogOpen(true);
-                        }}
-                        className="cursor-pointer text-[12px] font-bold text-[#0064cb] hover:underline"
-                      >
-                        Edit Selection
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <div className="absolute top-[22px] right-5">
-                  <div className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${recipientType === "filter" ? "border-[#0064cb]" : "border-slate-200"
-                    }`}>
-                    {recipientType === "filter" && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#0064cb]" />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
+          <SmsBalanceCard refreshTrigger={balanceRefreshTrigger} />
         </div>
-
-        <div className="bg-[#f8fafc]/50 border-t border-slate-100 p-5 md:px-8 flex items-center justify-end gap-3.5">
-          <Button
-            type="button"
-            onClick={handleSend}
-            disabled={isSending}
-            className="h-11 px-6 bg-[#0064cb] hover:bg-[#0052ae] text-white font-bold text-[14px] active:scale-95 transition-all rounded-lg flex items-center gap-2 shadow-sm shadow-blue-500/10 cursor-pointer"
-          >
-            {isSending ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              <>
-                <SendHorizontal className="w-4 h-4 stroke-[2px]" />
-                Send Blast Message
-              </>
-            )}
-          </Button>
-        </div>
-
       </div>
+
+      <div className="flex items-center gap-8 border-b border-slate-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab("compose")}
+          className={cn(
+            "cursor-pointer flex items-center gap-2 pb-3.5 px-1 font-semibold transition-all whitespace-nowrap text-sm relative -mb-[1px]",
+            activeTab === "compose"
+              ? "text-[#0064cb]"
+              : "text-slate-500 hover:text-slate-700"
+          )}
+        >
+          <Pencil className="w-4 h-4" />
+          <span>Compose Message</span>
+          {activeTab === "compose" && (
+            <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#0064cb] rounded-t-full" />
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("history")}
+          className={cn(
+            "cursor-pointer flex items-center gap-2 pb-3.5 px-1 font-semibold transition-all whitespace-nowrap text-sm relative -mb-[1px]",
+            activeTab === "history"
+              ? "text-[#0064cb]"
+              : "text-slate-500 hover:text-slate-700"
+          )}
+        >
+          <History className="w-4 h-4" />
+          <span>Manage History</span>
+          {historyTotalCount !== null && (
+            <span
+              className={cn(
+                "text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors",
+                activeTab === "history"
+                  ? "bg-blue-100 text-[#0064cb]"
+                  : "bg-slate-100 text-slate-600"
+              )}
+            >
+              {historyTotalCount}
+            </span>
+          )}
+          {activeTab === "history" && (
+            <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#0064cb] rounded-t-full" />
+          )}
+        </button>
+      </div>
+
+      {activeTab === "compose" && (
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-6 sm:p-8 space-y-8 w-full">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="notification-message"
+                  className="text-sm font-bold text-slate-900 block"
+                >
+                  Message
+                </label>
+                <span className="text-xs text-slate-400 font-medium">
+                  Compose announcements, urgent alerts or briefing updates
+                </span>
+              </div>
+              <div className="relative">
+                <textarea
+                  id="notification-message"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Enter your blast message here..."
+                  rows={6}
+                  className={cn(
+                    "w-full p-4 bg-white border focus:outline-none rounded-xl text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 transition-all duration-200 resize-none pr-4 pb-12 shadow-2xs",
+                    isOverLimit
+                      ? "border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
+                      : "border-slate-200 focus:border-[#0064cb] focus:ring-4 focus:ring-[#0064cb]/10"
+                  )}
+                />
+                <div className="absolute bottom-3.5 right-4 text-xs font-semibold text-slate-400 select-none">
+                  <span
+                    className={cn(
+                      isOverLimit
+                        ? "text-rose-600 font-bold"
+                        : message.length >= 950
+                          ? "text-amber-600 font-bold"
+                          : ""
+                    )}
+                  >
+                    {message.length}
+                  </span>{" "}
+                  / 1,000
+                </div>
+              </div>
+              {isOverLimit && (
+                <div className="flex items-center gap-1.5 text-xs font-medium text-rose-600 mt-1.5 animate-in fade-in duration-200">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>
+                    Message cannot exceed 1,000 characters. You have entered {message.length} characters (please remove {message.length - 1000} character{message.length - 1000 === 1 ? "" : "s"}).
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                Send Via{" "}
+                <span className="text-xs text-slate-500 font-normal">
+                  (Select one or both)
+                </span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div
+                  onClick={() => setSendViaInApp(!sendViaInApp)}
+                  className={cn(
+                    "relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer select-none",
+                    sendViaInApp
+                      ? "border-[#0064cb] bg-blue-50/20 shadow-xs"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/40"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center transition-colors",
+                      sendViaInApp
+                        ? "bg-blue-100/70 text-[#0064cb]"
+                        : "bg-slate-100 text-slate-500"
+                    )}
+                  >
+                    <Smartphone className="w-5 h-5" strokeWidth={2} />
+                  </div>
+                  <div className="space-y-1 flex-1 pr-6">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-slate-900">
+                        In-App Notification
+                      </h3>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+                        Recommended
+                      </span>
+                    </div>
+                    <p className="text-xs leading-relaxed text-slate-500 font-medium">
+                      Send a push notification to all guards through the app.
+                    </p>
+                  </div>
+                  <div className="absolute top-5 right-5">
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-md flex items-center justify-center transition-colors",
+                        sendViaInApp
+                          ? "bg-[#0064cb] text-white"
+                          : "bg-slate-100 border border-slate-300"
+                      )}
+                    >
+                      {sendViaInApp && (
+                        <Check className="w-3.5 h-3.5 stroke-[3px]" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setSendViaSms(!sendViaSms)}
+                  className={cn(
+                    "relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer select-none",
+                    sendViaSms
+                      ? "border-[#0064cb] bg-blue-50/20 shadow-xs"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/40"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center transition-colors",
+                      sendViaSms
+                        ? "bg-blue-100/70 text-[#0064cb]"
+                        : "bg-slate-100 text-slate-500"
+                    )}
+                  >
+                    <MessageSquare className="w-5 h-5" strokeWidth={2} />
+                  </div>
+                  <div className="space-y-1 flex-1 pr-6">
+                    <h3 className="text-sm font-bold text-slate-900">Twilio SMS</h3>
+                    <p className="text-xs leading-relaxed text-slate-500 font-medium">
+                      Send a text message to guards mobile numbers.
+                    </p>
+                  </div>
+                  <div className="absolute top-5 right-5">
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-md flex items-center justify-center transition-colors",
+                        sendViaSms
+                          ? "bg-[#0064cb] text-white"
+                          : "bg-slate-100 border border-slate-300"
+                      )}
+                    >
+                      {sendViaSms && (
+                        <Check className="w-3.5 h-3.5 stroke-[3px]" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-900 block">
+                Recipient Selection
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div
+                  onClick={() => setRecipientType("all")}
+                  className={cn(
+                    "relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer select-none",
+                    recipientType === "all"
+                      ? "border-[#0064cb] bg-blue-50/20 shadow-xs"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/40"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center transition-colors",
+                      recipientType === "all"
+                        ? "bg-blue-100/70 text-[#0064cb]"
+                        : "bg-slate-100 text-slate-500"
+                    )}
+                  >
+                    <Users className="w-5 h-5" strokeWidth={2} />
+                  </div>
+                  <div className="space-y-1 flex-1 pr-6">
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Send to All Guards
+                    </h3>
+                    <p className="text-xs leading-relaxed text-slate-500 font-medium">
+                      Deliver this blast message to every active guard in the system.
+                    </p>
+                  </div>
+                  <div className="absolute top-5 right-5">
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-colors",
+                        recipientType === "all"
+                          ? "border-[#0064cb]"
+                          : "border-slate-300"
+                      )}
+                    >
+                      {recipientType === "all" && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#0064cb]" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => {
+                    setRecipientType("filter");
+                    setIsSelectGuardsDialogOpen(true);
+                  }}
+                  className={cn(
+                    "relative flex items-start gap-4 p-5 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer select-none",
+                    recipientType === "filter"
+                      ? "border-[#0064cb] bg-blue-50/20 shadow-xs"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/40"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center transition-colors",
+                      recipientType === "filter"
+                        ? "bg-blue-100/70 text-[#0064cb]"
+                        : "bg-slate-100 text-slate-500"
+                    )}
+                  >
+                    <Filter className="w-5 h-5" strokeWidth={2} />
+                  </div>
+                  <div className="space-y-1 flex-1 pr-6">
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Filter Guards
+                    </h3>
+                    <p className="text-xs leading-relaxed text-slate-500 font-medium">
+                      Select specific guards based on location, services or distance.
+                    </p>
+                    {recipientType === "filter" && selectedGuardIds.length > 0 && (
+                      <div className="pt-2 flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-[#0064cb] bg-blue-100/70 px-2.5 py-0.5 rounded-full border border-blue-200">
+                          {selectedGuardIds.length} guards selected
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsSelectGuardsDialogOpen(true);
+                          }}
+                          className="cursor-pointer text-xs font-bold text-[#0064cb] hover:underline"
+                        >
+                          Edit Selection
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute top-5 right-5">
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-colors",
+                        recipientType === "filter"
+                          ? "border-[#0064cb]"
+                          : "border-slate-300"
+                      )}
+                    >
+                      {recipientType === "filter" && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#0064cb]" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {sendViaSms && message.trim().length > 0 && (
+              <div className="bg-[#FFFDF5] border border-[#FDE68A] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 shrink-0 rounded-xl bg-[#FEF3C7] flex items-center justify-center text-[#B45309]">
+                    <Calculator className="w-5 h-5" strokeWidth={2.2} />
+                  </div>
+
+                  <div className="h-9 w-px bg-amber-200/80 hidden sm:block" />
+
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-slate-800">
+                      Estimated SMS Cost
+                    </p>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-2xl sm:text-3xl font-extrabold text-[#B45309] tracking-tight">
+                        {isEstimating ? (
+                          <span className="inline-flex items-center gap-1.5 text-lg">
+                            <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                            <span className="text-sm font-semibold">Calculating...</span>
+                          </span>
+                        ) : (
+                          `$${estimatedCost.toFixed(2)}`
+                        )}
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">
+                        For{" "}
+                        {recipientType === "filter"
+                          ? estimatedRecipientsCount || selectedGuardIds.length
+                          : estimatedRecipientsCount || "all"}{" "}
+                        {recipientType === "filter" ? "selected guards" : "guards"} · Estimate only
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="h-8 w-px bg-amber-200/80 hidden md:block" />
+                  <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
+                    <div className="w-4 h-4 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                      i
+                    </div>
+                    <span>Final cost may vary by message length and carrier fees.</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-slate-50/70 border-t border-slate-100 px-6 sm:px-8 py-4.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="text-xs text-slate-500 font-medium flex items-center gap-2">
+              {sendViaInApp || sendViaSms ? (
+                <span className="inline-flex items-center gap-1.5 text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  Ready to send via{" "}
+                  <strong className="text-slate-900">
+                    {[sendViaInApp && "In-App", sendViaSms && "Twilio SMS"]
+                      .filter(Boolean)
+                      .join(" & ")}
+                  </strong>{" "}
+                  to{" "}
+                  <strong className="text-slate-900">
+                    {recipientType === "all"
+                      ? "All Guards"
+                      : `${selectedGuardIds.length} Selected Guards`}
+                  </strong>
+                </span>
+              ) : (
+                <span className="text-slate-400">
+                  Select at least one sending method to enable dispatch
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 justify-end">
+              {hasFormContent && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleResetForm}
+                  disabled={isSending}
+                  className="h-11 px-4 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-lg cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                  Reset
+                </Button>
+              )}
+
+              {(() => {
+                const isEstimatePending =
+                  sendViaSms && message.trim().length > 0 && !isEstimateReady;
+                return (
+                  <Button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={isSending || isOverLimit || isEstimatePending}
+                    className="h-11 px-6 bg-[#0064cb] hover:bg-[#0052ae] text-white font-semibold text-sm rounded-lg flex items-center gap-2 shadow-sm shadow-blue-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <SendHorizontal className="w-4 h-4" />
+                        <span>Send Blast Message</span>
+                      </>
+                    )}
+                  </Button>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "history" && (
+        <BroadcastHistoryTable
+          onComposeNew={() => setActiveTab("compose")}
+          onTotalCountChange={(count) => setHistoryTotalCount(count)}
+        />
+      )}
 
       {isSelectGuardsDialogOpen && (
         <SelectGuardsDialog

@@ -37,21 +37,38 @@ export function GuardPriceTab({
     value: string,
     onChange: (val: string) => void,
     placeholder: string,
-    options: string[],
+    options: any[],
     allLabel: string,
     triggerClassName: string = "bg-slate-50"
   ) => {
     if (!mounted) {
       return <div className={cn("h-10 border border-slate-200 rounded-md animate-pulse", triggerClassName)} />;
     }
+
+    const safeOptions: string[] = Array.isArray(options)
+      ? options
+          .map((opt: any) => {
+            if (typeof opt === "string") return opt.trim();
+            if (typeof opt === "number") return String(opt);
+            if (opt && typeof opt === "object") {
+              if (typeof opt.name === "string") return opt.name.trim();
+              if (typeof opt.label === "string") return opt.label.trim();
+              if (typeof opt.value === "string") return opt.value.trim();
+              return "";
+            }
+            return "";
+          })
+          .filter((opt) => typeof opt === "string" && opt.length > 0)
+      : [];
+
     return (
-      <Select value={value} onValueChange={onChange}>
+      <Select value={typeof value === "string" ? value : "all"} onValueChange={onChange}>
         <SelectTrigger className={cn("h-10 border-slate-200", triggerClassName)}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{allLabel}</SelectItem>
-          {options.map((opt) => (
+          {safeOptions.map((opt) => (
             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
           ))}
         </SelectContent>

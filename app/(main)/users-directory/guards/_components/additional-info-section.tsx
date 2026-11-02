@@ -14,8 +14,6 @@ export function AdditionalInfoSection({ formData, setFormData }: any) {
     { label: "Hold SG License?", key: "holdSgLicense" },
     { label: "Pass Background Check?", key: "passBgCheck" },
     { label: "Reliable Transportation?", key: "reliableTransport" },
-    { label: "Hold Unarmed License?", key: "holdUnarmedLicense" },
-    { label: "Hold Armed License?", key: "holdArmedLicense" },
     { label: "English Proficiency?", key: "englishProficiency" },
   ];
 

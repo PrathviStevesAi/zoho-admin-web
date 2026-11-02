@@ -24,6 +24,7 @@ const fetcher = async ([url, token]: [string, string]) => {
       errorData = { message: errorText || `API Request Failed with status ${response.status}` };
     }
 
+    console.error(`[useApi] ERROR [${response.status}] ${url}:`, errorText);
     let detailMessage = "";
     if (typeof errorData.detail === "string") {
       try {
@@ -37,6 +38,14 @@ const fetcher = async ([url, token]: [string, string]) => {
       } catch (e) {
         detailMessage = errorData.detail;
       }
+    } else if (Array.isArray(errorData.detail)) {
+      detailMessage = errorData.detail
+        .map((e: any) => {
+          if (typeof e === "string") return e;
+          const field = Array.isArray(e.loc) ? e.loc.filter((l: any) => l !== "body").join(".") : "field";
+          return `${field ? field + ": " : ""}${e.msg || e.message || JSON.stringify(e)}`;
+        })
+        .join("; ");
     } else {
       detailMessage = errorData.detail?.error || errorData.detail?.message || errorData.message || `API Request Failed with status ${response.status}`;
     }

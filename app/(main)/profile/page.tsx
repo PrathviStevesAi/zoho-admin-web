@@ -11,7 +11,8 @@ import {
   Loader2,
   Eye,
   EyeOff,
-  ChevronDown
+  ChevronDown,
+  ZoomIn,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -20,6 +21,14 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { fetchProfileAction, updateProfileAction, generateUploadUrlAction, sendEmailOtpAction, verifyEmailOtpAction } from "@/actions/profile.actions";
 import { UserProfile } from "@/types/profile.types";
@@ -71,6 +80,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -394,12 +404,30 @@ export default function ProfilePage() {
     <div className="p-0 sm:p-4 md:p-6 max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row items-center gap-6 px-2">
         <div className="relative group">
-          <Avatar className="w-24 h-24 md:w-28 md:h-28 border-4 border-white shadow-lg rounded-2xl bg-slate-50 overflow-hidden transition-transform duration-500 group-hover:scale-[1.02]">
-            <AvatarImage src={currentUser.profile_img_url || undefined} className="object-cover" />
+          <Avatar
+            onClick={() => {
+              if (currentUser.profile_img_url) {
+                setIsImagePreviewOpen(true);
+              }
+            }}
+            className={cn(
+              "w-24 h-24 md:w-28 md:h-28 border-4 border-white shadow-lg rounded-2xl bg-slate-50 overflow-hidden transition-all duration-300",
+              currentUser.profile_img_url
+                ? "cursor-pointer hover:shadow-xl hover:scale-[1.03] active:scale-95"
+                : ""
+            )}
+            title={currentUser.profile_img_url ? "Click to view full photo" : undefined}
+          >
+            <AvatarImage src={currentUser.profile_img_url || undefined} className="object-cover w-full h-full" />
             <AvatarFallback className="text-3xl font-bold bg-slate-100 text-[#0064cb]">
               {(currentUser.first_name?.[0] || "?").toUpperCase()}
               {(currentUser.last_name?.[0] || "").toUpperCase()}
             </AvatarFallback>
+            {currentUser.profile_img_url && (
+              <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl pointer-events-none">
+                <ZoomIn className="w-6 h-6 text-white drop-shadow-md" />
+              </div>
+            )}
           </Avatar>
           <input
             type="file"
@@ -410,9 +438,14 @@ export default function ProfilePage() {
           />
           <Button
             size="icon"
-            onClick={() => fileInputRef.current?.click()}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
             disabled={isUpdating}
-            className="absolute -bottom-1 -right-1 h-8 w-8 rounded-lg bg-[#0064cb] hover:bg-[#0052ae] text-white shadow-lg border-2 border-white transition-all active:scale-90 cursor-pointer"
+            className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-[#0064cb] hover:bg-[#0052ae] text-white shadow-lg border-2 border-white transition-all active:scale-90 cursor-pointer"
+            title="Upload photo"
           >
             {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
           </Button>
@@ -650,6 +683,31 @@ export default function ProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      {currentUser.profile_img_url && (
+        <Dialog open={isImagePreviewOpen} onOpenChange={setIsImagePreviewOpen}>
+          <DialogContent className="max-w-2xl bg-white p-6 rounded-2xl shadow-2xl border border-slate-100 flex flex-col items-center">
+            <DialogHeader className="w-full flex flex-row items-center justify-between pb-3 border-b border-slate-100">
+              <div className="space-y-0.5">
+                <DialogTitle className="text-lg font-bold text-slate-900">
+                  Profile Picture
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  {currentUser.first_name} {currentUser.last_name}
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+
+            <div className="py-4 w-full flex items-center justify-center bg-slate-50/70 rounded-xl border border-slate-100 overflow-hidden">
+              <img
+                src={currentUser.profile_img_url}
+                alt={`${currentUser.first_name} ${currentUser.last_name}`}
+                className="max-h-[70vh] w-auto max-w-full rounded-lg object-contain shadow-sm"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

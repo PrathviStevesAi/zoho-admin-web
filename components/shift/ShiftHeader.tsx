@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ChevronRight, ArrowLeft, Loader2, Play, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon, Mic, Clock } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronRight, ArrowLeft, Loader2, Play, Square, Settings, XCircle, UserPlus, Video, UserCheck, Send, BadgeCheck, XOctagon, Mic, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDescription } from "./utils";
 import { Shift } from "./types";
+import { getPreviousPath, popPreviousPath } from "@/lib/navigation-history";
+import { PersonnelProfileDropdown } from "@/components/personnel/PersonnelProfileDropdown";
+import { SelectedPersonnelProfile } from "@/lib/client-actions";
 
 interface ShiftHeaderProps {
   shift: Shift | null;
@@ -29,12 +32,14 @@ interface ShiftHeaderProps {
   onCloseCallRecordings?: () => void;
   isStartingShift: boolean;
   onManualStart: () => void;
-  onAssignGuard: () => void;
-  onNewAssignGuard: () => void;
-  onAssignLeadGuard: () => void;
-  onAssignStandbyGuard: () => void;
-  onReassignLeadGuard: () => void;
-  onReassignStandbyGuard: () => void;
+  isEndingShift?: boolean;
+  onManualEnd?: () => void;
+  onAssignGuard?: (profile?: SelectedPersonnelProfile) => void;
+  onNewAssignGuard?: (profile?: SelectedPersonnelProfile) => void;
+  onAssignLeadGuard: (profile?: SelectedPersonnelProfile) => void;
+  onAssignStandbyGuard: (profile?: SelectedPersonnelProfile) => void;
+  onReassignLeadGuard: (profile?: SelectedPersonnelProfile) => void;
+  onReassignStandbyGuard: (profile?: SelectedPersonnelProfile) => void;
   onFindStandbyGuard?: () => void;
   onCancelService?: () => void;
   onCallRecording?: () => void;
@@ -126,6 +131,8 @@ export function ShiftHeader({
   onCloseCallRecordings,
   isStartingShift,
   onManualStart,
+  isEndingShift,
+  onManualEnd,
   onAssignGuard,
   onNewAssignGuard,
   onAssignLeadGuard,
@@ -143,6 +150,37 @@ export function ShiftHeader({
   isLoading,
 }: ShiftHeaderProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams.get("from");
+  const viewParam = searchParams.get("view") || searchParams.get("tab");
+
+  const [isFromCalendar, setIsFromCalendar] = useState(false);
+  const [calendarTargetUrl, setCalendarTargetUrl] = useState<string>("/calendar");
+
+  useEffect(() => {
+    const prev = getPreviousPath();
+    const isCal = fromParam === "calendar" || Boolean(prev && prev.startsWith("/calendar"));
+    if (isCal) {
+      setIsFromCalendar(true);
+      if (prev && prev.startsWith("/calendar")) {
+        setCalendarTargetUrl(prev);
+      } else if (viewParam) {
+        setCalendarTargetUrl(`/calendar?view=${viewParam}`);
+      } else {
+        setCalendarTargetUrl("/calendar");
+      }
+    }
+  }, [fromParam, viewParam]);
+
+  const handleBack = () => {
+    if (isFromCalendar) {
+      popPreviousPath();
+      router.push(calendarTargetUrl);
+      return;
+    }
+
+    router.back();
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -152,6 +190,14 @@ export function ShiftHeader({
             <Link href="/dashboard" className="hover:text-[#0064cb] transition-colors">
               Dashboard
             </Link>
+            {isFromCalendar && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <Link href={calendarTargetUrl} className="hover:text-[#0064cb] transition-colors whitespace-nowrap">
+                  Calendar
+                </Link>
+              </>
+            )}
             <ChevronRight className="w-3.5 h-3.5" />
             <Link
               href={`/shift/view?shift_id=${shiftId}${notificationId ? `&notification_id=${notificationId}` : ""}`}
@@ -219,8 +265,9 @@ export function ShiftHeader({
           </div>
           <div className="flex items-start sm:items-center gap-3">
             <button
-              onClick={() => router.back()}
+              onClick={handleBack}
               className="cursor-pointer p-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:text-[#0064cb] transition-all shrink-0 mt-0.5 sm:mt-0"
+              title={isFromCalendar ? "Back to Calendar" : "Go Back"}
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -284,6 +331,8 @@ export function ShiftHeader({
         {(() => {
           if (!shift) return null;
           const buttons: any[] = [];
+          const paymentStatus = shift?.payment_status?.toLowerCase();
+          const isPaymentDisabled = !paymentStatus || paymentStatus === "pending" || paymentStatus === "unpaid";
 
           if (shift.action && typeof shift.action === "object") {
             const act = shift.action;
@@ -293,6 +342,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "indigo" as const,
                 onClick: onAssignGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onAssignGuard?.(profile),
               });
             }
             if (act.is_new_assigned) {
@@ -301,6 +352,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "blue" as const,
                 onClick: onNewAssignGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onNewAssignGuard?.(profile),
               });
             }
             if (act.is_new_lead_assigned) {
@@ -309,6 +362,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "blue" as const,
                 onClick: onAssignLeadGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onAssignLeadGuard(profile),
               });
             }
             if (act.is_new_standby_assigned) {
@@ -317,6 +372,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "yellow" as const,
                 onClick: onAssignStandbyGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onAssignStandbyGuard(profile),
               });
             }
             if (act.is_lead_reassigned) {
@@ -325,6 +382,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "indigo" as const,
                 onClick: onReassignLeadGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onReassignLeadGuard(profile),
               });
             }
             if (act.is_standby_reassigned) {
@@ -333,6 +392,8 @@ export function ShiftHeader({
                 icon: UserPlus,
                 color: "yellow" as const,
                 onClick: onReassignStandbyGuard,
+                isProviderDropdown: true,
+                onSelectProfile: (profile: SelectedPersonnelProfile) => onReassignStandbyGuard(profile),
               });
             }
             if (act.is_find_standby_guard) {
@@ -350,6 +411,15 @@ export function ShiftHeader({
                 color: "emerald" as const,
                 isLoading: isStartingShift,
                 onClick: onManualStart,
+              });
+            }
+            if (act.is_manual_end_shift) {
+              buttons.push({
+                label: "Manual Shift End",
+                icon: Square,
+                color: "red" as const,
+                isLoading: isEndingShift,
+                onClick: onManualEnd,
               });
             }
             if (act.is_config_settings) {
@@ -420,45 +490,60 @@ export function ShiftHeader({
             return `${words.join(" ")}\n${lastWord}`;
           };
 
-          return buttons.map((action, idx) => (
-            <button
-              key={idx}
-              className="flex flex-col items-center gap-1.5 group cursor-pointer border-none bg-transparent focus:outline-none"
-              onClick={action.onClick}
-              disabled={action.isLoading}
-            >
-              <div
-                className={cn(
-                  "w-12 h-12 rounded-full border-2 flex items-center justify-center shadow-sm transition-colors",
-                  action.color === "emerald" && "border-emerald-500 text-emerald-500 group-hover:bg-emerald-50",
-                  action.color === "blue" &&
-                  (isSettingsOpen && action.label === "Setting"
-                    ? "border-[#0064cb] text-[#0064cb] bg-blue-50"
-                    : "border-[#0064cb] text-[#0064cb] group-hover:bg-blue-50"),
-                  action.color === "orange" && "border-orange-500 text-orange-500 group-hover:bg-orange-50",
-                  action.color === "indigo" && "border-indigo-500 text-indigo-500 group-hover:bg-indigo-50",
-                  action.color === "teal" && "border-teal-500 text-teal-500 group-hover:bg-teal-50",
-                  action.color === "yellow" && "border-yellow-500 text-yellow-600 group-hover:bg-yellow-50",
-                  action.color === "slate" && "border-slate-400 text-slate-800 group-hover:bg-slate-50",
-                  action.color === "red" && "border-red-400 text-red-500 group-hover:bg-red-50"
-                )}
+          return buttons.map((action, idx) => {
+            const buttonElement = (
+              <button
+                type="button"
+                className="flex flex-col items-center gap-1.5 group cursor-pointer border-none bg-transparent focus:outline-none"
+                onClick={action.isProviderDropdown && !isPaymentDisabled ? undefined : action.onClick}
+                disabled={action.isLoading}
               >
-                {action.isLoading ? (
-                  <Loader2 className="w-5.5 h-5.5 animate-spin" />
-                ) : (
-                  <action.icon className="w-5.5 h-5.5" />
-                )}
-              </div>
-              <span
-                className={cn(
-                  "text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight whitespace-pre-line",
-                  isSettingsOpen && action.label === "Setting" && "text-[#0064cb]"
-                )}
-              >
-                {formatLabel(action.label)}
-              </span>
-            </button>
-          ));
+                <div
+                  className={cn(
+                    "w-12 h-12 rounded-full border-2 flex items-center justify-center shadow-sm transition-colors",
+                    action.color === "emerald" && "border-emerald-500 text-emerald-500 group-hover:bg-emerald-50",
+                    action.color === "blue" &&
+                    (isSettingsOpen && action.label === "Setting"
+                      ? "border-[#0064cb] text-[#0064cb] bg-blue-50"
+                      : "border-[#0064cb] text-[#0064cb] group-hover:bg-blue-50"),
+                    action.color === "orange" && "border-orange-500 text-orange-500 group-hover:bg-orange-50",
+                    action.color === "indigo" && "border-indigo-500 text-indigo-500 group-hover:bg-indigo-50",
+                    action.color === "teal" && "border-teal-500 text-teal-500 group-hover:bg-teal-50",
+                    action.color === "yellow" && "border-yellow-500 text-yellow-600 group-hover:bg-yellow-50",
+                    action.color === "slate" && "border-slate-400 text-slate-800 group-hover:bg-slate-50",
+                    action.color === "red" && "border-red-400 text-red-500 group-hover:bg-red-50"
+                  )}
+                >
+                  {action.isLoading ? (
+                    <Loader2 className="w-5.5 h-5.5 animate-spin" />
+                  ) : (
+                    <action.icon className="w-5.5 h-5.5" />
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "text-[10px] font-bold text-slate-600 uppercase text-center leading-[1.2] tracking-tight whitespace-pre-line",
+                    isSettingsOpen && action.label === "Setting" && "text-[#0064cb]"
+                  )}
+                >
+                  {formatLabel(action.label)}
+                </span>
+              </button>
+            );
+
+            if (action.isProviderDropdown && !isPaymentDisabled && action.onSelectProfile) {
+              return (
+                <PersonnelProfileDropdown
+                  key={idx}
+                  align="center"
+                  onSelect={action.onSelectProfile}
+                  trigger={buttonElement}
+                />
+              );
+            }
+
+            return <div key={idx}>{buttonElement}</div>;
+          });
         })()}
       </div>
     </div>

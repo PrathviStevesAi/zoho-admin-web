@@ -1,5 +1,6 @@
 import { clientApiFetch } from "@/lib/client-api";
 import { FetchResponse, BaseApiResponse, InvoiceData, Record, SingleFetchResponse } from "@/types/dashboard.types";
+import { toFullCountryName } from "@/lib/utils";
 
 export async function clientFetchInvoicesAction(
   page: number,
@@ -397,13 +398,19 @@ export async function clientFetchSecurityServicesAction(): Promise<{ success: bo
 }
 
 
-export async function clientFetchLocationAction(country?: string, state?: string, status?: string): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
+export async function clientFetchLocationAction(
+  country?: string,
+  state?: string,
+  status?: string,
+  personnel_profile_id?: string
+): Promise<{ success: boolean; data?: { countries: string[], states: string[], cities: string[] }; error?: string }> {
   try {
     let url = `/api/v1/guard/location`;
     const params = new URLSearchParams();
     if (status) params.append("status", status);
     if (country && country !== "All Country") params.append("country", country);
     if (state && state !== "All State") params.append("state", state);
+    if (personnel_profile_id) params.append("personnel_profile_id", personnel_profile_id);
     const qs = params.toString();
     if (qs) url += `?${qs}`;
 
@@ -474,6 +481,127 @@ export async function clientFetchGuardsAction(params: {
   }
 }
 
+export interface FetchGuardsByLocationParams {
+  location_type?: "geographic_area" | "cities" | "states" | "country" | string;
+  location?: string;
+  cities?: string[] | string;
+  city?: string;
+  states?: string[] | string;
+  state?: string;
+  country?: string[] | string;
+  radius?: number | string;
+  search?: string;
+  service?: "all" | "both" | "armed" | "unarmed" | string;
+  guard_level?: number | string;
+  account_status?: string;
+  status?: string;
+  page?: number | null;
+  personnel_profile_id?: string;
+  is_app_download?: boolean | string | null;
+}
+
+export async function clientFetchGuardsNewAction(params: FetchGuardsByLocationParams = {}): Promise<FetchResponse<any>> {
+  const query = new URLSearchParams();
+
+  const accountStatus =
+    params.account_status && params.account_status.toLowerCase() !== "all"
+      ? params.account_status
+      : "active";
+  query.append("account_status", accountStatus);
+
+  if (params.page !== null) {
+    const page = params.page !== undefined ? params.page : 1;
+    query.append("page", page.toString());
+  }
+
+  if (params.status) {
+    query.append("status", params.status);
+  }
+
+  if (params.personnel_profile_id) {
+    query.append("personnel_profile_id", params.personnel_profile_id);
+  }
+
+  if (
+    params.is_app_download !== undefined &&
+    params.is_app_download !== null &&
+    params.is_app_download !== "all" &&
+    params.is_app_download !== ""
+  ) {
+    query.append("is_app_download", String(params.is_app_download));
+  }
+
+  if (params.location_type) {
+    query.append("location_type", params.location_type);
+  }
+
+  if (params.location) {
+    query.append("location", params.location);
+  }
+
+  if (params.radius !== undefined && params.radius !== null && params.radius !== "") {
+    query.append("radius", params.radius.toString());
+  }
+
+  if (params.search && params.search.trim()) {
+    query.append("search", params.search.trim());
+  }
+
+  if (params.service && params.service.toLowerCase() !== "all") {
+    query.append("service", params.service.toLowerCase());
+  }
+
+  if (params.guard_level !== undefined && params.guard_level !== null && params.guard_level !== "" && String(params.guard_level).toLowerCase() !== "all") {
+    query.append("guard_level", params.guard_level.toString());
+  }
+
+  const citiesParam = params.cities ?? params.city;
+  if (citiesParam && citiesParam !== "All City") {
+    if (Array.isArray(citiesParam)) {
+      citiesParam.forEach(c => c && c !== "All City" && query.append("cities", c));
+    } else {
+      query.append("cities", citiesParam);
+    }
+  }
+
+  const statesParam = params.states ?? params.state;
+  if (statesParam && statesParam !== "All State") {
+    if (Array.isArray(statesParam)) {
+      statesParam.forEach(s => s && s !== "All State" && query.append("states", s));
+    } else {
+      query.append("states", statesParam);
+    }
+  }
+
+  const countryParam = params.country;
+  if (countryParam && countryParam !== "All Country") {
+    if (Array.isArray(countryParam)) {
+      countryParam.forEach(c => c && c !== "All Country" && query.append("country", c));
+    } else {
+      query.append("country", countryParam);
+    }
+  }
+
+  try {
+    const data = await clientApiFetch<any>(
+      `/api/v1/guard/list/new?${query.toString()}`
+    );
+    const guardsList = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+    const totalCount = data?.total !== undefined && data?.total !== null ? data.total : guardsList.length;
+    const limit = data?.page_size || 10;
+    const pagination = {
+      page: data?.page || (params.page !== null && params.page !== undefined ? params.page : 1),
+      limit: limit,
+      total: totalCount,
+      total_pages: Math.ceil(totalCount / limit) || 1
+    };
+    return { success: true, data: guardsList, pagination };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    return { success: false, error: message || "Unknown Error" };
+  }
+}
+
 
 export async function clientFetchCustomersAction(params: {
   page?: number | null;
@@ -528,6 +656,85 @@ export async function clientFetchAvailableGuardsAction(
     return { success: true, data: data?.data || data, total_guards: data.total_guards };
   } catch (error: any) {
     const message = error.message || "Something went wrong";
+    return { success: false, error: message || "Unknown Error" };
+  }
+}
+
+export async function clientFetchAvailableGuardsShiftsAction(
+  invoiceId: string
+): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  try {
+    const data = await clientApiFetch<{ success: boolean; data: any[] }>(
+      `/api/v1/invoice/${invoiceId}/available-guards/shifts`,
+      { cache: "no-store" }
+    );
+    const shiftsData = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+    return { success: true, data: shiftsData };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    console.error("[fetchAvailableGuardsShiftsAction] Error:", message);
+    return { success: false, error: message || "Unknown Error" };
+  }
+}
+
+export interface AvailableGuardItem {
+  notification_id: string;
+  guard_id: string;
+  guard_name: string;
+  email: string;
+  created_at: string;
+  shifts_data: { [key: string]: string };
+}
+
+export interface AvailableGuardsMatrixResponse {
+  success: boolean;
+  shift_nos?: string[];
+  total_guards?: number;
+  total_pages?: number;
+  current_page?: number;
+  data?: AvailableGuardItem[];
+  error?: string;
+}
+
+export async function clientFetchAvailableGuardsMatrixAction(
+  invoiceId: string,
+  shiftNos: string[] = [],
+  availabilityType: string = "all",
+  page: number = 1
+): Promise<AvailableGuardsMatrixResponse> {
+  try {
+    const params = new URLSearchParams();
+    if (shiftNos.length > 0) {
+      shiftNos.forEach((no) => {
+        const clean = String(no).replace(/^#/, "").trim();
+        if (clean) params.append("shift_no", clean);
+      });
+    }
+    if (availabilityType) {
+      params.append("availability_type", availabilityType);
+    }
+    if (page) {
+      params.append("page", page.toString());
+    }
+
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+    const data = await clientApiFetch<any>(
+      `/api/v1/invoice/${invoiceId}/available-guards${queryString}`,
+      { cache: "no-store" }
+    );
+
+    const guardsList = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+    return {
+      success: true,
+      shift_nos: Array.isArray(data?.shift_nos) ? data.shift_nos : [],
+      total_guards: data?.total_guards ?? guardsList.length,
+      total_pages: data?.total_pages ?? 1,
+      current_page: data?.current_page ?? page,
+      data: guardsList,
+    };
+  } catch (error: any) {
+    const message = error.message || "Something went wrong";
+    console.error("[clientFetchAvailableGuardsMatrixAction] Error:", message);
     return { success: false, error: message || "Unknown Error" };
   }
 }
@@ -602,6 +809,12 @@ export async function clientFetchCustomerByIdAction(id: string, customer_id?: st
 
 export async function updateCustomerAction(id: string, payload: any, customer_id?: string | null): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
+    if (payload?.billing_address?.country) {
+      payload.billing_address.country = toFullCountryName(payload.billing_address.country) || "United States";
+    }
+    if (payload?.service_address?.country) {
+      payload.service_address.country = toFullCountryName(payload.service_address.country) || "United States";
+    }
     const pathId = customer_id || id;
     const url = customer_id ? `/api/v1/customer/${pathId}?customer_id=${customer_id}` : `/api/v1/customer/${id}`;
     const data = await clientApiFetch<any>(url, {
@@ -955,4 +1168,389 @@ export async function clientFetchShiftReportsAction(params: {
     return { success: false, error: error?.message || "Failed to fetch shift reports" };
   }
 }
+
+export interface PersonnelProfileItem {
+  id: string;
+  name: string;
+  email?: string;
+  [key: string]: any;
+}
+
+export interface PersonnelProfilesResponseData {
+  fastguard: PersonnelProfileItem[];
+  agency: PersonnelProfileItem[];
+  agent: PersonnelProfileItem[];
+}
+
+export interface SelectedPersonnelProfile {
+  category: "fastguard" | "agency" | "agent";
+  categoryLabel: string;
+  id: string;
+  name: string;
+  email?: string;
+}
+
+export async function clientFetchPersonnelProfilesAction(
+  profileType?: "fastguard" | "agency" | "agent"
+): Promise<{ success: boolean; data?: PersonnelProfilesResponseData; error?: string }> {
+  try {
+    const endpoint = profileType
+      ? `/api/v1/personnel/profile/list?profile_type=${profileType}`
+      : `/api/v1/personnel/profile/list`;
+    const res = await clientApiFetch<any>(endpoint);
+    const payload = res?.data?.data || res?.data || res || {};
+
+    let fastguardList: any[] = [];
+    let agencyList: any[] = [];
+    let agentList: any[] = [];
+
+    if (Array.isArray(payload)) {
+      if (profileType === "fastguard") fastguardList = payload;
+      else if (profileType === "agency") agencyList = payload;
+      else if (profileType === "agent") agentList = payload;
+      else {
+        fastguardList = payload.filter((x: any) => x.type === "fastguard");
+        agencyList = payload.filter((x: any) => x.type === "agency");
+        agentList = payload.filter((x: any) => x.type === "agent");
+      }
+    } else {
+      fastguardList = payload.fastguard || [];
+      agencyList = payload.agency || [];
+      agentList = payload.agent || [];
+    }
+
+    const normalizeList = (list: any[]): PersonnelProfileItem[] => {
+      if (!Array.isArray(list)) return [];
+      return list.map((item) => ({
+        ...item,
+        id: String(item.id || item.user_id || item.profile_id || ""),
+        name:
+          item.name ||
+          item.full_name ||
+          [item.first_name, item.last_name].filter(Boolean).join(" ") ||
+          "Unknown",
+        email: item.email || undefined,
+        total_guards: typeof item.total_guards === "number" ? item.total_guards : (item.assigned_guards ?? 0),
+        phone: item.phone_no || item.phone_number || item.phone || undefined,
+        phone_no: item.phone_no || item.phone_number || item.phone || undefined,
+      }));
+    };
+
+    return {
+      success: true,
+      data: {
+        fastguard: normalizeList(fastguardList),
+        agency: normalizeList(agencyList),
+        agent: normalizeList(agentList),
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to fetch personnel profiles",
+    };
+  }
+}
+
+export async function clientUpdateGuardProviderAction(
+  guardId: string,
+  personnelProfileId: string
+): Promise<{ success: boolean; message?: string; error?: string; data?: any }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/guard/bank/application/${guardId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        personnel_profile_id: personnelProfileId,
+      }),
+    });
+    return {
+      success: res?.success !== false,
+      message: res?.message || "Provider updated successfully",
+      data: res?.data || res,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to update provider",
+    };
+  }
+}
+
+export interface CreatePersonnelProfilePayload {
+  profile_type: "agency" | "agent" | "fastguard" | string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: {
+    zip?: string;
+    city?: string;
+    state?: string;
+    street?: string;
+    country?: string;
+  };
+  notes?: string;
+}
+
+export async function clientCreatePersonnelProfileAction(
+  payload: CreatePersonnelProfilePayload
+): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return {
+      success: res?.success !== false,
+      message: res?.message || "Profile created successfully",
+      data: res?.data || res,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to create profile",
+    };
+  }
+}
+
+export interface PersonnelProfileDetail {
+  id: string;
+  profile_type: "agency" | "agent" | "fastguard" | string;
+  name: string;
+  email: string;
+  phone_no?: string;
+  phone?: string;
+  phone_number?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zip?: string;
+    zip_code?: string;
+  };
+  notes?: string;
+  total_guards?: number;
+  assigned_guards?: number;
+  [key: string]: any;
+}
+
+export async function clientFetchPersonnelProfileByIdAction(
+  profileId: string,
+  type: string = "profile"
+): Promise<{ success: boolean; data?: PersonnelProfileDetail; error?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/${profileId}?type=${type}`);
+    const rawData = res?.data || res;
+    return {
+      success: res?.success !== false,
+      data: rawData,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to fetch profile details",
+    };
+  }
+}
+
+export interface PersonnelSubdataResponse<T = any> {
+  success: boolean;
+  page?: number;
+  page_size?: number;
+  total?: number;
+  data?: T[];
+  error?: string;
+}
+
+export async function clientFetchPersonnelProfileSubdataAction<T = any>(
+  profileId: string,
+  type: "guards" | "shifts" | "attachments" | string,
+  page: number = 1,
+  search?: string,
+  pageSize: number = 15
+): Promise<PersonnelSubdataResponse<T>> {
+  try {
+    let url = `/api/v1/personnel/profile/${profileId}?type=${type}&page=${page}`;
+    if (search && search.trim()) {
+      url += `&search=${encodeURIComponent(search.trim())}`;
+    }
+    const res = await clientApiFetch<any>(url);
+    if (!res) {
+      return { success: false, error: "Empty response from server" };
+    }
+    const list = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
+    return {
+      success: res.success !== false,
+      page: typeof res.page === "number" ? res.page : page,
+      page_size: typeof res.page_size === "number" ? res.page_size : (typeof res.limit === "number" ? res.limit : (pageSize || 20)),
+      total: typeof res.total === "number" ? res.total : list.length,
+      data: list,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || `Failed to fetch ${type}`,
+    };
+  }
+}
+
+export interface UpdatePersonnelProfilePayload {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: {
+    street?: string;
+    zip?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+  };
+  notes?: string;
+}
+
+export async function clientUpdatePersonnelProfileByIdAction(
+  profileId: string,
+  payload: UpdatePersonnelProfilePayload
+): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/${profileId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    return {
+      success: res?.success !== false,
+      data: res?.data || res,
+      message: res?.message || "Profile updated successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to update profile",
+    };
+  }
+}
+
+export async function clientDeletePersonnelProfileByIdAction(
+  profileId: string
+): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/${profileId}`, {
+      method: "DELETE",
+    });
+    return {
+      success: res?.success !== false,
+      data: res?.data || res,
+      message: res?.message || "Profile deleted successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to delete profile",
+    };
+  }
+}
+
+export interface AddGuardsToPersonnelProfilePayload {
+  personnel_profile_id: string;
+  guard_ids: string[];
+}
+
+export async function clientAddGuardsToPersonnelProfileAction(
+  payload: AddGuardsToPersonnelProfilePayload
+): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/guards`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return {
+      success: res?.success !== false,
+      data: res?.data || res,
+      message: res?.message || "Guards added successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to add guards to profile",
+    };
+  }
+}
+
+export interface GeneratePersonnelMediaUploadUrlPayload {
+  file_name: string;
+  type?: string;
+  personnel_profile_id: string;
+}
+
+export async function clientGeneratePersonnelMediaUploadUrlAction(
+  payload: GeneratePersonnelMediaUploadUrlPayload
+): Promise<{ success: boolean; data?: { signed_url: string; file_path: string }; error?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/shift/media/generate-upload-url`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const data = res?.data || res;
+    return {
+      success: true,
+      data: {
+        signed_url: data?.signed_url || data?.url,
+        file_path: data?.file_path || data?.path || data?.signed_url?.split("?")[0],
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to generate upload URL",
+    };
+  }
+}
+
+export interface AddPersonnelProfileAttachmentPayload {
+  personnel_profile_id: string;
+  url: string;
+  file_name: string;
+}
+
+export async function clientAddPersonnelProfileAttachmentAction(
+  payload: AddPersonnelProfileAttachmentPayload
+): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/attachment`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return {
+      success: res?.success !== false,
+      data: res?.data || res,
+      message: res?.message || "Attachment uploaded successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to save attachment",
+    };
+  }
+}
+
+export async function clientDeletePersonnelProfileAttachmentAction(
+  attachmentId: string
+): Promise<{ success: boolean; error?: string; message?: string }> {
+  try {
+    const res = await clientApiFetch<any>(`/api/v1/personnel/profile/attachment/${attachmentId}`, {
+      method: "DELETE",
+    });
+    return {
+      success: res?.success !== false,
+      message: typeof res === "string" ? res : (res?.message || "Attachment deleted successfully"),
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Failed to delete attachment",
+    };
+  }
+}
+
+
 

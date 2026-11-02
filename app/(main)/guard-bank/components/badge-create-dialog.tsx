@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, Download, Check, Crop, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -173,6 +173,7 @@ export function BadgeCreateDialog({
         <DialogContent className="max-w-xl bg-white p-6 rounded-lg shadow-xl font-sans overflow-y-auto max-h-[90vh] border border-slate-100">
           <DialogHeader className="border-b border-slate-100 pb-3 flex flex-row items-center justify-between">
             <DialogTitle className="text-lg font-bold text-slate-800">Upload FAST GUARD BADGE ID</DialogTitle>
+            <DialogDescription className="sr-only">Upload passport headshot and configure guard badge details</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleFormSubmit} className="space-y-5 pt-3">

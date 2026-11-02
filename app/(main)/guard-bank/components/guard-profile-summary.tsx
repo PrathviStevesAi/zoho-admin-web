@@ -1,4 +1,5 @@
-import { Mail, Phone, ChevronDown, CheckCircle2, XCircle, Calendar, Plus, Loader2 } from "lucide-react";
+import { Mail, Phone, ChevronDown, CheckCircle2, XCircle, Calendar, Plus, Loader2, Building2, UserCheck, ShieldCheck, Briefcase } from "lucide-react";
+import Link from "next/link";
 import { FormattedDate } from "@/components/ui/formatted-date";
 import { cn } from "@/lib/utils";
 import { useState, useRef } from "react";
@@ -162,8 +163,20 @@ export function GuardProfileSummary({
         </div>
 
         <div className="space-y-3 sm:space-y-4 flex-1 min-w-0 flex flex-col items-center sm:items-start text-center sm:text-left w-full">
-          <h2 className="text-xl sm:text-[22px] font-bold text-slate-900 truncate w-full">
-            {`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "Guard Name"}
+          <h2 className="text-xl sm:text-[22px] font-bold text-slate-900 truncate w-full flex flex-wrap items-center justify-center sm:justify-start gap-2">
+            <span>{`${guard.first_name || ""} ${guard.last_name || ""}`.trim() || "Guard Name"}</span>
+            {guard?.account_status && (
+              <span className={cn(
+                "font-semibold capitalize text-base sm:text-lg",
+                guard.account_status.toLowerCase() === "active" && "text-emerald-600",
+                guard.account_status.toLowerCase() === "inactive" && "text-amber-600",
+                guard.account_status.toLowerCase() === "blocked" && "text-red-600",
+                guard.account_status.toLowerCase() === "archived" && "text-slate-500",
+                !["active", "inactive", "blocked", "archived"].includes(guard.account_status.toLowerCase()) && "text-slate-600"
+              )}>
+                ({guard.account_status})
+              </span>
+            )}
           </h2>
 
           <div>
@@ -287,26 +300,98 @@ export function GuardProfileSummary({
         </div>
       </div>
 
-      <div className="flex flex-row items-center justify-between lg:justify-start gap-4 sm:gap-12 lg:pl-10 lg:border-l lg:border-slate-100 pt-4 sm:pt-6 lg:pt-0 border-t lg:border-t-0 border-slate-100 w-full lg:w-auto mt-2 lg:mt-0">
-        <div className="space-y-1 sm:space-y-2">
-          <span className="text-[11px] sm:text-[12px] text-slate-500 font-medium">Status</span>
-          <div className="flex items-center gap-1.5">
-            {guard.status === 'approved' ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : guard.status === 'disqualified' ? <XCircle className="w-4 h-4 text-red-600" /> : <div className="w-4 h-4 rounded-full border-2 border-amber-500" />}
-            <span className={`text-[13px] font-bold capitalize ${guard.status === 'approved' ? 'text-green-600' : guard.status === 'disqualified' ? 'text-red-600' : 'text-amber-600'}`}>
-              {guard.status}
-            </span>
+      {(() => {
+        const provider = guard?.personnel_profile;
+        const providerName =
+          (typeof provider === "object" ? provider?.name : null) ||
+          (typeof provider === "string" ? provider : null) ||
+          guard?.personnel_profile_name ||
+          guard?.personnel_name;
+
+        const rawProviderType = String(
+          (typeof provider === "object" ? provider?.type || provider?.profile_type : "") || ""
+        ).toLowerCase().trim();
+
+        const ProviderIcon =
+          rawProviderType === "agency"
+            ? Building2
+            : rawProviderType === "agent"
+            ? UserCheck
+            : rawProviderType === "fastguard"
+            ? ShieldCheck
+            : Building2;
+
+        const providerIconColor =
+          rawProviderType === "agency"
+            ? "text-purple-600"
+            : rawProviderType === "agent"
+            ? "text-emerald-600"
+            : rawProviderType === "fastguard"
+            ? "text-[#0064cb]"
+            : "text-slate-500";
+
+        const providerId =
+          (typeof provider === "object" ? provider?.id || provider?.profile_id : null) ||
+          guard?.personnel_profile_id;
+
+        const isFastGuard =
+          rawProviderType === "fastguard" ||
+          providerId === "afa86a21-72e8-4629-85a7-b1f2052f278e" ||
+          (Boolean(providerName) && providerName.toLowerCase().includes("fastguard"));
+
+        const providerHref =
+          isFastGuard
+            ? `/provider-management/fastguard`
+            : providerId && (rawProviderType === "agency" || rawProviderType === "agent")
+            ? `/provider-management/${rawProviderType}/${providerId}`
+            : null;
+
+        return (
+          <div className="flex flex-row items-start justify-between lg:justify-start gap-4 sm:gap-12 lg:pl-10 lg:border-l lg:border-slate-100 pt-4 sm:pt-6 lg:pt-0 border-t lg:border-t-0 border-slate-100 w-full lg:w-auto mt-2 lg:mt-0">
+            <div className="space-y-3">
+              <div className="space-y-1 sm:space-y-1.5">
+                <span className="text-[11px] sm:text-[12px] text-slate-500 font-medium">Status</span>
+                <div className="flex items-center gap-1.5">
+                  {guard.status === 'approved' ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : guard.status === 'disqualified' ? <XCircle className="w-4 h-4 text-red-600" /> : <div className="w-4 h-4 rounded-full border-2 border-amber-500" />}
+                  <span className={`text-[13px] font-bold capitalize ${guard.status === 'approved' ? 'text-green-600' : guard.status === 'disqualified' ? 'text-red-600' : 'text-amber-600'}`}>
+                    {guard.status}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1 sm:space-y-1.5">
+                <span className="text-[11px] sm:text-[12px] text-slate-500 font-medium">Provider</span>
+                <div className="flex items-center gap-1.5 text-slate-700">
+                  <ProviderIcon className={`w-4 h-4 shrink-0 ${providerIconColor}`} />
+                  {providerHref && providerName ? (
+                    <Link
+                      href={providerHref}
+                      className="text-[13px] font-bold text-[#0064cb] hover:underline truncate max-w-[180px] transition-colors"
+                      title={providerName}
+                    >
+                      {providerName}
+                    </Link>
+                  ) : (
+                    <span className="text-[13px] font-bold text-slate-800 truncate max-w-[180px]" title={providerName || "Unassigned"}>
+                      {providerName || "Unassigned"}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1 sm:space-y-1.5 text-right lg:text-left">
+              <span className="text-[11px] sm:text-[12px] text-slate-500 font-medium">Form Submit - Date</span>
+              <div className="flex items-center justify-end lg:justify-start gap-1.5 text-slate-700">
+                <Calendar className="w-4 h-4" />
+                <span className="text-[13px] font-bold">
+                  {guard.created_at ? <FormattedDate date={guard.created_at} includeTime={false} /> : "N/A"}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="space-y-1 sm:space-y-2 text-right lg:text-left">
-          <span className="text-[11px] sm:text-[12px] text-slate-500 font-medium">Form Submit - Date</span>
-          <div className="flex items-center justify-end lg:justify-start gap-1.5 text-slate-700">
-            <Calendar className="w-4 h-4" />
-            <span className="text-[13px] font-bold">
-              {guard.created_at ? <FormattedDate date={guard.created_at} includeTime={false} /> : "N/A"}
-            </span>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
     </div>
   );
 }

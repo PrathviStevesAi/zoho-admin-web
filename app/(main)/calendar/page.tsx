@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { recordNavigation } from "@/lib/navigation-history";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
@@ -9,14 +11,35 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchCalendarShiftsAction } from "@/actions/dashboard.actions";
 import "./calendar.css";
 
-export default function CalendarPage() {
+const VIEW_MAP: Record<string, string> = {
+  dayGridMonth: "month",
+  listWeek: "week",
+  listDay: "day",
+};
+
+const REVERSE_VIEW_MAP: Record<string, string> = {
+  month: "dayGridMonth",
+  dayGridMonth: "dayGridMonth",
+  week: "listWeek",
+  listWeek: "listWeek",
+  "week-list": "listWeek",
+  day: "listDay",
+  listDay: "listDay",
+  "day-list": "listDay",
+};
+
+function CalendarContent() {
+  const searchParams = useSearchParams();
+  const urlView = searchParams.get("view") || searchParams.get("tab");
+  const initialViewName = urlView ? (REVERSE_VIEW_MAP[urlView] || "dayGridMonth") : "dayGridMonth";
+
   const calendarRef = useRef<FullCalendar>(null);
-  const [currentView, setCurrentView] = useState("dayGridMonth");
+  const [currentView, setCurrentView] = useState(initialViewName);
   const [currentDate, setCurrentDate] = useState("");
   const [showFullDuration, setShowFullDuration] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
@@ -43,11 +66,28 @@ export default function CalendarPage() {
     updateCurrentDate(calendarApi);
   };
 
+  useEffect(() => {
+    if (urlView) {
+      const targetView = REVERSE_VIEW_MAP[urlView] || "dayGridMonth";
+      if (targetView !== currentView) {
+        setCurrentView(targetView);
+        const calendarApi = calendarRef.current?.getApi();
+        calendarApi?.changeView(targetView);
+        updateCurrentDate(calendarApi);
+      }
+    }
+  }, [urlView]);
+
   const changeView = (viewName: string) => {
     const calendarApi = calendarRef.current?.getApi();
     calendarApi?.changeView(viewName);
     setCurrentView(viewName);
     updateCurrentDate(calendarApi);
+
+    const param = VIEW_MAP[viewName] || "month";
+    const newUrl = `/calendar?view=${param}`;
+    window.history.replaceState(null, "", newUrl);
+    recordNavigation(newUrl);
   };
 
   const updateCurrentDate = (calendarApi: any) => {
@@ -69,6 +109,12 @@ export default function CalendarPage() {
           const start = shift.start_time ? shift.start_time.substring(0, 19) : shift.start_time;
           const end = shift.end_time ? shift.end_time.substring(0, 19) : shift.end_time;
 
+          const assignedGuard = shift.assigned_guard
+            ? (typeof shift.assigned_guard === "object"
+                ? shift.assigned_guard.name || shift.assigned_guard.guard_name || `${shift.assigned_guard.first_name || ""} ${shift.assigned_guard.last_name || ""}`.trim()
+                : String(shift.assigned_guard).trim())
+            : null;
+
           return {
             id: shift.shift_id,
             title: `${shift.customer_name} [${shift.invoice_no}] - ${shift.service_address}`,
@@ -78,7 +124,8 @@ export default function CalendarPage() {
             textColor: "#ffffff",
             extendedProps: {
               shift_no: shift.shift_no,
-              end_str: end
+              end_str: end,
+              assigned_guard: assignedGuard
             }
           };
         });
@@ -289,7 +336,7 @@ export default function CalendarPage() {
               </div>
               <div className="p-5">
                 <Link
-                  href={`/shift/view?shift_id=${selectedEvent.id}`}
+                  href={`/shift/view?shift_id=${selectedEvent.id}&from=calendar&view=${VIEW_MAP[currentView] || "month"}`}
                   className="block"
                 >
                   <div
@@ -319,6 +366,17 @@ export default function CalendarPage() {
                       )}
                     </div>
                     <div className="font-semibold text-[14px] leading-relaxed ml-[14px]">{selectedEvent.title}</div>
+                    {selectedEvent.assigned_guard ? (
+                      <div className="mt-3 ml-[14px] inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 bg-white rounded-md border border-slate-200 shadow-2xs">
+                        <User className="w-3.5 h-3.5 text-[#0064cb] shrink-0" />
+                        <span className="text-slate-500 font-medium">Assigned Guard:</span>
+                        <span className="font-bold text-slate-900">{selectedEvent.assigned_guard}</span>
+                      </div>
+                    ) : (
+                      <div className="mt-3 ml-[14px] text-xs text-slate-400 italic">
+                        No Guard Assigned
+                      </div>
+                    )}
                   </div>
                 </Link>
               </div>
@@ -356,7 +414,8 @@ export default function CalendarPage() {
                           title: event.title,
                           start: event.start,
                           end: event.extendedProps?.end_str ? new Date(event.extendedProps.end_str) : event.end,
-                          backgroundColor: event.backgroundColor
+                          backgroundColor: event.backgroundColor,
+                          assigned_guard: event.extendedProps?.assigned_guard
                         });
                       }}
                     >
@@ -378,6 +437,13 @@ export default function CalendarPage() {
                         )}
                       </div>
                       <div className="font-semibold text-[14px] ml-[14px] truncate">{event.title}</div>
+                      {event.extendedProps?.assigned_guard && (
+                        <div className="ml-[14px] mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-800 bg-white/90 px-2 py-0.5 rounded border border-slate-200">
+                          <User className="w-3 h-3 text-[#0064cb] shrink-0" />
+                          <span className="text-slate-500 font-normal">Assigned:</span>
+                          <span className="font-bold">{event.extendedProps.assigned_guard}</span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -390,7 +456,7 @@ export default function CalendarPage() {
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
+            initialView={initialViewName}
             events={fetchEvents}
             headerToolbar={false}
             height="auto"
@@ -416,6 +482,7 @@ export default function CalendarPage() {
               const isListView = eventInfo.view.type.startsWith("list");
               const shiftNo = eventInfo.event.extendedProps?.shift_no;
               const endStr = eventInfo.event.extendedProps?.end_str;
+              const assignedGuard = eventInfo.event.extendedProps?.assigned_guard;
               
               let formattedEnd = "";
               if (showFullDuration && endStr) {
@@ -434,11 +501,24 @@ export default function CalendarPage() {
                       )}
                       {eventInfo.event.title}
                     </span>
-                    {shiftNo && (
-                      <span className="self-end text-[11px] font-extrabold tracking-wider mt-1 opacity-90 select-none">
-                        #SH-{shiftNo}
-                      </span>
-                    )}
+                    <div className="flex items-center justify-between gap-2 mt-1.5 flex-wrap sm:flex-nowrap">
+                      {assignedGuard ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-800 bg-white/90 px-2 py-0.5 rounded border border-slate-200/80 shadow-2xs">
+                          <User className="w-3.5 h-3.5 text-[#0064cb] shrink-0" />
+                          <span className="text-slate-500 font-medium">Assigned:</span>
+                          <span className="font-bold text-slate-900">{assignedGuard}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 italic bg-white/60 px-2 py-0.5 rounded border border-slate-200/60">
+                          No Guard Assigned
+                        </span>
+                      )}
+                      {shiftNo && (
+                        <span className="text-[11px] font-extrabold tracking-wider opacity-90 select-none ml-auto">
+                          #SH-{shiftNo}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               }
@@ -449,10 +529,18 @@ export default function CalendarPage() {
               }
 
               return (
-                <>
-                  {customTimeText && <span className="fc-event-time">{customTimeText}</span>}
-                  <span className="fc-event-title">{eventInfo.event.title}</span>
-                </>
+                <div className="flex flex-col min-w-0 w-full" title={assignedGuard ? `${eventInfo.event.title} • Assigned: ${assignedGuard}` : eventInfo.event.title}>
+                  <div className="flex items-center gap-1 truncate">
+                    {customTimeText && <span className="fc-event-time shrink-0">{customTimeText}</span>}
+                    <span className="fc-event-title truncate">{eventInfo.event.title}</span>
+                  </div>
+                  {assignedGuard && (
+                    <span className="text-[10px] font-semibold text-slate-800/90 truncate flex items-center gap-0.5 mt-0.5">
+                      <User className="w-2.5 h-2.5 text-[#0064cb] shrink-0 inline" />
+                      <span className="truncate">{assignedGuard}</span>
+                    </span>
+                  )}
+                </div>
               );
             }}
             eventClick={(info) => {
@@ -462,12 +550,21 @@ export default function CalendarPage() {
                 title: info.event.title,
                 start: info.event.start,
                 end: info.event.extendedProps?.end_str ? new Date(info.event.extendedProps.end_str) : info.event.end,
-                backgroundColor: info.event.backgroundColor || info.el.style.getPropertyValue('--event-color')
+                backgroundColor: info.event.backgroundColor || info.el.style.getPropertyValue('--event-color'),
+                assigned_guard: info.event.extendedProps?.assigned_guard
               });
             }}
           />
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense fallback={null}>
+      <CalendarContent />
+    </Suspense>
   );
 }

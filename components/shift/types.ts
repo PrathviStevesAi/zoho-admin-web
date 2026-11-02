@@ -35,6 +35,7 @@ export interface ShiftActions {
   is_new_lead_assigned?: boolean;
   is_new_standby_assigned?: boolean;
   is_manual_start_shift?: boolean;
+  is_manual_end_shift?: boolean;
   is_config_settings?: boolean;
   is_cancel_service?: boolean;
   is_edit_schedule?: boolean;
@@ -66,6 +67,13 @@ export interface AssignedGuard {
   name?: string;
 }
 
+export interface PersonnelProfileSummary {
+  id?: string;
+  name?: string;
+  profile_type?: string;
+  [key: string]: any;
+}
+
 export interface LeadGuard {
   guard_id?: string;
   first_name?: string;
@@ -74,6 +82,7 @@ export interface LeadGuard {
   phone_no?: string;
   shift_status?: string;
   execution_time?: ExecutionTime | string | null;
+  personnel_profile?: PersonnelProfileSummary | null;
 }
 
 export interface StandbyGuard {
@@ -83,6 +92,7 @@ export interface StandbyGuard {
   application_id?: string;
   phone_no?: string;
   shift_status?: string;
+  personnel_profile?: PersonnelProfileSummary | null;
 }
 
 export interface Shift {
@@ -101,6 +111,7 @@ export interface Shift {
   report_token?: string;
   is_report_send?: boolean;
   is_travel_guard?: boolean;
+  is_required_attachment?: boolean;
   assigned_guard?: string | AssignedGuard;
   scheduled_for?: ShiftTime;
   execution_time?: ExecutionTime;
@@ -119,6 +130,8 @@ export interface Shift {
   security_service_id?: string | null;
   security_service?: string | null;
   call_id?: string | null;
+  lead_shift_personnel_profile?: PersonnelProfileSummary | null;
+  standby_shift_personnel_profile?: PersonnelProfileSummary | null;
   lead_guard?: LeadGuard;
   standby_guard?: StandbyGuard;
   shift_extension_requests?: ShiftExtensionRequest[];
