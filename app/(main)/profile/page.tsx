@@ -52,7 +52,14 @@ const countries = [
 
 const findCountryFromPhone = (phone: string) => {
   if (!phone || !phone.startsWith("+")) return null;
-  const sortedCountries = [...countries].sort((a, b) => b.dialCode.length - a.dialCode.length);
+  const sortedCountries = [...countries].sort((a, b) => {
+    if (b.dialCode.length !== a.dialCode.length) {
+      return b.dialCode.length - a.dialCode.length;
+    }
+    if (a.code === "us") return -1;
+    if (b.code === "us") return 1;
+    return 0;
+  });
   for (const country of sortedCountries) {
     if (phone.startsWith(country.dialCode)) {
       return country;

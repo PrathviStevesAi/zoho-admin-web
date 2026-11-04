@@ -85,6 +85,7 @@ function GuardBankContent() {
     guardId: string;
   }>({ isOpen: false, guardId: "" });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const fetchProviders = async () => {
@@ -124,6 +125,9 @@ function GuardBankContent() {
   }, [debouncedSearch, selectedCountry, selectedState, selectedCity, selectedAccountStatus, selectedProvider]);
 
   useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
     const fetchLocations = async () => {
       let status = "";
       if (activeTab === "home") status = "pending";
@@ -134,6 +138,7 @@ function GuardBankContent() {
 
       try {
         const session = await getSession() as any;
+        if (cancelled) return;
         const token = session?.accessToken;
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -149,6 +154,7 @@ function GuardBankContent() {
         }
 
         const res = await fetch(url, {
+          signal: controller.signal,
           cache: "no-store",
           headers: {
             "ngrok-skip-browser-warning": "true",
@@ -157,12 +163,16 @@ function GuardBankContent() {
           }
         });
 
+        if (cancelled) return;
+
         if (!res.ok) {
-          setLocations({ countries: [], states: [], cities: [] });
+          if (!cancelled) setLocations({ countries: [], states: [], cities: [] });
           return;
         }
 
         const data = await res.json().catch(() => null);
+        if (cancelled) return;
+
         if (data && data.success && data.data && typeof data.data === "object" && !Array.isArray(data.data)) {
           const sanitizeStrings = (arr: any) =>
             Array.isArray(arr) ? arr.filter((x: any) => typeof x === "string" && x.trim() !== "") : [];
@@ -173,89 +183,116 @@ function GuardBankContent() {
             cities: sanitizeStrings(data.data.cities),
           });
         } else {
-          setLocations({ countries: [], states: [], cities: [] });
+          if (!cancelled) setLocations({ countries: [], states: [], cities: [] });
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (cancelled || error?.name === "AbortError") return;
         console.error("Failed to fetch locations:", error);
         setLocations({ countries: [], states: [], cities: [] });
       }
     };
 
     fetchLocations();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [activeTab, selectedCountry, selectedState, selectedProvider]);
 
-  const fetchGuards = async () => {
-    let status = "";
-    if (activeTab === "home") status = "pending";
-    else if (activeTab === "record-touch") status = "record_touched";
-    else if (activeTab === "approved") status = "approved";
-    else if (activeTab === "disqualified") status = "disqualified";
-    else return;
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
 
-    setLoading(true);
-    try {
-      const session = await getSession() as any;
-      const token = session?.accessToken;
+    const fetchGuards = async () => {
+      let status = "";
+      if (activeTab === "home") status = "pending";
+      else if (activeTab === "record-touch") status = "record_touched";
+      else if (activeTab === "approved") status = "approved";
+      else if (activeTab === "disqualified") status = "disqualified";
+      else return;
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      let url = `${baseUrl}/api/v1/guard/bank/application?status=${status}&page=${currentPage}&page_size=${pageSize}`;
-      if (selectedCountry && selectedCountry !== "all") {
-        url += `&country=${encodeURIComponent(selectedCountry)}`;
-      }
-      if (selectedState && selectedState !== "all") {
-        url += `&state=${encodeURIComponent(selectedState)}`;
-      }
-      if (selectedCity && selectedCity !== "all") {
-        url += `&city=${encodeURIComponent(selectedCity)}`;
-      }
-      if (debouncedSearch) {
-        url += `&search=${encodeURIComponent(debouncedSearch)}`;
-      }
-      if (activeTab !== "home" && selectedAccountStatus && selectedAccountStatus !== "all") {
-        url += `&account_status=${encodeURIComponent(selectedAccountStatus)}`;
-      }
-      if (activeTab !== "home" && selectedProvider && selectedProvider !== "all") {
-        url += `&personnel_profile_id=${encodeURIComponent(selectedProvider)}`;
-      }
-
-      url += `&_t=${Date.now()}`;
-
-      const res = await fetch(url, {
-        cache: "no-store",
-        headers: {
-          "ngrok-skip-browser-warning": "true",
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` })
-        }
-      });
-
-      if (!res.ok) {
-        setGuardsData([]);
-        setTotalCount(0);
-        return;
-      }
-
-      const data = await res.json().catch(() => null);
-      if (data && data.success && Array.isArray(data.data)) {
-        const cleanGuards = data.data.filter((g: any) => g && typeof g === "object" && !("success" in g && !g.id));
-        setGuardsData(cleanGuards);
-        setTotalCount(typeof data.total === "number" ? data.total : (data.pagination?.total || cleanGuards.length));
-      } else {
-        setGuardsData([]);
-        setTotalCount(0);
-      }
-    } catch (error) {
-      console.error("Failed to fetch guards:", error);
+      // Immediately clear stale data and show loading on every new fetch
       setGuardsData([]);
       setTotalCount(0);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(true);
 
-  useEffect(() => {
+      try {
+        const session = await getSession() as any;
+        if (cancelled) return;
+        const token = session?.accessToken;
+
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+        let url = `${baseUrl}/api/v1/guard/bank/application?status=${status}&page=${currentPage}&page_size=${pageSize}`;
+        if (selectedCountry && selectedCountry !== "all") {
+          url += `&country=${encodeURIComponent(selectedCountry)}`;
+        }
+        if (selectedState && selectedState !== "all") {
+          url += `&state=${encodeURIComponent(selectedState)}`;
+        }
+        if (selectedCity && selectedCity !== "all") {
+          url += `&city=${encodeURIComponent(selectedCity)}`;
+        }
+        if (debouncedSearch) {
+          url += `&search=${encodeURIComponent(debouncedSearch)}`;
+        }
+        if (activeTab !== "home" && selectedAccountStatus && selectedAccountStatus !== "all") {
+          url += `&account_status=${encodeURIComponent(selectedAccountStatus)}`;
+        }
+        if (activeTab !== "home" && selectedProvider && selectedProvider !== "all") {
+          url += `&personnel_profile_id=${encodeURIComponent(selectedProvider)}`;
+        }
+
+        url += `&_t=${Date.now()}`;
+
+        const res = await fetch(url, {
+          signal: controller.signal,
+          cache: "no-store",
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+          }
+        });
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          if (!cancelled) {
+            setGuardsData([]);
+            setTotalCount(0);
+          }
+          return;
+        }
+
+        const data = await res.json().catch(() => null);
+        if (cancelled) return;
+
+        if (data && data.success && Array.isArray(data.data)) {
+          const cleanGuards = data.data.filter((g: any) => g && typeof g === "object" && !("success" in g && !g.id));
+          setGuardsData(cleanGuards);
+          setTotalCount(typeof data.total === "number" ? data.total : (data.pagination?.total || cleanGuards.length));
+        } else {
+          setGuardsData([]);
+          setTotalCount(0);
+        }
+      } catch (error: any) {
+        if (cancelled || error?.name === "AbortError") return;
+        console.error("Failed to fetch guards:", error);
+        setGuardsData([]);
+        setTotalCount(0);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
     fetchGuards();
-  }, [activeTab, currentPage, pageSize, debouncedSearch, selectedCountry, selectedState, selectedCity, selectedAccountStatus, selectedProvider]);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [activeTab, currentPage, pageSize, debouncedSearch, selectedCountry, selectedState, selectedCity, selectedAccountStatus, selectedProvider, refreshKey]);
 
   const handleDeleteGuard = (id: string) => {
     setDeleteConfirm({ isOpen: true, guardId: id });
@@ -287,7 +324,7 @@ function GuardBankContent() {
         setGuardsData(prev => prev.filter(guard => guard.id !== id));
         setTotalCount(prev => Math.max(0, prev - 1));
         setTimeout(() => {
-          fetchGuards();
+          setRefreshKey(k => k + 1);
         }, 800);
       } else {
         const data = await res.json().catch(() => ({}));

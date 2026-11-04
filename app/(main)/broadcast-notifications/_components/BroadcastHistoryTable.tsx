@@ -10,6 +10,7 @@ import {
   History,
   Send,
   Users,
+  Trash2,
 } from "lucide-react";
 import {
   Table,
@@ -21,14 +22,18 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import { ConfirmationDialog } from "@/app/(main)/guard-bank/components/confirmation-dialog";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   fetchBroadcastHistoryAction,
+  deleteBroadcastMessagesAction,
   BroadcastHistoryItem,
 } from "@/actions/notification.actions";
 import { RecipientsDrawer } from "./RecipientsDrawer";
@@ -47,6 +52,22 @@ export function BroadcastHistoryTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedMessageForRecipients, setSelectedMessageForRecipients] = useState<BroadcastHistoryItem | null>(null);
+
+  // Selection & deletion states
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    ids: string[];
+    title: string;
+    description: string;
+  }>({
+    isOpen: false,
+    ids: [],
+    title: "",
+    description: "",
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const limit = 20;
 
   const loadHistory = useCallback(
@@ -80,6 +101,78 @@ export function BroadcastHistoryTable({
   }, [loadHistory, currentPage]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+
+  // Selection helpers
+  const validCurrentPageIds = historyList.map((item) => item.id).filter(Boolean);
+  const isAllSelected =
+    validCurrentPageIds.length > 0 &&
+    validCurrentPageIds.every((id) => selectedIds.includes(id));
+  const isSomeSelected =
+    validCurrentPageIds.some((id) => selectedIds.includes(id)) && !isAllSelected;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !validCurrentPageIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...validCurrentPageIds])));
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  // Delete helpers
+  const handleRequestDeleteSingle = (item: BroadcastHistoryItem) => {
+    setDeleteDialog({
+      isOpen: true,
+      ids: [item.id],
+      title: "Delete Broadcast Message",
+      description:
+        "Are you sure you want to delete this broadcast message? This action cannot be undone.",
+    });
+  };
+
+  const handleRequestDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    const count = selectedIds.length;
+    setDeleteDialog({
+      isOpen: true,
+      ids: [...selectedIds],
+      title: "Delete Selected Messages",
+      description: `Are you sure you want to delete ${count} selected broadcast message${count > 1 ? "s" : ""}? This action cannot be undone.`,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteDialog.ids.length === 0) return;
+    setIsDeleting(true);
+    try {
+      const res = await deleteBroadcastMessagesAction(deleteDialog.ids);
+      if (res.success) {
+        toast.success(res.message || "Broadcast message(s) deleted successfully");
+        const deletedSet = new Set(deleteDialog.ids);
+        setSelectedIds((prev) => prev.filter((id) => !deletedSet.has(id)));
+        setDeleteDialog((prev) => ({ ...prev, isOpen: false }));
+
+        // Adjust page if all items on current page were deleted
+        if (historyList.length <= deleteDialog.ids.length && currentPage > 1) {
+          setCurrentPage((p) => Math.max(1, p - 1));
+        } else {
+          loadHistory(currentPage);
+        }
+      } else {
+        toast.error(res.error || "Failed to delete broadcast message(s)");
+      }
+    } catch (err: any) {
+      console.error("Error deleting broadcast messages:", err);
+      toast.error(err?.message || "An unexpected error occurred while deleting");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";
@@ -150,19 +243,47 @@ export function BroadcastHistoryTable({
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-      <div className="px-6 py-4.5 border-b border-slate-100 bg-white">
+      <div className="px-6 py-4.5 border-b border-slate-100 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-bold text-slate-900">Broadcast History</h3>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
             Logs of all sent announcements, delivery, and total recipient reach.
           </p>
         </div>
+
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-2.5 animate-in fade-in duration-200">
+            <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+              {selectedIds.length} selected
+            </span>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleRequestDeleteSelected}
+              className="h-9 px-3.5 rounded-xl font-bold text-xs bg-red-600 hover:bg-red-700 text-white shadow-sm flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Selected</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto">
         <Table className="w-full">
           <TableHeader>
             <TableRow className="hover:bg-transparent border-y border-slate-200 bg-slate-100/70">
+              <TableHead className="w-10 text-center py-3.5 px-3">
+                <Checkbox
+                  checked={
+                    isAllSelected ? true : isSomeSelected ? "indeterminate" : false
+                  }
+                  onCheckedChange={handleToggleSelectAll}
+                  aria-label="Select all broadcast messages"
+                  className="mx-auto cursor-pointer"
+                />
+              </TableHead>
               <TableHead className="w-12 text-center text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3">
                 No.
               </TableHead>
@@ -184,12 +305,18 @@ export function BroadcastHistoryTable({
               <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3 w-[120px]">
                 Estimate Cost
               </TableHead>
+              <TableHead className="text-center text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3.5 px-3 w-[90px]">
+                Action
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="[&_tr:last-child]:border-b-0">
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={`skeleton-${i}`} className="border-b border-slate-100">
+                  <TableCell className="px-3 py-3.5 text-center">
+                    <Skeleton className="h-4 w-4 mx-auto rounded" />
+                  </TableCell>
                   <TableCell className="px-3 py-3.5 text-center">
                     <Skeleton className="h-4 w-6 mx-auto" />
                   </TableCell>
@@ -214,11 +341,14 @@ export function BroadcastHistoryTable({
                   <TableCell className="px-3 py-3.5">
                     <Skeleton className="h-6 w-16 rounded-full" />
                   </TableCell>
+                  <TableCell className="px-3 py-3.5 text-center">
+                    <Skeleton className="h-8 w-8 rounded-lg mx-auto" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : historyList.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-64 text-center">
+                <TableCell colSpan={9} className="h-64 text-center">
                   <div className="flex flex-col items-center justify-center gap-3 py-10 max-w-sm mx-auto">
                     <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                       <History className="w-7 h-7" />
@@ -265,11 +395,25 @@ export function BroadcastHistoryTable({
                     .slice(0, 2)
                     .toUpperCase() || "AD";
 
+                const isSelected = selectedIds.includes(item.id);
+
                 return (
                   <TableRow
                     key={item.id || `history-${idx}`}
-                    className="hover:bg-slate-50/70 border-b border-slate-100 transition-colors group"
+                    className={cn(
+                      "hover:bg-slate-50/70 border-b border-slate-100 transition-colors group",
+                      isSelected && "bg-blue-50/30"
+                    )}
                   >
+                    <TableCell className="text-center py-3.5 px-3 w-10">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => handleToggleSelect(item.id)}
+                        aria-label={`Select message ${rowNumber}`}
+                        className="mx-auto cursor-pointer"
+                      />
+                    </TableCell>
+
                     <TableCell className="text-center text-sm font-semibold text-slate-500 py-3.5 px-3 w-12">
                       {rowNumber}
                     </TableCell>
@@ -337,6 +481,19 @@ export function BroadcastHistoryTable({
                           <span className="text-slate-400 font-medium text-sm pl-2">-</span>
                         );
                       })()}
+                    </TableCell>
+
+                    <TableCell className="py-3.5 px-3 text-center whitespace-nowrap w-[90px]">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRequestDeleteSingle(item)}
+                        className="h-8 w-8 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Delete broadcast message"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -413,6 +570,18 @@ export function BroadcastHistoryTable({
         messageId={selectedMessageForRecipients?.id || null}
         messageSnippet={selectedMessageForRecipients?.message}
         initialTotalCount={selectedMessageForRecipients?.recipients_count}
+      />
+
+      <ConfirmationDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => !isDeleting && setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={handleConfirmDelete}
+        title={deleteDialog.title}
+        description={deleteDialog.description}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDanger={true}
+        isLoading={isDeleting}
       />
     </div>
   );

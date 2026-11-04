@@ -62,19 +62,42 @@ const COUNTRIES = [
   { name: "Venezuela", code: "ve", dialCode: "+58" },
 ];
 
-function parsePhoneWithCountry(rawPhone: string) {
+function parsePhoneWithCountry(rawPhone: string, countryHint?: string) {
   if (!rawPhone) return { country: COUNTRIES[11], number: "" };
   const cleaned = rawPhone.trim();
 
-  const sorted = [...COUNTRIES].sort((a, b) => b.dialCode.length - a.dialCode.length);
+  const isCanada = Boolean(countryHint && (countryHint.toLowerCase() === "canada" || countryHint.toLowerCase() === "ca"));
+  const usOrCanadaCountry = COUNTRIES.find((c) => c.code === (isCanada ? "ca" : "us")) || COUNTRIES[11];
+
+  if (cleaned.startsWith("+1")) {
+    const rest = cleaned.slice(2).trim().replace(/[^\d]/g, "");
+    return { country: usOrCanadaCountry, number: rest };
+  }
+
+  const sorted = [...COUNTRIES].sort((a, b) => {
+    if (b.dialCode.length !== a.dialCode.length) {
+      return b.dialCode.length - a.dialCode.length;
+    }
+    if (a.code === "us") return -1;
+    if (b.code === "us") return 1;
+    return 0;
+  });
+
   for (const c of sorted) {
     if (cleaned.startsWith(c.dialCode)) {
+      if (c.dialCode === "+1") {
+        const rest = cleaned.slice(c.dialCode.length).trim().replace(/[^\d]/g, "");
+        return { country: usOrCanadaCountry, number: rest };
+      }
       const rest = cleaned.slice(c.dialCode.length).trim().replace(/[^\d]/g, "");
       return { country: c, number: rest };
     }
   }
   const digits = cleaned.replace(/[^\d]/g, "");
-  return { country: COUNTRIES[11], number: digits };
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return { country: usOrCanadaCountry, number: digits.slice(1) };
+  }
+  return { country: usOrCanadaCountry, number: digits };
 }
 
 function formatPhoneDisplay(rawPhone?: string): string {
@@ -131,7 +154,7 @@ export function ProviderDetailView({ type, id }: ProviderDetailViewProps) {
 
   const initEditFormData = (p: PersonnelProfileDetail) => {
     const rawPhone = p.phone_no || p.phone || p.phone_number || "";
-    const parsed = parsePhoneWithCountry(rawPhone);
+    const parsed = parsePhoneWithCountry(rawPhone, p.address?.country);
     return {
       name: p.name || "",
       email: p.email || "",

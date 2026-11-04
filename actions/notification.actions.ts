@@ -160,6 +160,27 @@ export interface BroadcastHistoryResponse {
     error?: string;
 }
 
+export async function deleteBroadcastMessagesAction(
+    messageIds: string[]
+): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+        const response = await apiFetch<any>('/api/v1/notification/broadcast', {
+            method: 'DELETE',
+            body: JSON.stringify({ message_ids: messageIds }),
+        });
+        return {
+            success: true,
+            message: response?.message || 'Broadcast message(s) deleted successfully',
+        };
+    } catch (error: any) {
+        console.error('Error deleting broadcast messages:', error);
+        return {
+            success: false,
+            error: error?.message || 'Failed to delete broadcast message(s)',
+        };
+    }
+}
+
 export async function fetchBroadcastHistoryAction(page: number = 1, limit: number = 20): Promise<BroadcastHistoryResponse> {
     try {
         const response = await apiFetch<BroadcastHistoryResponse>(
