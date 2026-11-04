@@ -92,10 +92,12 @@ export function ShiftCheckpointsTab({
                   {items.map((item, iIdx) => (
                     <div
                       key={iIdx}
-                      className="flex justify-between items-center text-xs border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0"
+                      className="flex justify-between items-start gap-4 text-xs border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0"
                     >
-                      <span className="text-[10px] font-bold text-slate-900">{item.label}:</span>
-                      <span className="text-slate-800 font-medium">{item.value}</span>
+                      <span className="text-[10px] font-bold text-slate-900 shrink-0 mt-0.5">{item.label}:</span>
+                      <div className="text-slate-800 font-medium text-right break-words min-w-0 max-w-[75%]">
+                        {item.value}
+                      </div>
                     </div>
                   ))}
                 </div>

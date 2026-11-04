@@ -70,16 +70,43 @@ const DEFAULT_SERVICES = [
   { id: 7, name: "Employee Termination / Work Place Separation Security" },
 ];
 
-function parsePhone(rawPhone: string) {
+function parsePhone(rawPhone: string, countryHint?: string) {
   if (!rawPhone) return { country: countries[11], digits: "" };
   const trimmed = rawPhone.trim();
-  const sortedCountries = [...countries].sort((a, b) => b.dialCode.length - a.dialCode.length);
+
+  const isCanada = Boolean(countryHint && (countryHint.toLowerCase() === "canada" || countryHint.toLowerCase() === "ca"));
+  const usOrCanadaCountry = countries.find((c) => c.code === (isCanada ? "ca" : "us")) || countries[11];
+
+  if (trimmed.startsWith("+1")) {
+    const digits = trimmed.slice(2).replace(/\D/g, "");
+    return { country: usOrCanadaCountry, digits };
+  }
+
+  const sortedCountries = [...countries].sort((a, b) => {
+    if (b.dialCode.length !== a.dialCode.length) {
+      return b.dialCode.length - a.dialCode.length;
+    }
+    if (a.code === "us") return -1;
+    if (b.code === "us") return 1;
+    return 0;
+  });
+
   const matched = sortedCountries.find((c) => trimmed.startsWith(c.dialCode));
   if (matched) {
+    if (matched.dialCode === "+1") {
+      const digits = trimmed.slice(matched.dialCode.length).replace(/\D/g, "");
+      return { country: usOrCanadaCountry, digits };
+    }
     const digits = trimmed.slice(matched.dialCode.length).replace(/\D/g, "");
     return { country: matched, digits };
   }
-  return { country: countries[11], digits: trimmed.replace(/\D/g, "") };
+
+  const digitsOnly = trimmed.replace(/\D/g, "");
+  if (digitsOnly.length === 11 && digitsOnly.startsWith("1")) {
+    return { country: usOrCanadaCountry, digits: digitsOnly.slice(1) };
+  }
+
+  return { country: usOrCanadaCountry, digits: digitsOnly };
 }
 
 function CustomerViewContent() {
@@ -145,7 +172,8 @@ function CustomerViewContent() {
       const data = res.data;
       setCustomerData(data);
 
-      const parsedPhone = parsePhone(data.phone_number || "");
+      const customerCountry = data.billing_address?.country || data.service_address?.country;
+      const parsedPhone = parsePhone(data.phone_number || "", customerCountry);
       setSelectedCountry(parsedPhone.country);
       const initialPrices: Record<string, number> = {};
       DEFAULT_SERVICES.forEach((s) => {
@@ -374,7 +402,8 @@ function CustomerViewContent() {
 
   const handleCancel = () => {
     if (customerData) {
-      const parsedPhone = parsePhone(customerData.phone_number || "");
+      const customerCountry = customerData.billing_address?.country || customerData.service_address?.country;
+      const parsedPhone = parsePhone(customerData.phone_number || "", customerCountry);
       setSelectedCountry(parsedPhone.country);
 
       const initialPrices: Record<string, number> = {};

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Edit2, Loader2, XCircle, User } from "lucide-react";
+import { Edit2, Loader2, XCircle, User, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -80,6 +80,8 @@ export function ShiftDetailsCard({
     | "travel_fee"
     | null;
   const [editingField, setEditingField] = useState<EditingField>(null);
+  const [isInvoiceDetailsExpanded, setIsInvoiceDetailsExpanded] = useState(false);
+  const [isShiftDetailsExpanded, setIsShiftDetailsExpanded] = useState(false);
 
   const isPerHourRateSet =
     shift?.per_hour_rate !== null &&
@@ -463,9 +465,35 @@ export function ShiftDetailsCard({
           {/* Invoice Details */}
           {shift.invoice_description && (
             <SectionRow label="Invoice Details" alignTop>
-              <span className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
-                {shift.invoice_description}
-              </span>
+              <div className="flex items-start justify-between gap-3">
+                <div
+                  className={cn(
+                    "text-sm text-slate-800 font-medium leading-relaxed transition-all",
+                    isInvoiceDetailsExpanded
+                      ? "whitespace-pre-wrap break-words"
+                      : "truncate cursor-pointer"
+                  )}
+                  onClick={() => setIsInvoiceDetailsExpanded(!isInvoiceDetailsExpanded)}
+                  title={!isInvoiceDetailsExpanded ? "Click to view full invoice details" : "Click to collapse"}
+                >
+                  {shift.invoice_description}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsInvoiceDetailsExpanded(!isInvoiceDetailsExpanded)}
+                  className="h-7 w-7 rounded-lg shrink-0 text-slate-500 hover:text-[#0064cb] bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer shadow-sm transition-all"
+                  title={isInvoiceDetailsExpanded ? "Collapse invoice details" : "Expand invoice details"}
+                >
+                  <ChevronDown
+                    className={cn(
+                      "w-3.5 h-3.5 transition-transform duration-200",
+                      isInvoiceDetailsExpanded && "rotate-180 text-[#0064cb]"
+                    )}
+                  />
+                </Button>
+              </div>
             </SectionRow>
           )}
 
@@ -502,11 +530,39 @@ export function ShiftDetailsCard({
                   Shift Details
                 </span>
                 <span className="text-slate-300 mx-3 shrink-0 pt-0.5">:</span>
-                <div className="flex-1 flex items-start justify-between gap-4 min-w-0">
-                  <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                <div className="flex-1 flex items-start justify-between gap-3 min-w-0">
+                  <div
+                    className={cn(
+                      "text-sm text-slate-800 font-medium leading-relaxed transition-all",
+                      isShiftDetailsExpanded
+                        ? "whitespace-pre-wrap break-words"
+                        : "truncate cursor-pointer"
+                    )}
+                    onClick={() => shift.shift_description && setIsShiftDetailsExpanded(!isShiftDetailsExpanded)}
+                    title={shift.shift_description && !isShiftDetailsExpanded ? "Click to view full shift details" : undefined}
+                  >
                     {shift.shift_description || "No shift details provided."}
                   </div>
-                  {renderEditIcon("shift_description", !!shift.action?.is_shift_details_edit)}
+                  <div className="flex items-center shrink-0">
+                    {shift.shift_description && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsShiftDetailsExpanded(!isShiftDetailsExpanded)}
+                        className="h-7 w-7 rounded-lg shrink-0 text-slate-500 hover:text-[#0064cb] bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer shadow-sm transition-all"
+                        title={isShiftDetailsExpanded ? "Collapse shift details" : "Expand shift details"}
+                      >
+                        <ChevronDown
+                          className={cn(
+                            "w-3.5 h-3.5 transition-transform duration-200",
+                            isShiftDetailsExpanded && "rotate-180 text-[#0064cb]"
+                          )}
+                        />
+                      </Button>
+                    )}
+                    {renderEditIcon("shift_description", !!shift.action?.is_shift_details_edit)}
+                  </div>
                 </div>
               </div>
             )}

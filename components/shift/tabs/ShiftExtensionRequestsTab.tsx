@@ -58,18 +58,18 @@ export function ShiftExtensionRequestsTab({
             return (
               <div key={req.id || idx} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-3">
                 <div className="grid grid-cols-1 gap-2.5">
-                  <div className="flex justify-between items-center text-xs border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0">
-                    <span className="text-[10px] font-bold text-slate-900">Requested End Time:</span>
-                    <span className="text-slate-800 font-medium">
+                  <div className="flex justify-between items-center gap-3 text-xs border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0">
+                    <span className="text-[10px] font-bold text-slate-900 shrink-0">Requested End Time:</span>
+                    <span className="text-slate-800 font-medium text-right break-words min-w-0 flex-1">
                       {formatDateTime(req.requested_end_time, timezone)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-xs border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0">
-                    <span className="text-[10px] font-bold text-slate-900">Reason:</span>
-                    <span className="text-slate-800 font-medium">{req.reason || "N/A"}</span>
+                  <div className="flex justify-between items-start gap-3 text-xs border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0">
+                    <span className="text-[10px] font-bold text-slate-900 shrink-0 mt-0.5">Reason:</span>
+                    <span className="text-slate-800 font-medium text-right break-words min-w-0 flex-1">{req.reason || "N/A"}</span>
                   </div>
-                  <div className="flex justify-between items-center text-xs border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0">
-                    <span className="text-[10px] font-bold text-slate-900">Status:</span>
+                  <div className="flex justify-between items-center gap-3 text-xs border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0">
+                    <span className="text-[10px] font-bold text-slate-900 shrink-0">Status:</span>
                     <span
                       className={cn(
                         "px-2 py-0.5 rounded text-[10px] font-bold border capitalize",
@@ -83,9 +83,9 @@ export function ShiftExtensionRequestsTab({
                       {req.status}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-xs border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0">
-                    <span className="text-[10px] font-bold text-slate-900">Created At:</span>
-                    <span className="text-slate-800 font-medium">
+                  <div className="flex justify-between items-center gap-3 text-xs border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0">
+                    <span className="text-[10px] font-bold text-slate-900 shrink-0">Created At:</span>
+                    <span className="text-slate-800 font-medium text-right break-words min-w-0 flex-1">
                       {formatDateTime(req.created_at, timezone)}
                     </span>
                   </div>
