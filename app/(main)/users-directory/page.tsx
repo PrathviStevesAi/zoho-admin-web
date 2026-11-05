@@ -192,244 +192,242 @@ export default function StaffDirectoryPage() {
         ) : (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
-        <div className="flex items-center gap-6 flex-1 overflow-x-auto pb-[1px]">
-          <button
-            onClick={() => setActiveTab("All Staff")}
-            className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${activeTab === "All Staff"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
-          >
-            All Staff
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "All Staff" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
-              }`}>
-              {counts.all}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("Admins")}
-            className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${activeTab === "Admins"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
-          >
-            Admins
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "Admins" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
-              }`}>
-              {counts.admins}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("Members")}
-            className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${activeTab === "Members"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
-          >
-            Members
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "Members" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
-              }`}>
-              {counts.members}
-            </span>
-          </button>
-        </div>
-        <button
-          onClick={() => setView("register")}
-          className="h-[42px] bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-semibold shadow-md transition-all active:scale-95 px-6 whitespace-nowrap cursor-pointer flex items-center gap-2"
-        >
-          <UserPlus className="w-[18px] h-[18px]" />
-          Add New Staff
-        </button>
+              <div className="flex items-center gap-6 flex-1 overflow-x-auto pb-[1px]">
+                <button
+                  onClick={() => setActiveTab("All Staff")}
+                  className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${activeTab === "All Staff"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
+                >
+                  All Staff
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "All Staff" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+                    }`}>
+                    {counts.all}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("Admins")}
+                  className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${activeTab === "Admins"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
+                >
+                  Admins
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "Admins" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+                    }`}>
+                    {counts.admins}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("Members")}
+                  className={`cursor-pointer flex items-center gap-2 pb-3 px-1 border-b-2 font-semibold transition-all whitespace-nowrap ${activeTab === "Members"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
+                >
+                  Members
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "Members" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+                    }`}>
+                    {counts.members}
+                  </span>
+                </button>
+              </div>
+              <button
+                onClick={() => setView("register")}
+                className="h-[42px] bg-[#0064cb] hover:bg-[#0052ae] text-white rounded-xl font-semibold shadow-md transition-all active:scale-95 px-6 whitespace-nowrap cursor-pointer flex items-center gap-2"
+              >
+                <UserPlus className="w-[18px] h-[18px]" />
+                Add New Staff
+              </button>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="py-4 px-6 text-[12px] font-bold text-slate-600 uppercase tracking-wider w-[60px]">#</th>
+                      <th className="py-4 px-6 text-[12px] font-bold text-slate-600 uppercase tracking-wider">Staff</th>
+                      <th className="py-4 px-6 text-[12px] font-bold text-slate-600 uppercase tracking-wider">Role</th>
+                      <th className="py-4 px-6 text-[12px] font-bold text-slate-600 uppercase tracking-wider">Phone Number</th>
+                      <th className="py-4 px-6 text-[12px] font-bold text-slate-600 uppercase tracking-wider text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {isLoading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <tr key={i}>
+                          <td className="py-4 px-6">
+                            <div className="w-4 h-4 bg-slate-100 rounded animate-pulse" />
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-slate-100 animate-pulse" />
+                              <div className="space-y-2">
+                                <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
+                                <div className="h-3 w-40 bg-slate-100 rounded animate-pulse" />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="h-8 w-24 bg-slate-100 rounded-full animate-pulse" />
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            <div className="h-8 w-16 bg-slate-100 rounded animate-pulse ml-auto" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : filteredStaff.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-24 text-center">
+                          <div className="flex flex-col items-center justify-center gap-3">
+                            <Users className="w-12 h-12 text-slate-200" />
+                            <p className="text-[15px] font-medium text-slate-500">No staff members found.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredStaff.map((member, index) => (
+                        <tr key={member.id} className="hover:bg-slate-50/80 transition-colors group">
+                          <td className="py-4 px-6 text-[14px] font-medium text-slate-500">
+                            {index + 1}
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
+                                <AvatarImage src={member.profile_img_url || undefined} alt={`${member.first_name} ${member.last_name}`} />
+                                <AvatarFallback className="bg-purple-100 text-purple-700 font-bold text-sm">
+                                  {(member.first_name?.[0] || "") + (member.last_name?.[0] || "")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col">
+                                <span className="text-[14px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                                  {member.first_name || ""} {member.last_name || ""}
+                                </span>
+                                <span className="text-[13px] text-slate-500">
+                                  {member.email}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6">
+                            {editingRoleId === member.id ? (
+                              <div className="flex items-center gap-2">
+                                <Select
+                                  value={selectedRole}
+                                  onValueChange={(value) => setSelectedRole(value)}
+                                  disabled={isUpdatingRole}
+                                >
+                                  <SelectTrigger className="h-9 w-[110px] border-slate-200 focus:ring-[#0064cb]/20 rounded-full font-medium text-sm">
+                                    <SelectValue placeholder="Select role" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="member">Member</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <button
+                                  onClick={() => handleSaveRole(member.id)}
+                                  disabled={isUpdatingRole}
+                                  className="text-green-500 hover:text-green-600 hover:bg-green-50 p-1 rounded-full transition-colors disabled:opacity-50 cursor-pointer"
+                                  title="Save Role"
+                                >
+                                  <Check className="w-5 h-5" strokeWidth={3} />
+                                </button>
+                                <button
+                                  onClick={() => setEditingRoleId(null)}
+                                  disabled={isUpdatingRole}
+                                  className="text-red-500 hover:text-red-600 hover:bg-red-50 p-1 rounded-full transition-colors disabled:opacity-50 cursor-pointer"
+                                  title="Cancel"
+                                >
+                                  <X className="w-5 h-5" strokeWidth={3} />
+                                </button>
+                              </div>
+                            ) : member.role === "admin" ? (
+                              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-100">
+                                <Crown className="w-3.5 h-3.5 text-red-500" />
+                                <span className="text-[12px] font-bold text-red-600 capitalize">Admin</span>
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100">
+                                <User className="w-3.5 h-3.5 text-blue-500" />
+                                <span className="text-[12px] font-bold text-blue-600 capitalize">Member</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-2 text-slate-600">
+                              <Phone className="w-4 h-4 text-slate-400" />
+                              <span className="text-[14px] font-medium">{member.phone_number || "---"}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            {(!member.action?.is_delete && !member.action?.is_change_role && !member.action?.is_update_password) ? (
+                              <span className="text-slate-400 font-medium">---</span>
+                            ) : (
+                              <div className="flex items-center justify-end gap-2">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button
+                                      disabled={isUpdatingRole || isUpdatingPassword}
+                                      className="w-8 h-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50 outline-none"
+                                    >
+                                      <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-44 rounded-xl border-slate-200 shadow-lg">
+                                    {member.action?.is_change_role && (
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setEditingRoleId(member.id);
+                                          setSelectedRole(member.role);
+                                        }}
+                                        className="text-green-600 font-semibold cursor-pointer focus:text-green-700 focus:bg-green-50 text-[13px] py-2 gap-2"
+                                      >
+                                        <Crown className="w-3.5 h-3.5" />
+                                        Change Role
+                                      </DropdownMenuItem>
+                                    )}
+                                    {member.action?.is_update_password && (
+                                      <DropdownMenuItem
+                                        onClick={() => handleUpdatePasswordClick(member.id, `${member.first_name || ""} ${member.last_name || ""}`)}
+                                        className="text-blue-600 font-semibold cursor-pointer focus:text-blue-700 focus:bg-blue-50 text-[13px] py-2 gap-2"
+                                      >
+                                        <KeyRound className="w-3.5 h-3.5" />
+                                        Update Password
+                                      </DropdownMenuItem>
+                                    )}
+                                    {member.action?.is_delete && (
+                                      <DropdownMenuItem
+                                        onClick={() => handleDeleteClick(member.id, `${member.first_name || ""} ${member.last_name || ""}`)}
+                                        className="text-red-500 font-semibold cursor-pointer focus:text-red-600 focus:bg-red-50 text-[13px] py-2 gap-2"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="py-4 px-6 text-[12px] font-bold text-slate-600 uppercase tracking-wider w-[60px]">#</th>
-                <th className="py-4 px-6 text-[12px] font-bold text-slate-600 uppercase tracking-wider">Staff</th>
-                <th className="py-4 px-6 text-[12px] font-bold text-slate-600 uppercase tracking-wider">Role</th>
-                <th className="py-4 px-6 text-[12px] font-bold text-slate-600 uppercase tracking-wider">Phone Number</th>
-                <th className="py-4 px-6 text-[12px] font-bold text-slate-600 uppercase tracking-wider text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    <td className="py-4 px-6">
-                      <div className="w-4 h-4 bg-slate-100 rounded animate-pulse" />
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 animate-pulse" />
-                        <div className="space-y-2">
-                          <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
-                          <div className="h-3 w-40 bg-slate-100 rounded animate-pulse" />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="h-8 w-24 bg-slate-100 rounded-full animate-pulse" />
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <div className="h-8 w-16 bg-slate-100 rounded animate-pulse ml-auto" />
-                    </td>
-                  </tr>
-                ))
-              ) : filteredStaff.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-24 text-center">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <Users className="w-12 h-12 text-slate-200" />
-                      <p className="text-[15px] font-medium text-slate-500">No staff members found.</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredStaff.map((member, index) => (
-                  <tr key={member.id} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="py-4 px-6 text-[14px] font-medium text-slate-500">
-                      {index + 1}
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
-                          <AvatarImage src={member.profile_img_url || undefined} alt={`${member.first_name} ${member.last_name}`} />
-                          <AvatarFallback className="bg-purple-100 text-purple-700 font-bold text-sm">
-                            {(member.first_name?.[0] || "") + (member.last_name?.[0] || "")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <span className="text-[14px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                            {member.first_name || ""} {member.last_name || ""}
-                          </span>
-                          <span className="text-[13px] text-slate-500">
-                            {member.email}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      {editingRoleId === member.id ? (
-                        <div className="flex items-center gap-2">
-                          <Select
-                            value={selectedRole}
-                            onValueChange={(value) => setSelectedRole(value)}
-                            disabled={isUpdatingRole}
-                          >
-                            <SelectTrigger className="h-9 w-[110px] border-slate-200 focus:ring-[#0064cb]/20 rounded-full font-medium text-sm">
-                              <SelectValue placeholder="Select role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="member">Member</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <button
-                            onClick={() => handleSaveRole(member.id)}
-                            disabled={isUpdatingRole}
-                            className="text-green-500 hover:text-green-600 hover:bg-green-50 p-1 rounded-full transition-colors disabled:opacity-50 cursor-pointer"
-                            title="Save Role"
-                          >
-                            <Check className="w-5 h-5" strokeWidth={3} />
-                          </button>
-                          <button
-                            onClick={() => setEditingRoleId(null)}
-                            disabled={isUpdatingRole}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 p-1 rounded-full transition-colors disabled:opacity-50 cursor-pointer"
-                            title="Cancel"
-                          >
-                            <X className="w-5 h-5" strokeWidth={3} />
-                          </button>
-                        </div>
-                      ) : member.role === "admin" ? (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-100">
-                          <Crown className="w-3.5 h-3.5 text-red-500" />
-                          <span className="text-[12px] font-bold text-red-600 capitalize">Admin</span>
-                        </div>
-                      ) : (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100">
-                          <User className="w-3.5 h-3.5 text-blue-500" />
-                          <span className="text-[12px] font-bold text-blue-600 capitalize">Member</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Phone className="w-4 h-4 text-slate-400" />
-                        <span className="text-[14px] font-medium">{member.phone_number || "---"}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      {(!member.action?.is_delete && !member.action?.is_change_role && !member.action?.is_update_password) ? (
-                        <span className="text-slate-400 font-medium">---</span>
-                      ) : (
-                        <div className="flex items-center justify-end gap-2">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                disabled={isUpdatingRole || isUpdatingPassword}
-                                className="w-8 h-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50 outline-none"
-                              >
-                                <MoreVertical className="w-4 h-4" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44 rounded-xl border-slate-200 shadow-lg">
-                              {member.action?.is_change_role && (
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setEditingRoleId(member.id);
-                                    setSelectedRole(member.role);
-                                  }}
-                                  className="text-green-600 font-semibold cursor-pointer focus:text-green-700 focus:bg-green-50 text-[13px] py-2 gap-2"
-                                >
-                                  <Crown className="w-3.5 h-3.5" />
-                                  Change Role
-                                </DropdownMenuItem>
-                              )}
-                              {member.action?.is_update_password && (
-                                <DropdownMenuItem
-                                  onClick={() => handleUpdatePasswordClick(member.id, `${member.first_name || ""} ${member.last_name || ""}`)}
-                                  className="text-blue-600 font-semibold cursor-pointer focus:text-blue-700 focus:bg-blue-50 text-[13px] py-2 gap-2"
-                                >
-                                  <KeyRound className="w-3.5 h-3.5" />
-                                  Update Password
-                                </DropdownMenuItem>
-                              )}
-                              {member.action?.is_delete && (
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteClick(member.id, `${member.first_name || ""} ${member.last_name || ""}`)}
-                                  className="text-red-500 font-semibold cursor-pointer focus:text-red-600 focus:bg-red-50 text-[13px] py-2 gap-2"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  Delete
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      </div>
-      )}
-      </div>
-
-      {/* Update Password Modal */}
       <Dialog open={passwordModalOpen} onOpenChange={(open) => { setPasswordModalOpen(open); if (!open) { setNewPassword(""); setShowPassword(false); } }}>
         <DialogContent className="sm:max-w-[420px] p-0 rounded-2xl overflow-hidden border-0 shadow-2xl">
-          {/* Header */}
           <div className="px-7 pt-7 pb-5">
             <DialogHeader className="space-y-0">
               <div className="flex items-center gap-3 mb-3">
@@ -446,17 +444,49 @@ export default function StaffDirectoryPage() {
               </p>
             </DialogHeader>
 
-            {/* Password input */}
             <div className="relative mt-5">
               <input
+                type="text"
+                name="prevent_autofill_username"
+                autoComplete="username"
+                style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }}
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              <input
+                type="password"
+                name="prevent_autofill_password"
+                autoComplete="current-password"
+                style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }}
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              <input
                 type={showPassword ? "text" : "password"}
+                name="new-staff-password-field"
+                id="new-staff-password-field"
                 placeholder="Enter new password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && newPassword.trim() && !isUpdatingPassword) confirmUpdatePassword(); }}
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-form-type="other"
+                onChange={(e) => setNewPassword(e.target.value.replace(/\s+/g, ""))}
+                onKeyDown={(e) => {
+                  if (e.key === " ") {
+                    e.preventDefault();
+                    return;
+                  }
+                  if (e.key === "Enter" && newPassword.trim() && !isUpdatingPassword) {
+                    confirmUpdatePassword();
+                  }
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pastedText = e.clipboardData.getData("text").replace(/\s+/g, "");
+                  setNewPassword(pastedText);
+                }}
                 disabled={isUpdatingPassword}
                 className="w-full px-4 py-3 pr-11 rounded-lg border border-slate-200 bg-slate-50 text-[14px] font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0064cb]/20 focus:border-[#0064cb] focus:bg-white transition-all disabled:opacity-50"
-                autoFocus
               />
               <button
                 type="button"
