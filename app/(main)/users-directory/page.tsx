@@ -499,7 +499,6 @@ export default function StaffDirectoryPage() {
             </div>
           </div>
 
-          {/* Footer buttons */}
           <div className="flex items-center gap-3 px-7 py-5 bg-slate-50 border-t border-slate-100">
             <button
               onClick={() => { setPasswordModalOpen(false); setNewPassword(""); setShowPassword(false); }}
@@ -529,7 +528,6 @@ export default function StaffDirectoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Modal */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent className="sm:max-w-[400px] p-8 rounded-[24px]">
           <DialogHeader className="flex flex-col items-start text-left space-y-3">
