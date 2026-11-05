@@ -474,3 +474,31 @@ export async function registerStaffAction(data: {
         return { success: false, error: "An unexpected error occurred." };
     }
 }
+export async function updateStaffPasswordAction(staffId: string, newPassword: string) {
+    try {
+        const session = await auth();
+        const token = session?.accessToken;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/staff/${staffId}/password`, {
+            method: "PATCH",
+            body: JSON.stringify({ new_password: newPassword }),
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            return { success: true, message: result.message || "Password updated successfully" };
+        } else {
+            const errorMsg = result.detail?.error || result.message || "Failed to update password";
+            return { success: false, error: errorMsg };
+        }
+    } catch (error) {
+        console.error("Update Staff Password Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}

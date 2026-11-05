@@ -14,10 +14,13 @@ import {
   MoreVertical,
   ChevronRight,
   ArrowLeft,
-  AlertCircle
+  AlertCircle,
+  KeyRound,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { toast } from "sonner";
-import { fetchStaffAction, deleteStaffAction, updateStaffRoleAction } from "@/actions/auth.actions";
+import { fetchStaffAction, deleteStaffAction, updateStaffRoleAction, updateStaffPasswordAction } from "@/actions/auth.actions";
 import { MemberRegistrationForm } from "./_components/member-registration-form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -49,6 +52,11 @@ export default function StaffDirectoryPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<{ id: string, name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [staffToUpdatePwd, setStaffToUpdatePwd] = useState<{ id: string; name: string } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const { data: session, update: updateSession } = useSession();
 
   useEffect(() => {
@@ -87,6 +95,33 @@ export default function StaffDirectoryPage() {
       toast.error("An unexpected error occurred");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleUpdatePasswordClick = (id: string, name: string) => {
+    setStaffToUpdatePwd({ id, name });
+    setNewPassword("");
+    setShowPassword(false);
+    setPasswordModalOpen(true);
+  };
+
+  const confirmUpdatePassword = async () => {
+    if (!staffToUpdatePwd || !newPassword.trim()) return;
+    setIsUpdatingPassword(true);
+    try {
+      const res = await updateStaffPasswordAction(staffToUpdatePwd.id, newPassword.trim());
+      if (res.success) {
+        toast.success(res.message || "Password updated successfully");
+        setPasswordModalOpen(false);
+        setNewPassword("");
+        setShowPassword(false);
+      } else {
+        toast.error(res.error || "Failed to update password");
+      }
+    } catch {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -331,43 +366,52 @@ export default function StaffDirectoryPage() {
                       </div>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      {(!member.action?.is_change_role && !member.action?.is_delete) ? (
+                      {(!member.action?.is_delete && !member.action?.is_change_role && !member.action?.is_update_password) ? (
                         <span className="text-slate-400 font-medium">---</span>
                       ) : (
                         <div className="flex items-center justify-end gap-2">
-                          {member.action?.is_delete && (
-                            <button
-                              onClick={() => handleDeleteClick(member.id, `${member.first_name || ""} ${member.last_name || ""}`)}
-                              disabled={isUpdatingRole}
-                              className="w-8 h-8 flex items-center justify-center rounded-md text-red-500 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                          {member.action?.is_change_role && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button
-                                  disabled={isUpdatingRole}
-                                  className="w-8 h-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50 outline-none"
-                                >
-                                  <MoreVertical className="w-4 h-4" />
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-36 rounded-xl border-slate-200 shadow-lg">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                disabled={isUpdatingRole || isUpdatingPassword}
+                                className="w-8 h-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50 outline-none"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44 rounded-xl border-slate-200 shadow-lg">
+                              {member.action?.is_change_role && (
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setEditingRoleId(member.id);
                                     setSelectedRole(member.role);
                                   }}
-                                  className="text-green-600 font-semibold cursor-pointer focus:text-green-700 focus:bg-green-50 text-[13px] py-2 justify-center"
+                                  className="text-green-600 font-semibold cursor-pointer focus:text-green-700 focus:bg-green-50 text-[13px] py-2 gap-2"
                                 >
+                                  <Crown className="w-3.5 h-3.5" />
                                   Change Role
                                 </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
+                              )}
+                              {member.action?.is_update_password && (
+                                <DropdownMenuItem
+                                  onClick={() => handleUpdatePasswordClick(member.id, `${member.first_name || ""} ${member.last_name || ""}`)}
+                                  className="text-blue-600 font-semibold cursor-pointer focus:text-blue-700 focus:bg-blue-50 text-[13px] py-2 gap-2"
+                                >
+                                  <KeyRound className="w-3.5 h-3.5" />
+                                  Update Password
+                                </DropdownMenuItem>
+                              )}
+                              {member.action?.is_delete && (
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteClick(member.id, `${member.first_name || ""} ${member.last_name || ""}`)}
+                                  className="text-red-500 font-semibold cursor-pointer focus:text-red-600 focus:bg-red-50 text-[13px] py-2 gap-2"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  Delete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       )}
                     </td>
@@ -381,6 +425,79 @@ export default function StaffDirectoryPage() {
       </div>
       )}
       </div>
+
+      {/* Update Password Modal */}
+      <Dialog open={passwordModalOpen} onOpenChange={(open) => { setPasswordModalOpen(open); if (!open) { setNewPassword(""); setShowPassword(false); } }}>
+        <DialogContent className="sm:max-w-[420px] p-0 rounded-2xl overflow-hidden border-0 shadow-2xl">
+          {/* Header */}
+          <div className="px-7 pt-7 pb-5">
+            <DialogHeader className="space-y-0">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                  <KeyRound className="w-5 h-5 text-[#0064cb]" strokeWidth={2.5} />
+                </div>
+                <DialogTitle className="text-[20px] font-bold text-slate-900 leading-tight">
+                  Update Password
+                </DialogTitle>
+              </div>
+              <p className="text-[13.5px] text-slate-500 leading-relaxed">
+                Set a new password for{" "}
+                <span className="font-bold text-slate-800">{staffToUpdatePwd?.name}</span>.
+              </p>
+            </DialogHeader>
+
+            {/* Password input */}
+            <div className="relative mt-5">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && newPassword.trim() && !isUpdatingPassword) confirmUpdatePassword(); }}
+                disabled={isUpdatingPassword}
+                className="w-full px-4 py-3 pr-11 rounded-lg border border-slate-200 bg-slate-50 text-[14px] font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0064cb]/20 focus:border-[#0064cb] focus:bg-white transition-all disabled:opacity-50"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(p => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Footer buttons */}
+          <div className="flex items-center gap-3 px-7 py-5 bg-slate-50 border-t border-slate-100">
+            <button
+              onClick={() => { setPasswordModalOpen(false); setNewPassword(""); setShowPassword(false); }}
+              disabled={isUpdatingPassword}
+              className="flex-1 py-2.5 rounded-full border border-slate-200 bg-white text-slate-600 font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer text-[14px]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmUpdatePassword}
+              disabled={isUpdatingPassword || !newPassword.trim()}
+              className="flex-1 py-2.5 rounded-full bg-[#0064cb] hover:bg-[#0052ae] text-white font-semibold transition-all shadow-md shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex justify-center items-center gap-2 text-[14px]"
+            >
+              {isUpdatingPassword ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <KeyRound className="w-3.5 h-3.5" />
+                  Update Password
+                </>
+              )}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
